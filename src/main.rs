@@ -4,11 +4,13 @@ extern crate gdk;
 extern crate gdk_pixbuf;
 
 
-use std::env::args;
-use std::sync::mpsc::{channel, Sender};
+use gdk_pixbuf::{Pixbuf, PixbufAnimation};
 use gtk::prelude::*;
 use gtk::{Image, Window};
-use gdk_pixbuf::{Pixbuf, PixbufAnimation};
+use std::env::args;
+use std::sync::mpsc::{channel, Sender};
+use std::thread::sleep;
+use std::time::Duration;
 
 
 #[derive(Clone, Debug)]
@@ -70,6 +72,8 @@ fn main() {
                     }
                 }
             }
+
+            sleep(Duration::from_millis(10));
         }
     }
 }

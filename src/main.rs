@@ -66,7 +66,7 @@ fn main() {
 
         let mut index: i64 = 0;
         let mut count: Option<i64> = None;
-        let mut http_cache = HttpCache::new();
+        let http_cache = HttpCache::new();
 
         loop {
             while gtk::events_pending() {
@@ -91,7 +91,14 @@ fn main() {
                         }
                     }
                     PushURL(url) => {
-                        tx.send(PushFile(http_cache.get(url).unwrap().to_str().unwrap().to_owned())).unwrap();
+                        let tx = tx.clone();
+                        let mut http_cache = http_cache.clone();
+                        spawn(move || {
+                            match http_cache.get(url) {
+                                Ok(file) => tx.send(PushFile(file)).unwrap(),
+                                Err(err) => println!("Error\t{}", err)
+                            }
+                        });
                     }
                     Key(key) => {
                         print!("Key\t{}", key);

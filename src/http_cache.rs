@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::io::{BufWriter, Write, Read};
+use std::sync::{Arc, Mutex};
 use hyper::client::Client;
 use hyper::client::response::Response;
 use hyper::Error;
@@ -10,25 +11,37 @@ use mktemp::Temp;
 
 
 
+#[derive(Clone)]
 pub struct HttpCache {
-    cache: HashMap<String, PathBuf>, // URL to filepath
+    cache: Arc<Mutex<HashMap<String, PathBuf>>>, // URL to filepath
 }
 
 impl HttpCache {
     pub fn new() -> HttpCache {
-        HttpCache { cache: HashMap::new() }
+        HttpCache { cache: Arc::new(Mutex::new(HashMap::new())) }
     }
 
-    pub fn get(&mut self, url: String) -> Result<PathBuf, Error> {
-        if let Some(filepath) = self.cache.get(&url) {
-           return  Ok(filepath.clone())
+    pub fn get(&mut self, url: String) -> Result<String, Error> {
+        self.get_path_buf(url).map(|path| path.to_str().unwrap().to_owned())
+    }
+
+
+    fn get_path_buf(&mut self, url: String) -> Result<PathBuf, Error> {
+        {
+            let ref mut cache = *self.cache.lock().unwrap();
+            if let Some(filepath) = cache.get(&url) {
+                return  Ok(filepath.clone())
+            }
         }
 
         let client = Client::new();
 
         client.get(&url).send().map(|response| {
             let filepath = write_to_file(&url, response);
-            self.cache.insert(url, filepath.clone());
+            {
+                let ref mut cache = *self.cache.lock().unwrap();
+                cache.insert(url, filepath.clone());
+            }
             filepath
         })
     }

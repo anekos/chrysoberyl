@@ -82,6 +82,8 @@ fn main() {
 fn show_image(window: &Window, image: &mut Image, file: String) {
     use std::path::Path;
 
+    println!("show: {}", file);
+
     let (width, height) = window.get_size();
     let path = Path::new(&file);
 

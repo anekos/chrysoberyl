@@ -1,0 +1,3 @@
+
+release:
+	cargo build --release

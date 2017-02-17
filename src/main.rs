@@ -72,11 +72,19 @@ fn main() {
                     Last => { next_index = Some(files.len() as i64 - 1); },
                     Refresh => { next_index = Some(index); },
                     Append(file) => {
-                        println!("Add: {}", file);
+                        println!("Add\t{}", file);
                         let do_show = files.is_empty();
                         files.push(file);
                         if do_show {
                             tx.send(First).unwrap();
+                        }
+                    }
+                    Key(key) => {
+                        print!("Key\t{}", key);
+                        if let Some(file) = files.get(index as usize) {
+                            println!("\t{}", file);
+                        } else {
+                            println!("");
                         }
                     }
                     Exit => { std::process::exit(0); }
@@ -85,7 +93,9 @@ fn main() {
                 if let Some(next_index) = next_index {
                     if 0 <= next_index && next_index < files.len() as i64 {
                         index = next_index;
-                        show_image(&window, &mut image, files[index as usize].clone());
+                        let file = files[index as usize].clone();
+                        window.set_title(&format!("[{}/{}] {}", index + 1, files.len(), file));
+                        show_image(&window, &mut image, file);
                     }
                 }
             }
@@ -99,7 +109,7 @@ fn main() {
 fn show_image(window: &Window, image: &mut Image, file: String) {
     use std::path::Path;
 
-    println!("Show: {}", file);
+    println!("Show\t{}", file);
 
     let (width, height) = window.get_size();
     let path = Path::new(&file);
@@ -108,7 +118,7 @@ fn show_image(window: &Window, image: &mut Image, file: String) {
         if extension == "gif" {
             match PixbufAnimation::new_from_file(&file) {
                 Ok(buf) => image.set_from_animation(&buf),
-                Err(err) => println!("Error: {}", err)
+                Err(err) => println!("Error\t{}", err)
             }
             return
         }
@@ -116,7 +126,7 @@ fn show_image(window: &Window, image: &mut Image, file: String) {
 
     match Pixbuf::new_from_file_at_scale(&file, width, height, true) {
         Ok(buf) => image.set_from_pixbuf(Some(&buf)),
-        Err(err) => println!("Error: {}", err)
+        Err(err) => println!("Error\t{}", err)
     }
 }
 

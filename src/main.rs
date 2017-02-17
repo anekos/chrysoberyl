@@ -21,6 +21,8 @@ enum Operation {
     Last,
     Refresh,
     Append(String),
+    Key(u32),
+    Count(i64),
     Exit
 }
 
@@ -56,6 +58,7 @@ fn main() {
     {
 
         let mut index: i64 = 0;
+        let mut count: Option<i64> = None;
 
         loop {
             while gtk::events_pending() {
@@ -66,10 +69,10 @@ fn main() {
                 let mut next_index = None;
 
                 match operation {
-                    First => { next_index = Some(0); },
-                    Next => { next_index = Some(index + 1); },
-                    Previous => { next_index = Some(index - 1); },
-                    Last => { next_index = Some(files.len() as i64 - 1); },
+                    First => { next_index = Some(counted(&mut count) - 1); },
+                    Next => { next_index = Some(index + counted(&mut count)); },
+                    Previous => { next_index = Some(index - counted(&mut count)); },
+                    Last => { next_index = Some(files.len() as i64 - counted(&mut count) + 1); },
                     Refresh => { next_index = Some(index); },
                     Append(file) => {
                         println!("Add\t{}", file);
@@ -85,6 +88,13 @@ fn main() {
                             println!("\t{}", file);
                         } else {
                             println!("");
+                        }
+                    }
+                    Count(value) => {
+                        if let Some(current) = count {
+                            count = Some(current * 10 + value);
+                        } else {
+                            count = Some(value);
                         }
                     }
                     Exit => { std::process::exit(0); }
@@ -147,9 +157,10 @@ fn on_key_press(tx: Sender<Operation>, key: &gdk::EventKey) -> gtk::Inhibit {
         108 => Some(Last),
         113 => Some(Exit),
         114 => Some(Refresh),
-        key => {
-            println!("Key: {}", key);
-            None
+        key => if 48 <= key && key <= 57 {
+            Some(Count((key - 48) as i64))
+        } else {
+            Some(Key(key))
         }
     } {
         tx.send(operation).unwrap();
@@ -191,4 +202,11 @@ fn setup() -> (Window, Image) {
     window.add(&image);
 
     (window, image)
+}
+
+
+fn counted(count: &mut Option<i64>) -> i64 {
+    let result = count.unwrap_or(1);
+    *count = None;
+    result
 }

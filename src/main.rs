@@ -9,7 +9,7 @@ use gtk::prelude::*;
 use gtk::{Image, Window};
 use std::env::args;
 use std::sync::mpsc::{channel, Sender};
-use std::thread::sleep;
+use std::thread::{sleep, spawn};
 use std::time::Duration;
 
 
@@ -18,7 +18,9 @@ enum Operation {
     First,
     Next,
     Previous,
+    Last,
     Refresh,
+    Append(String),
     Exit
 }
 
@@ -28,7 +30,7 @@ fn main() {
 
     let (window, mut image) = setup();
 
-    let files: Vec<String> = args().skip(1).collect();
+    let mut files: Vec<String> = args().skip(1).collect();
 
     let (tx, rx) = channel();
 
@@ -40,6 +42,11 @@ fn main() {
     {
         let tx = tx.clone();
         window.connect_configure_event(move |_, _| on_configure(tx.clone()));
+    }
+
+    {
+        let tx = tx.clone();
+        stdin_reader(tx);
     }
 
     window.show_all();
@@ -56,12 +63,22 @@ fn main() {
             }
 
             for operation in rx.try_iter() {
-                let next_index;
+                let mut next_index = None;
+
                 match operation {
                     First => { next_index = Some(0); },
                     Next => { next_index = Some(index + 1); },
                     Previous => { next_index = Some(index - 1); },
+                    Last => { next_index = Some(files.len() as i64 - 1); },
                     Refresh => { next_index = Some(index); },
+                    Append(file) => {
+                        println!("Add: {}", file);
+                        let do_show = files.is_empty();
+                        files.push(file);
+                        if do_show {
+                            tx.send(First).unwrap();
+                        }
+                    }
                     Exit => { std::process::exit(0); }
                 }
 
@@ -82,7 +99,7 @@ fn main() {
 fn show_image(window: &Window, image: &mut Image, file: String) {
     use std::path::Path;
 
-    println!("show: {}", file);
+    println!("Show: {}", file);
 
     let (width, height) = window.get_size();
     let path = Path::new(&file);
@@ -114,17 +131,35 @@ fn on_key_press(tx: Sender<Operation>, key: &gdk::EventKey) -> gtk::Inhibit {
     use self::Operation::*;
 
     if let Some(operation) = match key.as_ref().keyval {
-        104 => Some(First),
-            106 => Some(Next),
-            107 => Some(Previous),
-            113 => Some(Exit),
-            114 => Some(Refresh),
-            _ => None
+        104 | 102 => Some(First),
+        106 => Some(Next),
+        107 => Some(Previous),
+        108 => Some(Last),
+        113 => Some(Exit),
+        114 => Some(Refresh),
+        key => {
+            println!("Key: {}", key);
+            None
+        }
     } {
         tx.send(operation).unwrap();
     }
 
     Inhibit(false)
+}
+
+
+fn stdin_reader(tx: Sender<Operation>) {
+    use std::io;
+    use std::io::BufRead;
+
+    spawn(move || {
+        let stdin = io::stdin();
+        for line in stdin.lock().lines() {
+             tx.send(Operation::Append(line.unwrap())).unwrap();
+             // tx.send(Operation::Last).unwrap();
+        }
+    });
 }
 
 

@@ -7,3 +7,5 @@ authors = ["anekos <anekos@snca.net>"]
 gdk = "*"
 gdk-pixbuf = "*"
 gtk = "*"
+hyper = "*"
+mktemp = "*"

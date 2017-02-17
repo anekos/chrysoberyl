@@ -2,7 +2,10 @@
 extern crate gtk;
 extern crate gdk;
 extern crate gdk_pixbuf;
+extern crate hyper;
+extern crate mktemp;
 
+mod http_cache;
 
 use gdk_pixbuf::{Pixbuf, PixbufAnimation};
 use gtk::prelude::*;
@@ -12,6 +15,9 @@ use std::sync::mpsc::{channel, Sender};
 use std::thread::{sleep, spawn};
 use std::time::Duration;
 
+use http_cache::HttpCache;
+
+
 
 #[derive(Clone, Debug)]
 enum Operation {
@@ -20,7 +26,8 @@ enum Operation {
     Previous,
     Last,
     Refresh,
-    Append(String),
+    PushFile(String),
+    PushURL(String),
     Key(u32),
     Count(i64),
     Exit
@@ -59,6 +66,7 @@ fn main() {
 
         let mut index: i64 = 0;
         let mut count: Option<i64> = None;
+        let mut http_cache = HttpCache::new();
 
         loop {
             while gtk::events_pending() {
@@ -74,13 +82,16 @@ fn main() {
                     Previous => { next_index = Some(index - counted(&mut count)); },
                     Last => { next_index = Some(files.len() as i64 - counted(&mut count) + 1); },
                     Refresh => { next_index = Some(index); },
-                    Append(file) => {
+                    PushFile(file) => {
                         println!("Add\t{}", file);
                         let do_show = files.is_empty();
                         files.push(file);
                         if do_show {
                             tx.send(First).unwrap();
                         }
+                    }
+                    PushURL(url) => {
+                        tx.send(PushFile(http_cache.get(url).unwrap().to_str().unwrap().to_owned())).unwrap();
                     }
                     Key(key) => {
                         print!("Key\t{}", key);
@@ -177,7 +188,12 @@ fn stdin_reader(tx: Sender<Operation>) {
     spawn(move || {
         let stdin = io::stdin();
         for line in stdin.lock().lines() {
-             tx.send(Operation::Append(line.unwrap())).unwrap();
+            let line = line.unwrap();
+            if line.starts_with("http://") {
+                tx.send(Operation::PushURL(line)).unwrap();
+            } else {
+                tx.send(Operation::PushFile(line)).unwrap();
+            }
              // tx.send(Operation::Last).unwrap();
         }
     });

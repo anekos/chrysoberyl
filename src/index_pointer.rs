@@ -79,8 +79,8 @@ impl IndexPointer {
     }
 
     fn counted(&mut self) -> usize {
-        self.current = self.count.unwrap_or(1);
+        let result = self.count.unwrap_or(1);
         self.count = None;
-        self.current
+        result
     }
 }

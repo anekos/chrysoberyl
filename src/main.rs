@@ -6,6 +6,7 @@ extern crate hyper;
 extern crate mktemp;
 
 mod http_cache;
+mod index_pointer;
 
 use gdk_pixbuf::{Pixbuf, PixbufAnimation};
 use gtk::prelude::*;
@@ -29,7 +30,7 @@ enum Operation {
     PushFile(String),
     PushURL(String),
     Key(u32),
-    Count(i64),
+    Count(u8),
     Exit
 }
 
@@ -64,8 +65,8 @@ fn main() {
 
     {
 
-        let mut index: i64 = 0;
-        let mut count: Option<i64> = None;
+        let mut index_pointer = index_pointer::IndexPointer::new();
+        let mut next_index = None;
         let http_cache = HttpCache::new();
 
         loop {
@@ -74,14 +75,12 @@ fn main() {
             }
 
             for operation in rx.try_iter() {
-                let mut next_index = None;
-
                 match operation {
-                    First => { next_index = Some(counted(&mut count) - 1); },
-                    Next => { next_index = Some(index + counted(&mut count)); },
-                    Previous => { next_index = Some(index - counted(&mut count)); },
-                    Last => { next_index = Some(files.len() as i64 - counted(&mut count) + 1); },
-                    Refresh => { next_index = Some(index); },
+                    First => { next_index = index_pointer.first(files.len()); }
+                    Next => { next_index = index_pointer.next(files.len()); }
+                    Previous => { next_index = index_pointer.previous(); },
+                    Last => { next_index = index_pointer.last(files.len()) }
+                    Refresh => { next_index = Some(index_pointer.current); }
                     PushFile(file) => {
                         println!("Add\t{}", file);
                         let do_show = files.is_empty();
@@ -102,28 +101,20 @@ fn main() {
                     }
                     Key(key) => {
                         print!("Key\t{}", key);
-                        if let Some(file) = files.get(index as usize) {
+                        if let Some(file) = files.get(index_pointer.current) {
                             println!("\t{}", file);
                         } else {
                             println!("");
                         }
                     }
-                    Count(value) => {
-                        if let Some(current) = count {
-                            count = Some(current * 10 + value);
-                        } else {
-                            count = Some(value);
-                        }
-                    }
+                    Count(value) => { index_pointer.push_counting_number(value) }
                     Exit => { std::process::exit(0); }
                 }
 
                 if let Some(next_index) = next_index {
-                    if 0 <= next_index && next_index < files.len() as i64 {
-                        index = next_index;
-                        let file = files[index as usize].clone();
-                        window.set_title(&format!("[{}/{}] {}", index + 1, files.len(), file));
-                        show_image(&window, &mut image, file);
+                    if let Some(file) = files.get(next_index) {
+                        window.set_title(&format!("[{}/{}] {}", next_index + 1, files.len(), file));
+                        show_image(&window, &mut image, file.clone());
                     }
                 }
             }
@@ -176,7 +167,7 @@ fn on_key_press(tx: Sender<Operation>, key: &gdk::EventKey) -> gtk::Inhibit {
         113 => Some(Exit),
         114 => Some(Refresh),
         key => if 48 <= key && key <= 57 {
-            Some(Count((key - 48) as i64))
+            Some(Count((key - 48) as u8))
         } else {
             Some(Key(key))
         }
@@ -225,11 +216,4 @@ fn setup() -> (Window, Image) {
     window.add(&image);
 
     (window, image)
-}
-
-
-fn counted(count: &mut Option<i64>) -> i64 {
-    let result = count.unwrap_or(1);
-    *count = None;
-    result
 }

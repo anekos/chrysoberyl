@@ -9,7 +9,6 @@ mod http_cache;
 mod index_pointer;
 mod app;
 
-use gdk_pixbuf::{Pixbuf, PixbufAnimation};
 use gtk::prelude::*;
 use gtk::{Image, Window};
 use std::env::args;

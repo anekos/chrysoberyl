@@ -63,10 +63,12 @@ impl App {
                 Next => next_index = self.index_pointer.next(len),
                 Previous => next_index = self.index_pointer.previous(),
                 Last => next_index = self.index_pointer.last(len),
-                Refresh => next_index = Some(self.index_pointer.current),
+                Refresh => next_index = self.index_pointer.current,
                 PushFile(file) => on_push_file(self.tx.clone(), &mut self.files, file),
                 PushURL(url) => on_push_url(self.tx.clone(), &mut self.http_cache, url),
-                Key(key) => on_key(key, self.files.get(self.index_pointer.current)),
+                Key(key) => if let Some(current) = self.index_pointer.current {
+                    on_key(key, self.files.get(current));
+                },
                 Count(value) => self.index_pointer.push_counting_number(value),
                 Exit => exit(0),
             }

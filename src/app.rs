@@ -1,0 +1,130 @@
+
+use std::sync::mpsc::{channel, Sender, Receiver};
+use std::thread::spawn;
+use std::process::exit;
+use gtk::prelude::*;
+use gtk::{Image, Window};
+use gdk_pixbuf::{Pixbuf, PixbufAnimation};
+
+use index_pointer::IndexPointer;
+use http_cache::HttpCache;
+
+
+
+pub struct App {
+    index_pointer: IndexPointer,
+    http_cache: HttpCache,
+    files: Vec<String>,
+    window: Window,
+    image: Image,
+    pub tx: Sender<Operation>,
+}
+
+#[derive(Clone, Debug)]
+pub enum Operation {
+    First,
+    Next,
+    Previous,
+    Last,
+    Refresh,
+    PushFile(String),
+    PushURL(String),
+    Key(u32),
+    Count(u8),
+    Exit
+}
+
+
+impl App {
+    pub fn new(files: Vec<String>, window: Window, image: Image) -> (App, Receiver<Operation>) {
+        let (tx, rx) = channel();
+
+        let app = App {
+            index_pointer: IndexPointer::new(),
+            http_cache: HttpCache::new(),
+            files: files,
+            window: window,
+            image: image,
+            tx: tx,
+        };
+
+        (app, rx)
+    }
+
+    pub fn operate(&mut self, operation: Operation) {
+        use self::Operation::*;
+
+        let mut next_index = None;
+        let len = self.files.len();
+
+        {
+            match operation {
+                First => { next_index = self.index_pointer.first(len); }
+                Next => { next_index = self.index_pointer.next(len); }
+                Previous => { next_index = self.index_pointer.previous(); },
+                Last => { next_index = self.index_pointer.last(len) }
+                Refresh => { next_index = Some(self.index_pointer.current); }
+                PushFile(file) => {
+                    println!("Add\t{}", file);
+                    let do_show = self.files.is_empty();
+                    self.files.push(file);
+                    if do_show {
+                        self.tx.send(First).unwrap();
+                    }
+                }
+                PushURL(url) => {
+                    let tx = self.tx.clone();
+                    let mut http_cache = self.http_cache.clone();
+                    spawn(move || {
+                        match http_cache.get(url) {
+                            Ok(file) => tx.send(PushFile(file)).unwrap(),
+                            Err(err) => println!("Error\t{}", err)
+                        }
+                    });
+                }
+                Key(key) => {
+                    print!("Key\t{}", key);
+                    if let Some(file) = self.files.get(self.index_pointer.current) {
+                        println!("\t{}", file);
+                    } else {
+                        println!("");
+                    }
+                }
+                Count(value) => { self.index_pointer.push_counting_number(value) }
+                Exit => { exit(0); }
+            }
+        }
+
+        if let Some(next_index) = next_index {
+            if let Some(file) = self.files.get(next_index) {
+                self.window.set_title(&format!("[{}/{}] {}", next_index + 1, len, file));
+                show_image(&mut self.window, &mut self.image, file.clone());
+            }
+        }
+    }
+}
+
+
+fn show_image(window: &mut Window, image: &mut Image, file: String) {
+    use std::path::Path;
+
+    println!("Show\t{}", file);
+
+    let (width, height) = window.get_size();
+    let path = Path::new(&file);
+
+    if let Some(extension) = path.extension() {
+        if extension == "gif" {
+            match PixbufAnimation::new_from_file(&file) {
+                Ok(buf) => image.set_from_animation(&buf),
+                Err(err) => println!("Error\t{}", err)
+            }
+            return
+        }
+    }
+
+    match Pixbuf::new_from_file_at_scale(&file, width, height, true) {
+        Ok(buf) => image.set_from_pixbuf(Some(&buf)),
+        Err(err) => println!("Error\t{}", err)
+    }
+}

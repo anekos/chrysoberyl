@@ -4,6 +4,7 @@ extern crate gdk_pixbuf;
 extern crate gtk;
 extern crate hyper;
 extern crate url;
+extern crate cairo;
 
 mod http_cache;
 mod index_pointer;

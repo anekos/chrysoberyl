@@ -5,6 +5,7 @@ use std::process::exit;
 use gtk::prelude::*;
 use gtk::{Image, Window};
 use gdk_pixbuf::{Pixbuf, PixbufAnimation};
+use cairo;
 
 use index_pointer::IndexPointer;
 use http_cache::HttpCache;
@@ -103,7 +104,27 @@ fn show_image(window: &mut Window, image: &mut Image, file: String) {
     }
 
     match Pixbuf::new_from_file_at_scale(&file, width, height, true) {
-        Ok(buf) => image.set_from_pixbuf(Some(&buf)),
+        Ok(buf) => {
+            use cairo::{Context, ImageSurface, Format};
+            use gdk::prelude::ContextExt;
+
+            let font_size = 12.0;
+
+            let (width, height) = (buf.get_width(), buf.get_height());
+
+            let surface = ImageSurface::create(Format::ARgb32, width, height);
+            let context = Context::new(&surface);
+
+            context.set_source_pixbuf(&buf, 0.0, 0.0);
+            context.paint();
+
+            context.set_font_size(font_size);
+            context.move_to(0.0, height as f64 - font_size);
+            context.set_source_rgba(0.1, 0.1, 0.1, 1.0);
+            context.show_text(&file);
+
+            image.set_from_surface(&surface);
+        }
         Err(err) => println!("Error\t{}", err)
     }
 }

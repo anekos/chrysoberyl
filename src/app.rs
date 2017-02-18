@@ -64,32 +64,9 @@ impl App {
                 Previous => { next_index = self.index_pointer.previous(); },
                 Last => { next_index = self.index_pointer.last(len) }
                 Refresh => { next_index = Some(self.index_pointer.current); }
-                PushFile(file) => {
-                    println!("Add\t{}", file);
-                    let do_show = self.files.is_empty();
-                    self.files.push(file);
-                    if do_show {
-                        self.tx.send(First).unwrap();
-                    }
-                }
-                PushURL(url) => {
-                    let tx = self.tx.clone();
-                    let mut http_cache = self.http_cache.clone();
-                    spawn(move || {
-                        match http_cache.get(url) {
-                            Ok(file) => tx.send(PushFile(file)).unwrap(),
-                            Err(err) => println!("Error\t{}", err)
-                        }
-                    });
-                }
-                Key(key) => {
-                    print!("Key\t{}", key);
-                    if let Some(file) = self.files.get(self.index_pointer.current) {
-                        println!("\t{}", file);
-                    } else {
-                        println!("");
-                    }
-                }
+                PushFile(file) => { on_push_file(self.tx.clone(), &mut self.files, file) }
+                PushURL(url) => { on_push_url(self.tx.clone(), &mut self.http_cache, url); }
+                Key(key) => { on_key(key, self.files.get(self.index_pointer.current)) }
                 Count(value) => { self.index_pointer.push_counting_number(value) }
                 Exit => { exit(0); }
             }
@@ -127,4 +104,32 @@ fn show_image(window: &mut Window, image: &mut Image, file: String) {
         Ok(buf) => image.set_from_pixbuf(Some(&buf)),
         Err(err) => println!("Error\t{}", err)
     }
+}
+
+fn on_key(key: u32, file: Option<&String>) {
+    print!("Key\t{}", key);
+    if let Some(file) = file {
+        println!("\t{}", file);
+    } else {
+        println!("");
+    }
+}
+
+fn on_push_file(tx: Sender<Operation>,files: &mut Vec<String>, file: String) {
+    println!("Add\t{}", file);
+    let do_show = files.is_empty();
+    files.push(file);
+    if do_show {
+        tx.send(Operation::First).unwrap();
+    }
+}
+
+fn on_push_url(tx: Sender<Operation>, http_cache: &mut HttpCache, url: String) {
+    let mut http_cache = http_cache.clone();
+    spawn(move || {
+        match http_cache.get(url) {
+            Ok(file) => tx.send(Operation::PushFile(file)).unwrap(),
+            Err(err) => println!("Error\t{}", err)
+        }
+    });
 }

@@ -3,7 +3,7 @@ extern crate gdk;
 extern crate gdk_pixbuf;
 extern crate gtk;
 extern crate hyper;
-extern crate mktemp;
+extern crate url;
 
 mod http_cache;
 mod index_pointer;

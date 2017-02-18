@@ -6,6 +6,7 @@ use std::io::{BufWriter, Write, Read};
 use hyper::client::Client;
 use hyper::client::response::Response;
 use hyper::Error;
+use url::Url;
 
 
 
@@ -49,27 +50,21 @@ fn write_to_file(filepath: &PathBuf, mut response: Response) {
     writer.write(data.as_slice()).unwrap();
 }
 
-fn encode_filename(url: &str) -> String {
-    let mut result = String::new();
+fn generate_temporary_filename(url: &str) -> PathBuf {
 
-    for c in url.chars() {
-        match c {
-            '_' => result.push_str("__"),
-            '/' => result.push_str("_-"),
-            _ => result.push(c)
-        }
+    let mut result = home_dir().unwrap();
+    result.push(".cache");
+    result.push("chrysoberyl");
+    result.push("http");
+
+    {
+        let url = Url::parse(url).unwrap();
+        result.push(format!("{}{}", url.host().unwrap(), url.path()));
     }
 
-    result
-}
+    println!("{:?}", result);
 
-fn generate_temporary_filename(url: &str) -> PathBuf {
-    let mut result = home_dir().unwrap();
-    let filename = encode_filename(url);
-    result.push(".cache");
-    result.push(".chrysoberyl");
-    result.push("url");
-    create_dir_all(&result).unwrap();
-    result.push(filename);
+    create_dir_all(&result.parent().unwrap()).unwrap();
+
     result
 }

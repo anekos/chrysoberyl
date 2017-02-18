@@ -1,24 +1,21 @@
 
-use std::collections::HashMap;
-use std::fs::File;
-use std::path::{Path, PathBuf};
+use std::env::home_dir;
+use std::fs::{File, create_dir_all};
+use std::path::PathBuf;
 use std::io::{BufWriter, Write, Read};
-use std::sync::{Arc, Mutex};
 use hyper::client::Client;
 use hyper::client::response::Response;
 use hyper::Error;
-use mktemp::Temp;
 
 
 
 #[derive(Clone)]
 pub struct HttpCache {
-    cache: Arc<Mutex<HashMap<String, PathBuf>>>, // URL to filepath
 }
 
 impl HttpCache {
     pub fn new() -> HttpCache {
-        HttpCache { cache: Arc::new(Mutex::new(HashMap::new())) }
+        HttpCache { }
     }
 
     pub fn get(&mut self, url: String) -> Result<String, Error> {
@@ -27,42 +24,52 @@ impl HttpCache {
 
 
     fn get_path_buf(&mut self, url: String) -> Result<PathBuf, Error> {
-        {
-            let cache = &self.cache.lock().unwrap();
-            if let Some(filepath) = cache.get(&url) {
-                return  Ok(filepath.clone())
-            }
+        let filepath = generate_temporary_filename(&url);
+
+        if filepath.exists() {
+            return Ok(filepath)
         }
 
         let client = Client::new();
 
+        println!("HTTPGet\t{}", url);
+
         client.get(&url).send().map(|response| {
-            let filepath = write_to_file(&url, response);
-            {
-                let mut cache = &mut self.cache.lock().unwrap();
-                cache.insert(url, filepath.clone());
-            }
+            write_to_file(&filepath, response);
             filepath
         })
     }
 }
 
 
-fn write_to_file(url: &str, mut response: Response) -> PathBuf {
-    let filepath = generate_temporary_filename(url);
-
-    let mut writer = BufWriter::new(File::create(&filepath).unwrap());
+fn write_to_file(filepath: &PathBuf, mut response: Response) {
+    let mut writer = BufWriter::new(File::create(filepath).unwrap());
     let mut data = vec![];
     response.read_to_end(&mut data).unwrap();
     writer.write(data.as_slice()).unwrap();
-
-    filepath
 }
 
+fn encode_filename(url: &str) -> String {
+    let mut result = String::new();
+
+    for c in url.chars() {
+        match c {
+            '_' => result.push_str("__"),
+            '/' => result.push_str("_-"),
+            _ => result.push(c)
+        }
+    }
+
+    result
+}
 
 fn generate_temporary_filename(url: &str) -> PathBuf {
-    let extension = Path::new(url).extension().unwrap();
-    let mut result = Temp::new_file().unwrap().to_path_buf();
-    result.set_extension(extension);
+    let mut result = home_dir().unwrap();
+    let filename = encode_filename(url);
+    result.push(".cache");
+    result.push(".chrysoberyl");
+    result.push("url");
+    create_dir_all(&result).unwrap();
+    result.push(filename);
     result
 }

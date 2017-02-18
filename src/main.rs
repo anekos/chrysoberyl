@@ -1,7 +1,7 @@
 
-extern crate gtk;
 extern crate gdk;
 extern crate gdk_pixbuf;
+extern crate gtk;
 extern crate hyper;
 extern crate mktemp;
 

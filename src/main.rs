@@ -6,42 +6,29 @@ extern crate hyper;
 extern crate mktemp;
 
 mod http_cache;
+mod index_pointer;
+mod app;
 
-use gdk_pixbuf::{Pixbuf, PixbufAnimation};
 use gtk::prelude::*;
 use gtk::{Image, Window};
 use std::env::args;
-use std::sync::mpsc::{channel, Sender};
+use std::sync::mpsc::Sender;
 use std::thread::{sleep, spawn};
 use std::time::Duration;
 
-use http_cache::HttpCache;
+use app::Operation;
 
-
-
-#[derive(Clone, Debug)]
-enum Operation {
-    First,
-    Next,
-    Previous,
-    Last,
-    Refresh,
-    PushFile(String),
-    PushURL(String),
-    Key(u32),
-    Count(i64),
-    Exit
-}
 
 
 fn main() {
-    use self::Operation::*;
+    use Operation::*;
 
-    let (window, mut image) = setup();
+    let (window, image) = setup();
 
-    let mut files: Vec<String> = args().skip(1).collect();
+    let files: Vec<String> = args().skip(1).collect();
 
-    let (tx, rx) = channel();
+    let (mut app, rx) = app::App::new(files, window.clone(), image.clone());
+    let tx = app.tx.clone();
 
     {
         let tx = tx.clone();
@@ -62,99 +49,15 @@ fn main() {
 
     tx.send(First).unwrap();
 
-    {
-
-        let mut index: i64 = 0;
-        let mut count: Option<i64> = None;
-        let http_cache = HttpCache::new();
-
-        loop {
-            while gtk::events_pending() {
-                gtk::main_iteration();
-            }
-
-            for operation in rx.try_iter() {
-                let mut next_index = None;
-
-                match operation {
-                    First => { next_index = Some(counted(&mut count) - 1); },
-                    Next => { next_index = Some(index + counted(&mut count)); },
-                    Previous => { next_index = Some(index - counted(&mut count)); },
-                    Last => { next_index = Some(files.len() as i64 - counted(&mut count) + 1); },
-                    Refresh => { next_index = Some(index); },
-                    PushFile(file) => {
-                        println!("Add\t{}", file);
-                        let do_show = files.is_empty();
-                        files.push(file);
-                        if do_show {
-                            tx.send(First).unwrap();
-                        }
-                    }
-                    PushURL(url) => {
-                        let tx = tx.clone();
-                        let mut http_cache = http_cache.clone();
-                        spawn(move || {
-                            match http_cache.get(url) {
-                                Ok(file) => tx.send(PushFile(file)).unwrap(),
-                                Err(err) => println!("Error\t{}", err)
-                            }
-                        });
-                    }
-                    Key(key) => {
-                        print!("Key\t{}", key);
-                        if let Some(file) = files.get(index as usize) {
-                            println!("\t{}", file);
-                        } else {
-                            println!("");
-                        }
-                    }
-                    Count(value) => {
-                        if let Some(current) = count {
-                            count = Some(current * 10 + value);
-                        } else {
-                            count = Some(value);
-                        }
-                    }
-                    Exit => { std::process::exit(0); }
-                }
-
-                if let Some(next_index) = next_index {
-                    if 0 <= next_index && next_index < files.len() as i64 {
-                        index = next_index;
-                        let file = files[index as usize].clone();
-                        window.set_title(&format!("[{}/{}] {}", index + 1, files.len(), file));
-                        show_image(&window, &mut image, file);
-                    }
-                }
-            }
-
-            sleep(Duration::from_millis(10));
+    loop {
+        while gtk::events_pending() {
+            gtk::main_iteration();
         }
-    }
-}
 
-
-fn show_image(window: &Window, image: &mut Image, file: String) {
-    use std::path::Path;
-
-    println!("Show\t{}", file);
-
-    let (width, height) = window.get_size();
-    let path = Path::new(&file);
-
-    if let Some(extension) = path.extension() {
-        if extension == "gif" {
-            match PixbufAnimation::new_from_file(&file) {
-                Ok(buf) => image.set_from_animation(&buf),
-                Err(err) => println!("Error\t{}", err)
-            }
-            return
+        for op in rx.try_iter() {
+            app.operate(op);
         }
-    }
-
-    match Pixbuf::new_from_file_at_scale(&file, width, height, true) {
-        Ok(buf) => image.set_from_pixbuf(Some(&buf)),
-        Err(err) => println!("Error\t{}", err)
+        sleep(Duration::from_millis(10));
     }
 }
 
@@ -166,7 +69,7 @@ fn on_configure(tx: Sender<Operation>) -> bool {
 
 
 fn on_key_press(tx: Sender<Operation>, key: &gdk::EventKey) -> gtk::Inhibit {
-    use self::Operation::*;
+    use Operation::*;
 
     if let Some(operation) = match key.as_ref().keyval {
         104 | 102 => Some(First),
@@ -176,7 +79,7 @@ fn on_key_press(tx: Sender<Operation>, key: &gdk::EventKey) -> gtk::Inhibit {
         113 => Some(Exit),
         114 => Some(Refresh),
         key => if 48 <= key && key <= 57 {
-            Some(Count((key - 48) as i64))
+            Some(Count((key - 48) as u8))
         } else {
             Some(Key(key))
         }
@@ -225,11 +128,4 @@ fn setup() -> (Window, Image) {
     window.add(&image);
 
     (window, image)
-}
-
-
-fn counted(count: &mut Option<i64>) -> i64 {
-    let result = count.unwrap_or(1);
-    *count = None;
-    result
 }

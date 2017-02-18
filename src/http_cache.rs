@@ -28,7 +28,7 @@ impl HttpCache {
 
     fn get_path_buf(&mut self, url: String) -> Result<PathBuf, Error> {
         {
-            let ref mut cache = *self.cache.lock().unwrap();
+            let cache = &self.cache.lock().unwrap();
             if let Some(filepath) = cache.get(&url) {
                 return  Ok(filepath.clone())
             }
@@ -39,7 +39,7 @@ impl HttpCache {
         client.get(&url).send().map(|response| {
             let filepath = write_to_file(&url, response);
             {
-                let ref mut cache = *self.cache.lock().unwrap();
+                let mut cache = &mut self.cache.lock().unwrap();
                 cache.insert(url, filepath.clone());
             }
             filepath

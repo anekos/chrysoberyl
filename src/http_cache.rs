@@ -6,6 +6,8 @@ use std::io::{BufWriter, Write, Read};
 use hyper::client::Client;
 use hyper::client::response::Response;
 use hyper::Error;
+use hyper::net::HttpsConnector;
+use hyper_native_tls::NativeTlsClient;
 use url::Url;
 
 
@@ -31,9 +33,11 @@ impl HttpCache {
             return Ok(filepath)
         }
 
-        let client = Client::new();
-
         println!("HTTPGet\t{}", url);
+
+        let ssl = NativeTlsClient::new().unwrap();
+        let connector = HttpsConnector::new(ssl);
+        let client = Client::with_connector(connector);
 
         client.get(&url).send().map(|response| {
             write_to_file(&filepath, response);

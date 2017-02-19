@@ -42,7 +42,7 @@ fn main() {
     window.connect_key_press_event(clone_army!([tx] move |_, key| on_key_press(tx.clone(), key)));
     window.connect_configure_event(clone_army!([tx] move |_, _| on_configure(tx.clone())));
 
-    clone_army!([tx] stdin_reader(tx));
+    stdin_reader(tx.clone());
 
     window.show_all();
 

@@ -40,7 +40,7 @@ impl IndexPointer {
 
         let delta = self.counted();
         let result = if delta <= container_size {
-            container_size + 1 - delta
+            container_size - delta
         } else {
             0
         };

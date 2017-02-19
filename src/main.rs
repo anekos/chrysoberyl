@@ -9,6 +9,7 @@ extern crate cairo;
 mod http_cache;
 mod index_pointer;
 mod app;
+mod options;
 
 use gtk::prelude::*;
 use gtk::{Image, Window};
@@ -71,6 +72,7 @@ fn on_configure(tx: Sender<Operation>) -> bool {
 
 fn on_key_press(tx: Sender<Operation>, key: &gdk::EventKey) -> gtk::Inhibit {
     use Operation::*;
+    use options::AppOptionName as opt;
 
     if let Some(operation) = match key.as_ref().keyval {
         104 | 102 => Some(First),
@@ -79,6 +81,7 @@ fn on_key_press(tx: Sender<Operation>, key: &gdk::EventKey) -> gtk::Inhibit {
         108 => Some(Last),
         113 => Some(Exit),
         114 => Some(Refresh),
+        105 => Some(Toggle(opt::ShowText)),
         key => if 48 <= key && key <= 57 {
             Some(Count((key - 48) as u8))
         } else {

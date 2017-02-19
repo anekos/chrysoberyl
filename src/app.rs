@@ -8,6 +8,7 @@ use gdk_pixbuf::{Pixbuf, PixbufAnimation};
 
 use index_pointer::IndexPointer;
 use http_cache::HttpCache;
+use options::{AppOptions, AppOptionName};
 
 
 
@@ -21,9 +22,6 @@ pub struct App {
     pub options: AppOptions
 }
 
-pub struct AppOptions {
-    pub show_text: bool
-}
 
 #[derive(Clone, Debug)]
 pub enum Operation {
@@ -36,6 +34,7 @@ pub enum Operation {
     PushURL(String),
     Key(u32),
     Count(u8),
+    Toggle(AppOptionName),
     Exit
 }
 
@@ -75,6 +74,10 @@ impl App {
                 Key(key) => if let Some(current) = self.index_pointer.current {
                     on_key(key, self.files.get(current));
                 },
+                Toggle(AppOptionName::ShowText) => {
+                    self.options.show_text = !self.options.show_text;
+                    next_index = self.index_pointer.current;
+                }
                 Count(value) => self.index_pointer.push_counting_number(value),
                 Exit => exit(0),
             }

@@ -6,6 +6,10 @@ authors = ["anekos <anekos@snca.net>"]
 [dependencies]
 gdk = "*"
 gdk-pixbuf = "*"
-gtk = "*"
+cairo-rs = "*"
 hyper = "*"
 url = "*"
+
+[dependencies.gtk]
+version = "0.1.1"
+features = ["v3_10"]

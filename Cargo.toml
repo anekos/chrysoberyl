@@ -4,12 +4,14 @@ version = "0.1.0"
 authors = ["anekos <anekos@snca.net>"]
 
 [dependencies]
+libc = "*"
 gdk = "*"
 gdk-pixbuf = "*"
 cairo-rs = "*"
 hyper = "*"
 hyper-native-tls = "*"
 url = "*"
+closet = "*"
 
 [dependencies.gtk]
 version = "0.1.1"

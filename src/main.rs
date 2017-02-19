@@ -6,6 +6,8 @@ extern crate hyper;
 extern crate hyper_native_tls;
 extern crate url;
 extern crate cairo;
+extern crate libc;
+#[macro_use] extern crate closet;
 
 mod http_cache;
 mod index_pointer;
@@ -26,6 +28,10 @@ use app::Operation;
 fn main() {
     use Operation::*;
 
+    unsafe {
+        println!("PID\t{}", libc::getpid());
+    }
+
     let (window, image) = setup();
 
     let files: Vec<String> = args().skip(1).collect();
@@ -33,20 +39,10 @@ fn main() {
     let (mut app, rx) = app::App::new(files, window.clone(), image.clone());
     let tx = app.tx.clone();
 
-    {
-        let tx = tx.clone();
-        window.connect_key_press_event(move |_, key| on_key_press(tx.clone(), key));
-    }
+    window.connect_key_press_event(clone_army!([tx] move |_, key| on_key_press(tx.clone(), key)));
+    window.connect_configure_event(clone_army!([tx] move |_, _| on_configure(tx.clone())));
 
-    {
-        let tx = tx.clone();
-        window.connect_configure_event(move |_, _| on_configure(tx.clone()));
-    }
-
-    {
-        let tx = tx.clone();
-        stdin_reader(tx);
-    }
+    clone_army!([tx] stdin_reader(tx));
 
     window.show_all();
 

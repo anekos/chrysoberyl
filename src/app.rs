@@ -5,7 +5,6 @@ use std::process::exit;
 use gtk::prelude::*;
 use gtk::{Image, Window};
 use gdk_pixbuf::{Pixbuf, PixbufAnimation};
-use cairo;
 
 use index_pointer::IndexPointer;
 use http_cache::HttpCache;
@@ -19,6 +18,11 @@ pub struct App {
     window: Window,
     image: Image,
     pub tx: Sender<Operation>,
+    pub options: AppOptions
+}
+
+pub struct AppOptions {
+    pub show_text: bool
 }
 
 #[derive(Clone, Debug)]
@@ -47,6 +51,7 @@ impl App {
             window: window,
             image: image,
             tx: tx,
+            options: AppOptions::new()
         };
 
         (app, rx)
@@ -77,15 +82,26 @@ impl App {
 
         if let Some(next_index) = next_index {
             if let Some(file) = self.files.get(next_index) {
-                self.window.set_title(&format!("[{}/{}] {}", next_index + 1, len, file));
-                show_image(&mut self.window, &mut self.image, file.clone());
+                let text = &format!("[{}/{}] {}", next_index + 1, len, file);
+                self.window.set_title(text);
+                show_image(
+                    &mut self.window,
+                    &mut self.image,
+                    file.clone(),
+                    if self.options.show_text { Some(text) } else { None });
             }
         }
     }
 }
 
+impl AppOptions {
+    fn new() -> AppOptions {
+        AppOptions { show_text: false }
+    }
+}
 
-fn show_image(window: &mut Window, image: &mut Image, file: String) {
+
+fn show_image(window: &mut Window, image: &mut Image, file: String, text: Option<&str>) {
     use std::path::Path;
 
     println!("Show\t{}", file);
@@ -105,25 +121,29 @@ fn show_image(window: &mut Window, image: &mut Image, file: String) {
 
     match Pixbuf::new_from_file_at_scale(&file, width, height, true) {
         Ok(buf) => {
-            use cairo::{Context, ImageSurface, Format};
-            use gdk::prelude::ContextExt;
+            if let Some(text) = text {
+                use cairo::{Context, ImageSurface, Format};
+                use gdk::prelude::ContextExt;
 
-            let font_size = 12.0;
+                let font_size = 12.0;
 
-            let (width, height) = (buf.get_width(), buf.get_height());
+                let (width, height) = (buf.get_width(), buf.get_height());
 
-            let surface = ImageSurface::create(Format::ARgb32, width, height);
-            let context = Context::new(&surface);
+                let surface = ImageSurface::create(Format::ARgb32, width, height);
+                let context = Context::new(&surface);
 
-            context.set_source_pixbuf(&buf, 0.0, 0.0);
-            context.paint();
+                context.set_source_pixbuf(&buf, 0.0, 0.0);
+                context.paint();
 
-            context.set_font_size(font_size);
-            context.move_to(0.0, height as f64 - font_size);
-            context.set_source_rgba(0.1, 0.1, 0.1, 1.0);
-            context.show_text(&file);
+                context.set_font_size(font_size);
+                context.move_to(0.0, height as f64 - font_size);
+                context.set_source_rgba(0.1, 0.1, 0.1, 1.0);
+                context.show_text(text);
 
-            image.set_from_surface(&surface);
+                image.set_from_surface(&surface);
+            } else {
+                image.set_from_pixbuf(Some(&buf));
+            }
         }
         Err(err) => println!("Error\t{}", err)
     }

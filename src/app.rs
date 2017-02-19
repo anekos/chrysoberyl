@@ -128,20 +128,38 @@ fn show_image(window: &mut Window, image: &mut Image, file: String, text: Option
                 use cairo::{Context, ImageSurface, Format};
                 use gdk::prelude::ContextExt;
 
-                let font_size = 12.0;
-
                 let (width, height) = (buf.get_width(), buf.get_height());
 
                 let surface = ImageSurface::create(Format::ARgb32, width, height);
-                let context = Context::new(&surface);
 
-                context.set_source_pixbuf(&buf, 0.0, 0.0);
-                context.paint();
+                {
+                    let height = height as f64;
 
-                context.set_font_size(font_size);
-                context.move_to(0.0, height as f64 - font_size);
-                context.set_source_rgba(0.1, 0.1, 0.1, 1.0);
-                context.show_text(text);
+                    let context = Context::new(&surface);
+                    let alpha = 0.8;
+
+                    context.set_source_pixbuf(&buf, 0.0, 0.0);
+                    context.paint();
+
+                    let font_size = 12.0;
+                    context.set_font_size(font_size);
+
+                    let text_y = {
+                        let extents = context.text_extents(&text);
+                        context.set_source_rgba(0.0, 0.25, 0.25, alpha);
+                        context.rectangle(
+                            0.0,
+                            height - extents.height - 4.0,
+                            extents.x_bearing + extents.x_advance + 2.0,
+                            height);
+                        context.fill();
+                        height - 4.0
+                    };
+
+                    context.move_to(2.0, text_y);
+                    context.set_source_rgba(1.0, 1.0, 1.0, alpha);
+                    context.show_text(text);
+                }
 
                 image.set_from_surface(&surface);
             } else {

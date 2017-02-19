@@ -104,12 +104,7 @@ fn stdin_reader(tx: Sender<Operation>) {
         let stdin = io::stdin();
         for line in stdin.lock().lines() {
             let line = line.unwrap();
-            if line.starts_with("http://") || line.starts_with("https://") {
-                tx.send(Operation::PushURL(line)).unwrap();
-            } else {
-                tx.send(Operation::PushFile(line)).unwrap();
-            }
-             // tx.send(Operation::Last).unwrap();
+            tx.send(Operation::Push(line)).unwrap();
         }
     });
 }

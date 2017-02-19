@@ -66,8 +66,6 @@ fn generate_temporary_filename(url: &str) -> PathBuf {
         result.push(format!("{}{}", url.host().unwrap(), url.path()));
     }
 
-    println!("{:?}", result);
-
     create_dir_all(&result.parent().unwrap()).unwrap();
 
     result

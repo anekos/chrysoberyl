@@ -30,6 +30,7 @@ pub enum Operation {
     Previous,
     Last,
     Refresh,
+    Push(String),
     PushFile(String),
     PushURL(String),
     Key(u32),
@@ -46,12 +47,16 @@ impl App {
         let app = App {
             index_pointer: IndexPointer::new(),
             http_cache: HttpCache::new(),
-            files: files,
+            files: vec![],
             window: window,
             image: image,
-            tx: tx,
+            tx: tx.clone(),
             options: AppOptions::new()
         };
+
+        for file in files {
+            tx.send(Operation::Push(file)).unwrap();
+        }
 
         (app, rx)
     }
@@ -69,6 +74,7 @@ impl App {
                 Previous => next_index = self.index_pointer.previous(),
                 Last => next_index = self.index_pointer.last(len),
                 Refresh => next_index = self.index_pointer.current,
+                Push(path) => on_push(self.tx.clone(), path),
                 PushFile(file) => on_push_file(self.tx.clone(), &mut self.files, file),
                 PushURL(url) => on_push_url(self.tx.clone(), &mut self.http_cache, url),
                 Key(key) => if let Some(current) = self.index_pointer.current {
@@ -179,8 +185,17 @@ fn on_key(key: u32, file: Option<&String>) {
     }
 }
 
+fn on_push(tx: Sender<Operation>,path: String) {
+    println!("Push\t{}", path);
+    if path.starts_with("http://") || path.starts_with("https://") {
+        tx.send(Operation::PushURL(path)).unwrap();
+    } else {
+        tx.send(Operation::PushFile(path)).unwrap();
+    }
+}
+
 fn on_push_file(tx: Sender<Operation>,files: &mut Vec<String>, file: String) {
-    println!("Add\t{}", file);
+    println!("File\t{}", file);
     let do_show = files.is_empty();
     files.push(file);
     if do_show {
@@ -189,6 +204,7 @@ fn on_push_file(tx: Sender<Operation>,files: &mut Vec<String>, file: String) {
 }
 
 fn on_push_url(tx: Sender<Operation>, http_cache: &mut HttpCache, url: String) {
+    println!("URL\t{}", url);
     let mut http_cache = http_cache.clone();
     spawn(move || {
         match http_cache.get(url) {

@@ -42,5 +42,5 @@ pub fn run_stdin_controller(tx: Sender<Operation>) {
 fn from_string(s: &str) -> Operation {
     use std::str::FromStr;
 
-    Operation::from_str(s).unwrap_or(Operation::PushFile(s.to_owned()))
+    Operation::from_str(s).unwrap_or(Operation::Push(s.to_owned()))
 }

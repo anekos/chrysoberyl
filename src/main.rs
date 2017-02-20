@@ -15,6 +15,7 @@ mod controller;
 mod events;
 mod http_cache;
 mod index_pointer;
+mod log;
 mod options;
 
 use gtk::prelude::*;
@@ -31,7 +32,7 @@ fn main() {
     use Operation::*;
 
     unsafe {
-        println!("PID\t{}", libc::getpid());
+        log::puts1("PID", libc::getpid());
     }
 
     let mut files: Vec<String> = vec![];

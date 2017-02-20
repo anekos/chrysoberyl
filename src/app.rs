@@ -9,6 +9,7 @@ use gdk_pixbuf::{Pixbuf, PixbufAnimation};
 use index_pointer::IndexPointer;
 use http_cache::HttpCache;
 use options::{AppOptions, AppOptionName};
+use log;
 
 
 
@@ -113,7 +114,7 @@ impl AppOptions {
 fn show_image(window: &mut Window, image: &mut Image, file: String, text: Option<&str>) {
     use std::path::Path;
 
-    println!("Show\t{}", file);
+    log::puts1("Show", &file);
 
     let (width, height) = window.get_size();
     let path = Path::new(&file);
@@ -122,7 +123,7 @@ fn show_image(window: &mut Window, image: &mut Image, file: String, text: Option
         if extension == "gif" {
             match PixbufAnimation::new_from_file(&file) {
                 Ok(buf) => image.set_from_animation(&buf),
-                Err(err) => println!("Error\t{}", err)
+                Err(err) => log::error(err)
             }
             return
         }
@@ -172,21 +173,20 @@ fn show_image(window: &mut Window, image: &mut Image, file: String, text: Option
                 image.set_from_pixbuf(Some(&buf));
             }
         }
-        Err(err) => println!("Error\t{}", err)
+        Err(err) => log::error(err)
     }
 }
 
 fn on_key(key: u32, file: Option<&String>) {
-    print!("Key\t{}", key);
     if let Some(file) = file {
-        println!("\t{}", file);
+        log::puts2("Key", key, &file);
     } else {
-        println!("");
+        log::puts1("Key", key);
     }
 }
 
 fn on_push(tx: Sender<Operation>,path: String) {
-    println!("Push\t{}", path);
+    log::puts1("Push", &path);
     if path.starts_with("http://") || path.starts_with("https://") {
         tx.send(Operation::PushURL(path)).unwrap();
     } else {
@@ -195,7 +195,7 @@ fn on_push(tx: Sender<Operation>,path: String) {
 }
 
 fn on_push_file(tx: Sender<Operation>,files: &mut Vec<String>, file: String) {
-    println!("File\t{}", file);
+    log::puts1("File", &file);
     let do_show = files.is_empty();
     files.push(file);
     if do_show {
@@ -204,12 +204,12 @@ fn on_push_file(tx: Sender<Operation>,files: &mut Vec<String>, file: String) {
 }
 
 fn on_push_url(tx: Sender<Operation>, http_cache: &mut HttpCache, url: String) {
-    println!("URL\t{}", url);
+    log::puts1("URL", &url);
     let mut http_cache = http_cache.clone();
     spawn(move || {
         match http_cache.get(url) {
             Ok(file) => tx.send(Operation::PushFile(file)).unwrap(),
-            Err(err) => println!("Error\t{}", err)
+            Err(err) => log::error(err)
         }
     });
 }

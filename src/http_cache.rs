@@ -10,6 +10,7 @@ use hyper::net::HttpsConnector;
 use hyper_native_tls::NativeTlsClient;
 use url::Url;
 
+use log;
 
 
 #[derive(Clone)]
@@ -33,7 +34,7 @@ impl HttpCache {
             return Ok(filepath)
         }
 
-        println!("HTTPGet\t{}", url);
+        log::puts1("HTTPGet", &url);
 
         let ssl = NativeTlsClient::new().unwrap();
         let connector = HttpsConnector::new(ssl);

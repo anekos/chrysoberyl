@@ -4,6 +4,7 @@ use std::sync::mpsc::Sender;
 use std::fs::File;
 
 use app::Operation;
+use log;
 
 
 
@@ -20,7 +21,7 @@ pub fn run_file_controller(tx: Sender<Operation>, filepath: String) {
                 }
             });
         }
-        Err(err) => println!("Error\t{}", err)
+        Err(err) => log::error(err)
     }
 }
 

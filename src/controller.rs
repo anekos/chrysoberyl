@@ -11,18 +11,18 @@ use log;
 pub fn run_file_controller(tx: Sender<Operation>, filepath: String) {
     use std::io::{BufReader, BufRead};
 
-    match File::open(filepath) {
-        Ok(file) => {
-            let file = BufReader::new(file);
-            spawn(move || {
+    spawn(move || {
+        match File::open(&filepath) {
+            Ok(file) => {
+                let file = BufReader::new(file);
                 for line in file.lines() {
                     let line = line.unwrap();
                     tx.send(Operation::Push(line)).unwrap();
                 }
-            });
+            }
+            Err(err) => log::error(err)
         }
-        Err(err) => log::error(err)
-    }
+    });
 }
 
 pub fn run_stdin_controller(tx: Sender<Operation>) {

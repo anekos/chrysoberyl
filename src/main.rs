@@ -57,11 +57,10 @@ fn main() {
     window.connect_key_press_event(clone_army!([tx] move |_, key| events::on_key_press(tx.clone(), key)));
     window.connect_configure_event(clone_army!([tx] move |_, _| events::on_configure(tx.clone())));
 
-    controller::run_stdin_controller(tx.clone());
-
     for input in inputs {
         controller::run_file_controller(tx.clone(), input);
     }
+    controller::run_stdin_controller(tx.clone());
 
     window.show_all();
 

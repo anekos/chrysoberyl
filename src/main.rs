@@ -12,10 +12,12 @@ extern crate libc;
 
 mod app;
 mod controller;
+mod entry;
 mod events;
 mod http_cache;
 mod index_pointer;
 mod log;
+mod operation;
 mod options;
 
 use gtk::prelude::*;
@@ -24,7 +26,7 @@ use argparse::{ArgumentParser, List, Collect};
 use std::thread::{sleep};
 use std::time::Duration;
 
-use app::Operation;
+use operation::Operation;
 
 
 

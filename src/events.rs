@@ -3,13 +3,13 @@ use gtk::{Inhibit, main_quit};
 use gdk::EventKey;
 use std::sync::mpsc::Sender;
 
-use app::Operation;
+use operation::Operation;
 
 
 
 
 pub fn on_key_press(tx: Sender<Operation>, key: &EventKey) -> Inhibit {
-    use Operation::*;
+    use operation::Operation::*;
     use options::AppOptionName as opt;
 
     if let Some(operation) = match key.as_ref().keyval {

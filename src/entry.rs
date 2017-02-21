@@ -42,22 +42,29 @@ impl EntryContainer {
     }
 
     pub fn expand(&mut self) {
-        let expanded = self.current().and_then(|(file, index)| {
-            file.parent().and_then(|dir| {
+        let result = self.current().and_then(|(file, index)| {
+            file.clone().parent().and_then(|dir| {
                 expand(dir.to_path_buf()).ok().and_then(|middle| {
                     let (left, right) = self.files.split_at(index);
                     let mut result = vec![];
                     result.extend_from_slice(left);
                     result.extend_from_slice(middle.as_slice());
                     result.extend(right.iter().skip(1).map(|it| it.clone()));
-                    Some(result)
+                    Some((result, file))
                 })
             })
         });
 
-        if let Some(expanded) = expanded {
+        if let Some((expanded, file)) = result {
             self.files.clear();
             self.files.extend_from_slice(expanded.as_slice());
+            self.set_current(file);
+        }
+    }
+
+    fn set_current(&mut self, entry: PathBuf) {
+        if let Some(index) = self.files.iter().position(|it| *it == entry) {
+            self.pointer.current = Some(index);
         }
     }
 }

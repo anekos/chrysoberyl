@@ -14,11 +14,13 @@ mod app;
 mod controller;
 mod entry;
 mod events;
+mod expander;
 mod http_cache;
 mod index_pointer;
 mod log;
 mod operation;
 mod options;
+mod path;
 
 use gtk::prelude::*;
 use gtk::{Image, Window};

@@ -1,6 +1,7 @@
 
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::spawn;
+use std::path::{Path, PathBuf};
 use std::process::exit;
 use gtk::prelude::*;
 use gtk::{Image, Window};
@@ -11,6 +12,7 @@ use http_cache::HttpCache;
 use options::{AppOptions, AppOptionName};
 use operation::Operation;
 use log;
+use path;
 
 
 
@@ -75,7 +77,7 @@ impl App {
         if changed {
             if let Some((file, index)) = self.entries.current() {
                 let len = self.entries.len();
-                let text = &format!("[{}/{}] {}", index + 1, len, file);
+                let text = &format!("[{}/{}] {}", index + 1, len, path::to_string(&file));
                 self.window.set_title(text);
                 show_image(
                     &mut self.window,
@@ -94,15 +96,12 @@ impl AppOptions {
 }
 
 
-fn show_image(window: &mut Window, image: &mut Image, file: String, text: Option<&str>) {
-    use std::path::Path;
-
+fn show_image(window: &mut Window, image: &mut Image, path: PathBuf, text: Option<&str>) {
     let (width, height) = window.get_size();
-    let path = Path::new(&file);
 
     if let Some(extension) = path.extension() {
         if extension == "gif" {
-            match PixbufAnimation::new_from_file(&file) {
+            match PixbufAnimation::new_from_file(&path.to_str().unwrap()) {
                 Ok(buf) => image.set_from_animation(&buf),
                 Err(err) => log::error(err)
             }
@@ -110,7 +109,7 @@ fn show_image(window: &mut Window, image: &mut Image, file: String, text: Option
         }
     }
 
-    match Pixbuf::new_from_file_at_scale(&file, width, height, true) {
+    match Pixbuf::new_from_file_at_scale(&path.to_str().unwrap(), width, height, true) {
         Ok(buf) => {
             if let Some(text) = text {
                 use cairo::{Context, ImageSurface, Format};
@@ -158,15 +157,15 @@ fn show_image(window: &mut Window, image: &mut Image, file: String, text: Option
     }
 }
 
-fn on_push(tx: Sender<Operation>,path: String) {
+fn on_push(tx: Sender<Operation>, path: String) {
     if path.starts_with("http://") || path.starts_with("https://") {
         tx.send(Operation::PushURL(path)).unwrap();
     } else {
-        tx.send(Operation::PushFile(path)).unwrap();
+        tx.send(Operation::PushFile(Path::new(&path).to_path_buf())).unwrap();
     }
 }
 
-fn on_push_file(tx: Sender<Operation>, entries: &mut EntryContainer, file: String) {
+fn on_push_file(tx: Sender<Operation>, entries: &mut EntryContainer, file: PathBuf) {
     let do_show = entries.is_empty();
     entries.push(file);
     if do_show {

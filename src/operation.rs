@@ -1,7 +1,9 @@
 
 use std::str::FromStr;
+use std::path::PathBuf;
 
 use options::AppOptionName;
+use path;
 
 
 
@@ -13,7 +15,7 @@ pub enum Operation {
     Last,
     Refresh,
     Push(String),
-    PushFile(String),
+    PushFile(PathBuf),
     PushURL(String),
     Key(u32),
     Count(u8),
@@ -38,7 +40,7 @@ impl FromStr for Operation {
 
 
 impl Operation {
-    pub fn log(&self, file: Option<String>) {
+    pub fn log(&self, path: Option<PathBuf>) {
         use Operation::*;
 
         match self {
@@ -48,10 +50,10 @@ impl Operation {
             &Last => println!("Last"),
             &Refresh => println!("Refresh"),
             &Push(ref path) => println!("Push\t{}", path),
-            &PushFile(ref file) => println!("PushFile\t{}", file),
+            &PushFile(ref path) => println!("PushFile\t{}", path::to_string(path)),
             &PushURL(ref url) => println!("PushURL\t{}", url),
-            &Key(key) => if let Some(file) = file {
-                println!("Key\t{}\t{}", key, file);
+            &Key(key) => if let Some(path) = path {
+                println!("Key\t{}\t{}", key, path::to_string(&path));
             } else {
                 println!("Key\t{}", key);
             },

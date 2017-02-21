@@ -1,11 +1,12 @@
 
+use std::path::PathBuf;
 
 use index_pointer::IndexPointer;
 
 
 
 pub struct EntryContainer {
-    files: Vec<String>,
+    files: Vec<PathBuf>,
     pub pointer: IndexPointer,
 }
 
@@ -23,19 +24,19 @@ impl EntryContainer {
         self.files.is_empty()
     }
 
-    pub fn push(&mut self, file: String) {
+    pub fn push(&mut self, file: PathBuf) {
         self.files.push(file);
     }
 
-    pub fn current(&self) -> Option<(String, usize)> {
+    pub fn current(&self) -> Option<(PathBuf, usize)> {
         if let Some(index) = self.pointer.current {
-            self.files.get(index).map(|it| (it.to_owned(), index))
+            self.files.get(index).map(|it| (it.clone(), index))
         } else {
             None
         }
     }
 
-    pub fn current_file(&self) -> Option<String> {
+    pub fn current_file(&self) -> Option<PathBuf> {
         self.current().map(|(file, _)| file)
     }
 }

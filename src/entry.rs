@@ -49,7 +49,7 @@ impl EntryContainer {
                     let mut result = vec![];
                     result.extend_from_slice(left);
                     result.extend_from_slice(middle.as_slice());
-                    result.extend_from_slice(right);
+                    result.extend(right.iter().skip(1).map(|it| it.clone()));
                     Some(result)
                 })
             })

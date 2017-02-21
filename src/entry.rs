@@ -1,6 +1,7 @@
 
 use std::path::PathBuf;
 use std::io;
+use std::fmt;
 
 use index_pointer::IndexPointer;
 
@@ -26,7 +27,7 @@ impl EntryContainer {
     }
 
     pub fn push(&mut self, file: PathBuf) {
-        self.files.push(file);
+        self.files.push(file.canonicalize().unwrap());
     }
 
     pub fn current(&self) -> Option<(PathBuf, usize)> {
@@ -44,7 +45,8 @@ impl EntryContainer {
     pub fn expand(&mut self) {
         let result = self.current().and_then(|(file, index)| {
             file.clone().parent().and_then(|dir| {
-                expand(dir.to_path_buf()).ok().and_then(|middle| {
+                expand(dir.to_path_buf()).ok().and_then(|mut middle| {
+                    middle.sort();
                     let (left, right) = self.files.split_at(index);
                     let mut result = vec![];
                     result.extend_from_slice(left);
@@ -66,6 +68,16 @@ impl EntryContainer {
         if let Some(index) = self.files.iter().position(|it| *it == entry) {
             self.pointer.current = Some(index);
         }
+    }
+}
+
+
+impl fmt::Display for EntryContainer {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for entry in self.files.iter() {
+            writeln!(f, "{:?}", entry).unwrap();
+        }
+        Ok(())
     }
 }
 

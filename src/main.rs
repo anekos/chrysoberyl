@@ -10,11 +10,12 @@ extern crate cairo;
 extern crate libc;
 #[macro_use] extern crate closet;
 
+#[macro_use]
+mod utils;
 mod app;
 mod controller;
 mod entry;
 mod events;
-mod expander;
 mod http_cache;
 mod index_pointer;
 mod log;

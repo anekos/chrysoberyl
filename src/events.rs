@@ -13,6 +13,7 @@ pub fn on_key_press(tx: Sender<Operation>, key: &EventKey) -> Inhibit {
     use options::AppOptionName as opt;
 
     if let Some(operation) = match key.as_ref().keyval {
+        101 => Some(Expand),
         104 | 102 => Some(First),
         106 => Some(Next),
         107 => Some(Previous),

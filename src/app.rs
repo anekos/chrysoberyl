@@ -68,6 +68,7 @@ impl App {
                     changed = true;
                 }
                 Count(value) => self.entries.pointer.push_counting_number(value),
+                Expand => self.entries.expand(),
                 Exit => exit(0),
             }
         }

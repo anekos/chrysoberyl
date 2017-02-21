@@ -20,6 +20,7 @@ pub enum Operation {
     Key(u32),
     Count(u8),
     Toggle(AppOptionName),
+    Expand,
     Exit
 }
 
@@ -59,6 +60,7 @@ impl Operation {
             },
             &Count(count) => println!("Count\t{}", count),
             &Toggle(ref option_name) => println!("Toggle\t{:?}", option_name),
+            &Expand => println!("Expand"),
             &Exit => println!("Exit"),
         }
     }

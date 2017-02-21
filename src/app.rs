@@ -60,7 +60,10 @@ impl App {
                 Last => changed = self.entries.pointer.last(len),
                 Refresh => changed = true,
                 Push(ref path) => on_push(self.tx.clone(), path.clone()),
-                PushFile(ref file) => on_push_file(self.tx.clone(), &mut self.entries, file.clone()),
+                PushFile(ref file) => {
+                    on_push_file(self.tx.clone(), &mut self.entries, file.clone());
+                    changed = self.options.show_text;
+                },
                 PushURL(ref url) => on_push_url(self.tx.clone(), &mut self.http_cache, url.clone()),
                 Key(_) => (),
                 Toggle(AppOptionName::ShowText) => {

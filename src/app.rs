@@ -63,7 +63,7 @@ impl App {
                 PushFile(ref file) => {
                     on_push_file(self.tx.clone(), &mut self.entries, file.clone());
                     changed = self.options.show_text;
-                },
+                }
                 PushURL(ref url) => on_push_url(self.tx.clone(), &mut self.http_cache, url.clone()),
                 Key(_) => (),
                 Toggle(AppOptionName::ShowText) => {
@@ -71,7 +71,10 @@ impl App {
                     changed = true;
                 }
                 Count(value) => self.entries.pointer.push_counting_number(value),
-                Expand => self.entries.expand(),
+                Expand => {
+                    self.entries.expand();
+                    changed = true;
+                }
                 Exit => exit(0),
             }
         }

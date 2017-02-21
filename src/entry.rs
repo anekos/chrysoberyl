@@ -89,8 +89,9 @@ fn expand(dir: PathBuf) -> Result<Vec<PathBuf>, io::Error> {
     through!([dir = dir.read_dir()] {
         for entry in dir {
             through!([entry = entry, ft = entry.file_type()] {
-                if ft.is_file() {
-                    result.push(entry.path())
+                let path = entry.path();
+                if ft.is_file() && is_image(&path) {
+                    result.push(path)
                 } else if ft.is_dir() {
                     if name != entry.file_name() {
                         through!([expanded = expand(entry.path())] {
@@ -104,4 +105,13 @@ fn expand(dir: PathBuf) -> Result<Vec<PathBuf>, io::Error> {
     });
 
     Ok(result)
+}
+
+
+fn is_image(path: &PathBuf) -> bool {
+    let image_extensions: Vec<&str> = vec!["jpeg", "jpg", "png", "gif"];
+    path.extension().map(|extension| {
+        let extension: &str = &extension.to_str().unwrap().to_lowercase();
+        image_extensions.contains(&extension)
+    }).unwrap_or(false)
 }

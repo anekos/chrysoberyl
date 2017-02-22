@@ -31,7 +31,7 @@ impl EntryContainer {
         if file.is_dir() {
             self.push_directory(file);
         } else if file.is_file() {
-            self.files.push(file.canonicalize().unwrap());
+            self.push_file(file);
         } else {
             log::error(format!("Invalid path: {:?}", file));
         }
@@ -71,6 +71,13 @@ impl EntryContainer {
     fn set_current(&mut self, entry: PathBuf) {
         if let Some(index) = self.files.iter().position(|it| *it == entry) {
             self.pointer.current = Some(index);
+        }
+    }
+
+    fn push_file(&mut self, file: PathBuf) {
+        let path = file.canonicalize().unwrap();
+        if !self.files.contains(&path) {
+            self.files.push(path);
         }
     }
 

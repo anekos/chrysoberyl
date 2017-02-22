@@ -78,9 +78,10 @@ fn main() {
 
     window.show_all();
 
-    tx.send(First).unwrap();
+    app.operate(First);
+
     if expand {
-        tx.send(Expand).unwrap();
+        app.operate(Expand);
     }
 
     loop {

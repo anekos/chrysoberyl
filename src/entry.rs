@@ -23,10 +23,6 @@ impl EntryContainer {
         self.files.len()
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.files.is_empty()
-    }
-
     pub fn push(&mut self, file: PathBuf) {
         if file.is_dir() {
             self.push_directory(file);
@@ -132,7 +128,6 @@ fn is_image(path: &PathBuf) -> bool {
 }
 
 fn n_parents(path: PathBuf, n: usize) -> PathBuf {
-    println!("expand: path = {:?}", path);
     if n > 100 {
         return n_parents(path, 100)
     }

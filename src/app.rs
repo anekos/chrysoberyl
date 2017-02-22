@@ -1,43 +1,28 @@
 
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::spawn;
+use std::path::{Path, PathBuf};
 use std::process::exit;
 use gtk::prelude::*;
 use gtk::{Image, Window};
 use gdk_pixbuf::{Pixbuf, PixbufAnimation};
 
-use index_pointer::IndexPointer;
+use entry::EntryContainer;
 use http_cache::HttpCache;
 use options::{AppOptions, AppOptionName};
+use operation::Operation;
 use log;
+use path;
 
 
 
 pub struct App {
-    index_pointer: IndexPointer,
+    entries: EntryContainer,
     http_cache: HttpCache,
-    files: Vec<String>,
     window: Window,
     image: Image,
     pub tx: Sender<Operation>,
     pub options: AppOptions
-}
-
-
-#[derive(Clone, Debug)]
-pub enum Operation {
-    First,
-    Next,
-    Previous,
-    Last,
-    Refresh,
-    Push(String),
-    PushFile(String),
-    PushURL(String),
-    Key(u32),
-    Count(u8),
-    Toggle(AppOptionName),
-    Exit
 }
 
 
@@ -46,9 +31,8 @@ impl App {
         let (tx, rx) = channel();
 
         let app = App {
-            index_pointer: IndexPointer::new(),
+            entries: EntryContainer::new(),
             http_cache: HttpCache::new(),
-            files: vec![],
             window: window,
             image: image,
             tx: tx.clone(),
@@ -65,34 +49,42 @@ impl App {
     pub fn operate(&mut self, operation: Operation) {
         use self::Operation::*;
 
-        let mut next_index = None;
-        let len = self.files.len();
+        let mut changed = false;
+        let len = self.entries.len();
 
         {
             match operation {
-                First => next_index = self.index_pointer.first(len),
-                Next => next_index = self.index_pointer.next(len),
-                Previous => next_index = self.index_pointer.previous(),
-                Last => next_index = self.index_pointer.last(len),
-                Refresh => next_index = self.index_pointer.current,
-                Push(path) => on_push(self.tx.clone(), path),
-                PushFile(file) => on_push_file(self.tx.clone(), &mut self.files, file),
-                PushURL(url) => on_push_url(self.tx.clone(), &mut self.http_cache, url),
-                Key(key) => if let Some(current) = self.index_pointer.current {
-                    on_key(key, self.files.get(current));
-                },
+                First => changed = self.entries.pointer.first(len),
+                Next => changed = self.entries.pointer.next(len),
+                Previous => changed = self.entries.pointer.previous(),
+                Last => changed = self.entries.pointer.last(len),
+                Refresh => changed = true,
+                Push(ref path) => on_push(self.tx.clone(), path.clone()),
+                PushFile(ref file) => {
+                    on_push_file(self.tx.clone(), &mut self.entries, file.clone());
+                    changed = self.options.show_text;
+                }
+                PushURL(ref url) => on_push_url(self.tx.clone(), &mut self.http_cache, url.clone()),
+                Key(_) => (),
                 Toggle(AppOptionName::ShowText) => {
                     self.options.show_text = !self.options.show_text;
-                    next_index = self.index_pointer.current;
+                    changed = true;
                 }
-                Count(value) => self.index_pointer.push_counting_number(value),
+                Count(value) => self.entries.pointer.push_counting_number(value),
+                Expand => {
+                    self.entries.expand();
+                    changed = true;
+                }
                 Exit => exit(0),
             }
         }
 
-        if let Some(next_index) = next_index {
-            if let Some(file) = self.files.get(next_index) {
-                let text = &format!("[{}/{}] {}", next_index + 1, len, file);
+        operation.log(self.entries.current_file());
+
+        if changed {
+            if let Some((file, index)) = self.entries.current() {
+                let len = self.entries.len();
+                let text = &format!("[{}/{}] {}", index + 1, len, path::to_string(&file));
                 self.window.set_title(text);
                 show_image(
                     &mut self.window,
@@ -111,17 +103,12 @@ impl AppOptions {
 }
 
 
-fn show_image(window: &mut Window, image: &mut Image, file: String, text: Option<&str>) {
-    use std::path::Path;
-
-    log::puts1("Show", &file);
-
+fn show_image(window: &mut Window, image: &mut Image, path: PathBuf, text: Option<&str>) {
     let (width, height) = window.get_size();
-    let path = Path::new(&file);
 
     if let Some(extension) = path.extension() {
         if extension == "gif" {
-            match PixbufAnimation::new_from_file(&file) {
+            match PixbufAnimation::new_from_file(&path.to_str().unwrap()) {
                 Ok(buf) => image.set_from_animation(&buf),
                 Err(err) => log::error(err)
             }
@@ -129,7 +116,7 @@ fn show_image(window: &mut Window, image: &mut Image, file: String, text: Option
         }
     }
 
-    match Pixbuf::new_from_file_at_scale(&file, width, height, true) {
+    match Pixbuf::new_from_file_at_scale(&path.to_str().unwrap(), width, height, true) {
         Ok(buf) => {
             if let Some(text) = text {
                 use cairo::{Context, ImageSurface, Format};
@@ -177,34 +164,23 @@ fn show_image(window: &mut Window, image: &mut Image, file: String, text: Option
     }
 }
 
-fn on_key(key: u32, file: Option<&String>) {
-    if let Some(file) = file {
-        log::puts2("Key", key, &file);
-    } else {
-        log::puts1("Key", key);
-    }
-}
-
-fn on_push(tx: Sender<Operation>,path: String) {
-    log::puts1("Push", &path);
+fn on_push(tx: Sender<Operation>, path: String) {
     if path.starts_with("http://") || path.starts_with("https://") {
         tx.send(Operation::PushURL(path)).unwrap();
     } else {
-        tx.send(Operation::PushFile(path)).unwrap();
+        tx.send(Operation::PushFile(Path::new(&path).to_path_buf())).unwrap();
     }
 }
 
-fn on_push_file(tx: Sender<Operation>,files: &mut Vec<String>, file: String) {
-    log::puts1("File", &file);
-    let do_show = files.is_empty();
-    files.push(file);
+fn on_push_file(tx: Sender<Operation>, entries: &mut EntryContainer, file: PathBuf) {
+    let do_show = entries.is_empty();
+    entries.push(file);
     if do_show {
         tx.send(Operation::First).unwrap();
     }
 }
 
 fn on_push_url(tx: Sender<Operation>, http_cache: &mut HttpCache, url: String) {
-    log::puts1("URL", &url);
     let mut http_cache = http_cache.clone();
     spawn(move || {
         match http_cache.get(url) {

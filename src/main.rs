@@ -10,13 +10,18 @@ extern crate cairo;
 extern crate libc;
 #[macro_use] extern crate closet;
 
+#[macro_use]
+mod utils;
 mod app;
 mod controller;
+mod entry;
 mod events;
 mod http_cache;
 mod index_pointer;
 mod log;
+mod operation;
 mod options;
+mod path;
 
 use gtk::prelude::*;
 use gtk::{Image, Window};
@@ -24,7 +29,7 @@ use argparse::{ArgumentParser, List, Collect};
 use std::thread::{sleep};
 use std::time::Duration;
 
-use app::Operation;
+use operation::Operation;
 
 
 

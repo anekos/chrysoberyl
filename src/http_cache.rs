@@ -22,12 +22,7 @@ impl HttpCache {
         HttpCache { }
     }
 
-    pub fn get(&mut self, url: String) -> Result<String, Error> {
-        self.get_path_buf(url).map(|path| path.to_str().unwrap().to_owned())
-    }
-
-
-    fn get_path_buf(&mut self, url: String) -> Result<PathBuf, Error> {
+    pub fn get(&mut self, url: String) -> Result<PathBuf, Error> {
         let filepath = generate_temporary_filename(&url);
 
         if filepath.exists() {

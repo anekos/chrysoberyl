@@ -1,5 +1,6 @@
 
 extern crate argparse;
+extern crate ctrlc;
 extern crate gdk;
 extern crate gdk_pixbuf;
 extern crate gtk;
@@ -16,6 +17,7 @@ mod app;
 mod controller;
 mod entry;
 mod events;
+mod fragile_input;
 mod http_cache;
 mod index_pointer;
 mod log;
@@ -42,6 +44,7 @@ fn main() {
 
     let mut files: Vec<String> = vec![];
     let mut inputs: Vec<String> = vec![];
+    let mut fragiles: Vec<String> = vec![];
     let mut expand: bool = false;
 
     {
@@ -50,6 +53,7 @@ fn main() {
         ap.set_description("Controllable Image Viewer");
 
         ap.refer(&mut inputs).add_option(&["--input", "-i"], Collect, "Controller files");
+        ap.refer(&mut fragiles).add_option(&["--fragile-input", "-f"], Collect, "Chrysoberyl makes the `fifo` file whth given path");
         ap.refer(&mut expand).add_option(&["--expand", "-e"], StoreTrue, "`Expand` first file");
         ap.refer(&mut files).add_argument("images", List, "Image files or URLs");
 
@@ -58,14 +62,17 @@ fn main() {
 
     let (window, image) = setup();
 
-    let (mut app, rx) = app::App::new(files, window.clone(), image.clone());
+    let (mut app, rx) = app::App::new(files, fragiles.clone(), window.clone(), image.clone());
     let tx = app.tx.clone();
 
     window.connect_key_press_event(clone_army!([tx] move |_, key| events::on_key_press(tx.clone(), key)));
     window.connect_configure_event(clone_army!([tx] move |_, _| events::on_configure(tx.clone())));
 
-    for input in inputs {
-        controller::run_file_controller(tx.clone(), input);
+    for path in inputs {
+        controller::run_file_controller(tx.clone(), path);
+    }
+    for path in fragiles {
+        controller::run_file_controller(tx.clone(), path);
     }
     controller::run_stdin_controller(tx.clone());
 

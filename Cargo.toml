@@ -6,6 +6,7 @@ authors = ["anekos <anekos@snca.net>"]
 [dependencies]
 argparse = "*"
 libc = "*"
+ctrlc = { version = "2.0", features = ["termination"] }
 gdk = "*"
 gdk-pixbuf = "*"
 cairo-rs = "*"

@@ -1,8 +1,10 @@
 
+use std::fs::remove_file;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::spawn;
 use std::path::{Path, PathBuf};
 use std::process::exit;
+use ctrlc;
 use gtk::prelude::*;
 use gtk::{Image, Window};
 use gdk_pixbuf::{Pixbuf, PixbufAnimation};
@@ -13,6 +15,7 @@ use options::{AppOptions, AppOptionName};
 use operation::Operation;
 use log;
 use path;
+use fragile_input::new_fragile_input;
 
 
 
@@ -20,13 +23,14 @@ pub struct App {
     entries: EntryContainer,
     window: Window,
     image: Image,
+    fragiles: Vec<String>,
     pub tx: Sender<Operation>,
     pub options: AppOptions
 }
 
 
 impl App {
-    pub fn new(files: Vec<String>, window: Window, image: Image) -> (App, Receiver<Operation>) {
+    pub fn new(files: Vec<String>, fragiles: Vec<String>, window: Window, image: Image) -> (App, Receiver<Operation>) {
         let (tx, rx) = channel();
 
         let app = App {
@@ -34,12 +38,19 @@ impl App {
             window: window,
             image: image,
             tx: tx.clone(),
+            fragiles: fragiles.clone(),
             options: AppOptions::new()
         };
 
         for file in files {
             tx.send(Operation::Push(file)).unwrap();
         }
+
+        for fragile in fragiles.clone() {
+            new_fragile_input(&fragile);
+        }
+
+        ctrlc::set_handler(move || on_exit(fragiles.clone()));
 
         (app, rx)
     }
@@ -74,7 +85,7 @@ impl App {
                     self.entries.expand(count);
                     changed = self.options.show_text;
                 }
-                Exit => exit(0),
+                Exit => self.on_exit(),
             }
         }
 
@@ -179,10 +190,22 @@ impl App {
             }
         });
     }
+
+    fn on_exit(&self) {
+        on_exit(self.fragiles.clone());
+    }
 }
 
 impl AppOptions {
     fn new() -> AppOptions {
         AppOptions { show_text: false }
     }
+}
+
+
+fn on_exit(fragiles: Vec<String>) {
+    for fragile in fragiles {
+        remove_file(fragile).unwrap();
+    }
+    exit(0);
 }

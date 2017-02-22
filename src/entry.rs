@@ -95,6 +95,7 @@ impl fmt::Display for EntryContainer {
 }
 
 
+
 fn expand(dir: PathBuf) -> Result<Vec<PathBuf>, io::Error> {
     let mut result = vec![];
     let name = dir.file_name().unwrap();
@@ -119,7 +120,6 @@ fn expand(dir: PathBuf) -> Result<Vec<PathBuf>, io::Error> {
 
     Ok(result)
 }
-
 
 fn is_image(path: &PathBuf) -> bool {
     let image_extensions: Vec<&str> = vec!["jpeg", "jpg", "png", "gif"];

@@ -4,6 +4,7 @@ use std::io;
 use std::fmt;
 
 use index_pointer::IndexPointer;
+use log;
 
 
 
@@ -27,7 +28,11 @@ impl EntryContainer {
     }
 
     pub fn push(&mut self, file: PathBuf) {
-        self.files.push(file.canonicalize().unwrap());
+        if file.exists() {
+            self.files.push(file.canonicalize().unwrap());
+        } else {
+            log::error(format!("File not found: {:?}", file));
+        }
     }
 
     pub fn current(&self) -> Option<(PathBuf, usize)> {

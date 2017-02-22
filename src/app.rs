@@ -18,7 +18,6 @@ use path;
 
 pub struct App {
     entries: EntryContainer,
-    http_cache: HttpCache,
     window: Window,
     image: Image,
     pub tx: Sender<Operation>,
@@ -32,7 +31,6 @@ impl App {
 
         let app = App {
             entries: EntryContainer::new(),
-            http_cache: HttpCache::new(),
             window: window,
             image: image,
             tx: tx.clone(),
@@ -59,12 +57,12 @@ impl App {
                 Previous => changed = self.entries.pointer.previous(),
                 Last => changed = self.entries.pointer.last(len),
                 Refresh => changed = true,
-                Push(ref path) => on_push(self.tx.clone(), path.clone()),
+                Push(ref path) => self.on_push(path.clone()),
                 PushFile(ref file) => {
-                    on_push_file(self.tx.clone(), &mut self.entries, file.clone());
+                    self.on_push_file(file.clone());
                     changed = self.options.show_text;
                 }
-                PushURL(ref url) => on_push_url(self.tx.clone(), &mut self.http_cache, url.clone()),
+                PushURL(ref url) => self.on_push_url(url.clone()),
                 Key(_) => (),
                 Toggle(AppOptionName::ShowText) => {
                     self.options.show_text = !self.options.show_text;
@@ -73,7 +71,7 @@ impl App {
                 Count(value) => self.entries.pointer.push_counting_number(value),
                 Expand => {
                     self.entries.expand();
-                    changed = true;
+                    changed = self.options.show_text;
                 }
                 Exit => exit(0),
             }
@@ -86,13 +84,99 @@ impl App {
                 let len = self.entries.len();
                 let text = &format!("[{}/{}] {}", index + 1, len, path::to_string(&file));
                 self.window.set_title(text);
-                show_image(
-                    &mut self.window,
-                    &mut self.image,
+                self.show_image(
                     file.clone(),
                     if self.options.show_text { Some(text) } else { None });
             }
         }
+    }
+
+    fn show_image(&self, path: PathBuf, text: Option<&str>) {
+        let (width, height) = self.window.get_size();
+
+        if let Some(extension) = path.extension() {
+            if extension == "gif" {
+                match PixbufAnimation::new_from_file(&path.to_str().unwrap()) {
+                    Ok(buf) => self.image.set_from_animation(&buf),
+                    Err(err) => log::error(err)
+                }
+                return
+            }
+        }
+
+        match Pixbuf::new_from_file_at_scale(&path.to_str().unwrap(), width, height, true) {
+            Ok(buf) => {
+                if let Some(text) = text {
+                    use cairo::{Context, ImageSurface, Format};
+                    use gdk::prelude::ContextExt;
+
+                    let (width, height) = (buf.get_width(), buf.get_height());
+
+                    let surface = ImageSurface::create(Format::ARgb32, width, height);
+
+                    {
+                        let height = height as f64;
+
+                        let context = Context::new(&surface);
+                        let alpha = 0.8;
+
+                        context.set_source_pixbuf(&buf, 0.0, 0.0);
+                        context.paint();
+
+                        let font_size = 12.0;
+                        context.set_font_size(font_size);
+
+                        let text_y = {
+                            let extents = context.text_extents(&text);
+                            context.set_source_rgba(0.0, 0.25, 0.25, alpha);
+                            context.rectangle(
+                                0.0,
+                                height - extents.height - 4.0,
+                                extents.x_bearing + extents.x_advance + 2.0,
+                                height);
+                            context.fill();
+                            height - 4.0
+                        };
+
+                        context.move_to(2.0, text_y);
+                        context.set_source_rgba(1.0, 1.0, 1.0, alpha);
+                        context.show_text(text);
+                    }
+
+                    self.image.set_from_surface(&surface);
+                } else {
+                    self.image.set_from_pixbuf(Some(&buf));
+                }
+            }
+            Err(err) => log::error(err)
+        }
+    }
+
+    fn on_push(&mut self, path: String) {
+        if path.starts_with("http://") || path.starts_with("https://") {
+            self.tx.send(Operation::PushURL(path)).unwrap();
+        } else {
+            self.operate(Operation::PushFile(Path::new(&path).to_path_buf()));
+        }
+    }
+
+    fn on_push_file(&mut self, file: PathBuf) {
+        let do_show = self.entries.is_empty();
+        self.entries.push(file);
+        if do_show {
+            self.tx.send(Operation::First).unwrap();
+        }
+    }
+
+    fn on_push_url(&self, url: String) {
+        let mut http_cache = HttpCache::new();
+        let tx = self.tx.clone();
+        spawn(move || {
+            match http_cache.get(url) {
+                Ok(file) => tx.send(Operation::PushFile(file)).unwrap(),
+                Err(err) => log::error(err)
+            }
+        });
     }
 }
 
@@ -100,92 +184,4 @@ impl AppOptions {
     fn new() -> AppOptions {
         AppOptions { show_text: false }
     }
-}
-
-
-fn show_image(window: &mut Window, image: &mut Image, path: PathBuf, text: Option<&str>) {
-    let (width, height) = window.get_size();
-
-    if let Some(extension) = path.extension() {
-        if extension == "gif" {
-            match PixbufAnimation::new_from_file(&path.to_str().unwrap()) {
-                Ok(buf) => image.set_from_animation(&buf),
-                Err(err) => log::error(err)
-            }
-            return
-        }
-    }
-
-    match Pixbuf::new_from_file_at_scale(&path.to_str().unwrap(), width, height, true) {
-        Ok(buf) => {
-            if let Some(text) = text {
-                use cairo::{Context, ImageSurface, Format};
-                use gdk::prelude::ContextExt;
-
-                let (width, height) = (buf.get_width(), buf.get_height());
-
-                let surface = ImageSurface::create(Format::ARgb32, width, height);
-
-                {
-                    let height = height as f64;
-
-                    let context = Context::new(&surface);
-                    let alpha = 0.8;
-
-                    context.set_source_pixbuf(&buf, 0.0, 0.0);
-                    context.paint();
-
-                    let font_size = 12.0;
-                    context.set_font_size(font_size);
-
-                    let text_y = {
-                        let extents = context.text_extents(&text);
-                        context.set_source_rgba(0.0, 0.25, 0.25, alpha);
-                        context.rectangle(
-                            0.0,
-                            height - extents.height - 4.0,
-                            extents.x_bearing + extents.x_advance + 2.0,
-                            height);
-                        context.fill();
-                        height - 4.0
-                    };
-
-                    context.move_to(2.0, text_y);
-                    context.set_source_rgba(1.0, 1.0, 1.0, alpha);
-                    context.show_text(text);
-                }
-
-                image.set_from_surface(&surface);
-            } else {
-                image.set_from_pixbuf(Some(&buf));
-            }
-        }
-        Err(err) => log::error(err)
-    }
-}
-
-fn on_push(tx: Sender<Operation>, path: String) {
-    if path.starts_with("http://") || path.starts_with("https://") {
-        tx.send(Operation::PushURL(path)).unwrap();
-    } else {
-        tx.send(Operation::PushFile(Path::new(&path).to_path_buf())).unwrap();
-    }
-}
-
-fn on_push_file(tx: Sender<Operation>, entries: &mut EntryContainer, file: PathBuf) {
-    let do_show = entries.is_empty();
-    entries.push(file);
-    if do_show {
-        tx.send(Operation::First).unwrap();
-    }
-}
-
-fn on_push_url(tx: Sender<Operation>, http_cache: &mut HttpCache, url: String) {
-    let mut http_cache = http_cache.clone();
-    spawn(move || {
-        match http_cache.get(url) {
-            Ok(file) => tx.send(Operation::PushFile(file)).unwrap(),
-            Err(err) => log::error(err)
-        }
-    });
 }

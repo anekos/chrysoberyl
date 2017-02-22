@@ -25,7 +25,7 @@ mod path;
 
 use gtk::prelude::*;
 use gtk::{Image, Window};
-use argparse::{ArgumentParser, List, Collect};
+use argparse::{ArgumentParser, List, Collect, StoreTrue};
 use std::thread::{sleep};
 use std::time::Duration;
 
@@ -42,6 +42,7 @@ fn main() {
 
     let mut files: Vec<String> = vec![];
     let mut inputs: Vec<String> = vec![];
+    let mut expand: bool = false;
 
     {
         let mut ap = ArgumentParser::new();
@@ -49,6 +50,7 @@ fn main() {
         ap.set_description("Controllable Image Viewer");
 
         ap.refer(&mut inputs).add_option(&["--input", "-i"], Collect, "Controller files");
+        ap.refer(&mut expand).add_option(&["--expand", "-e"], StoreTrue, "`Expand` first file");
         ap.refer(&mut files).add_argument("images", List, "Image files or URLs");
 
         ap.parse_args_or_exit();
@@ -70,6 +72,9 @@ fn main() {
     window.show_all();
 
     tx.send(First).unwrap();
+    if expand {
+        tx.send(Expand).unwrap();
+    }
 
     loop {
         while gtk::events_pending() {

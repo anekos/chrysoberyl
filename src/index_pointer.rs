@@ -78,6 +78,12 @@ impl IndexPointer {
         }
     }
 
+    pub fn counted(&mut self) -> usize {
+        let result = self.count.unwrap_or(1);
+        self.count = None;
+        result
+    }
+
     fn update(&mut self, new_index: usize) -> bool {
         if Some(new_index) == self.current {
             false
@@ -85,11 +91,5 @@ impl IndexPointer {
             self.current = Some(new_index);
             true
         }
-    }
-
-    fn counted(&mut self) -> usize {
-        let result = self.count.unwrap_or(1);
-        self.count = None;
-        result
     }
 }

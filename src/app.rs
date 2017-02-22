@@ -70,7 +70,8 @@ impl App {
                 }
                 Count(value) => self.entries.pointer.push_counting_number(value),
                 Expand => {
-                    self.entries.expand();
+                    let count = self.entries.pointer.counted();
+                    self.entries.expand(count);
                     changed = self.options.show_text;
                 }
                 Exit => exit(0),

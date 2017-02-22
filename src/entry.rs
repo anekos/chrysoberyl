@@ -47,18 +47,17 @@ impl EntryContainer {
         self.current().map(|(file, _)| file)
     }
 
-    pub fn expand(&mut self) {
+    pub fn expand(&mut self, n: usize) {
         let result = self.current().and_then(|(file, index)| {
-            file.clone().parent().and_then(|dir| {
-                expand(dir.to_path_buf()).ok().and_then(|mut middle| {
-                    middle.sort();
-                    let (left, right) = self.files.split_at(index);
-                    let mut result = vec![];
-                    result.extend_from_slice(left);
-                    result.extend_from_slice(middle.as_slice());
-                    result.extend(right.iter().skip(1).map(|it| it.clone()));
-                    Some((result, file))
-                })
+            let dir = n_parents(file.clone(), n);
+            expand(dir.to_path_buf()).ok().and_then(|mut middle| {
+                middle.sort();
+                let (left, right) = self.files.split_at(index);
+                let mut result = vec![];
+                result.extend_from_slice(left);
+                result.extend_from_slice(middle.as_slice());
+                result.extend(right.iter().skip(1).map(|it| it.clone()));
+                Some((result, file))
             })
         });
 
@@ -102,17 +101,16 @@ fn expand(dir: PathBuf) -> Result<Vec<PathBuf>, io::Error> {
 
     through!([dir = dir.read_dir()] {
         for entry in dir {
-            through!([entry = entry, ft = entry.file_type()] {
+            through!([entry = entry] {
                 let path = entry.path();
-                if ft.is_file() && is_image(&path) {
+                if path.is_file() && is_image(&path) {
                     result.push(path)
-                } else if ft.is_dir() {
+                } else if path.is_dir() {
                     if name != entry.file_name() {
-                        through!([expanded = expand(entry.path())] {
+                        through!([expanded = expand(path)] {
                             result.extend(expanded)
                         });
                     }
-                } else if ft.is_symlink() {
                 }
             })
         }
@@ -127,4 +125,19 @@ fn is_image(path: &PathBuf) -> bool {
         let extension: &str = &extension.to_str().unwrap().to_lowercase();
         image_extensions.contains(&extension)
     }).unwrap_or(false)
+}
+
+fn n_parents(path: PathBuf, n: usize) -> PathBuf {
+    println!("expand: path = {:?}", path);
+    if n > 100 {
+        return n_parents(path, 100)
+    }
+
+    if n > 0 {
+        if let Some(parent) = path.clone().parent() {
+            return n_parents(parent.to_path_buf(), n - 1);
+        }
+    }
+
+    path
 }

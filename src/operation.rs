@@ -3,7 +3,6 @@ use std::str::FromStr;
 use std::path::PathBuf;
 
 use options::AppOptionName;
-use path;
 
 
 
@@ -35,33 +34,6 @@ impl FromStr for Operation {
             (Some(&"Push"), Some(url), None)
                 => Ok(Operation::Push(oo(url))),
             _ => Err(()),
-        }
-    }
-}
-
-
-impl Operation {
-    pub fn log(&self, path: Option<PathBuf>) {
-        use Operation::*;
-
-        match self {
-            &First => println!("First"),
-            &Next => println!("Next"),
-            &Previous => println!("Previous"),
-            &Last => println!("Last"),
-            &Refresh => println!("Refresh"),
-            &Push(ref path) => println!("Push\t{}", path),
-            &PushFile(ref path) => println!("PushFile\t{}", path::to_string(path)),
-            &PushURL(ref url) => println!("PushURL\t{}", url),
-            &Key(key) => if let Some(path) = path {
-                println!("Key\t{}\t{}", key, path::to_string(&path));
-            } else {
-                println!("Key\t{}", key);
-            },
-            &Count(count) => println!("Count\t{}", count),
-            &Toggle(ref option_name) => println!("Toggle\t{:?}", option_name),
-            &Expand => println!("Expand"),
-            &Exit => println!("Exit"),
         }
     }
 }

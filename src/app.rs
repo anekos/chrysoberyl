@@ -24,6 +24,7 @@ pub struct App {
     window: Window,
     image: Image,
     fragiles: Vec<String>,
+    previous_len: usize,
     pub tx: Sender<Operation>,
     pub options: AppOptions
 }
@@ -33,17 +34,18 @@ impl App {
     pub fn new(files: Vec<String>, fragiles: Vec<String>, window: Window, image: Image) -> (App, Receiver<Operation>) {
         let (tx, rx) = channel();
 
-        let app = App {
+        let mut app = App {
             entries: EntryContainer::new(),
             window: window,
             image: image,
             tx: tx.clone(),
+            previous_len: 0,
             fragiles: fragiles.clone(),
             options: AppOptions::new()
         };
 
         for file in files {
-            tx.send(Operation::Push(file)).unwrap();
+           app.on_push(file);
         }
 
         for fragile in fragiles.clone() {
@@ -61,6 +63,8 @@ impl App {
         let mut changed = false;
         let len = self.entries.len();
 
+        // println!("operate: {:?}", operation);
+
         {
             match operation {
                 First => changed = self.entries.pointer.first(len),
@@ -74,7 +78,7 @@ impl App {
                     changed = self.options.show_text;
                 }
                 PushURL(ref url) => self.on_push_url(url.clone()),
-                Key(_) => (),
+                Key(key) => self.on_key(key),
                 Toggle(AppOptionName::ShowText) => {
                     self.options.show_text = !self.options.show_text;
                     changed = true;
@@ -89,10 +93,9 @@ impl App {
             }
         }
 
-        operation.log(self.entries.current_file());
 
-        if changed {
-            if let Some((file, index)) = self.entries.current() {
+        if let Some((file, index)) = self.entries.current() {
+            if changed {
                 let len = self.entries.len();
                 let text = &format!("[{}/{}] {}", index + 1, len, path::to_string(&file));
                 self.window.set_title(text);
@@ -100,6 +103,12 @@ impl App {
                     file.clone(),
                     if self.options.show_text { Some(text) } else { None });
             }
+        } else {
+            let len = self.entries.len();
+            if self.previous_len == 0 && len > 0 {
+                self.entries.pointer.first(len);
+            }
+            self.previous_len = len;
         }
     }
 
@@ -173,11 +182,7 @@ impl App {
     }
 
     fn on_push_file(&mut self, file: PathBuf) {
-        let do_show = self.entries.is_empty();
         self.entries.push(file);
-        if do_show {
-            self.tx.send(Operation::First).unwrap();
-        }
     }
 
     fn on_push_url(&self, url: String) {
@@ -193,6 +198,15 @@ impl App {
 
     fn on_exit(&self) {
         on_exit(self.fragiles.clone());
+    }
+
+    fn on_key(&self, key: u32) {
+        print!("Key\t{}", key);
+        if let Some(file) = self.entries.current_file() {
+            println!("\t{}", file.to_str().unwrap());
+        } else {
+            println!("");
+        }
     }
 }
 

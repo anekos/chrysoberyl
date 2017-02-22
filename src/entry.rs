@@ -132,7 +132,6 @@ fn is_image(path: &PathBuf) -> bool {
 }
 
 fn n_parents(path: PathBuf, n: usize) -> PathBuf {
-    println!("expand: path = {:?}", path);
     if n > 100 {
         return n_parents(path, 100)
     }

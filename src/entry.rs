@@ -31,11 +31,9 @@ impl EntryContainer {
     }
 
     pub fn current(&self) -> Option<(PathBuf, usize)> {
-        if let Some(index) = self.pointer.current {
+        self.pointer.current.and_then(|index| {
             self.files.get(index).map(|it| (it.clone(), index))
-        } else {
-            None
-        }
+        })
     }
 
     pub fn current_file(&self) -> Option<PathBuf> {

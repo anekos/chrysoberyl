@@ -97,7 +97,6 @@ impl fmt::Display for EntryContainer {
 
 fn expand(dir: PathBuf) -> Result<Vec<PathBuf>, io::Error> {
     let mut result = vec![];
-    let name = dir.file_name().unwrap();
 
     through!([dir = dir.read_dir()] {
         for entry in dir {
@@ -106,11 +105,9 @@ fn expand(dir: PathBuf) -> Result<Vec<PathBuf>, io::Error> {
                 if path.is_file() && is_image(&path) {
                     result.push(path)
                 } else if path.is_dir() {
-                    if name != entry.file_name() {
-                        through!([expanded = expand(path)] {
-                            result.extend(expanded)
-                        });
-                    }
+                    through!([expanded = expand(path)] {
+                        result.extend(expanded)
+                    });
                 }
             })
         }

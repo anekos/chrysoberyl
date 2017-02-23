@@ -63,10 +63,12 @@ impl EntryContainer {
                 middle.sort();
 
                 let (left, right) = self.files.split_at(index);
+
                 let mut result = vec![];
                 result.extend_from_slice(left);
                 result.extend_from_slice(middle.as_slice());
-                result.extend(right.iter().skip(1).map(|it| it.clone()));
+                result.extend_from_slice(&right[1..]);
+
                 Some((result, file))
             })
         });

@@ -54,7 +54,7 @@ impl EntryContainer {
             expand(dir.to_path_buf()).ok().and_then(|middle| {
                 let mut middle: Vec<Rc<PathBuf>> = {
                     middle.into_iter().filter(|path| {
-                        !self.file_indices.contains_key(path)
+                        *path == file || !self.file_indices.contains_key(path)
                     }).map(|path| {
                         Rc::new(path)
                     }).collect()
@@ -75,8 +75,8 @@ impl EntryContainer {
             self.files.clear();
             self.file_indices.clear();
             self.files.extend_from_slice(expanded.as_slice());
-            for file in self.files.iter() {
-                self.file_indices.insert(file.clone(), 0);
+            for (index, file) in self.files.iter().enumerate() {
+                self.file_indices.insert(file.clone(), index);
             }
             self.set_current(file);
         }
@@ -91,6 +91,7 @@ impl EntryContainer {
     fn push_file(&mut self, file: PathBuf) {
         let path = Rc::new(file.canonicalize().unwrap());
         if !self.file_indices.contains_key(&path) {
+            self.file_indices.insert(path.clone(), self.files.len());
             self.files.push(path);
         }
     }

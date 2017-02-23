@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::collections::HashMap;
 use std::io;
 use std::fmt;
+use image_utils;
 
 use index_pointer::IndexPointer;
 use log;
@@ -92,10 +93,19 @@ impl EntryContainer {
 
     fn push_file(&mut self, file: PathBuf) {
         let path = Rc::new(file.canonicalize().unwrap());
-        if !self.file_indices.contains_key(&path) {
-            self.file_indices.insert(path.clone(), self.files.len());
-            self.files.push(path);
+
+        if self.file_indices.contains_key(&path) {
+            return;
         }
+
+        if let Ok(image_info) = image_utils::info(&path) {
+            // if image_info.frames image_info.width > 200 || image_info.height < 200) {
+        } else {
+            return;
+        }
+
+        self.file_indices.insert(path.clone(), self.files.len());
+        self.files.push(path);
     }
 
     fn push_directory(&mut self, dir: PathBuf) {

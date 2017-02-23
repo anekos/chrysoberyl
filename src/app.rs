@@ -93,7 +93,6 @@ impl App {
             }
         }
 
-
         if let Some((file, index)) = self.entries.current() {
             if changed {
                 let len = self.entries.len();

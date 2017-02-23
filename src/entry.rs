@@ -1,5 +1,7 @@
 
+use std::rc::Rc;
 use std::path::PathBuf;
+use std::collections::HashMap;
 use std::io;
 use std::fmt;
 
@@ -9,14 +11,15 @@ use log;
 
 
 pub struct EntryContainer {
-    files: Vec<PathBuf>,
+    files: Vec<Rc<PathBuf>>,
+    file_indices: HashMap<Rc<PathBuf>, usize>,
     pub pointer: IndexPointer,
 }
 
 
 impl EntryContainer {
     pub fn new() -> EntryContainer {
-        EntryContainer { files: vec![], pointer: IndexPointer::new() }
+        EntryContainer { files: vec![], pointer: IndexPointer::new(), file_indices: HashMap::new() }
     }
 
     pub fn len(&self) -> usize {
@@ -35,7 +38,9 @@ impl EntryContainer {
 
     pub fn current(&self) -> Option<(PathBuf, usize)> {
         self.pointer.current.and_then(|index| {
-            self.files.get(index).map(|it| (it.clone(), index))
+            self.files.get(index).map(|it: &Rc<PathBuf>| {
+                ((**it).clone(), index)
+            })
         })
     }
 
@@ -46,8 +51,17 @@ impl EntryContainer {
     pub fn expand(&mut self, n: usize) {
         let result = self.current().and_then(|(file, index)| {
             let dir = n_parents(file.clone(), n);
-            expand(dir.to_path_buf()).ok().and_then(|mut middle| {
+            expand(dir.to_path_buf()).ok().and_then(|middle| {
+                let mut middle: Vec<Rc<PathBuf>> = {
+                    middle.into_iter().filter(|path| {
+                        *path == file || !self.file_indices.contains_key(path)
+                    }).map(|path| {
+                        Rc::new(path)
+                    }).collect()
+                };
+
                 middle.sort();
+
                 let (left, right) = self.files.split_at(index);
                 let mut result = vec![];
                 result.extend_from_slice(left);
@@ -59,20 +73,25 @@ impl EntryContainer {
 
         if let Some((expanded, file)) = result {
             self.files.clear();
+            self.file_indices.clear();
             self.files.extend_from_slice(expanded.as_slice());
+            for (index, file) in self.files.iter().enumerate() {
+                self.file_indices.insert(file.clone(), index);
+            }
             self.set_current(file);
         }
     }
 
     fn set_current(&mut self, entry: PathBuf) {
-        if let Some(index) = self.files.iter().position(|it| *it == entry) {
-            self.pointer.current = Some(index);
+        if let Some(index) = self.file_indices.get(&entry) {
+            self.pointer.current = Some(*index);
         }
     }
 
     fn push_file(&mut self, file: PathBuf) {
-        let path = file.canonicalize().unwrap();
-        if !self.files.contains(&path) {
+        let path = Rc::new(file.canonicalize().unwrap());
+        if !self.file_indices.contains_key(&path) {
+            self.file_indices.insert(path.clone(), self.files.len());
             self.files.push(path);
         }
     }

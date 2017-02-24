@@ -8,11 +8,11 @@ macro_rules! through {
     };
     ( [$name:ident = $e:expr $(,$rest_n:ident = $rest_e:expr)*] $body:expr )  => {
         {
-            use log;
+            use output;
 
             match $e {
                 Ok($name) => through!([$($rest_n = $rest_e),*] $body),
-                Err(err) => log::error(err)
+                Err(err) => output::error(err)
             }
         }
     }

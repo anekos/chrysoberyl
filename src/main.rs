@@ -12,6 +12,8 @@ extern crate cairo;
 extern crate libc;
 extern crate rand;
 #[macro_use] extern crate closet;
+extern crate env_logger;
+#[macro_use] extern crate log;
 
 #[macro_use]
 mod utils;
@@ -22,7 +24,7 @@ mod events;
 mod fragile_input;
 mod http_cache;
 mod index_pointer;
-mod log;
+mod output;
 mod operation;
 mod options;
 mod path;
@@ -41,8 +43,10 @@ use entry::EntryContainerOptions;
 fn main() {
     use Operation::*;
 
+    env_logger::init().unwrap();
+
     unsafe {
-        log::puts1("PID", libc::getpid());
+        output::puts1("PID", libc::getpid());
     }
 
     let mut files: Vec<String> = vec![];

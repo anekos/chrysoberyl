@@ -13,7 +13,7 @@ use entry::{EntryContainer, EntryContainerOptions};
 use http_cache::HttpCache;
 use options::{AppOptions, AppOptionName};
 use operation::Operation;
-use log;
+use output;
 use path;
 use fragile_input::new_fragile_input;
 
@@ -64,7 +64,7 @@ impl App {
         let mut changed = false;
         let len = self.entries.len();
 
-        // println!("operate: {:?}", operation);
+        debug!("Operate\t{:?}", operation);
 
         {
             match *operation {
@@ -129,7 +129,7 @@ impl App {
             if extension == "gif" {
                 match PixbufAnimation::new_from_file(&path.to_str().unwrap()) {
                     Ok(buf) => self.image.set_from_animation(&buf),
-                    Err(err) => log::error(err)
+                    Err(err) => output::error(err)
                 }
                 return
             }
@@ -179,7 +179,7 @@ impl App {
                     self.image.set_from_pixbuf(Some(&buf));
                 }
             }
-            Err(err) => log::error(err)
+            Err(err) => output::error(err)
         }
     }
 
@@ -201,7 +201,7 @@ impl App {
         spawn(move || {
             match http_cache.get(url) {
                 Ok(file) => tx.send(Operation::PushFile(file)).unwrap(),
-                Err(err) => log::error(err)
+                Err(err) => output::error(err)
             }
         });
     }

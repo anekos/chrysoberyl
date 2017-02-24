@@ -16,6 +16,8 @@ url = "*"
 closet = "*"
 image-utils = "*"
 rand = "*"
+log = "*"
+env_logger = "*"
 
 [dependencies.gtk]
 version = "0.1.1"

@@ -8,7 +8,7 @@ use rand::{thread_rng, Rng, ThreadRng};
 use image_utils;
 
 use index_pointer::IndexPointer;
-use log;
+use output;
 
 
 
@@ -48,7 +48,7 @@ impl EntryContainer {
         } else if file.is_file() {
             self.push_file(file);
         } else {
-            log::error(format!("Invalid path: {:?}", file));
+            output::error(format!("Invalid path: {:?}", file));
         }
     }
 

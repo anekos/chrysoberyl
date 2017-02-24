@@ -26,7 +26,6 @@ pub struct App {
     window: Window,
     image: Image,
     fragiles: Vec<String>,
-    previous_len: usize,
     http_cache: HttpCache,
     pub tx: Sender<Operation>,
     pub options: AppOptions
@@ -44,7 +43,6 @@ impl App {
             image: image,
             tx: tx.clone(),
             http_cache: HttpCache::new(tx.clone()),
-            previous_len: 0,
             fragiles: fragiles.clone(),
             options: options
         };
@@ -78,10 +76,7 @@ impl App {
                 Last => changed = self.entries.pointer.last(len),
                 Refresh => changed = true,
                 Push(ref path) => self.on_push(path.clone()),
-                PushFile(ref file) => {
-                    self.on_push_file(file.clone());
-                    changed = self.options.show_text;
-                }
+                PushFile(ref file) => changed= self.on_push_file(file.clone()) || self.options.show_text,
                 PushURL(ref url) => self.on_push_url(url.clone()),
                 Key(ref key) => self.on_key(key),
                 Toggle(AppOptionName::ShowText) => {
@@ -200,14 +195,9 @@ impl App {
         }
     }
 
-    fn on_push_file(&mut self, file: PathBuf) {
+    fn on_push_file(&mut self, file: PathBuf) -> bool {
         self.entries.push(file);
-
-        let len = self.entries.len();
-        if self.previous_len == 0 && len > 0 {
-            self.entries.pointer.first(len);
-        }
-        self.previous_len = len;
+        self.entries.len() == 1 && self.entries.pointer.first(1)
     }
 
     fn on_push_url(&mut self, url: String) {

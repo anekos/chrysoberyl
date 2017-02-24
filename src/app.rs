@@ -58,7 +58,7 @@ impl App {
         (app, rx)
     }
 
-    pub fn operate(&mut self, operation: Operation) {
+    pub fn operate(&mut self, operation: &Operation) {
         use self::Operation::*;
 
         let mut changed = false;
@@ -67,7 +67,7 @@ impl App {
         // println!("operate: {:?}", operation);
 
         {
-            match operation {
+            match *operation {
                 First => changed = self.entries.pointer.first(len),
                 Next => changed = self.entries.pointer.next(len),
                 Previous => changed = self.entries.pointer.previous(),
@@ -113,6 +113,12 @@ impl App {
                 self.entries.pointer.first(len);
             }
             self.previous_len = len;
+        }
+    }
+
+    pub fn operate_multi(&mut self, operations: &[Operation]) {
+        for op in operations {
+            self.operate(op);
         }
     }
 
@@ -181,7 +187,7 @@ impl App {
         if path.starts_with("http://") || path.starts_with("https://") {
             self.tx.send(Operation::PushURL(path)).unwrap();
         } else {
-            self.operate(Operation::PushFile(Path::new(&path).to_path_buf()));
+            self.operate(&Operation::PushFile(Path::new(&path).to_path_buf()));
         }
     }
 

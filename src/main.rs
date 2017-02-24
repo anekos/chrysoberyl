@@ -51,6 +51,7 @@ fn main() {
     let mut expand: bool = false;
     let mut min_width: u32 = 0;
     let mut min_height: u32 = 0;
+    let mut shuffle: bool = false;
 
     {
         let mut ap = ArgumentParser::new();
@@ -60,6 +61,7 @@ fn main() {
         ap.refer(&mut inputs).add_option(&["--input", "-i"], Collect, "Controller files");
         ap.refer(&mut fragiles).add_option(&["--fragile-input", "-f"], Collect, "Chrysoberyl makes the `fifo` file whth given path");
         ap.refer(&mut expand).add_option(&["--expand", "-e"], StoreTrue, "`Expand` first file");
+        ap.refer(&mut shuffle).add_option(&["--shuffle", "-z"], StoreTrue, "Shuffle file list");
         ap.refer(&mut min_width).add_option(&["--min-width", "-W"], Store, "Minimum width");
         ap.refer(&mut min_height).add_option(&["--min-height", "-H"], Store, "Minimum height");
         ap.refer(&mut files).add_argument("images", List, "Image files or URLs");
@@ -91,11 +93,9 @@ fn main() {
 
     window.show_all();
 
-    app.operate(First);
-
-    if expand {
-        app.operate(Expand);
-    }
+    app.operate(&First);
+    if expand { app.operate(&Expand); }
+    if shuffle { app.operate_multi(&[Shuffle, First]); }
 
     loop {
         while gtk::events_pending() {
@@ -103,7 +103,7 @@ fn main() {
         }
 
         for op in rx.try_iter() {
-            app.operate(op);
+            app.operate(&op);
         }
         sleep(Duration::from_millis(10));
     }

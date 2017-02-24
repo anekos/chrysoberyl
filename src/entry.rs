@@ -70,7 +70,7 @@ impl EntryContainer {
             expand(dir.to_path_buf()).ok().and_then(|middle| {
                 let mut middle: Vec<Rc<PathBuf>> = {
                     middle.into_iter().filter(|path| {
-                        *path == file || !self.file_indices.contains_key(path)
+                        *path == file || self.is_valid_image(path)
                     }).map(|path| {
                         Rc::new(path)
                     }).collect()
@@ -122,7 +122,7 @@ impl EntryContainer {
     fn push_file(&mut self, file: PathBuf) {
         let path = Rc::new(file.canonicalize().unwrap());
 
-        if self.file_indices.contains_key(&path) || !self.is_valid_image(file) {
+        if self.file_indices.contains_key(&path) || !self.is_valid_image(&file) {
             return;
         }
 
@@ -138,10 +138,10 @@ impl EntryContainer {
         });
     }
 
-    fn is_valid_image(&self, path: PathBuf) -> bool {
+    fn is_valid_image(&self, path: &PathBuf) -> bool {
         let opt = &self.options;
 
-        if opt.min_width.is_none() || opt.min_width.is_none() {
+        if opt.min_width.is_none() && opt.min_height.is_none() {
             return true;
         }
 

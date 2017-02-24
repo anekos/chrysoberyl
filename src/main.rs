@@ -32,7 +32,7 @@ mod key;
 
 use gtk::prelude::*;
 use gtk::{Image, Window};
-use argparse::{ArgumentParser, List, Collect, StoreTrue, Store};
+use argparse::{ArgumentParser, List, Collect, StoreTrue, StoreOption};
 use std::thread::{sleep};
 use std::time::Duration;
 
@@ -54,8 +54,8 @@ fn main() {
     let mut inputs: Vec<String> = vec![];
     let mut fragiles: Vec<String> = vec![];
     let mut expand: bool = false;
-    let mut min_width: u32 = 0;
-    let mut min_height: u32 = 0;
+    let mut min_width: Option<u32> = None;
+    let mut min_height: Option<u32> = None;
     let mut shuffle: bool = false;
 
     {
@@ -67,8 +67,8 @@ fn main() {
         ap.refer(&mut fragiles).add_option(&["--fragile-input", "-f"], Collect, "Chrysoberyl makes the `fifo` file whth given path");
         ap.refer(&mut expand).add_option(&["--expand", "-e"], StoreTrue, "`Expand` first file");
         ap.refer(&mut shuffle).add_option(&["--shuffle", "-z"], StoreTrue, "Shuffle file list");
-        ap.refer(&mut min_width).add_option(&["--min-width", "-W"], Store, "Minimum width");
-        ap.refer(&mut min_height).add_option(&["--min-height", "-H"], Store, "Minimum height");
+        ap.refer(&mut min_width).add_option(&["--min-width", "-W"], StoreOption, "Minimum width");
+        ap.refer(&mut min_height).add_option(&["--min-height", "-H"], StoreOption, "Minimum height");
         ap.refer(&mut files).add_argument("images", List, "Image files or URLs");
 
         ap.parse_args_or_exit();

@@ -22,8 +22,8 @@ pub struct EntryContainer {
 
 #[derive(Debug)]
 pub struct EntryContainerOptions {
-    pub min_width: u32,
-    pub min_height: u32,
+    pub min_width: Option<u32>,
+    pub min_height: Option<u32>,
 }
 
 
@@ -139,9 +139,16 @@ impl EntryContainer {
     }
 
     fn is_valid_image(&self, path: PathBuf) -> bool {
+        let opt = &self.options;
+
+        if opt.min_width.is_none() || opt.min_width.is_none() {
+            return true;
+        }
+
         if let Ok(image_info) = image_utils::info(&path) {
-            // image_info.frames <= 1 || (image_info.width >= self.options.min_width && image_info.height >= self.options.min_height)
-            self.options.min_width <= image_info.width && self.options.min_height <= image_info.height
+            let w = opt.min_width.map(|it| it < image_info.width).unwrap_or(true);
+            let h = opt.min_height.map(|it| it < image_info.height).unwrap_or(true);
+            w && h
         } else {
             false
         }

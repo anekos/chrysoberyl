@@ -27,7 +27,6 @@ pub struct EntryContainerOptions {
 
 impl EntryContainer {
     pub fn new(options: EntryContainerOptions) -> EntryContainer {
-        println!("options: {:?}", options);
         EntryContainer {
             files: vec![],
             pointer: IndexPointer::new(),

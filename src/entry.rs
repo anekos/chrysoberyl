@@ -123,12 +123,10 @@ impl EntryContainer {
     fn push_file(&mut self, file: PathBuf) {
         let path = Rc::new(file.canonicalize().expect("canonicalize"));
 
-        if self.file_indices.contains_key(&path) || !self.is_valid_image(&file) {
-            return;
+        if self.is_valid_image(&path) {
+            self.file_indices.insert(path.clone(), self.files.len());
+            self.files.push(path);
         }
-
-        self.file_indices.insert(path.clone(), self.files.len());
-        self.files.push(path);
     }
 
     fn push_directory(&mut self, dir: PathBuf) {
@@ -141,6 +139,10 @@ impl EntryContainer {
 
     fn is_valid_image(&self, path: &PathBuf) -> bool {
         let opt = &self.options;
+
+        if self.file_indices.contains_key(path) {
+            return false;
+        }
 
         if opt.min_width.is_none() && opt.min_height.is_none() {
             return true;

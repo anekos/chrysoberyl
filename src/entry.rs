@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::io;
 use std::fmt;
 use rand::{thread_rng, Rng, ThreadRng};
-use imagefmt;
+use immeta;
 
 use index_pointer::IndexPointer;
 use output;
@@ -147,16 +147,11 @@ impl EntryContainer {
             return true;
         }
 
-        // TODO
-        if path.extension().and_then(|it| it.to_str()) == Some("gif") {
-            return true;
-        }
-
         debug!("&is_valid_image(&path): path = {:?}", path);
 
-        if let Ok(image_info) = imagefmt::read_info(&path) {
-            let w = opt.min_width.map(|it| it < image_info.w as u32).unwrap_or(true);
-            let h = opt.min_height.map(|it| it < image_info.h as u32).unwrap_or(true);
+        if let Ok(img) = immeta::load_from_file(&path) {
+            let w = opt.min_width.map(|it| it < img.dimensions().width).unwrap_or(true);
+            let h = opt.min_height.map(|it| it < img.dimensions().height).unwrap_or(true);
             w && h
         } else {
             false
@@ -198,7 +193,7 @@ fn expand(dir: PathBuf, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
 }
 
 fn is_image(path: &PathBuf) -> bool {
-    let image_extensions: Vec<&str> = vec!["jpeg", "jpg", "png", "gif", "tga"];
+    let image_extensions: Vec<&str> = vec!["jpeg", "jpg", "png", "gif"];
     path.extension().map(|extension| {
         let extension: &str = &extension.to_str().unwrap().to_lowercase();
         image_extensions.contains(&extension)

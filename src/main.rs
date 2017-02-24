@@ -6,7 +6,7 @@ extern crate gdk_pixbuf;
 extern crate gtk;
 extern crate hyper;
 extern crate hyper_native_tls;
-extern crate imagefmt;
+extern crate immeta;
 extern crate url;
 extern crate cairo;
 extern crate libc;

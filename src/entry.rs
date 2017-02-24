@@ -14,13 +14,26 @@ use log;
 pub struct EntryContainer {
     files: Vec<Rc<PathBuf>>,
     file_indices: HashMap<Rc<PathBuf>, usize>,
+    options: EntryContainerOptions,
     pub pointer: IndexPointer,
+}
+
+#[derive(Debug)]
+pub struct EntryContainerOptions {
+    pub min_width: u32,
+    pub min_height: u32,
 }
 
 
 impl EntryContainer {
-    pub fn new() -> EntryContainer {
-        EntryContainer { files: vec![], pointer: IndexPointer::new(), file_indices: HashMap::new() }
+    pub fn new(options: EntryContainerOptions) -> EntryContainer {
+        println!("options: {:?}", options);
+        EntryContainer {
+            files: vec![],
+            pointer: IndexPointer::new(),
+            file_indices: HashMap::new(),
+            options: options
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -94,13 +107,7 @@ impl EntryContainer {
     fn push_file(&mut self, file: PathBuf) {
         let path = Rc::new(file.canonicalize().unwrap());
 
-        if self.file_indices.contains_key(&path) {
-            return;
-        }
-
-        if let Ok(image_info) = image_utils::info(&path) {
-            // if image_info.frames image_info.width > 200 || image_info.height < 200) {
-        } else {
+        if self.file_indices.contains_key(&path) || !self.is_valid_image(file) {
             return;
         }
 
@@ -114,6 +121,15 @@ impl EntryContainer {
                 self.push(file);
             }
         });
+    }
+
+    fn is_valid_image(&self, path: PathBuf) -> bool {
+        if let Ok(image_info) = image_utils::info(&path) {
+            // image_info.frames <= 1 || (image_info.width >= self.options.min_width && image_info.height >= self.options.min_height)
+            self.options.min_width <= image_info.width && self.options.min_height <= image_info.height
+        } else {
+            false
+        }
     }
 }
 

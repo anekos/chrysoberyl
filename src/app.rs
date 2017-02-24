@@ -9,7 +9,7 @@ use gtk::prelude::*;
 use gtk::{Image, Window};
 use gdk_pixbuf::{Pixbuf, PixbufAnimation};
 
-use entry::EntryContainer;
+use entry::{EntryContainer, EntryContainerOptions};
 use http_cache::HttpCache;
 use options::{AppOptions, AppOptionName};
 use operation::Operation;
@@ -31,17 +31,18 @@ pub struct App {
 
 
 impl App {
-    pub fn new(files: Vec<String>, fragiles: Vec<String>, window: Window, image: Image) -> (App, Receiver<Operation>) {
+    pub fn new(entry_options:EntryContainerOptions, files: Vec<String>, fragiles: Vec<String>, window: Window, image: Image) -> (App, Receiver<Operation>) {
         let (tx, rx) = channel();
+        let options = AppOptions::new();
 
         let mut app = App {
-            entries: EntryContainer::new(),
+            entries: EntryContainer::new(entry_options),
             window: window,
             image: image,
             tx: tx.clone(),
             previous_len: 0,
             fragiles: fragiles.clone(),
-            options: AppOptions::new()
+            options: options
         };
 
         for file in files {
@@ -206,12 +207,6 @@ impl App {
         } else {
             println!("");
         }
-    }
-}
-
-impl AppOptions {
-    fn new() -> AppOptions {
-        AppOptions { show_text: false }
     }
 }
 

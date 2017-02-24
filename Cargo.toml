@@ -14,6 +14,7 @@ hyper = "*"
 hyper-native-tls = "*"
 url = "*"
 closet = "*"
+image-utils = "*"
 
 [dependencies.gtk]
 version = "0.1.1"

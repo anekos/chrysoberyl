@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::collections::HashMap;
 use std::io;
 use std::fmt;
+use std::panic;
 use rand::{thread_rng, Rng, ThreadRng};
 use image_utils;
 
@@ -120,7 +121,7 @@ impl EntryContainer {
     }
 
     fn push_file(&mut self, file: PathBuf) {
-        let path = Rc::new(file.canonicalize().unwrap());
+        let path = Rc::new(file.canonicalize().expect("canonicalize"));
 
         if self.file_indices.contains_key(&path) || !self.is_valid_image(&file) {
             return;
@@ -145,7 +146,9 @@ impl EntryContainer {
             return true;
         }
 
-        if let Ok(image_info) = image_utils::info(&path) {
+        debug!("&is_valid_image(&path): path = {:?}", path);
+
+        if let Ok(image_info) = panic::catch_unwind(|| image_utils::info(path).unwrap()) {
             let w = opt.min_width.map(|it| it < image_info.width).unwrap_or(true);
             let h = opt.min_height.map(|it| it < image_info.height).unwrap_or(true);
             w && h

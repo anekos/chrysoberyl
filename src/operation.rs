@@ -20,6 +20,7 @@ pub enum Operation {
     Count(u8),
     Toggle(AppOptionName),
     Expand,
+    ExpandRecursive,
     Shuffle,
     Exit
 }

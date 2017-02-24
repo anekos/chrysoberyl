@@ -88,7 +88,12 @@ impl App {
                 Count(value) => self.entries.pointer.push_counting_number(value),
                 Expand => {
                     let count = self.entries.pointer.counted();
-                    self.entries.expand(count);
+                    self.entries.expand(count as u8, count as u8- 1);
+                    changed = self.options.show_text;
+                }
+                ExpandRecursive => {
+                    let count = self.entries.pointer.counted();
+                    self.entries.expand(1, count as u8);
                     changed = self.options.show_text;
                 }
                 Shuffle => {

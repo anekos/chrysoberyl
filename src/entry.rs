@@ -65,10 +65,10 @@ impl EntryContainer {
         self.current().map(|(file, _)| file)
     }
 
-    pub fn expand(&mut self, n: usize) {
+    pub fn expand(&mut self, n: u8, recursive: u8) {
         let result = self.current().and_then(|(file, index)| {
             let dir = n_parents(file.clone(), n);
-            expand(dir.to_path_buf()).ok().and_then(|middle| {
+            expand(dir.to_path_buf(), recursive).ok().and_then(|middle| {
                 let mut middle: Vec<Rc<PathBuf>> = {
                     middle.into_iter().filter(|path| {
                         *path == file || self.is_valid_image(path)
@@ -130,7 +130,7 @@ impl EntryContainer {
     }
 
     fn push_directory(&mut self, dir: PathBuf) {
-        through!([expanded = expand(dir)] {
+        through!([expanded = expand(dir, <u8>::max_value())] {
             for file in expanded {
                 self.push(file);
             }
@@ -172,7 +172,7 @@ impl fmt::Display for EntryContainer {
 
 
 
-fn expand(dir: PathBuf) -> Result<Vec<PathBuf>, io::Error> {
+fn expand(dir: PathBuf, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
     let mut result = vec![];
 
     through!([dir = dir.read_dir()] {
@@ -181,8 +181,8 @@ fn expand(dir: PathBuf) -> Result<Vec<PathBuf>, io::Error> {
                 let path = entry.path();
                 if path.is_file() && is_image(&path) {
                     result.push(path)
-                } else if path.is_dir() {
-                    through!([expanded = expand(path)] {
+                } else if recursive > 0 && path.is_dir() {
+                    through!([expanded = expand(path, recursive - 1)] {
                         result.extend(expanded)
                     });
                 }
@@ -201,11 +201,7 @@ fn is_image(path: &PathBuf) -> bool {
     }).unwrap_or(false)
 }
 
-fn n_parents(path: PathBuf, n: usize) -> PathBuf {
-    if n > 100 {
-        return n_parents(path, 100)
-    }
-
+fn n_parents(path: PathBuf, n: u8) -> PathBuf {
     if n > 0 {
         if let Some(parent) = path.clone().parent() {
             return n_parents(parent.to_path_buf(), n - 1);

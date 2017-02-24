@@ -10,6 +10,7 @@ extern crate image_utils;
 extern crate url;
 extern crate cairo;
 extern crate libc;
+extern crate rand;
 #[macro_use] extern crate closet;
 
 #[macro_use]

@@ -90,6 +90,10 @@ impl App {
                     self.entries.expand(count);
                     changed = self.options.show_text;
                 }
+                Shuffle => {
+                    self.entries.shuffle();
+                    changed = true;
+                }
                 Exit => self.on_exit(),
             }
         }

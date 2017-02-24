@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::collections::HashMap;
 use std::io;
 use std::fmt;
+use rand::{thread_rng, Rng, ThreadRng};
 use image_utils;
 
 use index_pointer::IndexPointer;
@@ -15,6 +16,7 @@ pub struct EntryContainer {
     files: Vec<Rc<PathBuf>>,
     file_indices: HashMap<Rc<PathBuf>, usize>,
     options: EntryContainerOptions,
+    rng: ThreadRng,
     pub pointer: IndexPointer,
 }
 
@@ -31,6 +33,7 @@ impl EntryContainer {
             files: vec![],
             pointer: IndexPointer::new(),
             file_indices: HashMap::new(),
+            rng: thread_rng(),
             options: options
         }
     }
@@ -88,12 +91,25 @@ impl EntryContainer {
 
         if let Some((expanded, file)) = result {
             self.files.clear();
-            self.file_indices.clear();
             self.files.extend_from_slice(expanded.as_slice());
-            for (index, file) in self.files.iter().enumerate() {
-                self.file_indices.insert(file.clone(), index);
-            }
+            self.reset_indices();
             self.set_current(file);
+        }
+    }
+
+    pub fn shuffle(&mut self) {
+        let mut source = self.files.clone();
+        let mut buffer = source.as_mut_slice();
+        self.rng.shuffle(&mut buffer);
+        self.files.clear();
+        self.files.extend_from_slice(buffer);
+        self.reset_indices();
+    }
+
+    fn reset_indices(&mut self) {
+        self.file_indices.clear();
+        for (index, file) in self.files.iter().enumerate() {
+            self.file_indices.insert(file.clone(), index);
         }
     }
 

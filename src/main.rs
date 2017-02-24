@@ -28,6 +28,7 @@ mod output;
 mod operation;
 mod options;
 mod path;
+mod key;
 
 use gtk::prelude::*;
 use gtk::{Image, Window};

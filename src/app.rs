@@ -16,6 +16,7 @@ use operation::Operation;
 use output;
 use path;
 use fragile_input::new_fragile_input;
+use key;
 
 
 
@@ -210,8 +211,8 @@ impl App {
         on_exit(self.fragiles.clone());
     }
 
-    fn on_key(&self, key: u32) {
-        print!("Key\t{}", key);
+    fn on_key(&self, keyval: u32) {
+        print!("Key\t{}", key::to_name(keyval));
         if let Some(file) = self.entries.current_file() {
             println!("\t{}", file.to_str().unwrap());
         } else {

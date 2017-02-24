@@ -5,17 +5,17 @@ set -euC
 
 
 # key b = Set wallpaper
-function key_98 () {
+function key_b () {
   feh --bg-scale "$1"
 }
 
 # key y = Copy filepath to clipboard
-function key_121 () {
+function key_y () {
   echo -n "$1" | xclip -i
 }
 
 # key p = Push filepath to a file
-function key_112 () {
+function key_p () {
   echo "$1" >> /tmp/chrysoberyl.list
 }
 

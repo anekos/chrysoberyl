@@ -8,6 +8,8 @@ use ctrlc;
 use gtk::prelude::*;
 use gtk::{Image, Window};
 use gdk_pixbuf::{Pixbuf, PixbufAnimation};
+use immeta;
+use immeta::markers::Gif;
 
 use entry::{EntryContainer, EntryContainerOptions};
 use http_cache::HttpCache;
@@ -131,13 +133,15 @@ impl App {
     fn show_image(&self, path: PathBuf, text: Option<&str>) {
         let (width, height) = self.window.get_size();
 
-        if let Some(extension) = path.extension() {
-            if extension == "gif" {
-                match PixbufAnimation::new_from_file(&path.to_str().unwrap()) {
-                    Ok(buf) => self.image.set_from_animation(&buf),
-                    Err(err) => output::error(err)
+        if let Ok(img) = immeta::load_from_file(&path) {
+            if let Ok(gif) = img.into::<Gif>() {
+                if gif.is_animated() {
+                    match PixbufAnimation::new_from_file(&path.to_str().unwrap()) {
+                        Ok(buf) => self.image.set_from_animation(&buf),
+                        Err(err) => output::error(err)
+                    }
+                    return
                 }
-                return
             }
         }
 

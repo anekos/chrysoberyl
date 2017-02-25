@@ -16,7 +16,7 @@ use operation::Operation;
 use output;
 use path;
 use fragile_input::new_fragile_input;
-use key;
+use key::KeyData;
 
 
 
@@ -80,7 +80,7 @@ impl App {
                     changed = self.options.show_text;
                 }
                 PushURL(ref url) => self.on_push_url(url.clone()),
-                Key(key) => self.on_key(key),
+                Key(ref key) => self.on_key(key),
                 Toggle(AppOptionName::ShowText) => {
                     self.options.show_text = !self.options.show_text;
                     changed = true;
@@ -216,8 +216,8 @@ impl App {
         on_exit(self.fragiles.clone());
     }
 
-    fn on_key(&self, keyval: u32) {
-        print!("Key\t{}", key::to_name(keyval));
+    fn on_key(&self, key: &KeyData) {
+        print!("Key\t{}", key.text());
         if let Some(file) = self.entries.current_file() {
             println!("\t{}", file.to_str().unwrap());
         } else {

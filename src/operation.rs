@@ -3,6 +3,7 @@ use std::str::FromStr;
 use std::path::PathBuf;
 
 use options::AppOptionName;
+use key::KeyData;
 
 
 
@@ -16,7 +17,7 @@ pub enum Operation {
     Push(String),
     PushFile(PathBuf),
     PushURL(String),
-    Key(u32),
+    Key(KeyData),
     Count(u8),
     Toggle(AppOptionName),
     Expand,

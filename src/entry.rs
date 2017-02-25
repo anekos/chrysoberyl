@@ -46,7 +46,7 @@ impl EntryContainer {
         if file.is_dir() {
             self.push_directory(file);
         } else if file.is_file() {
-            self.push_file(file);
+            self.push_file(&file);
         } else {
             output::error(format!("Invalid path: {:?}", file));
         }
@@ -68,13 +68,9 @@ impl EntryContainer {
         let result = self.current().and_then(|(file, index)| {
             let dir = n_parents(file.clone(), n);
             expand(dir.to_path_buf(), recursive).ok().and_then(|middle| {
-                let mut middle: Vec<Rc<PathBuf>> = {
-                    middle.into_iter().filter(|path| {
-                        *path == file || self.is_valid_image(path)
-                    }).map(|path| {
-                        Rc::new(path)
-                    }).collect()
-                };
+                let mut middle: Vec<Rc<PathBuf>> = middle.into_iter().filter(|path| {
+                    (*path == file || !self.is_duplicated(path)) && self.is_valid_image(path)
+                }).map(|path| Rc::new(path)).collect();
 
                 middle.sort();
 
@@ -119,10 +115,10 @@ impl EntryContainer {
         }
     }
 
-    fn push_file(&mut self, file: PathBuf) {
+    fn push_file(&mut self, file: &PathBuf) {
         let path = Rc::new(file.canonicalize().expect("canonicalize"));
 
-        if self.is_valid_image(&path) {
+        if self.is_valid_image(&path) && !self.is_duplicated(file) {
             self.file_indices.insert(path.clone(), self.files.len());
             self.files.push(path);
         }
@@ -131,16 +127,24 @@ impl EntryContainer {
     fn push_directory(&mut self, dir: PathBuf) {
         through!([expanded = expand(dir, <u8>::max_value())] {
             for file in expanded {
-                self.push(file);
+                self.push_file(&file);
             }
         });
+    }
+
+    fn is_duplicated(&self, path: &PathBuf) -> bool {
+        self.file_indices.contains_key(path)
     }
 
     fn is_valid_image(&self, path: &PathBuf) -> bool {
         let opt = &self.options;
 
-        if self.file_indices.contains_key(path) {
-            return false;
+        if let Some(extension) = path.extension() {
+            let extension: &str = &extension.to_str().unwrap().to_lowercase();
+            match extension {
+                "jpeg" | "jpg" | "png" | "gif" => (),
+                _ => return false
+            }
         }
 
         if opt.min_width.is_none() && opt.min_height.is_none() {
@@ -157,6 +161,7 @@ impl EntryContainer {
             false
         }
     }
+
 }
 
 
@@ -169,7 +174,15 @@ impl fmt::Display for EntryContainer {
     }
 }
 
+fn n_parents(path: PathBuf, n: u8) -> PathBuf {
+    if n > 0 {
+        if let Some(parent) = path.clone().parent() {
+            return n_parents(parent.to_path_buf(), n - 1);
+        }
+    }
 
+    path
+}
 
 fn expand(dir: PathBuf, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
     let mut result = vec![];
@@ -178,7 +191,7 @@ fn expand(dir: PathBuf, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
         for entry in dir {
             through!([entry = entry] {
                 let path = entry.path();
-                if path.is_file() && is_image(&path) {
+                if path.is_file() {
                     result.push(path)
                 } else if recursive > 0 && path.is_dir() {
                     through!([expanded = expand(path, recursive - 1)] {
@@ -190,22 +203,4 @@ fn expand(dir: PathBuf, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
     });
 
     Ok(result)
-}
-
-fn is_image(path: &PathBuf) -> bool {
-    let image_extensions: Vec<&str> = vec!["jpeg", "jpg", "png", "gif"];
-    path.extension().map(|extension| {
-        let extension: &str = &extension.to_str().unwrap().to_lowercase();
-        image_extensions.contains(&extension)
-    }).unwrap_or(false)
-}
-
-fn n_parents(path: PathBuf, n: u8) -> PathBuf {
-    if n > 0 {
-        if let Some(parent) = path.clone().parent() {
-            return n_parents(parent.to_path_buf(), n - 1);
-        }
-    }
-
-    path
 }

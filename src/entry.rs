@@ -118,11 +118,14 @@ impl EntryContainer {
         self.files.clear();
         self.files.extend_from_slice(buffer);
         self.reset_indices();
+
         if fix_current {
             if let Some(current_file) = current_file {
                 self.set_current(current_file);
+                return
             }
         }
+        self.pointer.first(1);
     }
 
     pub fn sort(&mut self) {

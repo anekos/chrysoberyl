@@ -23,7 +23,7 @@ pub fn on_key_press(tx: Sender<Operation>, key: KeyData) -> Inhibit {
         "q" => Some(Exit),
         "r" => Some(Refresh),
         "i" => Some(Toggle(opt::ShowText)),
-        "z" => Some(Shuffle),
+        "z" => Some(Shuffle(false)),
         "Z" | "s" => Some(Sort),
         _ => if 48 <= keyval && keyval <= 57 {
             Some(Count((keyval - 48) as u8))

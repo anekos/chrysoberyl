@@ -22,7 +22,7 @@ pub enum Operation {
     Toggle(AppOptionName),
     Expand(Option<PathBuf>),
     ExpandRecursive(Option<PathBuf>),
-    Shuffle,
+    Shuffle(bool), /* Fix current */
     Sort,
     Exit
 }

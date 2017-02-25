@@ -69,7 +69,7 @@ impl App {
         }
 
         if shuffle {
-            tx.send(Operation::Shuffle).unwrap();
+            tx.send(Operation::Shuffle(true)).unwrap();
         }
 
         for fragile in fragiles.clone() {
@@ -115,8 +115,8 @@ impl App {
                     self.entries.expand(base.clone(), 1, count as u8);
                     changed = self.options.show_text;
                 }
-                Shuffle => {
-                    self.entries.shuffle();
+                Shuffle(fix_current) => {
+                    self.entries.shuffle(fix_current);
                     changed = true;
                 }
                 Sort => {
@@ -217,8 +217,7 @@ impl App {
     }
 
     fn on_push_file(&mut self, file: PathBuf) -> bool {
-        self.entries.push(file);
-        self.entries.len() == 1 && self.entries.pointer.first(1)
+        self.entries.push(file)
     }
 
     fn on_push_url(&mut self, url: String) {

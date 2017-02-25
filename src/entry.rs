@@ -42,13 +42,14 @@ impl EntryContainer {
         self.files.len()
     }
 
-    pub fn push(&mut self, file: PathBuf) {
+    pub fn push(&mut self, file: PathBuf) -> bool {
         if file.is_dir() {
-            self.push_directory(file);
+            self.push_directory(file)
         } else if file.is_file() {
-            self.push_file(&file);
+            self.push_file(&file)
         } else {
             output::error(format!("Invalid path: {:?}", file));
+            false
         }
     }
 
@@ -109,13 +110,19 @@ impl EntryContainer {
         }
     }
 
-    pub fn shuffle(&mut self) {
+    pub fn shuffle(&mut self, fix_current: bool) {
+        let current_file = self.current_file();
         let mut source = self.files.clone();
         let mut buffer = source.as_mut_slice();
         self.rng.shuffle(&mut buffer);
         self.files.clear();
         self.files.extend_from_slice(buffer);
         self.reset_indices();
+        if fix_current {
+            if let Some(current_file) = current_file {
+                self.set_current(current_file);
+            }
+        }
     }
 
     pub fn sort(&mut self) {
@@ -140,21 +147,28 @@ impl EntryContainer {
         }
     }
 
-    fn push_file(&mut self, file: &PathBuf) {
+    fn push_file(&mut self, file: &PathBuf) -> bool {
         let path = Rc::new(file.canonicalize().expect("canonicalize"));
 
         if self.is_valid_image(&path) && !self.is_duplicated(file) {
             self.file_indices.insert(path.clone(), self.files.len());
             self.files.push(path);
+            self.files.len() == 1 && self.pointer.first(1)
+        } else {
+            false
         }
     }
 
-    fn push_directory(&mut self, dir: PathBuf) {
+    fn push_directory(&mut self, dir: PathBuf) -> bool {
+        let len = self.files.len();
+
         through!([expanded = expand(dir, <u8>::max_value())] {
             for file in expanded {
                 self.push_file(&file);
             }
         });
+
+        len == 0 && self.pointer.first(1)
     }
 
     fn is_duplicated(&self, path: &PathBuf) -> bool {

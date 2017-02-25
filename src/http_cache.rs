@@ -3,45 +3,68 @@ use std::env::home_dir;
 use std::fs::{File, create_dir_all};
 use std::path::PathBuf;
 use std::io::{BufWriter, Write, Read};
+use std::sync::mpsc::{channel, Sender};
+use std::thread::spawn;
 use hyper::client::Client;
 use hyper::client::response::Response;
-use hyper::Error;
 use hyper::net::HttpsConnector;
 use hyper_native_tls::NativeTlsClient;
 use url::Url;
 
 use output;
+use operation::Operation;
 
 
 #[derive(Clone)]
 pub struct HttpCache {
+    app_tx: Sender<Operation>,
+    main_tx: Sender<(String, PathBuf)>
 }
 
 impl HttpCache {
-    pub fn new() -> HttpCache {
-        HttpCache { }
+    pub fn new(app_tx: Sender<Operation>) -> HttpCache {
+        let main_tx = main(app_tx.clone());
+        HttpCache { app_tx: app_tx, main_tx: main_tx }
     }
 
-    pub fn get(&mut self, url: String) -> Result<PathBuf, Error> {
+    pub fn fetch(&mut self, url: String) {
         let filepath = generate_temporary_filename(&url);
 
         if filepath.exists() {
-            return Ok(filepath)
+            self.app_tx.send(Operation::PushFile(filepath)).unwrap();
+        } else {
+            self.main_tx.send((url, filepath)).unwrap();
         }
 
-        output::puts1("HTTPGet", &url);
-
-        let ssl = NativeTlsClient::new().unwrap();
-        let connector = HttpsConnector::new(ssl);
-        let client = Client::with_connector(connector);
-
-        client.get(&url).send().map(|response| {
-            write_to_file(&filepath, response);
-            filepath
-        })
     }
 }
 
+
+fn main(app_tx: Sender<Operation>) -> Sender<(String, PathBuf)> {
+    let (tx, rx) = channel();
+
+    let ssl = NativeTlsClient::new().unwrap();
+    let connector = HttpsConnector::new(ssl);
+    let client = Client::with_connector(connector);
+
+    spawn(move || {
+        while let Ok((url, filepath)) = rx.recv() {
+            output::puts1("HTTPGet", &url);
+
+            match client.get(&url).send() {
+                Ok(response) => {
+                    write_to_file(&filepath, response);
+                    app_tx.send(Operation::PushFile(filepath)).unwrap();
+                }
+                Err(err) => {
+                    output::error(err);
+                }
+            }
+        }
+    });
+
+    tx
+}
 
 fn write_to_file(filepath: &PathBuf, mut response: Response) {
     let mut writer = BufWriter::new(File::create(filepath).unwrap());

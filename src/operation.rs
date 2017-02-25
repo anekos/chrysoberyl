@@ -23,6 +23,7 @@ pub enum Operation {
     Expand,
     ExpandRecursive,
     Shuffle,
+    Sort,
     Exit
 }
 

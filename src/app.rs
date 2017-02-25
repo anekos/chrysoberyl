@@ -1,7 +1,6 @@
 
 use std::fs::remove_file;
 use std::sync::mpsc::{channel, Sender, Receiver};
-use std::thread::spawn;
 use std::path::{Path, PathBuf};
 use std::process::exit;
 use ctrlc;
@@ -28,6 +27,7 @@ pub struct App {
     image: Image,
     fragiles: Vec<String>,
     previous_len: usize,
+    http_cache: HttpCache,
     pub tx: Sender<Operation>,
     pub options: AppOptions
 }
@@ -43,6 +43,7 @@ impl App {
             window: window,
             image: image,
             tx: tx.clone(),
+            http_cache: HttpCache::new(tx.clone()),
             previous_len: 0,
             fragiles: fragiles.clone(),
             options: options
@@ -100,6 +101,10 @@ impl App {
                 }
                 Shuffle => {
                     self.entries.shuffle();
+                    changed = true;
+                }
+                Sort => {
+                    self.entries.sort();
                     changed = true;
                 }
                 Exit => self.on_exit(),
@@ -205,15 +210,8 @@ impl App {
         self.entries.push(file);
     }
 
-    fn on_push_url(&self, url: String) {
-        let mut http_cache = HttpCache::new();
-        let tx = self.tx.clone();
-        spawn(move || {
-            match http_cache.get(url) {
-                Ok(file) => tx.send(Operation::PushFile(file)).unwrap(),
-                Err(err) => output::error(err)
-            }
-        });
+    fn on_push_url(&mut self, url: String) {
+        self.http_cache.fetch(url);
     }
 
     fn on_exit(&self) {

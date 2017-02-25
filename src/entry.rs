@@ -102,6 +102,15 @@ impl EntryContainer {
         self.reset_indices();
     }
 
+    pub fn sort(&mut self) {
+        let current_file = self.current_file();
+        self.files.sort();
+        self.reset_indices();
+        if let Some(current_file) = current_file {
+            self.set_current(current_file);
+        }
+    }
+
     fn reset_indices(&mut self) {
         self.file_indices.clear();
         for (index, file) in self.files.iter().enumerate() {

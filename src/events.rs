@@ -14,8 +14,8 @@ pub fn on_key_press(tx: Sender<Operation>, key: KeyData) -> Inhibit {
 
     let keyval = key.code;
     if let Some(operation) = match key.text().as_str() {
-        "e" => Some(Expand),
-        "E" => Some(ExpandRecursive),
+        "e" => Some(Expand(None)),
+        "E" => Some(ExpandRecursive(None)),
         "f" | "h" => Some(First),
         "j" => Some(Next),
         "k" => Some(Previous),

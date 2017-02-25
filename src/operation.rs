@@ -20,8 +20,8 @@ pub enum Operation {
     Key(KeyData),
     Count(u8),
     Toggle(AppOptionName),
-    Expand,
-    ExpandRecursive,
+    Expand(Option<PathBuf>),
+    ExpandRecursive(Option<PathBuf>),
     Shuffle,
     Sort,
     Exit

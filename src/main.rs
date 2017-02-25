@@ -36,15 +36,12 @@ use argparse::{ArgumentParser, List, Collect, StoreTrue, StoreOption};
 use std::thread::{sleep};
 use std::time::Duration;
 
-use operation::Operation;
 use entry::EntryContainerOptions;
 use key::KeyData;
 
 
 
 fn main() {
-    use Operation::*;
-
     env_logger::init().unwrap();
 
     unsafe {
@@ -81,6 +78,9 @@ fn main() {
 
     let (mut app, rx) = app::App::new(
         EntryContainerOptions { min_width: min_width, min_height: min_height },
+        expand,
+        expand_recursive,
+        shuffle,
         files,
         fragiles.clone(),
         window.clone(),
@@ -100,14 +100,6 @@ fn main() {
     controller::run_stdin_controller(tx.clone());
 
     window.show_all();
-
-    app.operate(&First);
-    if expand_recursive {
-        app.operate(&ExpandRecursive);
-    } else if expand {
-        app.operate(&Expand);
-    }
-    if shuffle { app.operate_multi(&[Shuffle, First]); }
 
     loop {
         while gtk::events_pending() {

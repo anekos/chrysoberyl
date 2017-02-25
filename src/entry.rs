@@ -64,32 +64,48 @@ impl EntryContainer {
         self.current().map(|(file, _)| file)
     }
 
-    pub fn expand(&mut self, n: u8, recursive: u8) {
-        let result = self.current().and_then(|(file, index)| {
-            let dir = n_parents(file.clone(), n);
-            expand(dir.to_path_buf(), recursive).ok().and_then(|middle| {
-                let mut middle: Vec<Rc<PathBuf>> = middle.into_iter().filter(|path| {
-                    (*path == file || !self.is_duplicated(path)) && self.is_valid_image(path)
-                }).map(|path| Rc::new(path)).collect();
+    pub fn expand(&mut self, dir: Option<PathBuf>, n: u8, recursive: u8) {
+        let result =
+            if let Some((file, index)) = self.current() {
+                let dir = n_parents(file.clone(), n);
+                expand(dir.to_path_buf(), recursive).ok().and_then(|middle| {
+                    let mut middle: Vec<Rc<PathBuf>> = middle.into_iter().filter(|path| {
+                        (*path == file || !self.is_duplicated(path)) && self.is_valid_image(path)
+                    }).map(|path| Rc::new(path)).collect();
 
-                middle.sort();
+                    middle.sort();
 
-                let (left, right) = self.files.split_at(index);
+                    let (left, right) = self.files.split_at(index);
 
-                let mut result = vec![];
-                result.extend_from_slice(left);
-                result.extend_from_slice(middle.as_slice());
-                result.extend_from_slice(&right[1..]);
+                    let mut result = vec![];
+                    result.extend_from_slice(left);
+                    result.extend_from_slice(middle.as_slice());
+                    result.extend_from_slice(&right[1..]);
 
-                Some((result, file))
-            })
-        });
+                    Some((result, Some(file)))
+                })
+            } else if let Some(dir) = dir {
+                let dir = n_parents(dir, n - 1);
+                expand(dir.to_path_buf(), recursive).ok().map(|files| {
+                    let mut result = self.files.clone();
+                    let mut tail: Vec<Rc<PathBuf>> = files.into_iter().map(|it| Rc::new(it.to_path_buf())).collect();
+                    tail.sort();
+                    result.extend_from_slice(tail.as_slice());
+                    (result, None)
+                })
+            } else {
+                None
+            };
 
         if let Some((expanded, file)) = result {
             self.files.clear();
             self.files.extend_from_slice(expanded.as_slice());
             self.reset_indices();
-            self.set_current(file);
+            if let Some(file) = file {
+                self.set_current(file);
+            } else  {
+                self.pointer.first(1);
+            }
         }
     }
 

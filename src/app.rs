@@ -33,7 +33,7 @@ pub struct App {
 
 
 impl App {
-    pub fn new(entry_options:EntryContainerOptions, files: Vec<String>, fragiles: Vec<String>, window: Window, image: Image) -> (App, Receiver<Operation>) {
+    pub fn new(entry_options:EntryContainerOptions, expand: bool, expand_recursive: bool, shuffle: bool, files: Vec<String>, fragiles: Vec<String>, window: Window, image: Image) -> (App, Receiver<Operation>) {
         let (tx, rx) = channel();
         let options = AppOptions::new();
 
@@ -47,8 +47,29 @@ impl App {
             options: options
         };
 
-        for file in files {
-           app.on_push(file);
+        for file in files.iter() {
+           app.on_push(file.clone());
+        }
+
+        {
+            let mut expand_base = None;
+
+            if app.entries.len() == 0 {
+                if let Some(file) = files.get(0) {
+                    expand_base = Path::new(file).to_path_buf().parent().map(|it| it.to_path_buf());
+                    println!("base: {:?}", expand_base);
+                }
+            }
+
+            if expand {
+                tx.send(Operation::Expand(expand_base)).unwrap();
+            } else if expand_recursive {
+                tx.send(Operation::ExpandRecursive(expand_base)).unwrap();
+            }
+        }
+
+        if shuffle {
+            tx.send(Operation::Shuffle).unwrap();
         }
 
         for fragile in fragiles.clone() {
@@ -84,14 +105,14 @@ impl App {
                     changed = true;
                 }
                 Count(value) => self.entries.pointer.push_counting_number(value),
-                Expand => {
+                Expand(ref base) => {
                     let count = self.entries.pointer.counted();
-                    self.entries.expand(count as u8, count as u8- 1);
+                    self.entries.expand(base.clone(), count as u8, count as u8- 1);
                     changed = self.options.show_text;
                 }
-                ExpandRecursive => {
+                ExpandRecursive(ref base) => {
                     let count = self.entries.pointer.counted();
-                    self.entries.expand(1, count as u8);
+                    self.entries.expand(base.clone(), 1, count as u8);
                     changed = self.options.show_text;
                 }
                 Shuffle => {
@@ -118,11 +139,11 @@ impl App {
         }
     }
 
-    pub fn operate_multi(&mut self, operations: &[Operation]) {
-        for op in operations {
-            self.operate(op);
-        }
-    }
+    // pub fn operate_multi(&mut self, operations: &[Operation]) {
+    //     for op in operations {
+    //         self.operate(op);
+    //     }
+    // }
 
     fn show_image(&self, path: PathBuf, text: Option<&str>) {
         let (width, height) = self.window.get_size();

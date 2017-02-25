@@ -120,12 +120,6 @@ impl App {
                     file.clone(),
                     if self.options.show_text { Some(text) } else { None });
             }
-        } else {
-            let len = self.entries.len();
-            if self.previous_len == 0 && len > 0 {
-                self.entries.pointer.first(len);
-            }
-            self.previous_len = len;
         }
     }
 
@@ -208,6 +202,12 @@ impl App {
 
     fn on_push_file(&mut self, file: PathBuf) {
         self.entries.push(file);
+
+        let len = self.entries.len();
+        if self.previous_len == 0 && len > 0 {
+            self.entries.pointer.first(len);
+        }
+        self.previous_len = len;
     }
 
     fn on_push_url(&mut self, url: String) {

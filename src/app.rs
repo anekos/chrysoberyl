@@ -100,6 +100,7 @@ impl App {
                 PushFile(ref file) => changed= self.on_push_file(file.clone()) || self.options.show_text,
                 PushURL(ref url) => self.on_push_url(url.clone()),
                 Key(ref key) => self.on_key(key),
+                Button(ref button) => self.on_button(button),
                 Toggle(AppOptionName::ShowText) => {
                     self.options.show_text = !self.options.show_text;
                     changed = true;
@@ -230,6 +231,15 @@ impl App {
 
     fn on_key(&self, key: &KeyData) {
         print!("Key\t{}", key.text());
+        self.print_with_current();
+    }
+
+    fn on_button(&self, button: &u32) {
+        print!("Button\t{}", button);
+        self.print_with_current();
+    }
+
+    fn print_with_current(&self) {
         if let Some(file) = self.entries.current_file() {
             println!("\t{}", file.to_str().unwrap());
         } else {

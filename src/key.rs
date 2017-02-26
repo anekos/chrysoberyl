@@ -10,6 +10,7 @@ pub struct KeyData {
     pub alt: bool
 }
 
+
 impl KeyData {
     pub fn new(key: &gdk::EventKey) -> KeyData{
         KeyData {

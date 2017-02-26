@@ -18,6 +18,7 @@ pub enum Operation {
     PushFile(PathBuf),
     PushURL(String),
     Key(KeyData),
+    Button(u32),
     Count(u8),
     Toggle(AppOptionName),
     Expand(Option<PathBuf>),

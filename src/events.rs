@@ -1,6 +1,7 @@
 
-use gtk::{Inhibit, main_quit};
 use std::sync::mpsc::Sender;
+use gtk::{Inhibit, main_quit};
+use gdk::EventButton;
 
 use operation::Operation;
 use key::KeyData;
@@ -35,6 +36,12 @@ pub fn on_key_press(tx: Sender<Operation>, key: KeyData) -> Inhibit {
     }
 
     Inhibit(false)
+}
+
+pub fn on_button_press(tx: Sender<Operation>, button: &EventButton) -> Inhibit {
+    // println!("{:?}", button.get_event_type());
+    tx.send(Operation::Button(button.get_button())).unwrap();
+    Inhibit(true)
 }
 
 pub fn on_configure(tx: Sender<Operation>) -> bool {

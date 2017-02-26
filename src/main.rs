@@ -90,6 +90,7 @@ fn main() {
 
     window.connect_key_press_event(clone_army!([tx] move |_, key| events::on_key_press(tx.clone(), KeyData::new(key))));
     window.connect_configure_event(clone_army!([tx] move |_, _| events::on_configure(tx.clone())));
+    window.connect_button_press_event(clone_army!([tx] move |_, button| events::on_button_press(tx.clone(), button)));
 
     for path in inputs {
         controller::run_file_controller(tx.clone(), path);

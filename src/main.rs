@@ -32,7 +32,7 @@ mod key;
 
 use gtk::prelude::*;
 use gtk::{Image, Window};
-use argparse::{ArgumentParser, List, Collect, StoreTrue, StoreOption};
+use argparse::{ArgumentParser, List, Collect, Store, StoreTrue, StoreOption};
 use std::thread::{sleep};
 use std::time::Duration;
 
@@ -56,6 +56,7 @@ fn main() {
     let mut min_width: Option<u32> = None;
     let mut min_height: Option<u32> = None;
     let mut shuffle: bool = false;
+    let mut max_http_threads: u8 = 3;
 
     {
         let mut ap = ArgumentParser::new();
@@ -69,6 +70,7 @@ fn main() {
         ap.refer(&mut shuffle).add_option(&["--shuffle", "-z"], StoreTrue, "Shuffle file list");
         ap.refer(&mut min_width).add_option(&["--min-width", "-W"], StoreOption, "Minimum width");
         ap.refer(&mut min_height).add_option(&["--min-height", "-H"], StoreOption, "Minimum height");
+        ap.refer(&mut max_http_threads).add_option(&["--max-http-threads", "-t"], Store, "Maximum number of HTTP Threads");
         ap.refer(&mut files).add_argument("images", List, "Image files or URLs");
 
         ap.parse_args_or_exit();
@@ -78,6 +80,7 @@ fn main() {
 
     let (mut app, rx) = app::App::new(
         EntryContainerOptions { min_width: min_width, min_height: min_height },
+        max_http_threads,
         expand,
         expand_recursive,
         shuffle,

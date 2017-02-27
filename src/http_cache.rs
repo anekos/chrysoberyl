@@ -33,7 +33,7 @@ struct Request {
 enum Getter {
     Get(Request),
     Done(usize, Request),
-    Fail(usize, String)
+    Fail(usize, String, Request)
 }
 
 
@@ -73,8 +73,6 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
         while let Ok(it) = main_rx.recv() {
             match it {
                 Get(request) => {
-                    output::puts1("HTTPGet", &request.url);
-
                     let mut min_index = 0;
                     let mut min_stack = <usize>::max_value();
                     for (index, stack) in stacks.iter().enumerate() {
@@ -86,18 +84,19 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
 
                     let mut stack = stacks.get_mut(min_index).unwrap();
                     *stack += 1;
+                    puts!("HTTP", "Get", min_index, &request.url);
                     threads[min_index].send(request).unwrap();
                 }
                 Done(index, request) => {
                     app_tx.send(Operation::PushFile(request.cache_filepath)).unwrap();
                     let mut stack = stacks.get_mut(index).unwrap();
                     *stack -= 1;
-                    output::puts1("HTTPDone", index);
+                    puts!("HTTP", "Done", index);
                 }
-                Fail(index, err) => {
+                Fail(index, err, request) => {
                     let mut stack = stacks.get_mut(index).unwrap();
                     *stack -= 1;
-                    output::puts1("HTTPFail", err);
+                    output::error(format!("HTTPFail\t{}\t{}", err, request.url));
                 }
             }
         }
@@ -114,15 +113,16 @@ fn getter_thread(id: usize, main_tx: Sender<Getter>) -> Sender<Request> {
     let client = Client::with_connector(connector);
 
     spawn(move || {
-        while let Ok(Request { url, cache_filepath }) = getter_rx.recv() {
+        while let Ok(request) = getter_rx.recv() {
+            let request: Request = request;
 
-            match client.get(&url).send() {
+            match client.get(&request.url).send() {
                 Ok(response) => {
-                    write_to_file(&cache_filepath, response);
-                    main_tx.send(Getter::Done(id, Request { url: url, cache_filepath: cache_filepath })).unwrap();
+                    write_to_file(&request.cache_filepath, response);
+                    main_tx.send(Getter::Done(id, request)).unwrap();
                 }
                 Err(err) => {
-                    main_tx.send(Getter::Fail(id, format!("{}", err))).unwrap();
+                    main_tx.send(Getter::Fail(id, format!("{}", err), request)).unwrap();
                 }
             }
         }

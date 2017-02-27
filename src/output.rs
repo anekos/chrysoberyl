@@ -9,6 +9,12 @@ pub fn error<T: Display>(message: T) {
 }
 
 
-pub fn puts1<T: Display>(action_name: &str, arg1: T) {
-    println!("{}\t{}", action_name, arg1);
+macro_rules! puts {
+    ( $name:expr $(,$arg:expr)* ) => {
+        {
+            print!("{}", $name);
+            $( print!("\t{}", $arg); )*
+            println!("");
+        }
+    }
 }

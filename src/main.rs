@@ -15,8 +15,8 @@ extern crate rand;
 extern crate env_logger;
 #[macro_use] extern crate log;
 
-#[macro_use]
-mod utils;
+#[macro_use] mod utils;
+#[macro_use] mod output;
 mod app;
 mod controller;
 mod entry;
@@ -24,7 +24,6 @@ mod events;
 mod fragile_input;
 mod http_cache;
 mod index_pointer;
-mod output;
 mod operation;
 mod options;
 mod path;
@@ -45,7 +44,7 @@ fn main() {
     env_logger::init().unwrap();
 
     unsafe {
-        output::puts1("PID", libc::getpid());
+        puts!("PID", libc::getpid());
     }
 
     let mut files: Vec<String> = vec![];

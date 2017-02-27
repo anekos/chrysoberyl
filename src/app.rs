@@ -33,7 +33,7 @@ pub struct App {
 
 
 impl App {
-    pub fn new(entry_options:EntryContainerOptions, expand: bool, expand_recursive: bool, shuffle: bool, files: Vec<String>, fragiles: Vec<String>, window: Window, image: Image) -> (App, Receiver<Operation>) {
+    pub fn new(entry_options:EntryContainerOptions, http_threads: u8, expand: bool, expand_recursive: bool, shuffle: bool, files: Vec<String>, fragiles: Vec<String>, window: Window, image: Image) -> (App, Receiver<Operation>) {
         let (tx, rx) = channel();
         let options = AppOptions::new();
 
@@ -42,7 +42,7 @@ impl App {
             window: window,
             image: image,
             tx: tx.clone(),
-            http_cache: HttpCache::new(tx.clone()),
+            http_cache: HttpCache::new(http_threads, tx.clone()),
             fragiles: fragiles.clone(),
             options: options
         };

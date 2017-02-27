@@ -14,8 +14,6 @@ use url::Url;
 use output;
 use operation::Operation;
 
-static THREADS: usize = 3;
-
 
 
 #[derive(Clone)]
@@ -40,8 +38,8 @@ enum Getter {
 
 
 impl HttpCache {
-    pub fn new(app_tx: Sender<Operation>) -> HttpCache {
-        let main_tx = getter_main(app_tx.clone());
+    pub fn new(max_threads: u8, app_tx: Sender<Operation>) -> HttpCache {
+        let main_tx = getter_main(max_threads, app_tx.clone());
         HttpCache { app_tx: app_tx, main_tx: main_tx }
     }
 
@@ -58,7 +56,7 @@ impl HttpCache {
 }
 
 
-fn getter_main(app_tx: Sender<Operation>) -> Sender<Getter> {
+fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
     let (main_tx, main_rx) = channel();
 
     spawn(clone_army!([main_tx] move || {
@@ -67,7 +65,7 @@ fn getter_main(app_tx: Sender<Operation>) -> Sender<Getter> {
         let mut stacks: Vec<usize> = vec![];
         let mut threads: Vec<Sender<Request>> = vec![];
 
-        for index in 0..THREADS {
+        for index in 0..max_threads as usize {
             stacks.push(0);
             threads.push(getter_thread(index, main_tx.clone()));
         }

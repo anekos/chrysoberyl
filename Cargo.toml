@@ -18,6 +18,7 @@ immeta = "*"
 rand = "*"
 log = "*"
 env_logger = "*"
+cmdline-parser = "*"
 
 [dependencies.gtk]
 version = "0.1.1"

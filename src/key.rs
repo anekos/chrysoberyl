@@ -2,7 +2,7 @@
 use gdk;
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct KeyData {
     pub code: u32,
     pub shift: bool,

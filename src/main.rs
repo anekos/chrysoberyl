@@ -14,6 +14,7 @@ extern crate rand;
 #[macro_use] extern crate closet;
 extern crate env_logger;
 #[macro_use] extern crate log;
+extern crate cmdline_parser;
 
 #[macro_use] mod utils;
 #[macro_use] mod output;

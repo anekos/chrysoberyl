@@ -17,3 +17,24 @@ macro_rules! through {
         }
     }
 }
+
+
+macro_rules! iter_let_inner {
+    ( $iter:ident => [] $body:expr ) => {
+        $body
+    };
+    ( $iter:ident => [$binding:ident $(,$bindings:ident)*] $body:expr ) => {
+        if let Some($binding) = $iter.next() {
+            iter_let_inner!($iter => [$($bindings),*] $body)
+        }
+    }
+}
+
+macro_rules! iter_let {
+    ( $source:expr => [$($bindings:ident),*] $body:expr) => {
+        {
+            let mut iter = $source.iter();
+            iter_let_inner!(iter => [$($bindings),*] $body)
+        }
+    }
+}

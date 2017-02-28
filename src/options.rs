@@ -6,7 +6,7 @@ pub struct AppOptions {
     pub show_text: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum AppOptionName {
     ShowText
 }

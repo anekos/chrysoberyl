@@ -24,6 +24,8 @@ pub struct EntryContainer {
 pub struct EntryContainerOptions {
     pub min_width: Option<u32>,
     pub min_height: Option<u32>,
+    pub max_width: Option<u32>,
+    pub max_height: Option<u32>,
 }
 
 
@@ -189,16 +191,18 @@ impl EntryContainer {
             }
         }
 
-        if opt.min_width.is_none() && opt.min_height.is_none() {
+        if !opt.needs_image_info() {
             return true;
         }
 
         debug!("&is_valid_image(&path): path = {:?}", path);
 
         if let Ok(img) = immeta::load_from_file(&path) {
-            let w = opt.min_width.map(|it| it < img.dimensions().width).unwrap_or(true);
-            let h = opt.min_height.map(|it| it < img.dimensions().height).unwrap_or(true);
-            w && h
+            let min_w = opt.min_width.map(|it| it <= img.dimensions().width).unwrap_or(true);
+            let min_h = opt.min_height.map(|it| it <= img.dimensions().height).unwrap_or(true);
+            let max_w = opt.max_width.map(|it| img.dimensions().width <= it).unwrap_or(true);
+            let max_h = opt.max_height.map(|it| img.dimensions().height <= it).unwrap_or(true);
+            min_w && min_h && max_w && max_h
         } else {
             false
         }
@@ -215,6 +219,18 @@ impl fmt::Display for EntryContainer {
         Ok(())
     }
 }
+
+
+impl EntryContainerOptions {
+    pub fn new() -> EntryContainerOptions {
+        EntryContainerOptions { min_width: None, min_height: None, max_width: None, max_height: None }
+    }
+
+    fn needs_image_info(&self) -> bool {
+        self.min_width.is_some() || self.min_height.is_some()
+    }
+}
+
 
 fn n_parents(path: PathBuf, n: u8) -> PathBuf {
     if n > 0 {

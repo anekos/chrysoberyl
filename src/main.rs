@@ -53,10 +53,9 @@ fn main() {
     let mut fragiles: Vec<String> = vec![];
     let mut expand: bool = false;
     let mut expand_recursive: bool = false;
-    let mut min_width: Option<u32> = None;
-    let mut min_height: Option<u32> = None;
     let mut shuffle: bool = false;
     let mut max_http_threads: u8 = 3;
+    let mut eco = EntryContainerOptions::new();
 
     {
         let mut ap = ArgumentParser::new();
@@ -68,8 +67,10 @@ fn main() {
         ap.refer(&mut expand).add_option(&["--expand", "-e"], StoreTrue, "`Expand` first file");
         ap.refer(&mut expand_recursive).add_option(&["--expand-recursive", "-E"], StoreTrue, "`Expand` first file");
         ap.refer(&mut shuffle).add_option(&["--shuffle", "-z"], StoreTrue, "Shuffle file list");
-        ap.refer(&mut min_width).add_option(&["--min-width", "-W"], StoreOption, "Minimum width");
-        ap.refer(&mut min_height).add_option(&["--min-height", "-H"], StoreOption, "Minimum height");
+        ap.refer(&mut eco.min_width).add_option(&["--min-width", "-w"], StoreOption, "Minimum width");
+        ap.refer(&mut eco.min_height).add_option(&["--min-height", "-h"], StoreOption, "Minimum height");
+        ap.refer(&mut eco.max_width).add_option(&["--max-width", "-W"], StoreOption, "Maximum width");
+        ap.refer(&mut eco.max_height).add_option(&["--max-height", "-H"], StoreOption, "Maximum height");
         ap.refer(&mut max_http_threads).add_option(&["--max-http-threads", "-t"], Store, "Maximum number of HTTP Threads");
         ap.refer(&mut files).add_argument("images", List, "Image files or URLs");
 
@@ -79,7 +80,7 @@ fn main() {
     let (window, image) = setup();
 
     let (mut app, rx) = app::App::new(
-        EntryContainerOptions { min_width: min_width, min_height: min_height },
+        eco,
         max_http_threads,
         expand,
         expand_recursive,
@@ -87,8 +88,7 @@ fn main() {
         files,
         fragiles.clone(),
         window.clone(),
-        image.clone()
-        );
+        image.clone());
     let tx = app.tx.clone();
 
     window.connect_key_press_event(clone_army!([tx] move |_, key| events::on_key_press(tx.clone(), KeyData::new(key))));

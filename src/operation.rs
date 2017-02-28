@@ -71,7 +71,7 @@ fn parse(s: &str) -> Operation {
         }
     }
 
-    PushFile(Path::new(s).to_owned())
+    Push(s.to_owned())
 }
 
 

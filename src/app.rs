@@ -133,9 +133,10 @@ impl App {
                 let len = self.entries.len();
                 let text = &format!("[{}/{}] {}", index + 1, len, path::to_string(&file));
                 self.window.set_title(text);
-                self.show_image(
-                    file.clone(),
-                    if self.options.show_text { Some(text) } else { None });
+                time!("show_image" => {
+                    let text: Option<&str> = if self.options.show_text { Some(&text) } else { None };
+                    self.show_image(file.clone(), text);
+                });
             }
         }
     }

@@ -73,7 +73,7 @@ impl EntryContainer {
                 let dir = n_parents(file.clone(), n);
                 expand(dir.to_path_buf(), recursive).ok().and_then(|middle| {
                     let mut middle: Vec<Rc<PathBuf>> = middle.into_iter().filter(|path| {
-                        (*path == file || !self.is_duplicated(path)) && self.is_valid_image(path)
+                        *path == file || (!self.is_duplicated(path) && self.is_valid_image(path))
                     }).map(|path| Rc::new(path)).collect();
 
                     middle.sort();
@@ -91,7 +91,9 @@ impl EntryContainer {
                 let dir = n_parents(dir, n - 1);
                 expand(dir.to_path_buf(), recursive).ok().map(|files| {
                     let mut result = self.files.clone();
-                    let mut tail: Vec<Rc<PathBuf>> = files.into_iter().map(|it| Rc::new(it.to_path_buf())).collect();
+                    let mut tail: Vec<Rc<PathBuf>> = files.into_iter().filter(|path| {
+                        !self.is_duplicated(path) && self.is_valid_image(path)
+                    }).map(|it| Rc::new(it.to_path_buf())).collect();
                     tail.sort();
                     result.extend_from_slice(tail.as_slice());
                     (result, None)
@@ -155,7 +157,7 @@ impl EntryContainer {
     fn push_file(&mut self, file: &PathBuf) -> bool {
         let path = Rc::new(file.canonicalize().expect("canonicalize"));
 
-        if self.is_valid_image(&path) && !self.is_duplicated(file) {
+        if self.is_valid_image(&path) && !self.is_duplicated(&path) {
             self.file_indices.insert(path.clone(), self.files.len());
             self.files.push(path);
             self.files.len() == 1 && self.pointer.first(1)
@@ -198,10 +200,13 @@ impl EntryContainer {
         debug!("&is_valid_image(&path): path = {:?}", path);
 
         if let Ok(img) = immeta::load_from_file(&path) {
-            let min_w = opt.min_width.map(|it| it <= img.dimensions().width).unwrap_or(true);
-            let min_h = opt.min_height.map(|it| it <= img.dimensions().height).unwrap_or(true);
-            let max_w = opt.max_width.map(|it| img.dimensions().width <= it).unwrap_or(true);
-            let max_h = opt.max_height.map(|it| img.dimensions().height <= it).unwrap_or(true);
+            let dim = img.dimensions();
+
+            let min_w = opt.min_width.map(|it| it <= dim.width).unwrap_or(true);
+            let min_h = opt.min_height.map(|it| it <= dim.height).unwrap_or(true);
+            let max_w = opt.max_width.map(|it| dim.width <= it).unwrap_or(true);
+            let max_h = opt.max_height.map(|it| dim.height <= it).unwrap_or(true);
+
             min_w && min_h && max_w && max_h
         } else {
             false
@@ -227,7 +232,7 @@ impl EntryContainerOptions {
     }
 
     fn needs_image_info(&self) -> bool {
-        self.min_width.is_some() || self.min_height.is_some()
+        self.min_width.is_some() || self.min_height.is_some() || self.max_width.is_some() || self.max_height.is_some()
     }
 }
 

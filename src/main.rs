@@ -89,6 +89,7 @@ fn main() {
         fragiles.clone(),
         window.clone(),
         image.clone());
+
     let tx = app.tx.clone();
 
     window.connect_key_press_event(clone_army!([tx] move |_, key| events::on_key_press(tx.clone(), KeyData::new(key))));

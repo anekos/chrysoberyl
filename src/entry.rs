@@ -9,6 +9,7 @@ use immeta;
 
 use index_pointer::IndexPointer;
 use output;
+use types::*;
 
 
 
@@ -22,10 +23,10 @@ pub struct EntryContainer {
 
 #[derive(Debug)]
 pub struct EntryContainerOptions {
-    pub min_width: Option<u32>,
-    pub min_height: Option<u32>,
-    pub max_width: Option<u32>,
-    pub max_height: Option<u32>,
+    pub min_width: Option<ImageSize>,
+    pub min_height: Option<ImageSize>,
+    pub max_width: Option<ImageSize>,
+    pub max_height: Option<ImageSize>,
 }
 
 

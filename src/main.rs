@@ -18,6 +18,7 @@ extern crate cmdline_parser;
 
 #[macro_use] mod utils;
 #[macro_use] mod output;
+mod types;
 mod app;
 mod controller;
 mod entry;
@@ -35,9 +36,12 @@ use gtk::{Image, Window};
 use argparse::{ArgumentParser, List, Collect, Store, StoreTrue, StoreOption};
 use std::thread::{sleep};
 use std::time::Duration;
+use std::sync::mpsc::Receiver;
 
 use entry::EntryContainerOptions;
 use key::KeyData;
+use types::*;
+use operation::Operation;
 
 
 
@@ -48,47 +52,9 @@ fn main() {
         puts!("PID", libc::getpid());
     }
 
-    let mut files: Vec<String> = vec![];
-    let mut inputs: Vec<String> = vec![];
-    let mut fragiles: Vec<String> = vec![];
-    let mut expand: bool = false;
-    let mut expand_recursive: bool = false;
-    let mut shuffle: bool = false;
-    let mut max_http_threads: u8 = 3;
-    let mut eco = EntryContainerOptions::new();
-
-    {
-        let mut ap = ArgumentParser::new();
-
-        ap.set_description("Controllable Image Viewer");
-
-        ap.refer(&mut inputs).add_option(&["--input", "-i"], Collect, "Controller files");
-        ap.refer(&mut fragiles).add_option(&["--fragile-input", "-f"], Collect, "Chrysoberyl makes the `fifo` file whth given path");
-        ap.refer(&mut expand).add_option(&["--expand", "-e"], StoreTrue, "`Expand` first file");
-        ap.refer(&mut expand_recursive).add_option(&["--expand-recursive", "-E"], StoreTrue, "`Expand` first file");
-        ap.refer(&mut shuffle).add_option(&["--shuffle", "-z"], StoreTrue, "Shuffle file list");
-        ap.refer(&mut eco.min_width).add_option(&["--min-width", "-w"], StoreOption, "Minimum width");
-        ap.refer(&mut eco.min_height).add_option(&["--min-height", "-h"], StoreOption, "Minimum height");
-        ap.refer(&mut eco.max_width).add_option(&["--max-width", "-W"], StoreOption, "Maximum width");
-        ap.refer(&mut eco.max_height).add_option(&["--max-height", "-H"], StoreOption, "Maximum height");
-        ap.refer(&mut max_http_threads).add_option(&["--max-http-threads", "-t"], Store, "Maximum number of HTTP Threads");
-        ap.refer(&mut files).add_argument("images", List, "Image files or URLs");
-
-        ap.parse_args_or_exit();
-    }
-
     let (window, image) = setup();
 
-    let (mut app, rx) = app::App::new(
-        eco,
-        max_http_threads,
-        expand,
-        expand_recursive,
-        shuffle,
-        files,
-        fragiles.clone(),
-        window.clone(),
-        image.clone());
+    let (mut app, rx, inputs, fragiles) = parse_arguments(&window, image);
 
     let tx = app.tx.clone();
 
@@ -134,4 +100,53 @@ fn setup() -> (Window, Image) {
     window.add(&image);
 
     (window, image)
+}
+
+
+fn parse_arguments(window: &Window, image: Image) -> (app::App, Receiver<Operation>, Vec<String>, Vec<String>) {
+    let mut files: Vec<String> = vec![];
+    let mut inputs: Vec<String> = vec![];
+    let mut fragiles: Vec<String> = vec![];
+    let mut expand: bool = false;
+    let mut expand_recursive: bool = false;
+    let mut shuffle: bool = false;
+    let mut max_http_threads: u8 = 3;
+    let mut eco = EntryContainerOptions::new();
+
+    {
+        let mut width: Option<ImageSize> = None;
+        let mut height: Option<ImageSize> = None;
+
+        {
+
+            let mut ap = ArgumentParser::new();
+
+            ap.set_description("Controllable Image Viewer");
+
+            ap.refer(&mut inputs).add_option(&["--input", "-i"], Collect, "Controller files");
+            ap.refer(&mut fragiles).add_option(&["--fragile-input", "-f"], Collect, "Chrysoberyl makes the `fifo` file whth given path");
+            ap.refer(&mut expand).add_option(&["--expand", "-e"], StoreTrue, "`Expand` first file");
+            ap.refer(&mut expand_recursive).add_option(&["--expand-recursive", "-E"], StoreTrue, "`Expand` first file");
+            ap.refer(&mut shuffle).add_option(&["--shuffle", "-z"], StoreTrue, "Shuffle file list");
+            ap.refer(&mut eco.min_width).add_option(&["--min-width", "-w"], StoreOption, "Minimum width");
+            ap.refer(&mut eco.min_height).add_option(&["--min-height", "-h"], StoreOption, "Minimum height");
+            ap.refer(&mut eco.max_width).add_option(&["--max-width", "-W"], StoreOption, "Maximum width");
+            ap.refer(&mut eco.max_height).add_option(&["--max-height", "-H"], StoreOption, "Maximum height");
+            ap.refer(&mut width).add_option(&["--width"], StoreOption, "Width");
+            ap.refer(&mut height).add_option(&["--height"], StoreOption, "Height");
+            ap.refer(&mut max_http_threads).add_option(&["--max-http-threads", "-t"], Store, "Maximum number of HTTP Threads");
+            ap.refer(&mut files).add_argument("images", List, "Image files or URLs");
+
+
+            ap.parse_args_or_exit();
+        }
+
+        if let Some(width) = width { eco.min_width = Some(width); eco.max_width = Some(width); }
+        if let Some(height) = height { eco.min_height = Some(height); eco.max_height = Some(height); }
+    }
+
+
+    let (app, rx) = app::App::new(eco, max_http_threads, expand, expand_recursive, shuffle, files, fragiles.clone(), window.clone(), image);
+
+    (app, rx, inputs, fragiles)
 }

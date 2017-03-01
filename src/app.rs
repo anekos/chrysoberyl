@@ -239,9 +239,9 @@ impl App {
 
     fn print_with_current<T: fmt::Display>(&self, base: &str, first: T) {
         if let Some(file) = self.entries.current_file() {
-            puts!("event" => base, "code" => first, "file" => file.to_str().unwrap());
+            puts!("event" => base, "name" => first, "file" => file.to_str().unwrap());
         } else {
-            puts!("event" => base, "code" => first);
+            puts!("event" => base, "name" => first);
         }
     }
 }

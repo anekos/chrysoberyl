@@ -124,7 +124,7 @@ fn parse_arguments(window: &Window, image: Image) -> (app::App, Receiver<Operati
             ap.set_description("Controllable Image Viewer");
 
             ap.refer(&mut inputs).add_option(&["--input", "-i"], Collect, "Controller files");
-            ap.refer(&mut fragiles).add_option(&["--fragile-input", "-f"], Collect, "Chrysoberyl makes the `fifo` file whth given path");
+            ap.refer(&mut fragiles).add_option(&["--fragile", "-f"], Collect, "Chrysoberyl makes `fifo` controller file");
             ap.refer(&mut expand).add_option(&["--expand", "-e"], StoreTrue, "`Expand` first file");
             ap.refer(&mut expand_recursive).add_option(&["--expand-recursive", "-E"], StoreTrue, "`Expand` first file");
             ap.refer(&mut shuffle).add_option(&["--shuffle", "-z"], StoreTrue, "Shuffle file list");

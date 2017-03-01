@@ -11,16 +11,14 @@ pub fn run_file_controller(tx: Sender<Operation>, filepath: String) {
     use std::io::{BufReader, BufRead};
 
     spawn(move || {
-        match File::open(&filepath) {
-            Ok(file) => {
-                let file = BufReader::new(file);
-                for line in file.lines() {
-                    let line = line.unwrap();
-                    tx.send(from_string(&line)).unwrap();
-                }
+        while let Ok(file) = File::open(&filepath) {
+            let file = BufReader::new(file);
+            for line in file.lines() {
+                let line = line.unwrap();
+                tx.send(from_string(&line)).unwrap();
             }
-            Err(err) => puts_error!("at" => "file_controller", "reason" => err)
         }
+        puts_error!("at" => "file_controller", "reason" => "Could not open file", "for" => filepath);
     });
 }
 

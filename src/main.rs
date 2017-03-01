@@ -15,6 +15,7 @@ extern crate rand;
 extern crate env_logger;
 #[macro_use] extern crate log;
 extern crate cmdline_parser;
+extern crate shell_escape;
 
 #[macro_use] mod utils;
 #[macro_use] mod output;
@@ -28,7 +29,6 @@ mod http_cache;
 mod index_pointer;
 mod operation;
 mod options;
-mod path;
 mod key;
 
 use gtk::prelude::*;
@@ -49,7 +49,7 @@ fn main() {
     env_logger::init().unwrap();
 
     unsafe {
-        puts!("PID", libc::getpid());
+        puts_event!("info", "pid" => libc::getpid());
     }
 
     let (window, image) = setup();

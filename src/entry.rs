@@ -8,7 +8,7 @@ use rand::{thread_rng, Rng, ThreadRng};
 use immeta;
 
 use index_pointer::IndexPointer;
-use output;
+use utils::path_to_str;
 use types::*;
 
 
@@ -51,7 +51,7 @@ impl EntryContainer {
         } else if file.is_file() {
             self.push_file(&file)
         } else {
-            output::error(format!("Invalid path: {:?}", file));
+            puts_error!("at" => "push", "reason" => "Invalid path", "for" => path_to_str(&file));
             false
         }
     }

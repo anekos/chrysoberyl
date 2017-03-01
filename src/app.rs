@@ -3,6 +3,7 @@ use std::fs::remove_file;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::path::{Path, PathBuf};
 use std::process::exit;
+use std::fmt;
 use ctrlc;
 use gtk::prelude::*;
 use gtk::{Image, Window};
@@ -14,10 +15,9 @@ use entry::{EntryContainer, EntryContainerOptions};
 use http_cache::HttpCache;
 use options::{AppOptions, AppOptionName};
 use operation::Operation;
-use output;
-use path;
 use fragile_input::new_fragile_input;
 use key::KeyData;
+use utils::path_to_str;
 
 
 
@@ -57,7 +57,6 @@ impl App {
             if app.entries.len() == 0 {
                 if let Some(file) = files.get(0) {
                     expand_base = Path::new(file).to_path_buf().parent().map(|it| it.to_path_buf());
-                    println!("base: {:?}", expand_base);
                 }
             }
 
@@ -131,7 +130,7 @@ impl App {
         if let Some((file, index)) = self.entries.current() {
             if changed {
                 let len = self.entries.len();
-                let text = &format!("[{}/{}] {}", index + 1, len, path::to_string(&file));
+                let text = &format!("[{}/{}] {}", index + 1, len, path_to_str(&file));
                 self.window.set_title(text);
                 time!("show_image" => {
                     let text: Option<&str> = if self.options.show_text { Some(&text) } else { None };
@@ -155,7 +154,7 @@ impl App {
                 if gif.is_animated() {
                     match PixbufAnimation::new_from_file(&path.to_str().unwrap()) {
                         Ok(buf) => self.image.set_from_animation(&buf),
-                        Err(err) => output::error(err)
+                        Err(err) => puts_error!("at" => "show_image", "reason" => err)
                     }
                     return
                 }
@@ -206,7 +205,7 @@ impl App {
                     self.image.set_from_pixbuf(Some(&buf));
                 }
             }
-            Err(err) => output::error(err)
+            Err(err) => puts_error!("at" => "show_image", "reason" => err)
         }
     }
 
@@ -231,20 +230,18 @@ impl App {
     }
 
     fn on_key(&self, key: &KeyData) {
-        print!("Key\t{}", key.text());
-        self.print_with_current();
+        self.print_with_current("Key", key.text());
     }
 
     fn on_button(&self, button: &u32) {
-        print!("Button\t{}", button);
-        self.print_with_current();
+        self.print_with_current("Button", button);
     }
 
-    fn print_with_current(&self) {
+    fn print_with_current<T: fmt::Display>(&self, base: &str, first: T) {
         if let Some(file) = self.entries.current_file() {
-            println!("\t{}", file.to_str().unwrap());
+            puts!("event" => base, "code" => first, "file" => file.to_str().unwrap());
         } else {
-            println!("");
+            puts!("event" => base, "code" => first);
         }
     }
 }

@@ -39,7 +39,6 @@ pub fn on_key_press(tx: Sender<Operation>, key: KeyData) -> Inhibit {
 }
 
 pub fn on_button_press(tx: Sender<Operation>, button: &EventButton) -> Inhibit {
-    // println!("{:?}", button.get_event_type());
     tx.send(Operation::Button(button.get_button())).unwrap();
     Inhibit(true)
 }

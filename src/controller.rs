@@ -4,7 +4,6 @@ use std::sync::mpsc::Sender;
 use std::fs::File;
 
 use operation::Operation;
-use output;
 
 
 
@@ -20,7 +19,7 @@ pub fn run_file_controller(tx: Sender<Operation>, filepath: String) {
                     tx.send(from_string(&line)).unwrap();
                 }
             }
-            Err(err) => output::error(err)
+            Err(err) => puts_error!("at" => "file_controller", "reason" => err)
         }
     });
 }

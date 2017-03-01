@@ -11,7 +11,6 @@ use hyper::net::HttpsConnector;
 use hyper_native_tls::NativeTlsClient;
 use url::Url;
 
-use output;
 use operation::Operation;
 
 
@@ -84,19 +83,19 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
 
                     let mut stack = stacks.get_mut(min_index).unwrap();
                     *stack += 1;
-                    puts!("HTTP", "Get", min_index, &request.url);
+                    puts!("event" => "HTTP", "state" => "get", "thread_id" => min_index, "url" => &request.url);
                     threads[min_index].send(request).unwrap();
                 }
                 Done(index, request) => {
                     app_tx.send(Operation::PushFile(request.cache_filepath)).unwrap();
                     let mut stack = stacks.get_mut(index).unwrap();
                     *stack -= 1;
-                    puts!("HTTP", "Done", index);
+                    puts!("event" => "HTTP", "state" => "done", "thread_id" => index);
                 }
                 Fail(index, err, request) => {
                     let mut stack = stacks.get_mut(index).unwrap();
                     *stack -= 1;
-                    output::error(format!("HTTPFail\t{}\t{}", err, request.url));
+                    puts_error!("at" => "HTTP/Get", "reason" => err, "url" => request.url);
                 }
             }
         }

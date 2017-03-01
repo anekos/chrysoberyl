@@ -1,6 +1,12 @@
 
 use std::time::Duration;
+use std::path::PathBuf;
 
+
+
+pub fn path_to_str(path: &PathBuf) -> &str {
+    path.to_str().unwrap()
+}
 
 
 macro_rules! through {
@@ -11,11 +17,9 @@ macro_rules! through {
     };
     ( [$name:ident = $e:expr $(,$rest_n:ident = $rest_e:expr)*] $body:expr )  => {
         {
-            use output;
-
             match $e {
                 Ok($name) => through!([$($rest_n = $rest_e),*] $body),
-                Err(err) => output::error(err)
+                Err(err) => puts_error!("reason" => err)
             }
         }
     }

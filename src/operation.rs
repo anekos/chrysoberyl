@@ -98,11 +98,11 @@ fn test_parse() {
     assert_eq!(parse("@expand /foo/bar.txt"), Expand(Some(pathbuf("/foo/bar.txt"))));
     assert_eq!(parse("@expand"), Expand(None));
     assert_eq!(parse("@expandrecursive /foo/bar.txt"), ExpandRecursive(Some(pathbuf("/foo/bar.txt"))));
-    assert_eq!(parse("expandrecursive"), ExpandRecursive(None));
+    assert_eq!(parse("@expandrecursive"), ExpandRecursive(None));
 
     // Invalid commands be PushFile
-    assert_eq!(parse("Meow Meow"), PushFile(pathbuf("Meow Meow")));
-    assert_eq!(parse("expand /foo/bar.txt"), PushFile(pathbuf("expand /foo/bar.txt")));
+    assert_eq!(parse("Meow Meow"), Push("Meow Meow".to_owned()));
+    assert_eq!(parse("expand /foo/bar.txt"), Push("expand /foo/bar.txt".to_owned()));
 
     // Shell quotes
     assert_eq!(

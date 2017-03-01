@@ -66,7 +66,7 @@ fn main() {
         controller::run_file_controller(tx.clone(), path);
     }
     for path in fragiles {
-        controller::run_file_controller(tx.clone(), path);
+        controller::run_fifo_controller(tx.clone(), path);
     }
     controller::run_stdin_controller(tx.clone());
 

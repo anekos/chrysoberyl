@@ -7,18 +7,38 @@ use operation::Operation;
 
 
 
-pub fn run_file_controller(tx: Sender<Operation>, filepath: String) {
+pub fn run_fifo_controller(tx: Sender<Operation>, filepath: String) {
     use std::io::{BufReader, BufRead};
 
     spawn(move || {
         while let Ok(file) = File::open(&filepath) {
+            puts_event!("fifo_controller", "state" => "open");
             let file = BufReader::new(file);
             for line in file.lines() {
                 let line = line.unwrap();
                 tx.send(from_string(&line)).unwrap();
             }
+            puts_event!("fifo_controller", "state" => "close");
         }
         puts_error!("at" => "file_controller", "reason" => "Could not open file", "for" => filepath);
+    });
+}
+
+pub fn run_file_controller(tx: Sender<Operation>, filepath: String) {
+    use std::io::{BufReader, BufRead};
+
+    spawn(move || {
+        if let Ok(file) = File::open(&filepath) {
+            puts_event!("file_controller", "state" => "open");
+            let file = BufReader::new(file);
+            for line in file.lines() {
+                let line = line.unwrap();
+                tx.send(from_string(&line)).unwrap();
+            }
+            puts_event!("file_controller", "state" => "close");
+        } else {
+            puts_error!("at" => "file_controller", "reason" => "Could not open file", "for" => filepath);
+        }
     });
 }
 

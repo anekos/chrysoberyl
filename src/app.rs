@@ -230,11 +230,11 @@ impl App {
     }
 
     fn on_key(&self, key: &KeyData) {
-        self.print_with_current("Key", key.text());
+        self.print_with_current("key", key.text());
     }
 
     fn on_button(&self, button: &u32) {
-        self.print_with_current("Button", button);
+        self.print_with_current("button", button);
     }
 
     fn print_with_current<T: fmt::Display>(&self, base: &str, first: T) {

@@ -16,7 +16,7 @@ macro_rules! puts_inner {
     ( $name:expr => $value:expr $(,$tname:expr => $tvalue:expr)* ) => {
         {
             let value = Cow::from(format!("{}", $value));
-            print!("{}={}", $name, escape(value));
+            print!(":; {}={}", $name, escape(value));
             $(
                 let value = Cow::from(format!("{}", $tvalue));
                 print!(" {}={}", $tname, escape(value));

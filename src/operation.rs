@@ -25,6 +25,7 @@ pub enum Operation {
     Expand(Option<PathBuf>),
     ExpandRecursive(Option<PathBuf>),
     Shuffle(bool), /* Fix current */
+    PrintEntries,
     Sort,
     Exit
 }
@@ -64,6 +65,7 @@ fn parse(s: &str) -> Operation {
             "@last" | "@l"               => return Last,
             "@refresh" | "@r"            => return Refresh,
             "@shuffle"                   => return Shuffle(true),
+            "@entries"                   => return PrintEntries,
             "@sort"                      => return Sort,
             "@expand"                    => return Expand(args.get(0).map(|it| pathbuf(it))),
             "@expandrecursive"           => return ExpandRecursive(args.get(0).map(|it| pathbuf(it))),
@@ -86,6 +88,7 @@ fn test_parse() {
     assert_eq!(parse("@Prev"), Previous);
     assert_eq!(parse("@Last"), Last);
     assert_eq!(parse("@shuffle"), Shuffle(true));
+    assert_eq!(parse("@entries"), PrintEntries);
     assert_eq!(parse("@refresh"), Refresh);
     assert_eq!(parse("@sort"), Sort);
 

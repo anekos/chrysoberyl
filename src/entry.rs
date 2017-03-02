@@ -68,6 +68,10 @@ impl EntryContainer {
         self.current().map(|(file, _)| file)
     }
 
+    pub fn to_vec(&self) -> Vec<PathBuf> {
+        self.files.iter().map(|it: &Rc<PathBuf>| (**it).to_path_buf()).collect()
+    }
+
     pub fn expand(&mut self, dir: Option<PathBuf>, n: u8, recursive: u8) {
         let result =
             if let Some((file, index)) = self.current() {
@@ -213,7 +217,6 @@ impl EntryContainer {
             false
         }
     }
-
 }
 
 

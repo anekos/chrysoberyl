@@ -123,6 +123,12 @@ impl App {
                     self.entries.sort();
                     changed = true;
                 }
+                PrintEntries => {
+                    use std::io::{Write, stderr};
+                    for entry in self.entries.to_vec() {
+                        writeln!(&mut stderr(), "{}", path_to_str(&entry)).unwrap();
+                    }
+                }
                 Exit => self.on_exit(),
             }
         }

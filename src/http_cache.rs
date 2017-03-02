@@ -12,6 +12,7 @@ use hyper_native_tls::NativeTlsClient;
 use url::Url;
 
 use operation::Operation;
+use sorting_buffer::SortingBuffer;
 
 
 
@@ -23,6 +24,7 @@ pub struct HttpCache {
 
 #[derive(Clone)]
 struct Request {
+    serial: usize,
     url: String,
     cache_filepath: PathBuf
 }
@@ -30,7 +32,7 @@ struct Request {
 
 #[derive(Clone)]
 enum Getter {
-    Get(Request),
+    Queue(String, PathBuf),
     Done(usize, Request),
     Fail(usize, String, Request)
 }
@@ -48,9 +50,8 @@ impl HttpCache {
         if filepath.exists() {
             self.app_tx.send(Operation::PushFile(filepath)).unwrap();
         } else {
-            self.main_tx.send(Getter::Get(Request { url: url, cache_filepath: filepath })).unwrap();
+            self.main_tx.send(Getter::Queue(url, filepath)).unwrap();
         }
-
     }
 }
 
@@ -63,6 +64,8 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
 
         let mut stacks: Vec<usize> = vec![];
         let mut threads: Vec<Sender<Request>> = vec![];
+        let mut serial: usize = 0;
+        let mut buffer: SortingBuffer<Request> = SortingBuffer::new(serial);
 
         for index in 0..max_threads as usize {
             stacks.push(0);
@@ -71,7 +74,7 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
 
         while let Ok(it) = main_rx.recv() {
             match it {
-                Get(request) => {
+                Queue(url, cache_filepath) => {
                     let mut min_index = 0;
                     let mut min_stack = <usize>::max_value();
                     for (index, stack) in stacks.iter().enumerate() {
@@ -81,20 +84,32 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
                         }
                     }
 
+                    puts!("event" => "HTTP", "state" => "get", "thread_id" => min_index, "url" => &url);
+
                     let mut stack = stacks.get_mut(min_index).unwrap();
                     *stack += 1;
-                    puts!("event" => "HTTP", "state" => "get", "thread_id" => min_index, "url" => &request.url);
+
+                    let request = Request { serial: serial, url: url, cache_filepath: cache_filepath };
+                    serial += 1;
+
                     threads[min_index].send(request).unwrap();
                 }
                 Done(index, request) => {
-                    app_tx.send(Operation::PushFile(request.cache_filepath)).unwrap();
+                    puts!("event" => "HTTP", "state" => "done", "thread_id" => index);
+
                     let mut stack = stacks.get_mut(index).unwrap();
                     *stack -= 1;
-                    puts!("event" => "HTTP", "state" => "done", "thread_id" => index);
+
+                    buffer.push(request.serial, request);
+
+                    while let Some(request) = buffer.pull() {
+                        app_tx.send(Operation::PushFile(request.cache_filepath)).unwrap();
+                    }
                 }
                 Fail(index, err, request) => {
                     let mut stack = stacks.get_mut(index).unwrap();
                     *stack -= 1;
+                    buffer.skip(request.serial);
                     puts_error!("at" => "HTTP/Get", "reason" => err, "url" => request.url);
                 }
             }

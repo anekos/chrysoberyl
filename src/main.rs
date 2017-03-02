@@ -30,6 +30,7 @@ mod index_pointer;
 mod operation;
 mod options;
 mod key;
+mod sorting_buffer;
 
 use gtk::prelude::*;
 use gtk::{Image, Window};

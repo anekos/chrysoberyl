@@ -8,7 +8,7 @@ set -eC
 function chrysoberyl_filter_main () {
   while read -r line
   do
-    [[ $line =~ ^\;\;\ .* ]] || continue;
+    [[ $line =~ ^\:\;\ .* ]] || continue;
 
     if ! eval "$line"
     then

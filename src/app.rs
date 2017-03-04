@@ -33,9 +33,8 @@ pub struct App {
 
 
 impl App {
-    pub fn new(entry_options:EntryContainerOptions, http_threads: u8, expand: bool, expand_recursive: bool, shuffle: bool, files: Vec<String>, fragiles: Vec<String>, window: Window, image: Image) -> (App, Receiver<Operation>) {
+    pub fn new(entry_options:EntryContainerOptions, http_threads: u8, expand: bool, expand_recursive: bool, shuffle: bool, files: Vec<String>, fragiles: Vec<String>, window: Window, image: Image, options: AppOptions) -> (App, Receiver<Operation>) {
         let (tx, rx) = channel();
-        let options = AppOptions::new();
 
         let mut app = App {
             entries: EntryContainer::new(entry_options),

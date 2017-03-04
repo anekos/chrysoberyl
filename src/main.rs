@@ -42,6 +42,7 @@ use entry::EntryContainerOptions;
 use key::KeyData;
 use types::*;
 use operation::Operation;
+use options::AppOptions;
 
 
 
@@ -112,6 +113,7 @@ fn parse_arguments(window: &Window, image: Image) -> (app::App, Receiver<Operati
     let mut shuffle: bool = false;
     let mut max_http_threads: u8 = 3;
     let mut eco = EntryContainerOptions::new();
+    let mut app_options = AppOptions::new();
 
     {
         let mut width: Option<ImageSize> = None;
@@ -134,9 +136,9 @@ fn parse_arguments(window: &Window, image: Image) -> (app::App, Receiver<Operati
             ap.refer(&mut eco.max_height).add_option(&["--max-height", "-H"], StoreOption, "Maximum height");
             ap.refer(&mut width).add_option(&["--width"], StoreOption, "Width");
             ap.refer(&mut height).add_option(&["--height"], StoreOption, "Height");
+            ap.refer(&mut app_options.show_text).add_option(&["--show-info"], StoreTrue, "Show information bar on window bottom");
             ap.refer(&mut max_http_threads).add_option(&["--max-http-threads", "-t"], Store, "Maximum number of HTTP Threads");
             ap.refer(&mut files).add_argument("images", List, "Image files or URLs");
-
 
             ap.parse_args_or_exit();
         }
@@ -146,7 +148,7 @@ fn parse_arguments(window: &Window, image: Image) -> (app::App, Receiver<Operati
     }
 
 
-    let (app, rx) = app::App::new(eco, max_http_threads, expand, expand_recursive, shuffle, files, fragiles.clone(), window.clone(), image);
+    let (app, rx) = app::App::new(eco, max_http_threads, expand, expand_recursive, shuffle, files, fragiles.clone(), window.clone(), image, app_options);
 
     (app, rx, inputs, fragiles)
 }

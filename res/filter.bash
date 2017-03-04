@@ -5,6 +5,11 @@ set -C
 # set -x
 
 
+function has_command () {
+  type "key_$name" &> /dev/null
+}
+
+
 function chrysoberyl_filter_main () {
   while read -r line
   do
@@ -18,20 +23,18 @@ function chrysoberyl_filter_main () {
 
     case "$event" in
       key)
-        if type "key_$name" &> /dev/null && [ -n "$file" ]
+        if has_command "key_$name" && [ -n "$file" ]
         then
           "key_$name" "$file"
         fi
       ;;
       user)
-        if [ -n "$key" ]
+        if [ -n "$key" ] && has_command "key_$key"
         then
           "key_$key" "$file"
-          echo "key_$key" "$file"
-        elif [ -n "$function" ]
+        elif [ -n "$function" ] && has_command "user_$function"
         then
           "user_$function" "$file"
-          echo "user_$function" "$file"
         fi
       ;;
     esac

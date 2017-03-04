@@ -123,6 +123,7 @@ impl App {
                     self.entries.sort();
                     changed = true;
                 }
+                User(ref data) => self.on_user(data),
                 Exit => self.on_exit(),
             }
         }
@@ -230,18 +231,22 @@ impl App {
     }
 
     fn on_key(&self, key: &KeyData) {
-        self.print_with_current("key", key.text());
+        self.print_with_current("key", "name", key.text());
     }
 
     fn on_button(&self, button: &u32) {
-        self.print_with_current("button", button);
+        self.print_with_current("button", "name", button);
     }
 
-    fn print_with_current<T: fmt::Display>(&self, base: &str, first: T) {
+    fn on_user(&self, data: &str) {
+        self.print_with_current("user", "data", data);
+    }
+
+    fn print_with_current<T: fmt::Display>(&self, base: &str, key_name: &str, first: T) {
         if let Some(file) = self.entries.current_file() {
-            puts!("event" => base, "name" => first, "file" => file.to_str().unwrap());
+            puts!("event" => base, key_name => first, "file" => file.to_str().unwrap());
         } else {
-            puts!("event" => base, "name" => first);
+            puts!("event" => base, key_name => first);
         }
     }
 }

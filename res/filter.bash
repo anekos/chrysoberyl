@@ -23,6 +23,13 @@ function chrysoberyl_filter_main () {
           "key_$name" "$file"
         fi
         ;;
+      user)
+        if type "user_$data" &> /dev/null
+        then
+          "user_$data" "$file"
+        fi
+        ;;
+
     esac
 
     echo "$line"

@@ -25,6 +25,7 @@ pub enum Operation {
     Expand(Option<PathBuf>),
     ExpandRecursive(Option<PathBuf>),
     Shuffle(bool), /* Fix current */
+    User(String),
     Sort,
     Exit
 }
@@ -57,6 +58,9 @@ fn parse(s: &str) -> Operation {
             }),
             "@pushurl" => iter_let!(args => [path] {
                 return PushURL(path.to_owned())
+            }),
+            "@user" => iter_let!(args => [data] {
+                return User(data.to_owned())
             }),
             "@next" | "@n"               => return Next,
             "@prev" | "@p" | "@previous" => return Previous,

@@ -63,8 +63,13 @@ pub fn run_command_controller(tx: Sender<Operation>, command: String) {
     use std::io::{BufReader, BufRead};
 
     spawn(move || {
-        let child = Command::new(&command).stdout(Stdio::piped()).spawn().unwrap();
+        let child = Command::new(&command)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn().unwrap();
+
         puts_event!("command_controller", "state" => "open");
+
         if let Some(stdout) = child.stdout {
             for line in BufReader::new(stdout).lines() {
                 let line = line.unwrap();

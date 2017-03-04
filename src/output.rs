@@ -1,13 +1,28 @@
 
+use shell_escape::escape;
+use std::borrow::Cow;
+
+
+pub fn puts(data: &Vec<(String, String)>) {
+    for (index, pair) in data.iter().enumerate() {
+        let (ref key, ref value) = *pair;
+        let value = Cow::from(format!("{}", value));
+        if index == 0 {
+            print!(":;");
+        }
+        print!(" {}={}", key, escape(value));
+    }
+    println!("");
+}
 
 
 macro_rules! puts {
     ( $($name:expr => $value:expr),* ) => {
         {
-            use shell_escape::escape;
-            use std::borrow::Cow;
-            puts_inner!($($name => $value),*);
-            println!("");
+            use output;
+            output::puts(&vec![
+                $( ($name.to_owned(), format!("{}", $value)) ),*
+            ])
         }
     }
 }

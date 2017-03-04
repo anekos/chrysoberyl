@@ -49,10 +49,12 @@ pub fn run_stdin_controller(tx: Sender<Operation>) {
 
     spawn(move || {
         let stdin = io::stdin();
+        puts_event!("stdin_controller", "state" => "open");
         for line in stdin.lock().lines() {
             let line = line.unwrap();
             tx.send(from_string(&line)).unwrap();
         }
+        puts_event!("stdin_controller", "state" => "close");
     });
 }
 
@@ -61,12 +63,16 @@ pub fn run_command_controller(tx: Sender<Operation>, command: String) {
     use std::io::{BufReader, BufRead};
 
     spawn(move || {
-        let child = Command::new(command).stdout(Stdio::piped()).spawn().unwrap();
+        let child = Command::new(&command).stdout(Stdio::piped()).spawn().unwrap();
+        puts_event!("command_controller", "state" => "open");
         if let Some(stdout) = child.stdout {
             for line in BufReader::new(stdout).lines() {
                 let line = line.unwrap();
                 tx.send(from_string(&line)).unwrap();
             }
+            puts_event!("command_controller", "state" => "close");
+        } else {
+            puts_error!("at" => "command_controller", "for" => command);
         }
     });
 }

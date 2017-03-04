@@ -1,7 +1,7 @@
 #!/bin/bash
 # shellcheck disable=SC2154
 
-set -eC
+set -C
 # set -x
 
 
@@ -22,14 +22,18 @@ function chrysoberyl_filter_main () {
         then
           "key_$name" "$file"
         fi
-        ;;
+      ;;
       user)
-        if type "user_$data" &> /dev/null
+        if [ -n "$key" ]
         then
-          "user_$data" "$file"
+          "key_$key" "$file"
+          echo "key_$key" "$file"
+        elif [ -n "$function" ]
+        then
+          "user_$function" "$file"
+          echo "user_$function" "$file"
         fi
-        ;;
-
+      ;;
     esac
 
     echo "$line"

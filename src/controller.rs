@@ -2,6 +2,7 @@
 use std::thread::spawn;
 use std::sync::mpsc::Sender;
 use std::fs::File;
+use std::process::{Command, Stdio};
 
 use operation::Operation;
 
@@ -55,6 +56,20 @@ pub fn run_stdin_controller(tx: Sender<Operation>) {
     });
 }
 
+
+pub fn run_command_controller(tx: Sender<Operation>, command: String) {
+    use std::io::{BufReader, BufRead};
+
+    spawn(move || {
+        let child = Command::new(command).stdout(Stdio::piped()).spawn().unwrap();
+        if let Some(stdout) = child.stdout {
+            for line in BufReader::new(stdout).lines() {
+                let line = line.unwrap();
+                tx.send(from_string(&line)).unwrap();
+            }
+        }
+    });
+}
 
 fn from_string(s: &str) -> Operation {
     use std::str::FromStr;

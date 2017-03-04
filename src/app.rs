@@ -18,6 +18,7 @@ use operation::Operation;
 use fragile_input::new_fragile_input;
 use key::KeyData;
 use utils::path_to_str;
+use output;
 
 
 
@@ -243,16 +244,21 @@ impl App {
         self.print_with_current("button", "name", button);
     }
 
-    fn on_user(&self, data: &str) {
-        self.print_with_current("user", "data", data);
-    }
-
     fn print_with_current<T: fmt::Display>(&self, base: &str, key_name: &str, first: T) {
         if let Some(file) = self.entries.current_file() {
             puts!("event" => base, key_name => first, "file" => file.to_str().unwrap());
         } else {
             puts!("event" => base, key_name => first);
         }
+    }
+
+    fn on_user(&self, data: &Vec<(String, String)>) {
+        let mut args = vec![("event".to_owned(), "user".to_owned())];
+        if let Some(file) = self.entries.current_file() {
+            args.push(("file".to_owned(), file.to_str().unwrap().to_owned()));
+        }
+        args.extend_from_slice(data.as_slice());
+        output::puts(&args);
     }
 }
 

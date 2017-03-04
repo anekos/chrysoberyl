@@ -25,7 +25,7 @@ pub enum Operation {
     Expand(Option<PathBuf>),
     ExpandRecursive(Option<PathBuf>),
     Shuffle(bool), /* Fix current */
-    User(String),
+    User(Vec<(String, String)>),
     PrintEntries,
     Sort,
     Exit
@@ -37,6 +37,27 @@ impl FromStr for Operation {
     type Err = ();
     fn from_str(src: &str) -> Result<Operation, ()> {
         Ok(parse(src))
+    }
+}
+
+
+impl Operation {
+    fn user(args: Vec<String>) -> Operation {
+        let mut result: Vec<(String, String)> = vec![];
+        let mut index = 0;
+
+        for  arg in args.iter() {
+            let sep = arg.find("=").unwrap_or(0);
+            let (key, value) = arg.split_at(sep);
+            if key.is_empty() {
+                result.push((format!("arg{}", index), value.to_owned()));
+                index += 1;
+            } else {
+                result.push((key.to_owned(), value[1..].to_owned()));
+            }
+        }
+
+        Operation::User(result)
     }
 }
 
@@ -60,9 +81,6 @@ fn parse(s: &str) -> Operation {
             "@pushurl" => iter_let!(args => [path] {
                 return PushURL(path.to_owned())
             }),
-            "@user" => iter_let!(args => [data] {
-                return User(data.to_owned())
-            }),
             "@next" | "@n"               => return Next,
             "@prev" | "@p" | "@previous" => return Previous,
             "@first" | "@f"              => return First,
@@ -73,6 +91,7 @@ fn parse(s: &str) -> Operation {
             "@sort"                      => return Sort,
             "@expand"                    => return Expand(args.get(0).map(|it| pathbuf(it))),
             "@expandrecursive"           => return ExpandRecursive(args.get(0).map(|it| pathbuf(it))),
+            "@user"                      => return Operation::user(args),
             _ => ()
         }
     }

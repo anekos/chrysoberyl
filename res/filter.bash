@@ -6,7 +6,7 @@ set -C
 
 
 function has_command () {
-  type "key_$name" &> /dev/null
+  type "$1" &> /dev/null
 }
 
 

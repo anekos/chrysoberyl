@@ -91,7 +91,10 @@ impl App {
                 Last => changed = self.entries.pointer.last(len),
                 Refresh => do_refresh = true,
                 Push(ref path) => self.on_push(path.clone()),
-                PushFile(ref file) => changed= self.on_push_file(file.clone()) || self.options.show_text,
+                PushFile(ref file) => {
+                    changed = self.on_push_file(file.clone());
+                    do_refresh = self.options.show_text;
+                }
                 PushURL(ref url) => self.on_push_url(url.clone()),
                 Key(ref key) => self.on_key(key),
                 Button(ref button) => self.on_button(button),

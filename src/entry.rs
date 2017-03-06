@@ -172,15 +172,16 @@ impl EntryContainer {
     }
 
     fn push_directory(&mut self, dir: PathBuf) -> bool {
-        let len = self.files.len();
+        let mut changed = false;
 
         through!([expanded = expand(dir, <u8>::max_value())] {
             for file in expanded {
-                self.push_file(&file);
+                changed |= self.push_file(&file);
             }
         });
 
-        len == 0 && self.pointer.first(1)
+        self.pointer.first(1);
+        changed
     }
 
     fn is_duplicated(&self, path: &PathBuf) -> bool {

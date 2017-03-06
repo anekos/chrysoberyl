@@ -78,6 +78,7 @@ impl App {
         use self::Operation::*;
 
         let mut changed = false;
+        let mut do_refresh = false;
         let len = self.entries.len();
 
         debug!("Operate\t{:?}", operation);
@@ -88,7 +89,7 @@ impl App {
                 Next => changed = self.entries.pointer.next(len),
                 Previous => changed = self.entries.pointer.previous(),
                 Last => changed = self.entries.pointer.last(len),
-                Refresh => changed = true,
+                Refresh => do_refresh = true,
                 Push(ref path) => self.on_push(path.clone()),
                 PushFile(ref file) => changed= self.on_push_file(file.clone()) || self.options.show_text,
                 PushURL(ref url) => self.on_push_url(url.clone()),
@@ -96,13 +97,13 @@ impl App {
                 Button(ref button) => self.on_button(button),
                 Toggle(AppOptionName::ShowText) => {
                     self.options.show_text = !self.options.show_text;
-                    changed = true;
+                    do_refresh = true;
                 }
                 Count(value) => self.entries.pointer.push_counting_number(value),
                 Expand(ref base) => {
                     let count = self.entries.pointer.counted();
                     self.entries.expand(base.clone(), count as u8, count as u8- 1);
-                    changed = self.options.show_text;
+                    do_refresh = self.options.show_text;
                 }
                 ExpandRecursive(ref base) => {
                     let count = self.entries.pointer.counted();
@@ -129,14 +130,20 @@ impl App {
         }
 
         if let Some((file, index)) = self.entries.current() {
-            if changed {
+            if changed || do_refresh {
                 let len = self.entries.len();
-                let text = &format!("[{}/{}] {}", index + 1, len, path_to_str(&file));
-                self.window.set_title(text);
+                let path = path_to_str(&file);
+                let text = &format!("[{}/{}] {}", index + 1, len, path);
+
                 time!("show_image" => {
                     let text: Option<&str> = if self.options.show_text { Some(&text) } else { None };
                     self.show_image(file.clone(), text);
                 });
+
+                self.window.set_title(text);
+                if changed {
+                    puts_event!("show", "index" => index + 1, "count" => len, "file" => path);
+                }
             }
         }
     }

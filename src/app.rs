@@ -1,10 +1,7 @@
 
-use std::fs::remove_file;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::path::{Path, PathBuf};
-use std::process::exit;
 use std::fmt;
-use ctrlc;
 use gtk::prelude::*;
 use gtk::{Image, Window};
 use gdk_pixbuf::{Pixbuf, PixbufAnimation};
@@ -19,6 +16,7 @@ use fragile_input::new_fragile_input;
 use key::KeyData;
 use utils::path_to_str;
 use output;
+use termination;
 
 
 
@@ -26,7 +24,6 @@ pub struct App {
     entries: EntryContainer,
     window: Window,
     image: Image,
-    fragiles: Vec<String>,
     http_cache: HttpCache,
     pub tx: Sender<Operation>,
     pub options: AppOptions
@@ -43,7 +40,6 @@ impl App {
             image: image,
             tx: tx.clone(),
             http_cache: HttpCache::new(http_threads, tx.clone()),
-            fragiles: fragiles.clone(),
             options: options
         };
 
@@ -74,8 +70,6 @@ impl App {
         for fragile in fragiles.clone() {
             new_fragile_input(&fragile);
         }
-
-        ctrlc::set_handler(move || on_exit(fragiles.clone()));
 
         (app, rx)
     }
@@ -130,7 +124,7 @@ impl App {
                         writeln!(&mut stderr(), "{}", path_to_str(&entry)).unwrap();
                     }
                 }
-                Exit => self.on_exit(),
+                Exit => termination::execute(),
             }
         }
 
@@ -232,10 +226,6 @@ impl App {
         self.http_cache.fetch(url);
     }
 
-    fn on_exit(&self) {
-        on_exit(self.fragiles.clone());
-    }
-
     fn on_key(&self, key: &KeyData) {
         self.print_with_current("key", "name", key.text());
     }
@@ -260,12 +250,4 @@ impl App {
         args.extend_from_slice(data.as_slice());
         output::puts(&args);
     }
-}
-
-
-fn on_exit(fragiles: Vec<String>) {
-    for fragile in fragiles {
-        remove_file(fragile).unwrap();
-    }
-    exit(0);
 }

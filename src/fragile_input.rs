@@ -3,6 +3,8 @@ use std::ffi::CString;
 use std::io::Error;
 use libc;
 
+use termination;
+
 
 
 pub fn new_fragile_input(path: &str) {
@@ -14,4 +16,6 @@ pub fn new_fragile_input(path: &str) {
     if res != 0 {
         panic!("Could not mkfifo {:?} {}", path, Error::last_os_error().raw_os_error().unwrap());
     }
+
+    termination::register(termination::Process::Delete(path.to_owned()));
 }

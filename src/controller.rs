@@ -5,6 +5,7 @@ use std::fs::File;
 use std::process::{Command, Stdio};
 
 use operation::Operation;
+use termination;
 
 
 
@@ -69,6 +70,8 @@ pub fn run_command_controller(tx: Sender<Operation>, command: String) {
             .spawn().unwrap();
 
         puts_event!("command_controller", "state" => "open");
+
+        termination::register(termination::Process::Kill(child.id()));
 
         if let Some(stdout) = child.stdout {
             for line in BufReader::new(stdout).lines() {

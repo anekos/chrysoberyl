@@ -40,17 +40,12 @@ pub fn execute() {
         debug!("execute: {:?}", process);
         match *process {
             Kill(pid) => unsafe {
-                libc::kill(pid as i32, libc::SIGTERM);
+                libc::kill(-(pid as i32), libc::SIGTERM);
             },
             Delete(ref path) => {
                 let _ = remove_file(path);
             }
         }
-    }
-
-    unsafe {
-        let pid = libc::getpid();
-        libc::kill(-(pid as i32), libc::SIGTERM);
     }
 
     exit(0);

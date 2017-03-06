@@ -64,7 +64,8 @@ pub fn run_command_controller(tx: Sender<Operation>, command: String) {
     use std::io::{BufReader, BufRead};
 
     spawn(move || {
-        let child = Command::new(&command)
+        let child = Command::new("setsid")
+            .arg(&command)
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .spawn().unwrap();

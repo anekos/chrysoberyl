@@ -71,8 +71,6 @@ pub fn run_command_controller(tx: Sender<Operation>, command: String) {
 
         puts_event!("command_controller", "state" => "open");
 
-        termination::register(termination::Process::Kill(child.id()));
-
         if let Some(stdout) = child.stdout {
             for line in BufReader::new(stdout).lines() {
                 let line = line.unwrap();

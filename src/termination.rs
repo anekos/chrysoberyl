@@ -9,6 +9,7 @@ use libc;
 
 #[derive(Clone, Debug)]
 pub enum Process {
+    Kill(u32),
     Delete(String)
 }
 
@@ -38,6 +39,9 @@ pub fn execute() {
     for process in list.iter() {
         debug!("execute: {:?}", process);
         match *process {
+            Kill(pid) => unsafe {
+                libc::kill(pid as i32, libc::SIGTERM);
+            },
             Delete(ref path) => {
                 let _ = remove_file(path);
             }

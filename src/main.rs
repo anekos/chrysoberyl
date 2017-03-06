@@ -53,7 +53,7 @@ fn main() {
     env_logger::init().unwrap();
 
     unsafe {
-        puts_event!("info", "pid" => libc::getpid());
+        puts_event!("info", "name" => "pid", "value" => libc::getpid());
     }
 
     let (window, image) = setup();

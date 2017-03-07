@@ -27,6 +27,7 @@ pub struct EntryContainerOptions {
     pub min_height: Option<ImageSize>,
     pub max_width: Option<ImageSize>,
     pub max_height: Option<ImageSize>,
+    pub ratio: Option<f32>, // width / height
 }
 
 
@@ -212,8 +213,9 @@ impl EntryContainer {
             let min_h = opt.min_height.map(|it| it <= dim.height).unwrap_or(true);
             let max_w = opt.max_width.map(|it| dim.width <= it).unwrap_or(true);
             let max_h = opt.max_height.map(|it| dim.height <= it).unwrap_or(true);
+            let ratio = opt.ratio_matches(dim.width, dim.height);
 
-            min_w && min_h && max_w && max_h
+            min_w && min_h && max_w && max_h && ratio
         } else {
             false
         }
@@ -233,11 +235,19 @@ impl fmt::Display for EntryContainer {
 
 impl EntryContainerOptions {
     pub fn new() -> EntryContainerOptions {
-        EntryContainerOptions { min_width: None, min_height: None, max_width: None, max_height: None }
+        EntryContainerOptions { min_width: None, min_height: None, max_width: None, max_height: None, ratio: None }
     }
 
     fn needs_image_info(&self) -> bool {
-        self.min_width.is_some() || self.min_height.is_some() || self.max_width.is_some() || self.max_height.is_some()
+        self.min_width.is_some() || self.min_height.is_some() || self.max_width.is_some() || self.max_height.is_some() || self.ratio.is_some()
+    }
+
+    fn ratio_matches(&self, width: ImageSize, height: ImageSize) -> bool {
+        if let Some(ratio) = self.ratio {
+            (ratio - (width as f32 / height as f32)).abs() < 0.001
+        } else {
+            true
+        }
     }
 }
 

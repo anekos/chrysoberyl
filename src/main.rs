@@ -145,6 +145,7 @@ fn parse_arguments(window: &Window, image: Image) -> (app::App, Receiver<Operati
             ap.refer(&mut eco.min_height).add_option(&["--min-height", "-h"], StoreOption, "Minimum height");
             ap.refer(&mut eco.max_width).add_option(&["--max-width", "-W"], StoreOption, "Maximum width");
             ap.refer(&mut eco.max_height).add_option(&["--max-height", "-H"], StoreOption, "Maximum height");
+            ap.refer(&mut eco.ratio).add_option(&["--ratio", "-R"], StoreOption, "Width / Height");
             ap.refer(&mut width).add_option(&["--width"], StoreOption, "Width");
             ap.refer(&mut height).add_option(&["--height"], StoreOption, "Height");
             // Options

@@ -246,13 +246,13 @@ impl App {
     fn on_key(&self, key: &KeyData) {
         self.puts_event_with_current(
             "key",
-            Some(&vec![("key".to_owned(), key.text().to_owned())]));
+            Some(&vec![("name".to_owned(), key.text().to_owned())]));
     }
 
     fn on_button(&self, button: &u32) {
         self.puts_event_with_current(
             "key",
-            Some(&vec![("button".to_owned(), format!("{}", button))]));
+            Some(&vec![("name".to_owned(), format!("{}", button))]));
     }
 
     fn on_user(&self, data: &Vec<(String, String)>) {

@@ -32,7 +32,8 @@ pub struct EntryContainerOptions {
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
 pub enum Entry {
-    File(PathBuf)
+    File(PathBuf),
+    Http(PathBuf, String)
 }
 
 
@@ -52,17 +53,6 @@ impl EntryContainer {
         self.files.len()
     }
 
-    pub fn push(&mut self, file: PathBuf) -> bool {
-        if file.is_dir() {
-            self.push_directory(file)
-        } else if file.is_file() {
-            self.push_file(&file)
-        } else {
-            puts_error!("at" => "push", "reason" => "Invalid path", "for" => path_to_str(&file));
-            false
-        }
-    }
-
     pub fn current(&self) -> Option<(Entry, usize)> {
         self.pointer.current.and_then(|index| {
             self.files.get(index).map(|it: &Rc<Entry>| {
@@ -75,14 +65,11 @@ impl EntryContainer {
         self.current().map(|(entry, _)| entry)
     }
 
-    pub fn current_path(&self) -> Option<String> {
-        self.current().map(|(entry, _)| entry.path())
-    }
-
     pub fn current_for_file(&self) -> Option<(PathBuf, usize, Entry)> {
         self.current().and_then(|(entry, index)| {
             match entry {
-                Entry::File(ref path) => Some((path.clone(), index, entry.clone()))
+                Entry::File(ref path) => Some((path.clone(), index, entry.clone())),
+                _ => None
             }
         })
     }
@@ -95,7 +82,7 @@ impl EntryContainer {
         let result =
             if let Some((file, index, current_entry)) = self.current_for_file() {
                 let dir = n_parents(file.clone(), n);
-                expand(dir.to_path_buf(), recursive).ok().and_then(|middle| {
+                expand(&dir.to_path_buf(), recursive).ok().and_then(|middle| {
                     let mut middle: Vec<Rc<Entry>> = middle.into_iter().map(|path| Entry::File(path)).filter(|entry| {
                         current_entry == *entry || (!self.is_duplicated(entry) && self.is_valid_image(entry))
                     }).map(|it| Rc::new(it)).collect();
@@ -113,7 +100,7 @@ impl EntryContainer {
                 })
             } else if let Some(dir) = dir {
                 let dir = n_parents(dir, n - 1);
-                expand(dir.to_path_buf(), recursive).ok().map(|files| {
+                expand(&dir.to_path_buf(), recursive).ok().map(|files| {
                     let mut result = self.files.clone();
                     let mut tail: Vec<Rc<Entry>> = files.into_iter().map(|path| Entry::File(path)).filter(|entry| {
                         !self.is_duplicated(entry) && self.is_valid_image(entry)
@@ -178,9 +165,8 @@ impl EntryContainer {
         }
     }
 
-    fn push_file(&mut self, file: &PathBuf) -> bool {
-        let path = file.canonicalize().expect("canonicalize");
-        let entry = Rc::new(Entry::File(path));
+    fn push_entry(&mut self, entry: Entry) -> bool {
+        let entry = Rc::new(entry);
 
         if self.is_valid_image(&entry) && !self.is_duplicated(&entry) {
             self.file_indices.insert(entry.clone(), self.files.len());
@@ -191,7 +177,28 @@ impl EntryContainer {
         }
     }
 
-    fn push_directory(&mut self, dir: PathBuf) -> bool {
+    pub fn push_path(&mut self, file: &PathBuf) -> bool {
+        if file.is_dir() {
+            self.push_directory(file)
+        } else if file.is_file() {
+            self.push_file(&file)
+        } else {
+            puts_error!("at" => "push", "reason" => "Invalid path", "for" => path_to_str(&file));
+            false
+        }
+    }
+
+    pub fn push_http_cache(&mut self, file: &PathBuf, url: &str) -> bool {
+        let path = file.canonicalize().expect("canonicalize");
+        self.push_entry(Entry::Http(path, url.to_owned()))
+    }
+
+    fn push_file(&mut self, file: &PathBuf) -> bool {
+        let path = file.canonicalize().expect("canonicalize");
+        self.push_entry(Entry::File(path))
+    }
+
+    fn push_directory(&mut self, dir: &PathBuf) -> bool {
         let mut changed = false;
 
         through!([expanded = expand(dir, <u8>::max_value())] {
@@ -212,7 +219,8 @@ impl EntryContainer {
         use self::Entry::*;
 
         match *entry {
-            File(ref path) => self.is_valid_image_file(path)
+            File(ref path) => self.is_valid_image_file(path),
+            Http(ref path, _) => self.is_valid_image_file(path)
         }
     }
 
@@ -284,7 +292,8 @@ impl Entry {
         use self::Entry::*;
 
         match *self {
-            File(ref path) => path_to_str(path).to_owned()
+            File(ref path) => path_to_str(path).to_owned(),
+            Http(_, ref url) => url.clone(),
         }
 
     }
@@ -293,16 +302,17 @@ impl Entry {
         use self::Entry::*;
 
         match *self {
-            File(ref path) => path.clone()
+            File(ref path) => path.clone(),
+            Http(ref path, _) => path.clone()
         }
-
     }
 
     pub fn to_path_str(&self) -> &str {
         use self::Entry::*;
 
         match *self {
-            File(ref path) => path_to_str(path)
+            File(ref path) => path_to_str(path),
+            Http(ref path, _) => path_to_str(path)
         }
 
     }
@@ -320,7 +330,7 @@ fn n_parents(path: PathBuf, n: u8) -> PathBuf {
     path
 }
 
-fn expand(dir: PathBuf, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
+fn expand(dir: &PathBuf, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
     let mut result = vec![];
 
     through!([dir = dir.read_dir()] {
@@ -330,7 +340,7 @@ fn expand(dir: PathBuf, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
                 if path.is_file() {
                     result.push(path)
                 } else if recursive > 0 && path.is_dir() {
-                    through!([expanded = expand(path, recursive - 1)] {
+                    through!([expanded = expand(&path, recursive - 1)] {
                         result.extend(expanded)
                     });
                 }

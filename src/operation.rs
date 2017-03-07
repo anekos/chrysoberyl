@@ -16,7 +16,8 @@ pub enum Operation {
     Last,
     Refresh,
     Push(String),
-    PushFile(PathBuf),
+    PushPath(PathBuf),
+    PushHttpCache(PathBuf, String),
     PushURL(String),
     Key(KeyData),
     Button(u32),
@@ -75,8 +76,8 @@ fn parse(s: &str) -> Operation {
             "@push" => iter_let!(args => [path] {
                 return Push(path.to_owned())
             }),
-            "@pushfile" => iter_let!(args => [path] {
-                return PushFile(pathbuf(path))
+            "@pushpath" => iter_let!(args => [path] {
+                return PushPath(pathbuf(path))
             }),
             "@pushurl" => iter_let!(args => [path] {
                 return PushURL(path.to_owned())
@@ -117,7 +118,7 @@ fn test_parse() {
 
     // 1 argument
     assert_eq!(parse("@push http://example.com/moge.jpg"), Push("http://example.com/moge.jpg".to_owned()));
-    assert_eq!(parse("@pushfile /hoge/moge.jpg"), PushFile(pathbuf("/hoge/moge.jpg")));
+    assert_eq!(parse("@pushpath /hoge/moge.jpg"), PushPath(pathbuf("/hoge/moge.jpg")));
     assert_eq!(parse("@pushurl http://example.com/moge.jpg"), PushURL("http://example.com/moge.jpg".to_owned()));
 
     // 1 optional argument
@@ -126,7 +127,7 @@ fn test_parse() {
     assert_eq!(parse("@expandrecursive /foo/bar.txt"), ExpandRecursive(Some(pathbuf("/foo/bar.txt"))));
     assert_eq!(parse("@expandrecursive"), ExpandRecursive(None));
 
-    // Invalid commands be PushFile
+    // Invalid commands be Push
     assert_eq!(parse("Meow Meow"), Push("Meow Meow".to_owned()));
     assert_eq!(parse("expand /foo/bar.txt"), Push("expand /foo/bar.txt".to_owned()));
 

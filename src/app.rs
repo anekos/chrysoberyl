@@ -1,7 +1,6 @@
 
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::path::{Path, PathBuf};
-use std::fmt;
 use gtk::prelude::*;
 use gtk::{Image, Window};
 use gdk_pixbuf::{Pixbuf, PixbufAnimation};
@@ -91,8 +90,12 @@ impl App {
                 Last => changed = self.entries.pointer.last(len),
                 Refresh => do_refresh = true,
                 Push(ref path) => self.on_push(path.clone()),
-                PushFile(ref file) => {
-                    changed = self.on_push_file(file.clone());
+                PushPath(ref file) => {
+                    changed = self.on_push_path(file.clone());
+                    do_refresh = self.options.show_text;
+                }
+                PushHttpCache(ref file, ref url) => {
+                    changed = self.on_push_http_cache(file.clone(), url.clone());
                     do_refresh = self.options.show_text;
                 }
                 PushURL(ref url) => self.on_push_url(url.clone()),
@@ -224,12 +227,16 @@ impl App {
         if path.starts_with("http://") || path.starts_with("https://") {
             self.tx.send(Operation::PushURL(path)).unwrap();
         } else {
-            self.operate(&Operation::PushFile(Path::new(&path).to_path_buf()));
+            self.operate(&Operation::PushPath(Path::new(&path).to_path_buf()));
         }
     }
 
-    fn on_push_file(&mut self, file: PathBuf) -> bool {
-        self.entries.push(file)
+    fn on_push_path(&mut self, file: PathBuf) -> bool {
+        self.entries.push_path(&file)
+    }
+
+    fn on_push_http_cache(&mut self, file: PathBuf, url: String) -> bool {
+        self.entries.push_http_cache(&file, &url)
     }
 
     fn on_push_url(&mut self, url: String) {
@@ -237,33 +244,38 @@ impl App {
     }
 
     fn on_key(&self, key: &KeyData) {
-        self.print_with_current("key", "name", key.text());
+        self.puts_event_with_current(
+            "key",
+            Some(&vec![("key".to_owned(), key.text().to_owned())]));
     }
 
     fn on_button(&self, button: &u32) {
-        self.print_with_current("button", "name", button);
-    }
-
-    fn print_with_current<T: fmt::Display>(&self, base: &str, key_name: &str, first: T) {
-        use entry::Entry::*;
-
-        if let Some((entry, _)) = self.entries.current() {
-            match entry {
-                File(path) => {
-                    puts!("event" => base, key_name => first, "type" => "file", "path" => path.to_str().unwrap())
-                }
-            }
-        } else {
-            puts!("event" => base, key_name => first);
-        }
+        self.puts_event_with_current(
+            "key",
+            Some(&vec![("button".to_owned(), format!("{}", button))]));
     }
 
     fn on_user(&self, data: &Vec<(String, String)>) {
-        let mut args = vec![("event".to_owned(), "user".to_owned())];
-        if let Some(path) = self.entries.current_path() {
-            args.push(("path".to_owned(), path));
-        }
-        args.extend_from_slice(data.as_slice());
-        output::puts(&args);
+        self.puts_event_with_current("user", Some(data));
+    }
+
+    fn puts_event_with_current(&self, event: &str, data: Option<&Vec<(String, String)>>) {
+        use entry::Entry::*;
+
+        puts_with!(pairs => {
+            push_pair!(pairs, "event" => event);
+
+            if let Some((entry, index)) = self.entries.current() {
+                match entry {
+                    File(ref path) => push_pair!(pairs, "file" => path_to_str(path)),
+                    Http(ref path, ref url) => push_pair!(pairs, "file" => path_to_str(path), "url" => url),
+                }
+                push_pair!(pairs, "index" => index + 1, "count" => self.entries.len());
+            }
+
+            if let Some(data) = data {
+                pairs.extend_from_slice(data.as_slice());
+            }
+        });
     }
 }

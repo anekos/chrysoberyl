@@ -48,7 +48,7 @@ impl HttpCache {
         let filepath = generate_temporary_filename(&url);
 
         if filepath.exists() {
-            self.app_tx.send(Operation::PushFile(filepath)).unwrap();
+            self.app_tx.send(Operation::PushHttpCache(filepath, url)).unwrap();
         } else {
             self.main_tx.send(Getter::Queue(url, filepath)).unwrap();
         }
@@ -103,7 +103,7 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
                     buffer.push(request.serial, request);
 
                     while let Some(request) = buffer.pull() {
-                        app_tx.send(Operation::PushFile(request.cache_filepath)).unwrap();
+                        app_tx.send(Operation::PushHttpCache(request.cache_filepath, request.url)).unwrap();
                     }
                 }
                 Fail(index, err, request) => {

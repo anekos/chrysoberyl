@@ -17,6 +17,7 @@ extern crate env_logger;
 extern crate cmdline_parser;
 extern crate shell_escape;
 #[macro_use] extern crate lazy_static;
+extern crate libarchive;
 
 #[macro_use] mod utils;
 #[macro_use] mod output;

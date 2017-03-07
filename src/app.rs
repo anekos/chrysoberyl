@@ -148,7 +148,7 @@ impl App {
 
                 self.window.set_title(text);
                 if changed {
-                    puts_event!("show", "file" => path, "index" => index + 1, "count" => len);
+                    self.puts_event_with_current("show", None);
                 }
             }
         }

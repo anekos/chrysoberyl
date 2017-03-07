@@ -1,14 +1,13 @@
 
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::path::{Path, PathBuf};
-use std::fmt;
 use gtk::prelude::*;
 use gtk::{Image, Window};
 use gdk_pixbuf::{Pixbuf, PixbufAnimation};
 use immeta;
 use immeta::markers::Gif;
 
-use entry::{EntryContainer, EntryContainerOptions};
+use entry::{Entry,EntryContainer, EntryContainerOptions};
 use http_cache::HttpCache;
 use options::{AppOptions, AppOptionName};
 use operation::Operation;
@@ -91,8 +90,12 @@ impl App {
                 Last => changed = self.entries.pointer.last(len),
                 Refresh => do_refresh = true,
                 Push(ref path) => self.on_push(path.clone()),
-                PushFile(ref file) => {
-                    changed = self.on_push_file(file.clone());
+                PushPath(ref file) => {
+                    changed = self.on_push_path(file.clone());
+                    do_refresh = self.options.show_text;
+                }
+                PushHttpCache(ref file, ref url) => {
+                    changed = self.on_push_http_cache(file.clone(), url.clone());
                     do_refresh = self.options.show_text;
                 }
                 PushURL(ref url) => self.on_push_url(url.clone()),
@@ -132,20 +135,20 @@ impl App {
             }
         }
 
-        if let Some((file, index)) = self.entries.current() {
+        if let Some((entry, index)) = self.entries.current() {
             if changed || do_refresh {
                 let len = self.entries.len();
-                let path = path_to_str(&file);
+                let path = entry.path();
                 let text = &format!("[{}/{}] {}", index + 1, len, path);
 
                 time!("show_image" => {
                     let text: Option<&str> = if self.options.show_text { Some(&text) } else { None };
-                    self.show_image(file.clone(), text);
+                    self.show_image(entry.clone(), text);
                 });
 
                 self.window.set_title(text);
                 if changed {
-                    puts_event!("show", "file" => path, "index" => index + 1, "count" => len);
+                    self.puts_event_with_current("show", None);
                 }
             }
         }
@@ -157,13 +160,13 @@ impl App {
     //     }
     // }
 
-    fn show_image(&self, path: PathBuf, text: Option<&str>) {
+    fn show_image(&self, entry: Entry, text: Option<&str>) {
         let (width, height) = self.window.get_size();
 
-        if let Ok(img) = immeta::load_from_file(&path) {
+        if let Ok(img) = immeta::load_from_file(&entry.to_path_buf()) {
             if let Ok(gif) = img.into::<Gif>() {
                 if gif.is_animated() {
-                    match PixbufAnimation::new_from_file(&path.to_str().unwrap()) {
+                    match PixbufAnimation::new_from_file(entry.to_path_str()) {
                         Ok(buf) => self.image.set_from_animation(&buf),
                         Err(err) => puts_error!("at" => "show_image", "reason" => err)
                     }
@@ -172,7 +175,7 @@ impl App {
             }
         }
 
-        match Pixbuf::new_from_file_at_scale(&path.to_str().unwrap(), width, height, true) {
+        match Pixbuf::new_from_file_at_scale(entry.to_path_str(), width, height, true) {
             Ok(buf) => {
                 if let Some(text) = text {
                     use cairo::{Context, ImageSurface, Format};
@@ -224,12 +227,16 @@ impl App {
         if path.starts_with("http://") || path.starts_with("https://") {
             self.tx.send(Operation::PushURL(path)).unwrap();
         } else {
-            self.operate(&Operation::PushFile(Path::new(&path).to_path_buf()));
+            self.operate(&Operation::PushPath(Path::new(&path).to_path_buf()));
         }
     }
 
-    fn on_push_file(&mut self, file: PathBuf) -> bool {
-        self.entries.push(file)
+    fn on_push_path(&mut self, file: PathBuf) -> bool {
+        self.entries.push_path(&file)
+    }
+
+    fn on_push_http_cache(&mut self, file: PathBuf, url: String) -> bool {
+        self.entries.push_http_cache(&file, &url)
     }
 
     fn on_push_url(&mut self, url: String) {
@@ -237,27 +244,38 @@ impl App {
     }
 
     fn on_key(&self, key: &KeyData) {
-        self.print_with_current("key", "name", key.text());
+        self.puts_event_with_current(
+            "key",
+            Some(&vec![("name".to_owned(), key.text().to_owned())]));
     }
 
     fn on_button(&self, button: &u32) {
-        self.print_with_current("button", "name", button);
-    }
-
-    fn print_with_current<T: fmt::Display>(&self, base: &str, key_name: &str, first: T) {
-        if let Some(file) = self.entries.current_file() {
-            puts!("event" => base, key_name => first, "file" => file.to_str().unwrap());
-        } else {
-            puts!("event" => base, key_name => first);
-        }
+        self.puts_event_with_current(
+            "key",
+            Some(&vec![("name".to_owned(), format!("{}", button))]));
     }
 
     fn on_user(&self, data: &Vec<(String, String)>) {
-        let mut args = vec![("event".to_owned(), "user".to_owned())];
-        if let Some(file) = self.entries.current_file() {
-            args.push(("file".to_owned(), file.to_str().unwrap().to_owned()));
-        }
-        args.extend_from_slice(data.as_slice());
-        output::puts(&args);
+        self.puts_event_with_current("user", Some(data));
+    }
+
+    fn puts_event_with_current(&self, event: &str, data: Option<&Vec<(String, String)>>) {
+        use entry::Entry::*;
+
+        puts_with!(pairs => {
+            push_pair!(pairs, "event" => event);
+
+            if let Some((entry, index)) = self.entries.current() {
+                match entry {
+                    File(ref path) => push_pair!(pairs, "file" => path_to_str(path)),
+                    Http(ref path, ref url) => push_pair!(pairs, "file" => path_to_str(path), "url" => url),
+                }
+                push_pair!(pairs, "index" => index + 1, "count" => self.entries.len());
+            }
+
+            if let Some(data) = data {
+                pairs.extend_from_slice(data.as_slice());
+            }
+        });
     }
 }

@@ -39,11 +39,6 @@ impl Output {
 }
 
 
-// pub fn register(tx: Sender<String>) {
-//     let mut out = (*OUTPUT_INSTANCE).lock().unwrap();
-//     out.register(tx);
-// }
-
 
 pub fn puts(data: &Vec<(String, String)>) {
     let out = (*OUTPUT_INSTANCE).lock().unwrap();
@@ -68,6 +63,25 @@ macro_rules! puts_event {
     }
 }
 
+macro_rules! puts_with {
+    ( $pairs:ident => $body:expr) => {
+        let mut $pairs: Vec<(String, String)> = vec![];
+        $body;
+        output::puts(&$pairs);
+    }
+}
+
+macro_rules! push_pair {
+    ( $pairs:ident $(, $name:expr => $value:expr)*) => {
+        {
+            let ref mut pairs = $pairs;
+            $(
+                pairs.push((format!("{}", $name), format!("{}", $value)));
+             )*
+        }
+    }
+}
+
 macro_rules! puts_error {
     ( $($name:expr => $value:expr),* ) => {
         puts!("event" => "error" $(, $name => $value)*)
@@ -82,7 +96,7 @@ fn generate_text(data: &Vec<(String, String)>) -> String {
         let (ref key, ref value) = *pair;
         let value = Cow::from(format!("{}", value));
         if index == 0 {
-            result += ":;";
+            result += "O=O";
         }
         result += &format!(" {}={}", key, escape(value));
     }

@@ -63,7 +63,8 @@ impl App {
         }
 
         if shuffle {
-            tx.send(Operation::Shuffle(true)).unwrap();
+            let fix = files.get(0).map(|it| Path::new(it).is_file()).unwrap_or(false);
+            tx.send(Operation::Shuffle(fix)).unwrap();
         }
 
         for fragile in fragiles.clone() {

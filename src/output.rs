@@ -101,7 +101,7 @@ fn generate_text(data: &Vec<(String, String)>) -> String {
         let (ref key, ref value) = *pair;
         let value = Cow::from(format!("{}", value));
         if index == 0 {
-            result += ":;";
+            result += "O=O";
         }
         result += &format!(" {}={}", key, escape(value));
     }

@@ -39,11 +39,6 @@ impl Output {
 }
 
 
-// pub fn register(tx: Sender<String>) {
-//     let mut out = (*OUTPUT_INSTANCE).lock().unwrap();
-//     out.register(tx);
-// }
-
 
 pub fn puts(data: &Vec<(String, String)>) {
     let out = (*OUTPUT_INSTANCE).lock().unwrap();

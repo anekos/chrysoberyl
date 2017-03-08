@@ -136,6 +136,10 @@ impl App {
                     }
                 }
                 Map(ref input, ref mapped_operation) => {
+                    // FIXME
+                    puts_event!("map",
+                                "input" => format!("{:?}", input),
+                                "operation" => format!("{:?}", mapped_operation));
                     self.mapping.register(input.clone(), *mapped_operation.clone());
                 }
                 Exit => termination::execute(),

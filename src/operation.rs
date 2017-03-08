@@ -63,41 +63,49 @@ impl Operation {
 }
 
 
-fn parse(s: &str) -> Operation {
+fn parse_from_vec(whole: Vec<String>) -> Option<Operation> {
     use self::Operation::*;
 
-    let mut whole =  Parser::new(s).map(|(_, it)| it);
+    fn pb(args: Vec<String>, index: usize) -> Option<PathBuf> {
+        args.get(index).map(|it| pathbuf(it))
+    }
 
-    if let Some(name) = whole.next() {
-        let name = &*name.to_lowercase();
-        let args: Vec<String> = whole.collect();
+    whole.get(0).and_then(|head| {
+        let name = &*head.to_lowercase();
+        let args = whole[1..].to_vec();
 
         match name {
             "@push" => iter_let!(args => [path] {
-                return Push(path.to_owned())
+                Push(path.to_owned())
             }),
             "@pushpath" => iter_let!(args => [path] {
-                return PushPath(pathbuf(path))
+                PushPath(pathbuf(path))
             }),
             "@pushurl" => iter_let!(args => [path] {
-                return PushURL(path.to_owned())
+                PushURL(path.to_owned())
             }),
-            "@next" | "@n"               => return Next,
-            "@prev" | "@p" | "@previous" => return Previous,
-            "@first" | "@f"              => return First,
-            "@last" | "@l"               => return Last,
-            "@refresh" | "@r"            => return Refresh,
-            "@shuffle"                   => return Shuffle(true),
-            "@entries"                   => return PrintEntries,
-            "@sort"                      => return Sort,
-            "@expand"                    => return Expand(args.get(0).map(|it| pathbuf(it))),
-            "@expandrecursive"           => return ExpandRecursive(args.get(0).map(|it| pathbuf(it))),
-            "@user"                      => return Operation::user(args),
-            _ => ()
+            "@next" | "@n"               => Some(Next),
+            "@prev" | "@p" | "@previous" => Some(Previous),
+            "@first" | "@f"              => Some(First),
+            "@last" | "@l"               => Some(Last),
+            "@refresh" | "@r"            => Some(Refresh),
+            "@shuffle"                   => Some(Shuffle(true)),
+            "@entries"                   => Some(PrintEntries),
+            "@sort"                      => Some(Sort),
+            "@expand"                    => Some(Expand(pb(args, 0))),
+            "@expandrecursive"           => Some(ExpandRecursive(pb(args, 0))),
+            "@user"                      => Some(Operation::user(args)),
+            _ => None
         }
-    }
+    })
+}
 
-    Push(s.to_owned())
+
+fn parse(s: &str) -> Operation {
+    use self::Operation::*;
+
+    let ps: Vec<String> = Parser::new(s).map(|(_, it)| it).collect();
+    parse_from_vec(ps).unwrap_or(Push(s.to_owned()))
 }
 
 

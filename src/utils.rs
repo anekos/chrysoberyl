@@ -28,20 +28,22 @@ macro_rules! through {
 
 macro_rules! iter_let_inner {
     ( $iter:ident => [] $body:expr ) => {
-        $body
+        Some($body)
     };
     ( $iter:ident => [$binding:ident $(,$bindings:ident)*] $body:expr ) => {
         if let Some($binding) = $iter.next() {
             iter_let_inner!($iter => [$($bindings),*] $body)
+        } else {
+            None
         }
     }
 }
 
 macro_rules! iter_let {
-    ( $source:expr => [$($bindings:ident),*] $body:expr) => {
+    ( $source:ident => [$($bindings:ident),*] $body:expr) => {
         {
-            let mut iter = $source.iter();
-            iter_let_inner!(iter => [$($bindings),*] $body)
+            let mut $source = $source.iter();
+            iter_let_inner!($source => [$($bindings),*] $body)
         }
     }
 }

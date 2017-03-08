@@ -40,7 +40,10 @@ use gtk::{Image, Window};
 use argparse::{ArgumentParser, List, Collect, Store, StoreTrue, StoreOption};
 use std::thread::{sleep};
 use std::time::Duration;
-use std::sync::mpsc::Receiver;
+use std::sync::mpsc::{Sender, Receiver};
+use std::env::home_dir;
+use std::io::{BufReader, BufRead};
+use std::fs::File;
 
 use entry::EntryContainerOptions;
 use key::KeyData;
@@ -166,5 +169,28 @@ fn parse_arguments(window: &Window, image: Image) -> (app::App, Receiver<Operati
 
     let (app, rx) = app::App::new(eco, max_http_threads, expand, expand_recursive, shuffle, files, fragiles.clone(), window.clone(), image, app_options);
 
+    load_config(app.tx.clone());
+
     (app, rx, inputs, fragiles, commands)
+}
+
+
+fn load_config(tx: Sender<Operation>) {
+    let filepath = {
+        let mut path = home_dir().unwrap();
+        path.push(".config");
+        path.push("chrysoberyl");
+        path.push("rc.conf");
+        path
+    };
+
+    if let Ok(file) = File::open(&filepath) {
+        puts_event!("config_file", "state" => "open");
+        let file = BufReader::new(file);
+        for line in file.lines() {
+            let line = line.unwrap();
+            tx.send(Operation::from_str_force(&line)).unwrap();
+        }
+        puts_event!("config_file", "state" => "close");
+    }
 }

@@ -45,6 +45,12 @@ impl FromStr for Operation {
 
 
 impl Operation {
+    pub fn from_str_force(s: &str) -> Operation {
+        use std::str::FromStr;
+
+        Operation::from_str(s).unwrap_or(Operation::Push(s.to_owned()))
+    }
+
     fn user(args: Vec<String>) -> Operation {
         let mut result: Vec<(String, String)> = vec![];
         let mut index = 0;

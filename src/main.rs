@@ -33,6 +33,7 @@ mod options;
 mod key;
 mod sorting_buffer;
 mod termination;
+mod mapping;
 
 use gtk::prelude::*;
 use gtk::{Image, Window};

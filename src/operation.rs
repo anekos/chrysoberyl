@@ -5,6 +5,7 @@ use cmdline_parser::Parser;
 
 use options::AppOptionName;
 use key::KeyData;
+use mapping::Input;
 
 
 
@@ -27,6 +28,7 @@ pub enum Operation {
     ExpandRecursive(Option<PathBuf>),
     Shuffle(bool), /* Fix current */
     User(Vec<(String, String)>),
+    Map(Input, Box<Operation>),
     PrintEntries,
     Sort,
     Exit
@@ -76,13 +78,24 @@ fn parse_from_vec(whole: Vec<String>) -> Option<Operation> {
 
         match name {
             "@push" => iter_let!(args => [path] {
-                Push(path.to_owned())
+                Some(Push(path.to_owned()))
             }),
             "@pushpath" => iter_let!(args => [path] {
-                PushPath(pathbuf(path))
+                Some(PushPath(pathbuf(path)))
             }),
             "@pushurl" => iter_let!(args => [path] {
-                PushURL(path.to_owned())
+                Some(PushURL(path.to_owned()))
+            }),
+            "@map" => iter_let!(args => [kind, name] {
+                match &*kind.to_lowercase() {
+                    "key" | "keyboard"                  => Some(Input::key(name)),
+                    "button" | "mouse" | "mouse_button" => name.parse().ok().map(|button| Input::mouse_button(button)),
+                    _                                   => None
+                } .and_then(|input| {
+                    parse_from_vec(args.map(|it| it.to_owned()).collect()).map(|op| {
+                        Map(input, Box::new(op))
+                    })
+                })
             }),
             "@next" | "@n"               => Some(Next),
             "@prev" | "@p" | "@previous" => Some(Previous),

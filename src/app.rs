@@ -16,6 +16,7 @@ use key::KeyData;
 use utils::path_to_str;
 use output;
 use termination;
+use mapping::{Mapping, Input};
 
 
 
@@ -24,6 +25,7 @@ pub struct App {
     window: Window,
     image: Image,
     http_cache: HttpCache,
+    mapping: Mapping,
     pub tx: Sender<Operation>,
     pub options: AppOptions
 }
@@ -39,7 +41,8 @@ impl App {
             image: image,
             tx: tx.clone(),
             http_cache: HttpCache::new(http_threads, tx.clone()),
-            options: options
+            options: options,
+            mapping: Mapping::new()
         };
 
         for file in files.iter() {
@@ -131,6 +134,9 @@ impl App {
                     for entry in self.entries.to_vec() {
                         writeln!(&mut stderr(), "{}", path_to_str(&entry)).unwrap();
                     }
+                }
+                Map(ref input, ref mapped_operation) => {
+                    self.mapping.register(input.clone(), *mapped_operation.clone());
                 }
                 Exit => termination::execute(),
             }
@@ -245,14 +251,21 @@ impl App {
     }
 
     fn on_key(&self, key: &KeyData) {
+        let key_name = key.text();
+        if let Some(op) = self.mapping.matched(&Input::key(&key_name)) {
+            self.tx.send(op).unwrap();
+        }
         self.puts_event_with_current(
-            "key",
+            "keyboard",
             Some(&vec![("name".to_owned(), key.text().to_owned())]));
     }
 
     fn on_button(&self, button: &u32) {
+        if let Some(op) = self.mapping.matched(&Input::mouse_button(*button)) {
+            self.tx.send(op).unwrap();
+        }
         self.puts_event_with_current(
-            "key",
+            "mouse_button",
             Some(&vec![("name".to_owned(), format!("{}", button))]));
     }
 

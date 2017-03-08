@@ -28,7 +28,7 @@ macro_rules! through {
 
 macro_rules! iter_let_inner {
     ( $iter:ident => [] $body:expr ) => {
-        Some($body)
+        $body
     };
     ( $iter:ident => [$binding:ident $(,$bindings:ident)*] $body:expr ) => {
         if let Some($binding) = $iter.next() {

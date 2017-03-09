@@ -259,19 +259,21 @@ impl App {
         let key_name = key.text();
         if let Some(op) = self.mapping.matched(&Input::key(&key_name)) {
             self.tx.send(op).unwrap();
+        } else {
+            self.puts_event_with_current(
+                "keyboard",
+                Some(&vec![("name".to_owned(), key.text().to_owned())]));
         }
-        self.puts_event_with_current(
-            "keyboard",
-            Some(&vec![("name".to_owned(), key.text().to_owned())]));
     }
 
     fn on_button(&self, button: &u32) {
         if let Some(op) = self.mapping.matched(&Input::mouse_button(*button)) {
             self.tx.send(op).unwrap();
+        } else {
+            self.puts_event_with_current(
+                "mouse_button",
+                Some(&vec![("name".to_owned(), format!("{}", button))]));
         }
-        self.puts_event_with_current(
-            "mouse_button",
-            Some(&vec![("name".to_owned(), format!("{}", button))]));
     }
 
     fn on_user(&self, data: &Vec<(String, String)>) {

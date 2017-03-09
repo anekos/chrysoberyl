@@ -88,6 +88,7 @@ impl App {
 
         {
             match *operation {
+                Nop => (),
                 First => changed = self.entries.pointer.first(len),
                 Next => changed = self.entries.pointer.next(len),
                 Previous => changed = self.entries.pointer.previous(),
@@ -142,7 +143,7 @@ impl App {
                                 "operation" => format!("{:?}", mapped_operation));
                     self.mapping.register(input.clone(), *mapped_operation.clone());
                 }
-                Exit => termination::execute(),
+                Quit => termination::execute(),
             }
         }
 

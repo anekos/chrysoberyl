@@ -31,7 +31,8 @@ pub enum Operation {
     Map(Input, Box<Operation>),
     PrintEntries,
     Sort,
-    Exit
+    Quit,
+    Nop
 }
 
 
@@ -78,9 +79,13 @@ fn parse_from_vec(whole: Vec<String>) -> Option<Operation> {
         args.get(index).map(|it| pathbuf(it))
     }
 
-    whole.get(0).and_then(|head| {
+    if let Some(head) = whole.get(0) {
         let name = &*head.to_lowercase();
         let args = whole[1..].to_vec();
+
+        if Some('#') == name.chars().next() {
+            return Some(Nop)
+        }
 
         match name {
             "@push" => iter_let!(args => [path] {
@@ -103,20 +108,30 @@ fn parse_from_vec(whole: Vec<String>) -> Option<Operation> {
                     })
                 })
             }),
+            "@toggle" => iter_let!(args => [name] {
+                use options::AppOptionName::*;
+                match &*name.to_lowercase() {
+                    "info" | "information" => Some(Toggle(ShowText)),
+                    _                      => None
+                }
+            }),
             "@next" | "@n"               => Some(Next),
             "@prev" | "@p" | "@previous" => Some(Previous),
             "@first" | "@f"              => Some(First),
             "@last" | "@l"               => Some(Last),
             "@refresh" | "@r"            => Some(Refresh),
-            "@shuffle"                   => Some(Shuffle(true)),
+            "@shuffle"                   => Some(Shuffle(false)),
             "@entries"                   => Some(PrintEntries),
             "@sort"                      => Some(Sort),
             "@expand"                    => Some(Expand(pb(args, 0))),
             "@expandrecursive"           => Some(ExpandRecursive(pb(args, 0))),
+            "@quit"                      => Some(Quit),
             "@user"                      => Some(Operation::user(args)),
             _ => None
         }
-    })
+    } else {
+        Some(Nop)
+    }
 }
 
 

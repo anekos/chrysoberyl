@@ -290,6 +290,7 @@ impl App {
                 match entry {
                     File(ref path) => push_pair!(pairs, "file" => path_to_str(path)),
                     Http(ref path, ref url) => push_pair!(pairs, "file" => path_to_str(path), "url" => url),
+                    Archive(ref archive_file, ref file, _) => push_pair!(pairs, "file" => file, "archive_file" => path_to_str(archive_file)),
                 }
                 push_pair!(pairs, "index" => index + 1, "count" => self.entries.len());
             }

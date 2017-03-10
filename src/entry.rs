@@ -10,6 +10,7 @@ use immeta;
 use index_pointer::IndexPointer;
 use utils::path_to_str;
 use types::*;
+use archive::{self, ArchiveEntry};
 
 
 
@@ -33,7 +34,8 @@ pub struct EntryContainerOptions {
 #[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
 pub enum Entry {
     File(PathBuf),
-    Http(PathBuf, String)
+    Http(PathBuf, String),
+    Archive(Rc<PathBuf>, String, Rc<Vec<u8>>) /* Archive filepath, filename, buffer */
 }
 
 
@@ -195,6 +197,12 @@ impl EntryContainer {
 
     fn push_file(&mut self, file: &PathBuf) -> bool {
         let path = file.canonicalize().expect("canonicalize");
+        if let Some(ext) = file.extension() {
+            match &*ext.to_str().unwrap().to_lowercase() {
+                "zip" => return self.push_archive(&path),
+                _ => ()
+            }
+        }
         self.push_entry(Entry::File(path))
     }
 
@@ -211,6 +219,19 @@ impl EntryContainer {
         changed
     }
 
+    fn push_archive(&mut self, archive_path: &PathBuf) -> bool {
+        let mut changed = false;
+
+        let shared_archive_path = Rc::new(archive_path.to_owned());
+        for entry in archive::read_entries(archive_path) {
+            self.push_entry(from_archive_entry(shared_archive_path.clone(), &entry));
+            changed = true; // FIXME
+        }
+
+        self.pointer.first(1);
+        changed
+    }
+
     fn is_duplicated(&self, entry: &Entry) -> bool {
         self.file_indices.contains_key(entry)
     }
@@ -220,7 +241,8 @@ impl EntryContainer {
 
         match *entry {
             File(ref path) => self.is_valid_image_file(path),
-            Http(ref path, _) => self.is_valid_image_file(path)
+            Http(ref path, _) => self.is_valid_image_file(path),
+            Archive(_, _, _) => true // FIXME ??
         }
     }
 
@@ -294,6 +316,7 @@ impl Entry {
         match *self {
             File(ref path) => path_to_str(path).to_owned(),
             Http(_, ref url) => url.clone(),
+            Archive(_, _, _) => not_implemented!()
         }
 
     }
@@ -303,7 +326,8 @@ impl Entry {
 
         match *self {
             File(ref path) => path.clone(),
-            Http(ref path, _) => path.clone()
+            Http(ref path, _) => path.clone(),
+            Archive(_, _, _) => not_implemented!()
         }
     }
 
@@ -312,7 +336,8 @@ impl Entry {
 
         match *self {
             File(ref path) => path_to_str(path),
-            Http(ref path, _) => path_to_str(path)
+            Http(ref path, _) => path_to_str(path),
+            Archive(_, _, _) => not_implemented!()
         }
 
     }
@@ -349,4 +374,11 @@ fn expand(dir: &PathBuf, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
     });
 
     Ok(result)
+}
+
+fn from_archive_entry(archive_path: Rc<PathBuf>, archive_entry: &ArchiveEntry) -> Entry {
+    Entry::Archive(
+        archive_path,
+        archive_entry.name.clone(),
+        archive_entry.content.clone())
 }

@@ -153,7 +153,7 @@ fn test_parse() {
     assert_eq!(parse("@Previous"), Previous);
     assert_eq!(parse("@Prev"), Previous);
     assert_eq!(parse("@Last"), Last);
-    assert_eq!(parse("@shuffle"), Shuffle(true));
+    assert_eq!(parse("@shuffle"), Shuffle(false));
     assert_eq!(parse("@entries"), PrintEntries);
     assert_eq!(parse("@refresh"), Refresh);
     assert_eq!(parse("@sort"), Sort);
@@ -189,7 +189,7 @@ fn test_parse() {
         Push("http://example.com/sample.png".to_owned()));
 
     // Ignore case
-    assert_eq!(parse("@ShuFFle"), Shuffle(true));
+    assert_eq!(parse("@ShuFFle"), Shuffle(false));
 }
 
 fn pathbuf(s: &str) -> PathBuf {

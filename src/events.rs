@@ -8,32 +8,17 @@ use key::KeyData;
 
 
 
-
 pub fn on_key_press(tx: Sender<Operation>, key: KeyData) -> Inhibit {
     use operation::Operation::*;
-    use options::AppOptionName as opt;
 
     let keyval = key.code;
-    if let Some(operation) = match key.text().as_str() {
-        "e" => Some(Expand(None)),
-        "E" => Some(ExpandRecursive(None)),
-        "f" | "h" => Some(First),
-        "j" => Some(Next),
-        "k" => Some(Previous),
-        "l" => Some(Last),
-        "q" => Some(Exit),
-        "r" => Some(Refresh),
-        "i" => Some(Toggle(opt::ShowText)),
-        "z" => Some(Shuffle(false)),
-        "Z" | "s" => Some(Sort),
-        _ => if 48 <= keyval && keyval <= 57 {
-            Some(Count((keyval - 48) as u8))
+    tx.send({
+        if 48 <= keyval && keyval <= 57 {
+            Count((keyval - 48) as u8)
         } else {
-            Some(Key(key))
+            Key(key)
         }
-    } {
-        tx.send(operation).unwrap();
-    }
+    }).unwrap();
 
     Inhibit(false)
 }

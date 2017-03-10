@@ -33,13 +33,17 @@ mod options;
 mod key;
 mod sorting_buffer;
 mod termination;
+mod mapping;
 
 use gtk::prelude::*;
 use gtk::{Image, Window};
 use argparse::{ArgumentParser, List, Collect, Store, StoreTrue, StoreOption};
 use std::thread::{sleep};
 use std::time::Duration;
-use std::sync::mpsc::Receiver;
+use std::sync::mpsc::{Sender, Receiver};
+use std::env::home_dir;
+use std::io::{BufReader, BufRead};
+use std::fs::File;
 
 use entry::EntryContainerOptions;
 use key::KeyData;
@@ -165,5 +169,43 @@ fn parse_arguments(window: &Window, image: Image) -> (app::App, Receiver<Operati
 
     let (app, rx) = app::App::new(eco, max_http_threads, expand, expand_recursive, shuffle, files, fragiles.clone(), window.clone(), image, app_options);
 
+    load_config(app.tx.clone());
+
     (app, rx, inputs, fragiles, commands)
+}
+
+
+fn load_config(tx: Sender<Operation>) {
+    use operation::Operation::*;
+    use mapping::Input;
+    use options::AppOptionName::*;
+
+    let filepath = {
+        let mut path = home_dir().unwrap();
+        path.push(".config");
+        path.push("chrysoberyl");
+        path.push("rc.conf");
+        path
+    };
+
+    if let Ok(file) = File::open(&filepath) {
+        puts_event!("config_file", "state" => "open");
+        let file = BufReader::new(file);
+        for line in file.lines() {
+            let line = line.unwrap();
+            tx.send(Operation::from_str_force(&line)).unwrap();
+        }
+        puts_event!("config_file", "state" => "close");
+    } else {
+        tx.send(Map(Input::key("h"), Box::new(First))).unwrap();
+        tx.send(Map(Input::key("j"), Box::new(Next))).unwrap();
+        tx.send(Map(Input::key("k"), Box::new(Previous))).unwrap();
+        tx.send(Map(Input::key("l"), Box::new(Last))).unwrap();
+        tx.send(Map(Input::key("q"), Box::new(Quit))).unwrap();
+        tx.send(Map(Input::key("z"), Box::new(Shuffle(false)))).unwrap();
+        tx.send(Map(Input::key("e"), Box::new(Expand(None)))).unwrap();
+        tx.send(Map(Input::key("E"), Box::new(ExpandRecursive(None)))).unwrap();
+        tx.send(Map(Input::key("i"), Box::new(Toggle(ShowText)))).unwrap();
+        tx.send(Map(Input::key("r"), Box::new(Refresh))).unwrap();
+    }
 }

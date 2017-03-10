@@ -16,6 +16,7 @@ use key::KeyData;
 use utils::path_to_str;
 use output;
 use termination;
+use mapping::{Mapping, Input};
 
 
 
@@ -24,6 +25,7 @@ pub struct App {
     window: Window,
     image: Image,
     http_cache: HttpCache,
+    mapping: Mapping,
     pub tx: Sender<Operation>,
     pub options: AppOptions
 }
@@ -39,7 +41,8 @@ impl App {
             image: image,
             tx: tx.clone(),
             http_cache: HttpCache::new(http_threads, tx.clone()),
-            options: options
+            options: options,
+            mapping: Mapping::new()
         };
 
         for file in files.iter() {
@@ -85,6 +88,7 @@ impl App {
 
         {
             match *operation {
+                Nop => (),
                 First => changed = self.entries.pointer.first(len),
                 Next => changed = self.entries.pointer.next(len),
                 Previous => changed = self.entries.pointer.previous(),
@@ -132,7 +136,14 @@ impl App {
                         writeln!(&mut stderr(), "{}", path_to_str(&entry)).unwrap();
                     }
                 }
-                Exit => termination::execute(),
+                Map(ref input, ref mapped_operation) => {
+                    // FIXME
+                    puts_event!("map",
+                                "input" => format!("{:?}", input),
+                                "operation" => format!("{:?}", mapped_operation));
+                    self.mapping.register(input.clone(), *mapped_operation.clone());
+                }
+                Quit => termination::execute(),
             }
         }
 
@@ -245,15 +256,24 @@ impl App {
     }
 
     fn on_key(&self, key: &KeyData) {
-        self.puts_event_with_current(
-            "key",
-            Some(&vec![("name".to_owned(), key.text().to_owned())]));
+        let key_name = key.text();
+        if let Some(op) = self.mapping.matched(&Input::key(&key_name)) {
+            self.tx.send(op).unwrap();
+        } else {
+            self.puts_event_with_current(
+                "keyboard",
+                Some(&vec![("name".to_owned(), key.text().to_owned())]));
+        }
     }
 
     fn on_button(&self, button: &u32) {
-        self.puts_event_with_current(
-            "key",
-            Some(&vec![("name".to_owned(), format!("{}", button))]));
+        if let Some(op) = self.mapping.matched(&Input::mouse_button(*button)) {
+            self.tx.send(op).unwrap();
+        } else {
+            self.puts_event_with_current(
+                "mouse_button",
+                Some(&vec![("name".to_owned(), format!("{}", button))]));
+        }
     }
 
     fn on_user(&self, data: &Vec<(String, String)>) {

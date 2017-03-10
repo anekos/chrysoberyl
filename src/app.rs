@@ -3,8 +3,6 @@ use std::sync::mpsc::{channel, Sender, Receiver};
 use std::path::{Path, PathBuf};
 use gtk::prelude::*;
 use gtk::{Image, Window};
-use gdk_pixbuf::{Pixbuf, PixbufAnimation};
-use immeta;
 use immeta::markers::Gif;
 
 use entry::{Entry,EntryContainer, EntryContainerOptions};
@@ -17,6 +15,7 @@ use utils::path_to_str;
 use output;
 use termination;
 use mapping::{Mapping, Input};
+use pixbuf::*;
 
 
 
@@ -132,8 +131,8 @@ impl App {
                 User(ref data) => self.on_user(data),
                 PrintEntries => {
                     use std::io::{Write, stderr};
-                    for entry in self.entries.to_vec() {
-                        writeln!(&mut stderr(), "{}", path_to_str(&entry)).unwrap();
+                    for entry in self.entries.to_displays() {
+                        writeln!(&mut stderr(), "{}", entry).unwrap();
                     }
                 }
                 Map(ref input, ref mapped_operation) => {
@@ -150,7 +149,7 @@ impl App {
         if let Some((entry, index)) = self.entries.current() {
             if changed || do_refresh {
                 let len = self.entries.len();
-                let path = entry.path();
+                let path = entry.display_path();
                 let text = &format!("[{}/{}] {}", index + 1, len, path);
 
                 time!("show_image" => {
@@ -175,10 +174,10 @@ impl App {
     fn show_image(&self, entry: Entry, text: Option<&str>) {
         let (width, height) = self.window.get_size();
 
-        if let Ok(img) = immeta::load_from_file(&entry.to_path_buf()) {
+        if let Ok(img) = get_meta(&entry) {
             if let Ok(gif) = img.into::<Gif>() {
                 if gif.is_animated() {
-                    match PixbufAnimation::new_from_file(entry.to_path_str()) {
+                    match get_pixbuf_animation(&entry) {
                         Ok(buf) => self.image.set_from_animation(&buf),
                         Err(err) => puts_error!("at" => "show_image", "reason" => err)
                     }
@@ -187,7 +186,7 @@ impl App {
             }
         }
 
-        match Pixbuf::new_from_file_at_scale(entry.to_path_str(), width, height, true) {
+        match get_pixbuf(&&entry, width, height) {
             Ok(buf) => {
                 if let Some(text) = text {
                     use cairo::{Context, ImageSurface, Format};

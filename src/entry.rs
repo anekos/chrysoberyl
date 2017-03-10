@@ -39,7 +39,6 @@ pub enum Entry {
 }
 
 
-
 impl EntryContainer {
     pub fn new(options: EntryContainerOptions) -> EntryContainer {
         EntryContainer {
@@ -76,8 +75,8 @@ impl EntryContainer {
         })
     }
 
-    pub fn to_vec(&self) -> Vec<PathBuf> {
-        self.files.iter().map(|it: &Rc<Entry>| (**it).to_path_buf()).collect()
+    pub fn to_displays(&self) -> Vec<String> {
+        self.files.iter().map(|it: &Rc<Entry>| (**it).display_path()).collect()
     }
 
     pub fn expand(&mut self, dir: Option<PathBuf>, n: u8, recursive: u8) {
@@ -310,38 +309,15 @@ impl EntryContainerOptions {
 
 
 impl Entry {
-    pub fn path(&self) -> String {
+    pub fn display_path(&self) -> String {
         use self::Entry::*;
 
         match *self {
             File(ref path) => path_to_str(path).to_owned(),
             Http(_, ref url) => url.clone(),
-            Archive(_, _, _) => not_implemented!()
-        }
-
-    }
-
-    pub fn to_path_buf(&self) -> PathBuf {
-        use self::Entry::*;
-
-        match *self {
-            File(ref path) => path.clone(),
-            Http(ref path, _) => path.clone(),
-            Archive(_, _, _) => not_implemented!()
+            Archive(ref archive_path, ref filename, _) => format!("{}@{}", filename, path_to_str(&*archive_path))
         }
     }
-
-    pub fn to_path_str(&self) -> &str {
-        use self::Entry::*;
-
-        match *self {
-            File(ref path) => path_to_str(path),
-            Http(ref path, _) => path_to_str(path),
-            Archive(_, _, _) => not_implemented!()
-        }
-
-    }
-
 }
 
 

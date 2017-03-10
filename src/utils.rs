@@ -9,6 +9,13 @@ pub fn path_to_str(path: &PathBuf) -> &str {
 }
 
 
+macro_rules! not_implemented {
+    () => {
+        panic!("Not Implemented")
+    }
+}
+
+
 macro_rules! through {
     ( [] $body:expr )  => {
         {

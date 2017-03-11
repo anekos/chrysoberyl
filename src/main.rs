@@ -19,6 +19,7 @@ extern crate shell_escape;
 #[macro_use] extern crate lazy_static;
 extern crate libarchive;
 extern crate libarchive3_sys;
+extern crate encoding;
 
 #[macro_use] mod utils;
 #[macro_use] mod output;

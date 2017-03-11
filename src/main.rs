@@ -38,7 +38,7 @@ mod sorting_buffer;
 mod termination;
 mod mapping;
 mod archive;
-mod pixbuf;
+mod buffer_cache;
 
 use gtk::prelude::*;
 use gtk::{Image, Window};

@@ -1,9 +1,12 @@
 
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::path::{Path, PathBuf};
+use gtk;
 use gtk::prelude::*;
 use gtk::{Image, Window};
+use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
 use immeta::markers::Gif;
+use immeta::{self, GenericMetadata};
 
 use entry::{Entry,EntryContainer, EntryContainerOptions};
 use http_cache::HttpCache;
@@ -15,7 +18,6 @@ use utils::path_to_str;
 use output;
 use termination;
 use mapping::{Mapping, Input};
-use pixbuf::*;
 
 
 
@@ -182,10 +184,10 @@ impl App {
     fn show_image(&self, entry: Entry, text: Option<&str>) {
         let (width, height) = self.window.get_size();
 
-        if let Ok(img) = get_meta(&entry) {
+        if let Ok(img) = self.get_meta(&entry) {
             if let Ok(gif) = img.into::<Gif>() {
                 if gif.is_animated() {
-                    match get_pixbuf_animation(&entry) {
+                    match self.get_pixbuf_animation(&entry) {
                         Ok(buf) => self.image.set_from_animation(&buf),
                         Err(err) => puts_error!("at" => "show_image", "reason" => err)
                     }
@@ -194,7 +196,7 @@ impl App {
             }
         }
 
-        match get_pixbuf(&&entry, width, height) {
+        match self.get_pixbuf(&&entry, width, height) {
             Ok(buf) => {
                 if let Some(text) = text {
                     use cairo::{Context, ImageSurface, Format};
@@ -297,7 +299,7 @@ impl App {
                 match entry {
                     File(ref path) => push_pair!(pairs, "file" => path_to_str(path)),
                     Http(ref path, ref url) => push_pair!(pairs, "file" => path_to_str(path), "url" => url),
-                    Archive(ref archive_file, ref file, _) => push_pair!(pairs, "file" => file, "archive_file" => path_to_str(archive_file)),
+                    Archive(ref archive_file, ref entry) => push_pair!(pairs, "file" => entry.name, "archive_file" => path_to_str(archive_file)),
                 }
                 push_pair!(pairs, "index" => index + 1, "count" => self.entries.len());
             }
@@ -307,4 +309,64 @@ impl App {
             }
         });
     }
+
+    pub fn get_pixbuf_animation(&self, entry: &Entry) -> Result<PixbufAnimation, gtk::Error> {
+        match *entry {
+            Entry::File(ref path) => PixbufAnimation::new_from_file(path_to_str(path)),
+            Entry::Http(ref path, _) => PixbufAnimation::new_from_file(path_to_str(path)),
+            Entry::Archive(ref archive_path, ref entry) => {
+                let buffer = self.entries.buffer_cache.get(((**archive_path).clone(), entry.index));
+                let loader = PixbufLoader::new();
+                loader.loader_write(&*buffer.as_slice()).map(|_| {
+                    loader.close().unwrap();
+                    loader.get_animation().unwrap()
+                })
+            }
+        }
+    }
+
+    pub fn get_pixbuf(&self, entry: &Entry, width: i32, height: i32) -> Result<Pixbuf, gtk::Error> {
+        use gdk_pixbuf::InterpType;
+
+        match *entry {
+            Entry::File(ref path) => Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
+            Entry::Http(ref path, _) => Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
+            Entry::Archive(ref archive_path, ref entry) => {
+                let loader = PixbufLoader::new();
+                let buffer = self.entries.buffer_cache.get(((**archive_path).clone(), entry.index));
+                let pixbuf = loader.loader_write(&*buffer.as_slice()).map(|_| {
+                    loader.close().unwrap();
+                    let source = loader.get_pixbuf().unwrap();
+                    let (scale, out_width, out_height) = calculate_scale(&source, width, height);
+                    let mut scaled = unsafe { Pixbuf::new(0, false, 8, out_width, out_height).unwrap() };
+                    source.scale(&mut scaled, 0, 0, out_width, out_height, 0.0, 0.0, scale, scale, InterpType::Bilinear);
+                    scaled
+                });
+                pixbuf
+            }
+        }
+    }
+
+    pub fn get_meta(&self, entry: &Entry) -> Result<GenericMetadata, immeta::Error> {
+        match *entry {
+            Entry::File(ref path) => immeta::load_from_file(&path),
+            Entry::Http(ref path, _) => immeta::load_from_file(&path),
+            Entry::Archive(ref archive_path, ref entry) =>  {
+                let buffer = self.entries.buffer_cache.get(((**archive_path).clone(), entry.index));
+                immeta::load_from_buf(&buffer)
+            }
+        }
+    }
+}
+
+
+fn calculate_scale(pixbuf: &Pixbuf, max_width: i32, max_height: i32) -> (f64, i32, i32) {
+    let (in_width, in_height) = (pixbuf.get_width(), pixbuf.get_height());
+    let mut scale = max_width as f64 / in_width as f64;
+    let mut out_height = (in_height as f64 * scale) as i32;
+    if out_height > max_height {
+        scale = max_height as f64 / in_height as f64;
+        out_height = (in_height as f64 * scale) as i32;
+    }
+    (scale, (in_width as f64 * scale) as i32, out_height)
 }

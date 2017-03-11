@@ -12,6 +12,7 @@ use index_pointer::IndexPointer;
 use utils::path_to_str;
 use types::*;
 use archive::{self, ArchiveEntry};
+use buffer_cache::BufferCache;
 
 
 
@@ -20,6 +21,7 @@ pub struct EntryContainer {
     file_indices: HashMap<Rc<Entry>, usize>,
     options: EntryContainerOptions,
     rng: ThreadRng,
+    pub buffer_cache: BufferCache<(PathBuf, usize)>,
     pub pointer: IndexPointer,
 }
 
@@ -36,7 +38,7 @@ pub struct EntryContainerOptions {
 pub enum Entry {
     File(PathBuf),
     Http(PathBuf, String),
-    Archive(Rc<PathBuf>, String, Rc<Vec<u8>>) /* Archive filepath, filename, buffer */
+    Archive(Rc<PathBuf>, ArchiveEntry)
 }
 
 
@@ -47,6 +49,7 @@ impl EntryContainer {
             pointer: IndexPointer::new(),
             file_indices: HashMap::new(),
             rng: thread_rng(),
+            buffer_cache: BufferCache::new(),
             options: options
         }
     }
@@ -223,7 +226,7 @@ impl EntryContainer {
         let mut changed = false;
 
         let shared_archive_path = Rc::new(archive_path.to_owned());
-        for entry in archive::read_entries(archive_path, &self.options.encodings) {
+        for entry in archive::read_entries(archive_path.clone(), &self.options.encodings, self.buffer_cache.tx.clone()) {
             self.push_entry(from_archive_entry(shared_archive_path.clone(), &entry));
             changed = true; // FIXME
         }
@@ -242,7 +245,7 @@ impl EntryContainer {
         match *entry {
             File(ref path) => self.is_valid_image_file(path),
             Http(ref path, _) => self.is_valid_image_file(path),
-            Archive(_, _, _) => true // FIXME ??
+            Archive(_, _) => true // FIXME ??
         }
     }
 
@@ -316,7 +319,7 @@ impl Entry {
         match *self {
             File(ref path) => path_to_str(path).to_owned(),
             Http(_, ref url) => url.clone(),
-            Archive(ref archive_path, ref filename, _) => format!("{}@{}", filename, path_to_str(&*archive_path))
+            Archive(ref archive_path, ref entry) => format!("{}@{}", entry.name, path_to_str(&*archive_path))
         }
     }
 }
@@ -356,6 +359,5 @@ fn expand(dir: &PathBuf, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
 fn from_archive_entry(archive_path: Rc<PathBuf>, archive_entry: &ArchiveEntry) -> Entry {
     Entry::Archive(
         archive_path,
-        archive_entry.name.clone(),
-        archive_entry.content.clone())
+        (*archive_entry).clone())
 }

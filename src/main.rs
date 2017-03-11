@@ -18,6 +18,7 @@ extern crate cmdline_parser;
 extern crate shell_escape;
 #[macro_use] extern crate lazy_static;
 extern crate libarchive;
+extern crate libarchive3_sys;
 
 #[macro_use] mod utils;
 #[macro_use] mod output;

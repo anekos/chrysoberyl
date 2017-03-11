@@ -23,7 +23,7 @@ pub fn read_entries<T: AsRef<Path>>(path: T) -> Vec<ArchiveEntry> {
 
     let mut reader = builder.open_file(path).unwrap();
 
-    while let Some(ref name) = reader.next_header().map(|it| it.pathname().to_owned()) {
+    while let Some(ref name) = reader.next_header().map(|entry| get_filename(entry)) {
         let mut content = vec![];
         loop {
             if let Ok(block) = reader.read_block() {
@@ -41,10 +41,18 @@ pub fn read_entries<T: AsRef<Path>>(path: T) -> Vec<ArchiveEntry> {
         }
     }
 
-    println!("t7");
     result
 }
 
+
+fn get_filename(entry: &Entry) -> String {
+    use libarchive3_sys::ffi;
+    use std::ffi::CStr;
+
+    let c_str: &CStr = unsafe { CStr::from_ptr(ffi::archive_entry_pathname(entry.entry())) };
+    let buf: &[u8] = c_str.to_bytes();
+    String::from_utf8_lossy(buf).into_owned()
+}
 
 #[cfg(test)]#[test]
 fn test_open_archive() {

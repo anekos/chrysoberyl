@@ -49,6 +49,8 @@ use std::sync::mpsc::{Sender, Receiver};
 use std::env::home_dir;
 use std::io::{BufReader, BufRead};
 use std::fs::File;
+use encoding::label::encoding_from_whatwg_label;
+use encoding::EncodingRef;
 
 use entry::EntryContainerOptions;
 use key::KeyData;
@@ -130,6 +132,7 @@ fn parse_arguments(window: &Window, image: Image) -> (app::App, Receiver<Operati
     let mut max_http_threads: u8 = 3;
     let mut eco = EntryContainerOptions::new();
     let mut app_options = AppOptions::new();
+    let mut encodings: Vec<String> = vec![];
 
     {
         let mut width: Option<ImageSize> = None;
@@ -161,6 +164,8 @@ fn parse_arguments(window: &Window, image: Image) -> (app::App, Receiver<Operati
             ap.refer(&mut app_options.show_text).add_option(&["--show-info"], StoreTrue, "Show information bar on window bottom");
             // Limitation
             ap.refer(&mut max_http_threads).add_option(&["--max-http-threads", "-t"], Store, "Maximum number of HTTP Threads");
+            // Archive
+            ap.refer(&mut encodings).add_option(&["--encoding", "--enc"], Collect, "Character encoding for filename in archives");
             // Files
             ap.refer(&mut files).add_argument("images", List, "Image files or URLs");
 
@@ -171,12 +176,28 @@ fn parse_arguments(window: &Window, image: Image) -> (app::App, Receiver<Operati
         if let Some(height) = height { eco.min_height = Some(height); eco.max_height = Some(height); }
     }
 
+    eco.encodings = parse_encodings(&encodings);
 
     let (app, rx) = app::App::new(eco, max_http_threads, expand, expand_recursive, shuffle, files, fragiles.clone(), window.clone(), image, app_options);
 
     load_config(app.tx.clone());
 
     (app, rx, inputs, fragiles, commands)
+}
+
+
+fn parse_encodings(names: &Vec<String>) -> Vec<EncodingRef> {
+    let mut result = vec![];
+
+    for name in names.iter() {
+        if let Some(encoding) = encoding_from_whatwg_label(name) {
+            result.push(encoding);
+        } else {
+            puts_error!("invalid_encoding_name" => name);
+        }
+    }
+
+    result
 }
 
 

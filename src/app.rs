@@ -34,6 +34,14 @@ impl App {
     pub fn new(entry_options:EntryContainerOptions, http_threads: u8, expand: bool, expand_recursive: bool, shuffle: bool, files: Vec<String>, fragiles: Vec<String>, window: Window, image: Image, options: AppOptions) -> (App, Receiver<Operation>) {
         let (tx, rx) = channel();
 
+        let mut entry_options = entry_options;
+
+        if entry_options.encodings.is_empty() {
+            use encoding::all::*;
+            entry_options.encodings.push(UTF_8);
+            entry_options.encodings.push(WINDOWS_31J);
+        }
+
         let mut app = App {
             entries: EntryContainer::new(entry_options),
             window: window,

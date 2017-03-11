@@ -4,6 +4,7 @@ use std::rc::Rc;
 use libarchive::reader::Builder;
 use libarchive::archive::{ReadFilter, ReadFormat, Entry};
 use libarchive::reader::Reader;
+use encoding::types::EncodingRef;
 
 
 
@@ -14,7 +15,7 @@ pub struct ArchiveEntry {
 
 
 
-pub fn read_entries<T: AsRef<Path>>(path: T) -> Vec<ArchiveEntry> {
+pub fn read_entries<T: AsRef<Path>>(path: T, encodings: &Vec<EncodingRef>) -> Vec<ArchiveEntry> {
     let mut result = Vec::new();
 
     let mut builder = Builder::new();
@@ -24,7 +25,7 @@ pub fn read_entries<T: AsRef<Path>>(path: T) -> Vec<ArchiveEntry> {
     let mut reader = builder.open_file(path).unwrap();
     let mut index = 0;
 
-    while let Some(ref name) = reader.next_header().map(|entry| get_filename(entry, index)) {
+    while let Some(ref name) = reader.next_header().map(|entry| get_filename(entry, index, encodings)) {
         let mut content = vec![];
         loop {
             if let Ok(block) = reader.read_block() {
@@ -47,22 +48,23 @@ pub fn read_entries<T: AsRef<Path>>(path: T) -> Vec<ArchiveEntry> {
 }
 
 
-fn get_filename(entry: &Entry, index: usize) -> String {
+fn get_filename(entry: &Entry, index: usize, encodings: &Vec<EncodingRef>) -> String {
     use libarchive3_sys::ffi;
     use std::ffi::CStr;
-    use encoding::{Encoding, DecoderTrap};
-    use encoding::all::WINDOWS_31J;
+    use encoding::Encoding;
+    use encoding::DecoderTrap::{Strict, Ignore};
+    use encoding::all::ASCII;
 
     let c_str: &CStr = unsafe { CStr::from_ptr(ffi::archive_entry_pathname(entry.entry())) };
     let buf: &[u8] = c_str.to_bytes();
 
-    if let Ok(result) = String::from_utf8(buf.to_vec()) {
-        result
-    } else if let Ok(result) = WINDOWS_31J.decode(buf, DecoderTrap::Ignore) {
-        result
-    } else {
-        format!("{:4}", index)
+    for encoding in encodings {
+        if let Ok(result) = encoding.decode(buf, Strict) {
+            return result;
+        }
     }
+
+    ASCII.decode(buf, Ignore).unwrap_or_else(|_| format!("{:4}", index))
 }
 
 #[cfg(test)]#[test]

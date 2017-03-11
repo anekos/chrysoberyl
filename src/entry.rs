@@ -6,6 +6,7 @@ use std::io;
 use std::fmt;
 use rand::{thread_rng, Rng, ThreadRng};
 use immeta;
+use encoding::types::EncodingRef;
 
 use index_pointer::IndexPointer;
 use utils::path_to_str;
@@ -22,13 +23,13 @@ pub struct EntryContainer {
     pub pointer: IndexPointer,
 }
 
-#[derive(Debug)]
 pub struct EntryContainerOptions {
     pub min_width: Option<ImageSize>,
     pub min_height: Option<ImageSize>,
     pub max_width: Option<ImageSize>,
     pub max_height: Option<ImageSize>,
     pub ratio: Option<f32>, // width / height
+    pub encodings: Vec<EncodingRef>,
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
@@ -222,7 +223,7 @@ impl EntryContainer {
         let mut changed = false;
 
         let shared_archive_path = Rc::new(archive_path.to_owned());
-        for entry in archive::read_entries(archive_path) {
+        for entry in archive::read_entries(archive_path, &self.options.encodings) {
             self.push_entry(from_archive_entry(shared_archive_path.clone(), &entry));
             changed = true; // FIXME
         }
@@ -291,7 +292,7 @@ impl fmt::Display for EntryContainer {
 
 impl EntryContainerOptions {
     pub fn new() -> EntryContainerOptions {
-        EntryContainerOptions { min_width: None, min_height: None, max_width: None, max_height: None, ratio: None }
+        EntryContainerOptions { min_width: None, min_height: None, max_width: None, max_height: None, ratio: None, encodings: vec![] }
     }
 
     fn needs_image_info(&self) -> bool {

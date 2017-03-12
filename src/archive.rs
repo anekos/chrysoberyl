@@ -22,7 +22,7 @@ pub struct ArchiveEntry {
 
 impl Ord for ArchiveEntry {
     fn cmp(&self, other: &ArchiveEntry) -> Ordering {
-        self.index.cmp(&other.index)
+        self.name.cmp(&other.name)
     }
 }
 
@@ -34,13 +34,13 @@ impl PartialOrd for ArchiveEntry {
 
 impl PartialEq for ArchiveEntry {
     fn eq(&self, other: &ArchiveEntry) -> bool {
-        self.index == other.index
+        self.name == other.name
     }
 }
 
 impl Hash for ArchiveEntry {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.index.hash(state);
+        self.name.hash(state);
     }
 }
 
@@ -104,6 +104,7 @@ pub fn read_entries(path: PathBuf, encodings: &Vec<EncodingRef>, buffer_cache_tx
 
     });
 
+    result.sort();
     result
 }
 

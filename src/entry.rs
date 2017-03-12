@@ -4,6 +4,7 @@ use std::fmt;
 use std::io;
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use encoding::types::EncodingRef;
 use immeta;
@@ -21,7 +22,7 @@ pub struct EntryContainer {
     file_indices: HashMap<Rc<Entry>, usize>,
     options: EntryContainerOptions,
     rng: ThreadRng,
-    pub buffer_cache: BufferCache<(PathBuf, usize)>,
+    buffer_cache: BufferCache<(PathBuf, usize)>,
     pub pointer: IndexPointer,
 }
 
@@ -196,6 +197,10 @@ impl EntryContainer {
     pub fn push_http_cache(&mut self, file: &PathBuf, url: &str) -> bool {
         let path = file.canonicalize().expect("canonicalize");
         self.push_entry(Entry::Http(path, url.to_owned()))
+    }
+
+    pub fn get_buffer_cache(&self, archive_path: &PathBuf, index: usize) -> Arc<Vec<u8>> {
+        self.buffer_cache.get(((*archive_path).clone(), index))
     }
 
     fn push_file(&mut self, file: &PathBuf) -> bool {

@@ -316,7 +316,7 @@ impl App {
             Entry::File(ref path) => PixbufAnimation::new_from_file(path_to_str(path)),
             Entry::Http(ref path, _) => PixbufAnimation::new_from_file(path_to_str(path)),
             Entry::Archive(ref archive_path, ref entry) => {
-                let buffer = self.entries.buffer_cache.get(((**archive_path).clone(), entry.index));
+                let buffer = self.entries.get_buffer_cache(archive_path, entry.index);
                 let loader = PixbufLoader::new();
                 loader.loader_write(&*buffer.as_slice()).map(|_| {
                     loader.close().unwrap();
@@ -334,7 +334,7 @@ impl App {
             Entry::Http(ref path, _) => Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
             Entry::Archive(ref archive_path, ref entry) => {
                 let loader = PixbufLoader::new();
-                let buffer = self.entries.buffer_cache.get(((**archive_path).clone(), entry.index));
+                let buffer = self.entries.get_buffer_cache(archive_path, entry.index);
                 let pixbuf = loader.loader_write(&*buffer.as_slice()).map(|_| {
                     loader.close().unwrap();
                     let source = loader.get_pixbuf().unwrap();
@@ -353,7 +353,7 @@ impl App {
             Entry::File(ref path) => immeta::load_from_file(&path),
             Entry::Http(ref path, _) => immeta::load_from_file(&path),
             Entry::Archive(ref archive_path, ref entry) =>  {
-                let buffer = self.entries.buffer_cache.get(((**archive_path).clone(), entry.index));
+                let buffer = self.entries.get_buffer_cache(archive_path, entry.index);
                 immeta::load_from_buf(&buffer)
             }
         }

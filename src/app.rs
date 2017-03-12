@@ -283,10 +283,10 @@ impl App {
         self.http_cache.fetch(url);
     }
 
-    fn on_key(&self, key: &KeyData) {
+    fn on_key(&mut self, key: &KeyData) {
         let key_name = key.text();
         if let Some(op) = self.mapping.matched(&Input::key(&key_name)) {
-            self.tx.send(op).unwrap();
+            self.operate(&op);
         } else {
             self.puts_event_with_current(
                 "keyboard",

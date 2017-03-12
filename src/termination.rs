@@ -1,7 +1,8 @@
 
 use std::fs::remove_file;
-use std::sync::{Arc, Mutex};
 use std::process::exit;
+use std::sync::{Arc, Mutex};
+
 use ctrlc;
 use libc;
 

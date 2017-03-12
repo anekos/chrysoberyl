@@ -1,8 +1,8 @@
 
-use std::thread::spawn;
-use std::sync::mpsc::Sender;
 use std::fs::File;
 use std::process::{Command, Stdio};
+use std::sync::mpsc::Sender;
+use std::thread::spawn;
 
 use operation::Operation;
 use termination;

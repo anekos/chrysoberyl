@@ -1,23 +1,24 @@
 
-use std::sync::mpsc::{channel, Sender, Receiver};
 use std::path::{Path, PathBuf};
-use gtk;
+use std::sync::mpsc::{channel, Sender, Receiver};
+
+use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
 use gtk::prelude::*;
 use gtk::{Image, Window};
-use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
+use gtk;
 use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
 
 use entry::{Entry,EntryContainer, EntryContainerOptions};
-use http_cache::HttpCache;
-use options::{AppOptions, AppOptionName};
-use operation::Operation;
 use fragile_input::new_fragile_input;
+use http_cache::HttpCache;
 use key::KeyData;
-use utils::path_to_str;
+use mapping::{Mapping, Input};
+use operation::Operation;
+use options::{AppOptions, AppOptionName};
 use output;
 use termination;
-use mapping::{Mapping, Input};
+use utils::path_to_str;
 
 
 

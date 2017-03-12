@@ -1,11 +1,12 @@
 
-use std::str::FromStr;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
+
 use cmdline_parser::Parser;
 
-use options::AppOptionName;
 use key::KeyData;
 use mapping::Input;
+use options::AppOptionName;
 
 
 

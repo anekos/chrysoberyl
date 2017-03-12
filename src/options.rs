@@ -1,7 +1,6 @@
 
 
 
-
 pub struct AppOptions {
     pub show_text: bool,
 }

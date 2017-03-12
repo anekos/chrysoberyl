@@ -1,5 +1,6 @@
 
 use std::cmp::Ordering;
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
 use std::sync::mpsc::Sender;
@@ -11,6 +12,7 @@ use libarchive::reader::Builder;
 use libarchive::reader::Reader;
 
 use buffer_cache::Operation;
+use validation::is_valid_image_filename;
 
 
 
@@ -57,12 +59,16 @@ pub fn read_entries(path: PathBuf, encodings: &Vec<EncodingRef>, buffer_cache_tx
 
     let mut reader = builder.open_file(&path).unwrap();
     let mut index = 0;
+    let mut targets = HashSet::new();
 
     while let Some(entry) = reader.next_header() {
         let name = get_filename(entry, index, encodings);
 
         match entry.filetype() {
-            FileType::RegularFile => result.push(ArchiveEntry { name: name.to_owned(), index: index }),
+            FileType::RegularFile if is_valid_image_filename(&name) => {
+                targets.insert(index);
+                result.push(ArchiveEntry { name: name.to_owned(), index: index });
+            }
             _ => ()
         }
 
@@ -77,26 +83,24 @@ pub fn read_entries(path: PathBuf, encodings: &Vec<EncodingRef>, buffer_cache_tx
 
         let mut reader = builder.open_file(&path).unwrap();
         let mut index = 0;
-        while let Some(filetype) = reader.next_header().map(|it| it.filetype()) {
-            match filetype {
-                FileType::RegularFile => {
-                    let mut content = vec![];
-                    loop {
-                        if let Ok(block) = reader.read_block() {
-                            if let Some(block) = block {
-                                content.extend_from_slice(block);
-                                continue;
-                            } else if content.is_empty() {
-                                panic!("Empty content in archive");
-                            } else {
-                                buffer_cache_tx.send(Operation::Fill((path.clone(), index), content)).unwrap();
 
-                            }
+        while let Some(_) = reader.next_header() {
+            if targets.contains(&index) {
+                let mut content = vec![];
+                loop {
+                    if let Ok(block) = reader.read_block() {
+                        if let Some(block) = block {
+                            content.extend_from_slice(block);
+                            continue;
+                        } else if content.is_empty() {
+                            panic!("Empty content in archive");
+                        } else {
+                            buffer_cache_tx.send(Operation::Fill((path.clone(), index), content)).unwrap();
+
                         }
-                        break;
                     }
+                    break;
                 }
-                _ => ()
             }
 
             index += 1;

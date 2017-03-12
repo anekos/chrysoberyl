@@ -14,6 +14,7 @@ use archive::{self, ArchiveEntry};
 use buffer_cache::BufferCache;
 use index_pointer::IndexPointer;
 use utils::path_to_str;
+use validation::is_valid_image_filename;
 
 
 
@@ -257,12 +258,8 @@ impl EntryContainer {
     fn is_valid_image_file(&self, path: &PathBuf) -> bool {
         let opt = &self.options;
 
-        if let Some(extension) = path.extension() {
-            let extension: &str = &extension.to_str().unwrap().to_lowercase();
-            match extension {
-                "jpeg" | "jpg" | "png" | "gif" => (),
-                _ => return false
-            }
+        if !is_valid_image_filename(path) {
+            return false;
         }
 
         if !opt.needs_image_info() {

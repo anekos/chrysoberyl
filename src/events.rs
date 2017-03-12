@@ -1,10 +1,11 @@
 
 use std::sync::mpsc::Sender;
-use gtk::{Inhibit, main_quit};
-use gdk::EventButton;
 
-use operation::Operation;
+use gdk::EventButton;
+use gtk::{Inhibit, main_quit};
+
 use key::KeyData;
+use operation::Operation;
 
 
 

@@ -1,13 +1,14 @@
 
-use std::path::PathBuf;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
+use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 use std::thread::spawn;
-use libarchive::reader::Builder;
-use libarchive::archive::{ReadFilter, ReadFormat, Entry, FileType};
-use libarchive::reader::Reader;
+
 use encoding::types::EncodingRef;
+use libarchive::archive::{ReadFilter, ReadFormat, Entry, FileType};
+use libarchive::reader::Builder;
+use libarchive::reader::Reader;
 
 use buffer_cache::Operation;
 

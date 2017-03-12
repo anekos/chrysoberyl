@@ -6,6 +6,7 @@ use std::sync::mpsc::{Sender, channel};
 use std::thread::spawn;
 
 
+
 pub struct BufferCache<T: Hash + Eq + Send> {
     pub tx: Sender<Operation<T>>
 }

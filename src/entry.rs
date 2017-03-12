@@ -1,18 +1,19 @@
 
-use std::rc::Rc;
-use std::path::PathBuf;
 use std::collections::HashMap;
-use std::io;
 use std::fmt;
-use rand::{thread_rng, Rng, ThreadRng};
-use immeta;
-use encoding::types::EncodingRef;
+use std::io;
+use std::path::PathBuf;
+use std::rc::Rc;
+use std::sync::Arc;
 
-use index_pointer::IndexPointer;
-use utils::path_to_str;
-use types::*;
+use encoding::types::EncodingRef;
+use immeta;
+use rand::{thread_rng, Rng, ThreadRng};
+
 use archive::{self, ArchiveEntry};
 use buffer_cache::BufferCache;
+use index_pointer::IndexPointer;
+use utils::path_to_str;
 
 
 
@@ -21,15 +22,15 @@ pub struct EntryContainer {
     file_indices: HashMap<Rc<Entry>, usize>,
     options: EntryContainerOptions,
     rng: ThreadRng,
-    pub buffer_cache: BufferCache<(PathBuf, usize)>,
+    buffer_cache: BufferCache<(PathBuf, usize)>,
     pub pointer: IndexPointer,
 }
 
 pub struct EntryContainerOptions {
-    pub min_width: Option<ImageSize>,
-    pub min_height: Option<ImageSize>,
-    pub max_width: Option<ImageSize>,
-    pub max_height: Option<ImageSize>,
+    pub min_width: Option<u32>,
+    pub min_height: Option<u32>,
+    pub max_width: Option<u32>,
+    pub max_height: Option<u32>,
     pub ratio: Option<f32>, // width / height
     pub encodings: Vec<EncodingRef>,
 }
@@ -198,6 +199,10 @@ impl EntryContainer {
         self.push_entry(Entry::Http(path, url.to_owned()))
     }
 
+    pub fn get_buffer_cache(&self, archive_path: &PathBuf, index: usize) -> Arc<Vec<u8>> {
+        self.buffer_cache.get(((*archive_path).clone(), index))
+    }
+
     fn push_file(&mut self, file: &PathBuf) -> bool {
         let path = file.canonicalize().expect("canonicalize");
         if let Some(ext) = file.extension() {
@@ -302,7 +307,7 @@ impl EntryContainerOptions {
         self.min_width.is_some() || self.min_height.is_some() || self.max_width.is_some() || self.max_height.is_some() || self.ratio.is_some()
     }
 
-    fn ratio_matches(&self, width: ImageSize, height: ImageSize) -> bool {
+    fn ratio_matches(&self, width: u32, height: u32) -> bool {
         if let Some(ratio) = self.ratio {
             (ratio - (width as f32 / height as f32)).abs() < 0.001
         } else {

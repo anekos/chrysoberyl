@@ -1,10 +1,11 @@
 
 use std::env::home_dir;
 use std::fs::{File, create_dir_all};
-use std::path::PathBuf;
 use std::io::{BufWriter, Write, Read};
+use std::path::PathBuf;
 use std::sync::mpsc::{channel, Sender};
 use std::thread::spawn;
+
 use hyper::client::Client;
 use hyper::client::response::Response;
 use hyper::net::HttpsConnector;

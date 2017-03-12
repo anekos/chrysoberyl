@@ -6,12 +6,10 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use encoding::types::EncodingRef;
 use immeta;
 use rand::{thread_rng, Rng, ThreadRng};
 
-use archive::{self, ArchiveEntry};
-use buffer_cache::BufferCache;
+use archive::ArchiveEntry;
 use index_pointer::IndexPointer;
 use utils::path_to_str;
 use validation::is_valid_image_filename;
@@ -23,7 +21,6 @@ pub struct EntryContainer {
     file_indices: HashMap<Rc<Entry>, usize>,
     options: EntryContainerOptions,
     rng: ThreadRng,
-    buffer_cache: BufferCache<(PathBuf, usize)>,
     pub pointer: IndexPointer,
 }
 
@@ -33,14 +30,13 @@ pub struct EntryContainerOptions {
     pub max_width: Option<u32>,
     pub max_height: Option<u32>,
     pub ratio: Option<f32>, // width / height
-    pub encodings: Vec<EncodingRef>,
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
 pub enum Entry {
     File(PathBuf),
     Http(PathBuf, String),
-    Archive(Rc<PathBuf>, ArchiveEntry)
+    Archive(Rc<PathBuf>, ArchiveEntry, Arc<Vec<u8>>)
 }
 
 
@@ -51,7 +47,6 @@ impl EntryContainer {
             pointer: IndexPointer::new(),
             file_indices: HashMap::new(),
             rng: thread_rng(),
-            buffer_cache: BufferCache::new(),
             options: options
         }
     }
@@ -200,18 +195,12 @@ impl EntryContainer {
         self.push_entry(Entry::Http(path, url.to_owned()))
     }
 
-    pub fn get_buffer_cache(&self, archive_path: &PathBuf, index: usize) -> Arc<Vec<u8>> {
-        self.buffer_cache.get(((*archive_path).clone(), index))
+    pub fn push_archive_entry(&mut self, archive_path: &PathBuf, entry: &ArchiveEntry, buffer: Arc<Vec<u8>>) -> bool {
+        self.push_entry(Entry::Archive(Rc::new(archive_path.clone()), entry.clone(), buffer))
     }
 
     fn push_file(&mut self, file: &PathBuf) -> bool {
         let path = file.canonicalize().expect("canonicalize");
-        if let Some(ext) = file.extension() {
-            match &*ext.to_str().unwrap().to_lowercase() {
-                "zip" | "rar" | "tar.gz" | "lzh" | "lha" => return self.push_archive(&path),
-                _ => ()
-            }
-        }
         self.push_entry(Entry::File(path))
     }
 
@@ -228,19 +217,6 @@ impl EntryContainer {
         changed
     }
 
-    fn push_archive(&mut self, archive_path: &PathBuf) -> bool {
-        let mut changed = false;
-
-        let shared_archive_path = Rc::new(archive_path.to_owned());
-        for entry in archive::read_entries(archive_path.clone(), &self.options.encodings, self.buffer_cache.tx.clone()) {
-            self.push_entry(from_archive_entry(shared_archive_path.clone(), &entry));
-            changed = true; // FIXME
-        }
-
-        self.pointer.first(1);
-        changed
-    }
-
     fn is_duplicated(&self, entry: &Entry) -> bool {
         self.file_indices.contains_key(entry)
     }
@@ -251,7 +227,7 @@ impl EntryContainer {
         match *entry {
             File(ref path) => self.is_valid_image_file(path),
             Http(ref path, _) => self.is_valid_image_file(path),
-            Archive(_, _) => true // FIXME ??
+            Archive(_, _, _) => true // FIXME ??
         }
     }
 
@@ -297,7 +273,7 @@ impl fmt::Display for EntryContainer {
 
 impl EntryContainerOptions {
     pub fn new() -> EntryContainerOptions {
-        EntryContainerOptions { min_width: None, min_height: None, max_width: None, max_height: None, ratio: None, encodings: vec![] }
+        EntryContainerOptions { min_width: None, min_height: None, max_width: None, max_height: None, ratio: None }
     }
 
     fn needs_image_info(&self) -> bool {
@@ -321,7 +297,7 @@ impl Entry {
         match *self {
             File(ref path) => path_to_str(path).to_owned(),
             Http(_, ref url) => url.clone(),
-            Archive(ref archive_path, ref entry) => format!("{}@{}", entry.name, path_to_str(&*archive_path))
+            Archive(ref archive_path, ref entry, _) => format!("{}@{}", entry.name, path_to_str(&*archive_path))
         }
     }
 }
@@ -356,10 +332,4 @@ fn expand(dir: &PathBuf, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
     });
 
     Ok(result)
-}
-
-fn from_archive_entry(archive_path: Rc<PathBuf>, archive_entry: &ArchiveEntry) -> Entry {
-    Entry::Archive(
-        archive_path,
-        (*archive_entry).clone())
 }

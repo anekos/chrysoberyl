@@ -2,6 +2,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Sender, Receiver};
 
+use encoding::types::EncodingRef;
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
 use gtk::prelude::*;
 use gtk::{Image, Window};
@@ -9,6 +10,7 @@ use gtk;
 use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
 
+use archive;
 use entry::{Entry,EntryContainer, EntryContainerOptions};
 use fragile_input::new_fragile_input;
 use http_cache::HttpCache;
@@ -26,23 +28,24 @@ pub struct App {
     entries: EntryContainer,
     window: Window,
     image: Image,
-    http_cache: HttpCache,
     mapping: Mapping,
+    http_cache: HttpCache,
+    encodings: Vec<EncodingRef>,
     pub tx: Sender<Operation>,
     pub options: AppOptions
 }
 
 
 impl App {
-    pub fn new(entry_options:EntryContainerOptions, http_threads: u8, expand: bool, expand_recursive: bool, shuffle: bool, files: Vec<String>, fragiles: Vec<String>, window: Window, image: Image, options: AppOptions) -> (App, Receiver<Operation>) {
+    pub fn new(entry_options:EntryContainerOptions, http_threads: u8, expand: bool, expand_recursive: bool, shuffle: bool, files: Vec<String>, fragiles: Vec<String>, window: Window, image: Image, _encodings: Vec<EncodingRef>, options: AppOptions) -> (App, Receiver<Operation>) {
         let (tx, rx) = channel();
 
-        let mut entry_options = entry_options;
+        let mut _encodings = _encodings;
 
-        if entry_options.encodings.is_empty() {
+        if _encodings.is_empty() {
             use encoding::all::*;
-            entry_options.encodings.push(UTF_8);
-            entry_options.encodings.push(WINDOWS_31J);
+            _encodings.push(UTF_8);
+            _encodings.push(WINDOWS_31J);
         }
 
         let mut app = App {
@@ -52,6 +55,7 @@ impl App {
             tx: tx.clone(),
             http_cache: HttpCache::new(http_threads, tx.clone()),
             options: options,
+            encodings: _encodings,
             mapping: Mapping::new()
         };
 
@@ -114,6 +118,10 @@ impl App {
                     do_refresh = self.options.show_text;
                 }
                 PushURL(ref url) => self.on_push_url(url.clone()),
+                PushArchiveEntry(ref archive_path, ref entry, ref buffer) => {
+                    changed = self.entries.push_archive_entry(archive_path, entry, buffer.clone());
+                    do_refresh = self.options.show_text;
+                },
                 Key(ref key) => self.on_key(key),
                 Button(ref button) => self.on_button(button),
                 Toggle(AppOptionName::ShowText) => {
@@ -248,9 +256,19 @@ impl App {
     fn on_push(&mut self, path: String) {
         if path.starts_with("http://") || path.starts_with("https://") {
             self.tx.send(Operation::PushURL(path)).unwrap();
-        } else {
-            self.operate(&Operation::PushPath(Path::new(&path).to_path_buf()));
+            return;
         }
+
+        let path = Path::new(&path).canonicalize().expect("canonicalize");
+        if let Some(ext) = path.extension() {
+            match &*ext.to_str().unwrap().to_lowercase() {
+                "zip" | "rar" | "tar.gz" | "lzh" | "lha" =>
+                    archive::fetch_entries(&path, &self.encodings, self.tx.clone()),
+                _ => ()
+            }
+        }
+
+        self.operate(&Operation::PushPath(Path::new(&path).to_path_buf()));
     }
 
     fn on_push_path(&mut self, file: PathBuf) -> bool {
@@ -300,7 +318,7 @@ impl App {
                 match entry {
                     File(ref path) => push_pair!(pairs, "file" => path_to_str(path)),
                     Http(ref path, ref url) => push_pair!(pairs, "file" => path_to_str(path), "url" => url),
-                    Archive(ref archive_file, ref entry) => push_pair!(pairs, "file" => entry.name, "archive_file" => path_to_str(archive_file)),
+                    Archive(ref archive_file, ref entry, _) => push_pair!(pairs, "file" => entry.name, "archive_file" => path_to_str(archive_file)),
                 }
                 push_pair!(pairs, "index" => index + 1, "count" => self.entries.len());
             }
@@ -315,8 +333,7 @@ impl App {
         match *entry {
             Entry::File(ref path) => PixbufAnimation::new_from_file(path_to_str(path)),
             Entry::Http(ref path, _) => PixbufAnimation::new_from_file(path_to_str(path)),
-            Entry::Archive(ref archive_path, ref entry) => {
-                let buffer = self.entries.get_buffer_cache(archive_path, entry.index);
+            Entry::Archive(_, _, ref buffer) => {
                 let loader = PixbufLoader::new();
                 loader.loader_write(&*buffer.as_slice()).map(|_| {
                     loader.close().unwrap();
@@ -332,9 +349,8 @@ impl App {
         match *entry {
             Entry::File(ref path) => Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
             Entry::Http(ref path, _) => Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
-            Entry::Archive(ref archive_path, ref entry) => {
+            Entry::Archive(_, _, ref buffer) => {
                 let loader = PixbufLoader::new();
-                let buffer = self.entries.get_buffer_cache(archive_path, entry.index);
                 let pixbuf = loader.loader_write(&*buffer.as_slice()).map(|_| {
                     loader.close().unwrap();
                     let source = loader.get_pixbuf().unwrap();
@@ -352,8 +368,7 @@ impl App {
         match *entry {
             Entry::File(ref path) => immeta::load_from_file(&path),
             Entry::Http(ref path, _) => immeta::load_from_file(&path),
-            Entry::Archive(ref archive_path, ref entry) =>  {
-                let buffer = self.entries.get_buffer_cache(archive_path, entry.index);
+            Entry::Archive(_, _, ref buffer) =>  {
                 immeta::load_from_buf(&buffer)
             }
         }

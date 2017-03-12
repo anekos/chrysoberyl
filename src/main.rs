@@ -25,7 +25,6 @@ extern crate url;
 #[macro_use] mod utils;
 mod app;
 mod archive;
-mod buffer_cache;
 mod chrysoberyl;
 mod controller;
 mod entry;

@@ -59,8 +59,13 @@ pub fn main() {
             gtk::main_iteration();
         }
 
+        let mut tried = 0;
         for op in rx.try_iter() {
             app.operate(&op);
+            tried += 1;
+            if tried > 10 {
+                break;
+            }
         }
         sleep(Duration::from_millis(10));
     }
@@ -140,9 +145,9 @@ fn parse_arguments(window: &Window, image: Image) -> (app::App, Receiver<Operati
         if let Some(height) = height { eco.min_height = Some(height); eco.max_height = Some(height); }
     }
 
-    eco.encodings = parse_encodings(&encodings);
+    let encodings = parse_encodings(&encodings);
 
-    let (app, rx) = app::App::new(eco, max_http_threads, expand, expand_recursive, shuffle, files, fragiles.clone(), window.clone(), image, app_options);
+    let (app, rx) = app::App::new(eco, max_http_threads, expand, expand_recursive, shuffle, files, fragiles.clone(), window.clone(), image, encodings, app_options);
 
     load_config(app.tx.clone());
 

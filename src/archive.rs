@@ -1,8 +1,9 @@
 
 use std::cmp::Ordering;
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use std::thread::spawn;
 
@@ -11,7 +12,8 @@ use libarchive::archive::{ReadFilter, ReadFormat, Entry, FileType};
 use libarchive::reader::Builder;
 use libarchive::reader::Reader;
 
-use buffer_cache::Operation;
+use operation::Operation;
+use sorting_buffer::SortingBuffer;
 use validation::is_valid_image_filename;
 
 
@@ -48,10 +50,9 @@ impl Hash for ArchiveEntry {
 }
 
 
+pub fn fetch_entries(path: &PathBuf, encodings: &Vec<EncodingRef>, tx: Sender<Operation>) {
 
-pub fn read_entries(path: PathBuf, encodings: &Vec<EncodingRef>, buffer_cache_tx: Sender<Operation<(PathBuf, usize)>>) -> Vec<ArchiveEntry> {
-
-    let mut result = Vec::new();
+    let mut candidates = Vec::new();
 
     let mut builder = Builder::new();
     builder.support_format(ReadFormat::All).ok();
@@ -67,7 +68,7 @@ pub fn read_entries(path: PathBuf, encodings: &Vec<EncodingRef>, buffer_cache_tx
         match entry.filetype() {
             FileType::RegularFile if is_valid_image_filename(&name) => {
                 targets.insert(index);
-                result.push(ArchiveEntry { name: name.to_owned(), index: index });
+                candidates.push(ArchiveEntry { name: name.to_owned(), index: index });
             }
             _ => ()
         }
@@ -76,16 +77,28 @@ pub fn read_entries(path: PathBuf, encodings: &Vec<EncodingRef>, buffer_cache_tx
 
     }
 
-    spawn(move || {
+    candidates.sort();
+
+    let mut index_to_serial: HashMap<usize, usize> = HashMap::new();
+    for (serial, candidate) in candidates.iter().enumerate() {
+        index_to_serial.insert(candidate.index, serial);
+    }
+
+    spawn(clone_army!([path] move || {
         let mut builder = Builder::new();
         builder.support_format(ReadFormat::All).ok();
         builder.support_filter(ReadFilter::All).ok();
 
         let mut reader = builder.open_file(&path).unwrap();
+
+        let mut buffer = SortingBuffer::new(0);
+        let mut candidates = candidates.iter();
         let mut index = 0;
 
         while let Some(_) = reader.next_header() {
             if targets.contains(&index) {
+                let candidate = candidates.next().unwrap();
+
                 let mut content = vec![];
                 loop {
                     if let Ok(block) = reader.read_block() {
@@ -95,22 +108,24 @@ pub fn read_entries(path: PathBuf, encodings: &Vec<EncodingRef>, buffer_cache_tx
                         } else if content.is_empty() {
                             panic!("Empty content in archive");
                         } else {
-                            buffer_cache_tx.send(Operation::Fill((path.clone(), index), content)).unwrap();
-
+                            buffer.push(*index_to_serial.get(&candidate.index).unwrap(), (candidate, content));
                         }
+                    } else {
+                        buffer.skip(*index_to_serial.get(&candidate.index).unwrap());
                     }
                     break;
                 }
+            }
+
+            while let Some((entry, buffer)) = buffer.pull() {
+                tx.send(Operation::PushArchiveEntry(path.clone(), entry.clone(), Arc::new(buffer))).unwrap();
             }
 
             index += 1;
         }
 
 
-    });
-
-    result.sort();
-    result
+    }));
 }
 
 

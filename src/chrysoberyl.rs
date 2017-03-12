@@ -61,7 +61,6 @@ pub fn main() {
         }
 
         for op in primary_rx.try_iter() {
-            println!("primary: {:?}", op);
             app.operate(&op);
         }
 

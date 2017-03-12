@@ -21,6 +21,9 @@ env_logger = "*"
 cmdline-parser = "*"
 shell-escape = "*"
 lazy_static = "*"
+libarchive = "*"
+libarchive3-sys = "*"
+encoding = "*"
 
 [dependencies.gtk]
 version = "0.1.1"

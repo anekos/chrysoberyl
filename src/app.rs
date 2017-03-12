@@ -1,11 +1,12 @@
 
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::path::{Path, PathBuf};
+use gtk;
 use gtk::prelude::*;
 use gtk::{Image, Window};
-use gdk_pixbuf::{Pixbuf, PixbufAnimation};
-use immeta;
+use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
 use immeta::markers::Gif;
+use immeta::{self, GenericMetadata};
 
 use entry::{Entry,EntryContainer, EntryContainerOptions};
 use http_cache::HttpCache;
@@ -16,6 +17,7 @@ use key::KeyData;
 use utils::path_to_str;
 use output;
 use termination;
+use mapping::{Mapping, Input};
 
 
 
@@ -24,6 +26,7 @@ pub struct App {
     window: Window,
     image: Image,
     http_cache: HttpCache,
+    mapping: Mapping,
     pub tx: Sender<Operation>,
     pub options: AppOptions
 }
@@ -33,13 +36,22 @@ impl App {
     pub fn new(entry_options:EntryContainerOptions, http_threads: u8, expand: bool, expand_recursive: bool, shuffle: bool, files: Vec<String>, fragiles: Vec<String>, window: Window, image: Image, options: AppOptions) -> (App, Receiver<Operation>) {
         let (tx, rx) = channel();
 
+        let mut entry_options = entry_options;
+
+        if entry_options.encodings.is_empty() {
+            use encoding::all::*;
+            entry_options.encodings.push(UTF_8);
+            entry_options.encodings.push(WINDOWS_31J);
+        }
+
         let mut app = App {
             entries: EntryContainer::new(entry_options),
             window: window,
             image: image,
             tx: tx.clone(),
             http_cache: HttpCache::new(http_threads, tx.clone()),
-            options: options
+            options: options,
+            mapping: Mapping::new()
         };
 
         for file in files.iter() {
@@ -85,6 +97,7 @@ impl App {
 
         {
             match *operation {
+                Nop => (),
                 First => changed = self.entries.pointer.first(len),
                 Next => changed = self.entries.pointer.next(len),
                 Previous => changed = self.entries.pointer.previous(),
@@ -128,18 +141,25 @@ impl App {
                 User(ref data) => self.on_user(data),
                 PrintEntries => {
                     use std::io::{Write, stderr};
-                    for entry in self.entries.to_vec() {
-                        writeln!(&mut stderr(), "{}", path_to_str(&entry)).unwrap();
+                    for entry in self.entries.to_displays() {
+                        writeln!(&mut stderr(), "{}", entry).unwrap();
                     }
                 }
-                Exit => termination::execute(),
+                Map(ref input, ref mapped_operation) => {
+                    // FIXME
+                    puts_event!("map",
+                                "input" => format!("{:?}", input),
+                                "operation" => format!("{:?}", mapped_operation));
+                    self.mapping.register(input.clone(), *mapped_operation.clone());
+                }
+                Quit => termination::execute(),
             }
         }
 
         if let Some((entry, index)) = self.entries.current() {
             if changed || do_refresh {
                 let len = self.entries.len();
-                let path = entry.path();
+                let path = entry.display_path();
                 let text = &format!("[{}/{}] {}", index + 1, len, path);
 
                 time!("show_image" => {
@@ -164,10 +184,10 @@ impl App {
     fn show_image(&self, entry: Entry, text: Option<&str>) {
         let (width, height) = self.window.get_size();
 
-        if let Ok(img) = immeta::load_from_file(&entry.to_path_buf()) {
+        if let Ok(img) = self.get_meta(&entry) {
             if let Ok(gif) = img.into::<Gif>() {
                 if gif.is_animated() {
-                    match PixbufAnimation::new_from_file(entry.to_path_str()) {
+                    match self.get_pixbuf_animation(&entry) {
                         Ok(buf) => self.image.set_from_animation(&buf),
                         Err(err) => puts_error!("at" => "show_image", "reason" => err)
                     }
@@ -176,7 +196,7 @@ impl App {
             }
         }
 
-        match Pixbuf::new_from_file_at_scale(entry.to_path_str(), width, height, true) {
+        match self.get_pixbuf(&&entry, width, height) {
             Ok(buf) => {
                 if let Some(text) = text {
                     use cairo::{Context, ImageSurface, Format};
@@ -245,15 +265,24 @@ impl App {
     }
 
     fn on_key(&self, key: &KeyData) {
-        self.puts_event_with_current(
-            "key",
-            Some(&vec![("name".to_owned(), key.text().to_owned())]));
+        let key_name = key.text();
+        if let Some(op) = self.mapping.matched(&Input::key(&key_name)) {
+            self.tx.send(op).unwrap();
+        } else {
+            self.puts_event_with_current(
+                "keyboard",
+                Some(&vec![("name".to_owned(), key.text().to_owned())]));
+        }
     }
 
     fn on_button(&self, button: &u32) {
-        self.puts_event_with_current(
-            "key",
-            Some(&vec![("name".to_owned(), format!("{}", button))]));
+        if let Some(op) = self.mapping.matched(&Input::mouse_button(*button)) {
+            self.tx.send(op).unwrap();
+        } else {
+            self.puts_event_with_current(
+                "mouse_button",
+                Some(&vec![("name".to_owned(), format!("{}", button))]));
+        }
     }
 
     fn on_user(&self, data: &Vec<(String, String)>) {
@@ -270,6 +299,7 @@ impl App {
                 match entry {
                     File(ref path) => push_pair!(pairs, "file" => path_to_str(path)),
                     Http(ref path, ref url) => push_pair!(pairs, "file" => path_to_str(path), "url" => url),
+                    Archive(ref archive_file, ref entry) => push_pair!(pairs, "file" => entry.name, "archive_file" => path_to_str(archive_file)),
                 }
                 push_pair!(pairs, "index" => index + 1, "count" => self.entries.len());
             }
@@ -279,4 +309,64 @@ impl App {
             }
         });
     }
+
+    pub fn get_pixbuf_animation(&self, entry: &Entry) -> Result<PixbufAnimation, gtk::Error> {
+        match *entry {
+            Entry::File(ref path) => PixbufAnimation::new_from_file(path_to_str(path)),
+            Entry::Http(ref path, _) => PixbufAnimation::new_from_file(path_to_str(path)),
+            Entry::Archive(ref archive_path, ref entry) => {
+                let buffer = self.entries.buffer_cache.get(((**archive_path).clone(), entry.index));
+                let loader = PixbufLoader::new();
+                loader.loader_write(&*buffer.as_slice()).map(|_| {
+                    loader.close().unwrap();
+                    loader.get_animation().unwrap()
+                })
+            }
+        }
+    }
+
+    pub fn get_pixbuf(&self, entry: &Entry, width: i32, height: i32) -> Result<Pixbuf, gtk::Error> {
+        use gdk_pixbuf::InterpType;
+
+        match *entry {
+            Entry::File(ref path) => Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
+            Entry::Http(ref path, _) => Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
+            Entry::Archive(ref archive_path, ref entry) => {
+                let loader = PixbufLoader::new();
+                let buffer = self.entries.buffer_cache.get(((**archive_path).clone(), entry.index));
+                let pixbuf = loader.loader_write(&*buffer.as_slice()).map(|_| {
+                    loader.close().unwrap();
+                    let source = loader.get_pixbuf().unwrap();
+                    let (scale, out_width, out_height) = calculate_scale(&source, width, height);
+                    let mut scaled = unsafe { Pixbuf::new(0, false, 8, out_width, out_height).unwrap() };
+                    source.scale(&mut scaled, 0, 0, out_width, out_height, 0.0, 0.0, scale, scale, InterpType::Bilinear);
+                    scaled
+                });
+                pixbuf
+            }
+        }
+    }
+
+    pub fn get_meta(&self, entry: &Entry) -> Result<GenericMetadata, immeta::Error> {
+        match *entry {
+            Entry::File(ref path) => immeta::load_from_file(&path),
+            Entry::Http(ref path, _) => immeta::load_from_file(&path),
+            Entry::Archive(ref archive_path, ref entry) =>  {
+                let buffer = self.entries.buffer_cache.get(((**archive_path).clone(), entry.index));
+                immeta::load_from_buf(&buffer)
+            }
+        }
+    }
+}
+
+
+fn calculate_scale(pixbuf: &Pixbuf, max_width: i32, max_height: i32) -> (f64, i32, i32) {
+    let (in_width, in_height) = (pixbuf.get_width(), pixbuf.get_height());
+    let mut scale = max_width as f64 / in_width as f64;
+    let mut out_height = (in_height as f64 * scale) as i32;
+    if out_height > max_height {
+        scale = max_height as f64 / in_height as f64;
+        out_height = (in_height as f64 * scale) as i32;
+    }
+    (scale, (in_width as f64 * scale) as i32, out_height)
 }

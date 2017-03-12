@@ -9,6 +9,13 @@ pub fn path_to_str(path: &PathBuf) -> &str {
 }
 
 
+macro_rules! not_implemented {
+    () => {
+        panic!("Not Implemented")
+    }
+}
+
+
 macro_rules! through {
     ( [] $body:expr )  => {
         {
@@ -28,7 +35,7 @@ macro_rules! through {
 
 macro_rules! iter_let_inner {
     ( $iter:ident => [] $body:expr ) => {
-        Some($body)
+        $body
     };
     ( $iter:ident => [$binding:ident $(,$bindings:ident)*] $body:expr ) => {
         if let Some($binding) = $iter.next() {

@@ -5,6 +5,7 @@ use cmdline_parser::Parser;
 
 use options::AppOptionName;
 use key::KeyData;
+use mapping::Input;
 
 
 
@@ -27,9 +28,11 @@ pub enum Operation {
     ExpandRecursive(Option<PathBuf>),
     Shuffle(bool), /* Fix current */
     User(Vec<(String, String)>),
+    Map(Input, Box<Operation>),
     PrintEntries,
     Sort,
-    Exit
+    Quit,
+    Nop
 }
 
 
@@ -43,6 +46,12 @@ impl FromStr for Operation {
 
 
 impl Operation {
+    pub fn from_str_force(s: &str) -> Operation {
+        use std::str::FromStr;
+
+        Operation::from_str(s).unwrap_or(Operation::Push(s.to_owned()))
+    }
+
     fn user(args: Vec<String>) -> Operation {
         let mut result: Vec<(String, String)> = vec![];
         let mut index = 0;
@@ -70,34 +79,59 @@ fn parse_from_vec(whole: Vec<String>) -> Option<Operation> {
         args.get(index).map(|it| pathbuf(it))
     }
 
-    whole.get(0).and_then(|head| {
+    if let Some(head) = whole.get(0) {
         let name = &*head.to_lowercase();
         let args = whole[1..].to_vec();
 
+        if Some('#') == name.chars().next() {
+            return Some(Nop)
+        }
+
         match name {
             "@push" => iter_let!(args => [path] {
-                Push(path.to_owned())
+                Some(Push(path.to_owned()))
             }),
             "@pushpath" => iter_let!(args => [path] {
-                PushPath(pathbuf(path))
+                Some(PushPath(pathbuf(path)))
             }),
             "@pushurl" => iter_let!(args => [path] {
-                PushURL(path.to_owned())
+                Some(PushURL(path.to_owned()))
+            }),
+            "@map" => iter_let!(args => [kind, name] {
+                match &*kind.to_lowercase() {
+                    "key" | "keyboard"                  => Some(Input::key(name)),
+                    "button" | "mouse" | "mouse_button" => name.parse().ok().map(|button| Input::mouse_button(button)),
+                    _                                   => None
+                } .and_then(|input| {
+                    parse_from_vec(args.map(|it| it.to_owned()).collect()).map(|op| {
+                        Map(input, Box::new(op))
+                    })
+                })
+            }),
+            "@toggle" => iter_let!(args => [name] {
+                use options::AppOptionName::*;
+                match &*name.to_lowercase() {
+                    "info" | "information" => Some(Toggle(ShowText)),
+                    _                      => None
+                }
             }),
             "@next" | "@n"               => Some(Next),
             "@prev" | "@p" | "@previous" => Some(Previous),
             "@first" | "@f"              => Some(First),
             "@last" | "@l"               => Some(Last),
             "@refresh" | "@r"            => Some(Refresh),
-            "@shuffle"                   => Some(Shuffle(true)),
+            "@shuffle"                   => Some(Shuffle(false)),
             "@entries"                   => Some(PrintEntries),
             "@sort"                      => Some(Sort),
             "@expand"                    => Some(Expand(pb(args, 0))),
             "@expandrecursive"           => Some(ExpandRecursive(pb(args, 0))),
+            "@quit"                      => Some(Quit),
             "@user"                      => Some(Operation::user(args)),
             _ => None
         }
-    })
+    } else {
+        Some(Nop)
+    }
 }
 
 
@@ -119,7 +153,7 @@ fn test_parse() {
     assert_eq!(parse("@Previous"), Previous);
     assert_eq!(parse("@Prev"), Previous);
     assert_eq!(parse("@Last"), Last);
-    assert_eq!(parse("@shuffle"), Shuffle(true));
+    assert_eq!(parse("@shuffle"), Shuffle(false));
     assert_eq!(parse("@entries"), PrintEntries);
     assert_eq!(parse("@refresh"), Refresh);
     assert_eq!(parse("@sort"), Sort);
@@ -155,7 +189,7 @@ fn test_parse() {
         Push("http://example.com/sample.png".to_owned()));
 
     // Ignore case
-    assert_eq!(parse("@ShuFFle"), Shuffle(true));
+    assert_eq!(parse("@ShuFFle"), Shuffle(false));
 }
 
 fn pathbuf(s: &str) -> PathBuf {

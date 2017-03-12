@@ -202,7 +202,7 @@ impl EntryContainer {
         let path = file.canonicalize().expect("canonicalize");
         if let Some(ext) = file.extension() {
             match &*ext.to_str().unwrap().to_lowercase() {
-                "zip" => return self.push_archive(&path),
+                "zip" | "rar" | "tar.gz" | "lzh" | "lha" => return self.push_archive(&path),
                 _ => ()
             }
         }

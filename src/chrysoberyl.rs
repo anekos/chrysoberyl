@@ -11,12 +11,11 @@ use encoding::EncodingRef;
 use encoding::label::encoding_from_whatwg_label;
 use env_logger;
 use gtk::prelude::*;
-use gtk::{self, Image};
+use gtk::{self, Image, Label};
 use libc;
 
 use app;
 use entry::EntryContainerOptions;
-use events;
 use operation::Operation;
 use options::AppOptions;
 
@@ -31,8 +30,6 @@ pub fn main() {
 
     let gui = setup_gui();
     let (mut app, primary_rx, secondary_rx) = parse_arguments(gui.clone());
-
-    gui.window.show_all();
 
     'outer: loop {
         while gtk::events_pending() {
@@ -58,6 +55,8 @@ pub fn main() {
 
 
 fn setup_gui() -> app::Gui {
+    use gtk::Orientation;
+
     gtk::init().unwrap();
 
     let window = gtk::Window::new(gtk::WindowType::Toplevel);
@@ -66,12 +65,24 @@ fn setup_gui() -> app::Gui {
     window.set_border_width(0);
     window.set_position(gtk::WindowPosition::Center);
 
+    let vbox = gtk::Box::new(Orientation::Vertical, 0);
+
     let image = Image::new_from_pixbuf(None);
-    window.add(&image);
+
+    let label = Label::new(Some("HogeMoge"));
+
+    vbox.pack_end(&label, false, false, 0);
+    vbox.pack_end(&image, true, true, 0);
+    window.add(&vbox);
+
+    vbox.show();
+    image.show();
+    window.show();
 
     app::Gui {
         window: window,
         image: image,
+        label: label
     }
 }
 

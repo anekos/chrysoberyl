@@ -5,7 +5,7 @@ use std::sync::mpsc::{channel, Sender, Receiver};
 use encoding::types::EncodingRef;
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
 use gtk::prelude::*;
-use gtk::{Image, Window};
+use gtk::{Image, Window, Label};
 use gtk;
 use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
@@ -40,6 +40,7 @@ pub struct App {
 pub struct Gui {
     pub window: Window,
     pub image: Image,
+    pub label: Label,
 }
 
 pub struct Initial {
@@ -78,6 +79,8 @@ impl App {
 
         events::register(gui, primary_tx.clone());
         controller::register(tx.clone(), &initial.controllers);
+
+        app.update_label_visibility();
 
         for file in initial.files.iter() {
            app.on_push(file.clone());
@@ -146,6 +149,7 @@ impl App {
                 Button(ref button) => self.on_button(button),
                 Toggle(AppOptionName::ShowText) => {
                     self.options.show_text = !self.options.show_text;
+                    self.update_label_visibility();
                     do_refresh = true;
                 }
                 Count(value) => self.entries.pointer.push_counting_number(value),
@@ -211,7 +215,13 @@ impl App {
     // }
 
     fn show_image(&self, entry: Entry, text: Option<&str>) {
-        let (width, height) = self.gui.window.get_size();
+        let (width, mut height) = self.gui.window.get_size();
+
+        if let Some(text) = text {
+            let label_height = self.gui.label.get_allocated_height();
+            self.gui.label.set_text(text);
+            height -= label_height;
+        }
 
         if let Ok(img) = self.get_meta(&entry) {
             if let Ok(gif) = img.into::<Gif>() {
@@ -226,50 +236,16 @@ impl App {
         }
 
         match self.get_pixbuf(&&entry, width, height) {
-            Ok(buf) => {
-                if let Some(text) = text {
-                    use cairo::{Context, ImageSurface, Format};
-                    use gdk::prelude::ContextExt;
-
-                    let (width, height) = (buf.get_width(), buf.get_height());
-
-                    let surface = ImageSurface::create(Format::ARgb32, width, height);
-
-                    {
-                        let height = height as f64;
-
-                        let context = Context::new(&surface);
-                        let alpha = 0.8;
-
-                        context.set_source_pixbuf(&buf, 0.0, 0.0);
-                        context.paint();
-
-                        let font_size = 12.0;
-                        context.set_font_size(font_size);
-
-                        let text_y = {
-                            let extents = context.text_extents(&text);
-                            context.set_source_rgba(0.0, 0.25, 0.25, alpha);
-                            context.rectangle(
-                                0.0,
-                                height - extents.height - 4.0,
-                                extents.x_bearing + extents.x_advance + 2.0,
-                                height);
-                            context.fill();
-                            height - 4.0
-                        };
-
-                        context.move_to(2.0, text_y);
-                        context.set_source_rgba(1.0, 1.0, 1.0, alpha);
-                        context.show_text(text);
-                    }
-
-                    self.gui.image.set_from_surface(&surface);
-                } else {
-                    self.gui.image.set_from_pixbuf(Some(&buf));
-                }
-            }
+            Ok(buf) => self.gui.image.set_from_pixbuf(Some(&buf)),
             Err(err) => puts_error!("at" => "show_image", "reason" => err)
+        }
+    }
+
+    fn update_label_visibility(&self) {
+        if self.options.show_text {
+            self.gui.label.show();
+        } else {
+            self.gui.label.hide();
         }
     }
 

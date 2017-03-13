@@ -9,7 +9,42 @@ use termination;
 
 
 
-pub fn run_fifo_controller(tx: Sender<Operation>, filepath: String) {
+pub struct Controllers {
+    pub inputs: Vec<String>,
+    pub fragiles: Vec<String>,
+    pub commands: Vec<String>
+}
+
+
+impl Controllers {
+    pub fn new() -> Controllers {
+        Controllers {
+            inputs: vec![],
+            fragiles: vec![],
+            commands: vec![],
+        }
+    }
+}
+
+
+
+pub fn register(tx: Sender<Operation>, controllers: &Controllers) {
+    for path in controllers.inputs.iter() {
+        file_controller(tx.clone(), path.clone());
+    }
+    for path in controllers.fragiles.iter() {
+        fifo_controller(tx.clone(), path.clone());
+    }
+    for path in controllers.commands.iter() {
+        command_controller(tx.clone(), path.clone());
+    }
+
+    stdin_controller(tx.clone());
+}
+
+
+
+fn fifo_controller(tx: Sender<Operation>, filepath: String) {
     use std::io::{BufReader, BufRead};
 
     spawn(move || {
@@ -26,7 +61,7 @@ pub fn run_fifo_controller(tx: Sender<Operation>, filepath: String) {
     });
 }
 
-pub fn run_file_controller(tx: Sender<Operation>, filepath: String) {
+fn file_controller(tx: Sender<Operation>, filepath: String) {
     use std::io::{BufReader, BufRead};
 
     spawn(move || {
@@ -44,7 +79,7 @@ pub fn run_file_controller(tx: Sender<Operation>, filepath: String) {
     });
 }
 
-pub fn run_stdin_controller(tx: Sender<Operation>) {
+fn stdin_controller(tx: Sender<Operation>) {
     use std::io;
     use std::io::BufRead;
 
@@ -60,7 +95,7 @@ pub fn run_stdin_controller(tx: Sender<Operation>) {
 }
 
 
-pub fn run_command_controller(tx: Sender<Operation>, command: String) {
+fn command_controller(tx: Sender<Operation>, command: String) {
     use std::io::{BufReader, BufRead};
 
     spawn(move || {

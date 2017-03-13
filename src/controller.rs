@@ -30,21 +30,21 @@ impl Controllers {
 
 pub fn register(tx: Sender<Operation>, controllers: &Controllers) {
     for path in controllers.inputs.iter() {
-        run_file_controller(tx.clone(), path.clone());
+        file_controller(tx.clone(), path.clone());
     }
     for path in controllers.fragiles.iter() {
-        run_fifo_controller(tx.clone(), path.clone());
+        fifo_controller(tx.clone(), path.clone());
     }
     for path in controllers.commands.iter() {
-        run_command_controller(tx.clone(), path.clone());
+        command_controller(tx.clone(), path.clone());
     }
 
-    run_stdin_controller(tx.clone());
+    stdin_controller(tx.clone());
 }
 
 
 
-pub fn run_fifo_controller(tx: Sender<Operation>, filepath: String) {
+fn fifo_controller(tx: Sender<Operation>, filepath: String) {
     use std::io::{BufReader, BufRead};
 
     spawn(move || {
@@ -61,7 +61,7 @@ pub fn run_fifo_controller(tx: Sender<Operation>, filepath: String) {
     });
 }
 
-pub fn run_file_controller(tx: Sender<Operation>, filepath: String) {
+fn file_controller(tx: Sender<Operation>, filepath: String) {
     use std::io::{BufReader, BufRead};
 
     spawn(move || {
@@ -79,7 +79,7 @@ pub fn run_file_controller(tx: Sender<Operation>, filepath: String) {
     });
 }
 
-pub fn run_stdin_controller(tx: Sender<Operation>) {
+fn stdin_controller(tx: Sender<Operation>) {
     use std::io;
     use std::io::BufRead;
 
@@ -95,7 +95,7 @@ pub fn run_stdin_controller(tx: Sender<Operation>) {
 }
 
 
-pub fn run_command_controller(tx: Sender<Operation>, command: String) {
+fn command_controller(tx: Sender<Operation>, command: String) {
     use std::io::{BufReader, BufRead};
 
     spawn(move || {

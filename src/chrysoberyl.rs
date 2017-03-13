@@ -66,8 +66,6 @@ fn setup_gui() -> app::Gui {
     window.set_border_width(0);
     window.set_position(gtk::WindowPosition::Center);
 
-    window.connect_delete_event(|_, _| events::on_delete());
-
     let image = Image::new_from_pixbuf(None);
     window.add(&image);
 

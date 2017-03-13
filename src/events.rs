@@ -15,10 +15,12 @@ pub fn register(gui: app::Gui, tx: Sender<Operation>) {
     gui.window.connect_key_press_event(clone_army!([tx] move |_, key| on_key_press(tx.clone(), KeyData::new(key))));
     gui.window.connect_configure_event(clone_army!([tx] move |_, _| on_configure(tx.clone())));
     gui.window.connect_button_press_event(clone_army!([tx] move |_, button| on_button_press(tx.clone(), button)));
+    gui.window.connect_delete_event(|_, _| on_delete());
+
 }
 
 
-pub fn on_key_press(tx: Sender<Operation>, key: KeyData) -> Inhibit {
+fn on_key_press(tx: Sender<Operation>, key: KeyData) -> Inhibit {
     use operation::Operation::*;
 
     let keyval = key.code;
@@ -33,17 +35,17 @@ pub fn on_key_press(tx: Sender<Operation>, key: KeyData) -> Inhibit {
     Inhibit(false)
 }
 
-pub fn on_button_press(tx: Sender<Operation>, button: &EventButton) -> Inhibit {
+fn on_button_press(tx: Sender<Operation>, button: &EventButton) -> Inhibit {
     tx.send(Operation::Button(button.get_button())).unwrap();
     Inhibit(true)
 }
 
-pub fn on_configure(tx: Sender<Operation>) -> bool {
+fn on_configure(tx: Sender<Operation>) -> bool {
     tx.send(Operation::Refresh).unwrap();
     false
 }
 
-pub fn on_delete() -> Inhibit {
+fn on_delete() -> Inhibit {
     main_quit();
     Inhibit(false)
 }

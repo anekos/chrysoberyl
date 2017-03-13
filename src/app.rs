@@ -176,7 +176,12 @@ impl App {
                                 "input" => format!("{:?}", input),
                                 "operation" => format!("{:?}", mapped_operation));
                     self.mapping.register(input.clone(), *mapped_operation.clone());
-                }
+                },
+                Multi(ref ops) => {
+                    for op in ops {
+                        self.operate(op)
+                    }
+                },
                 Quit => termination::execute(),
             }
         }

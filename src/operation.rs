@@ -37,6 +37,7 @@ pub enum Operation {
     PrintEntries,
     Sort,
     Quit,
+    Multi(Vec<Operation>),
     Nop
 }
 
@@ -139,6 +140,7 @@ fn parse_from_vec(whole: Vec<String>) -> Option<Operation> {
             "@expandrecursive"           => Some(ExpandRecursive(pb(args, 0))),
             "@quit"                      => Some(Quit),
             "@user"                      => Some(Operation::user(args)),
+            ";"                          => parse_multi(args, ";").ok(),
             _ => None
         }
     } else {
@@ -146,6 +148,35 @@ fn parse_from_vec(whole: Vec<String>) -> Option<Operation> {
     }
 }
 
+fn parse_multi(xs: Vec<String>, separator: &str) -> Result<Operation, String> {
+    let mut ops: Vec<Vec<String>> = vec![];
+    let mut buffer: Vec<String> = vec![];
+
+    for x in  xs.into_iter() {
+        if x == separator {
+            ops.push(buffer.clone());
+            buffer.clear();
+        } else {
+            buffer.push(x);
+        }
+    }
+
+    if !buffer.is_empty() {
+        ops.push(buffer);
+    }
+
+    let mut result: Vec<Operation> = vec![];
+
+    for op in ops {
+        if let Some(op) = parse_from_vec(op) {
+            result.push(op);
+        } else {
+            return Err("Invalid command".to_owned())
+        }
+    }
+
+    Ok(Operation::Multi(result))
+}
 
 fn parse(s: &str) -> Operation {
     use self::Operation::*;

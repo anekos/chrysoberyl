@@ -132,10 +132,19 @@ impl App {
                 Last => changed = self.entries.pointer.last(len),
                 Refresh => changed = true,
                 Push(ref path) => self.on_push(path.clone()),
-                PushPath(ref file) => changed = self.on_push_path(file.clone()),
-                PushHttpCache(ref file, ref url) => changed = self.on_push_http_cache(file.clone(), url.clone()),
+                PushPath(ref file) => {
+                    changed = self.on_push_path(file.clone());
+                    label_updated = true;
+                }
+                PushHttpCache(ref file, ref url) => {
+                    changed = self.on_push_http_cache(file.clone(), url.clone());
+                    label_updated = true;
+                }
                 PushURL(ref url) => self.on_push_url(url.clone()),
-                PushArchiveEntry(ref archive_path, ref entry, ref buffer) => changed = self.entries.push_archive_entry(archive_path, entry, buffer.clone()),
+                PushArchiveEntry(ref archive_path, ref entry, ref buffer) => {
+                    changed = self.entries.push_archive_entry(archive_path, entry, buffer.clone());
+                    label_updated = true;
+                },
                 Key(ref key) => self.on_key(key),
                 Button(ref button) => self.on_button(button),
                 Toggle(AppOptionName::ShowText) => {

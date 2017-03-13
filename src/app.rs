@@ -10,7 +10,7 @@ use gtk;
 use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
 
-use archive;
+use archive::{self, ArchiveEntry};
 use controller;
 use entry::{Entry,EntryContainer, EntryContainerOptions};
 use events;
@@ -52,6 +52,11 @@ pub struct Initial {
     pub controllers: controller::Controllers,
     pub files: Vec<String>,
     pub encodings: Vec<EncodingRef>
+}
+
+struct Change {
+    pointer: bool,
+    label: bool
 }
 
 
@@ -118,92 +123,75 @@ impl App {
     pub fn operate(&mut self, operation: &Operation) {
         use self::Operation::*;
 
-        let mut changed = false;
-        let mut label_updated = false;
+        let mut change = Change { pointer: false, label: false };
         let len = self.entries.len();
 
         debug!("Operate\t{:?}", operation);
 
         {
             match *operation {
-                Nop => (),
-                First => changed = self.entries.pointer.first(len),
-                Next => changed = self.entries.pointer.next(len),
-                Previous => changed = self.entries.pointer.previous(),
-                Last => changed = self.entries.pointer.last(len),
-                Refresh => changed = true,
-                Push(ref path) => self.on_push(path.clone()),
-                PushPath(ref file) => {
-                    changed = self.on_push_path(file.clone());
-                    label_updated = true;
-                }
-                PushHttpCache(ref file, ref url) => {
-                    changed = self.on_push_http_cache(file.clone(), url.clone());
-                    label_updated = true;
-                }
-                PushURL(ref url) => self.on_push_url(url.clone()),
-                PushArchiveEntry(ref archive_path, ref entry) => {
-                    changed = self.entries.push_archive_entry(archive_path, entry);
-                    label_updated = true;
-                },
-                Key(ref key) => self.on_key(key),
-                Button(ref button) => self.on_button(button),
-                Toggle(AppOptionName::ShowText) => {
-                    self.options.show_text = !self.options.show_text;
-                    self.update_label_visibility();
-                    changed = true;
-                }
-                Count(count) => self.entries.pointer.set_count(count),
-                CountDigit(digit) => self.entries.pointer.push_count_digit(digit),
-                Expand(ref base) => {
-                    let count = self.entries.pointer.counted();
-                    self.entries.expand(base.clone(), count as u8, count as u8- 1);
-                    label_updated = true;
-                }
-                ExpandRecursive(ref base) => {
-                    let count = self.entries.pointer.counted();
-                    self.entries.expand(base.clone(), 1, count as u8);
-                    label_updated = true;
-                }
-                Shuffle(fix_current) => {
-                    self.entries.shuffle(fix_current);
-                    changed = true;
-                }
-                Sort => {
-                    self.entries.sort();
-                    changed = true;
-                }
-                User(ref data) => self.on_user(data),
-                PrintEntries => {
-                    use std::io::{Write, stderr};
-                    for entry in self.entries.to_displays() {
-                        writeln!(&mut stderr(), "{}", entry).unwrap();
-                    }
-                }
-                Map(ref input, ref mapped_operation) => {
-                    // FIXME
-                    puts_event!("map",
-                                "input" => format!("{:?}", input),
-                                "operation" => format!("{:?}", mapped_operation));
-                    self.mapping.register(input.clone(), *mapped_operation.clone());
-                },
-                Multi(ref ops) => {
-                    for op in ops {
-                        self.operate(op)
-                    }
-                },
-                Script(async, ref command_name, ref arguments) => script::call(async, command_name, arguments, self.current_info()),
-                Quit => termination::execute(),
+                Button(ref button) =>
+                    self.on_button(button),
+                Count(count) =>
+                    self.entries.pointer.set_count(count),
+                CountDigit(digit) =>
+                    self.entries.pointer.push_count_digit(digit),
+                Expand(ref base) =>
+                    self.on_expand(&mut change, base),
+                ExpandRecursive(ref base) =>
+                    self.on_expand_recursive(&mut change, base),
+                First =>
+                    change.pointer = self.entries.pointer.first(len),
+                Key(ref key) =>
+                    self.on_key(key),
+                Last =>
+                    change.pointer = self.entries.pointer.last(len),
+                Map(ref input, ref mapped_operation) =>
+                    self.on_map(input, mapped_operation),
+                Multi(ref ops) =>
+                    self.on_multi(ops),
+                Next =>
+                    self.on_next(&mut change, len),
+                Nop =>
+                    (),
+                Previous =>
+                    self.on_previous(&mut change),
+                PrintEntries =>
+                    self.on_print_entries(),
+                Push(ref path) =>
+                    self.on_push(path.clone()),
+                PushArchiveEntry(ref archive_path, ref entry) => 
+                    self.on_push_archive_entry(&mut change, archive_path, entry),
+                PushHttpCache(ref file, ref url) =>
+                    self.on_push_http_cache(&mut change, file, url),
+                PushPath(ref file) =>
+                    self.on_push_path(&mut change, file.clone()),
+                PushURL(ref url) =>
+                    self.on_push_url(url.clone()),
+                Quit =>
+                    termination::execute(),
+                Refresh =>
+                    change.pointer = true,
+                Toggle(AppOptionName::ShowText) =>
+                    self.on_toggle(&mut change),
+                Shuffle(fix_current) =>
+                    self.on_shuffle(&mut change, fix_current),
+                Sort =>
+                    self.on_sort(&mut change),
+                User(ref data) =>
+                    self.on_user(data),
+                Script(async, ref command_name, ref arguments) =>
+                    script::call(async, command_name, arguments, self.current_info()),
             }
         }
 
         if let Some((entry, index)) = self.entries.current() {
-            if changed {
+            if change.pointer {
                 time!("show_image" => self.show_image(entry.clone(), self.options.show_text));
                 self.puts_event_with_current("show", None);
             }
 
-            if changed || label_updated {
+            if change.pointer || change.label {
                 let len = self.entries.len();
                 let path = entry.display_path();
                 self.update_label(&format!("[{}/{}] {}", index + 1, len, path));
@@ -211,49 +199,67 @@ impl App {
         }
     }
 
-    // pub fn operate_multi(&mut self, operations: &[Operation]) {
-    //     for op in operations {
-    //         self.operate(op);
-    //     }
-    // }
+    /* Operation event */
 
-    fn update_label(&self, text: &str) {
-        self.gui.window.set_title(text);
-        if self.options.show_text {
-            self.gui.label.set_text(text);
-        }
-    }
-
-    fn show_image(&self, entry: Entry, with_label: bool) {
-        let (width, mut height) = self.gui.window.get_size();
-
-        if with_label {
-            height -=  self.gui.label.get_allocated_height();;
-        }
-
-        if let Ok(img) = self.get_meta(&entry) {
-            if let Ok(gif) = img.into::<Gif>() {
-                if gif.is_animated() {
-                    match self.get_pixbuf_animation(&entry) {
-                        Ok(buf) => self.gui.image.set_from_animation(&buf),
-                        Err(err) => puts_error!("at" => "show_image", "reason" => err)
-                    }
-                    return
-                }
-            }
-        }
-
-        match self.get_pixbuf(&&entry, width, height) {
-            Ok(buf) => self.gui.image.set_from_pixbuf(Some(&buf)),
-            Err(err) => puts_error!("at" => "show_image", "reason" => err)
-        }
-    }
-
-    fn update_label_visibility(&self) {
-        if self.options.show_text {
-            self.gui.label.show();
+    fn on_button(&self, button: &u32) {
+        if let Some(op) = self.mapping.matched(&Input::mouse_button(*button)) {
+            self.tx.send(op).unwrap();
         } else {
-            self.gui.label.hide();
+            self.puts_event_with_current(
+                "mouse_button",
+                Some(&vec![("name".to_owned(), format!("{}", button))]));
+        }
+    }
+
+    fn on_expand(&mut self, change: &mut Change, base: &Option<PathBuf>) {
+        let count = self.entries.pointer.counted();
+        self.entries.expand(base.clone(), count as u8, count as u8- 1);
+        change.label = true;
+    }
+
+    fn on_expand_recursive(&mut self, change: &mut Change, base: &Option<PathBuf>) {
+        let count = self.entries.pointer.counted();
+        self.entries.expand(base.clone(), 1, count as u8);
+        change.label = true;
+    }
+
+    fn on_key(&mut self, key: &KeyData) {
+        let key_name = key.text();
+        if let Some(op) = self.mapping.matched(&Input::key(&key_name)) {
+            self.operate(&op);
+        } else {
+            self.puts_event_with_current(
+                "keyboard",
+                Some(&vec![("name".to_owned(), key.text().to_owned())]));
+        }
+    }
+
+    fn on_map(&mut self, input: &Input, operation: &Box<Operation>) {
+        // FIXME
+        puts_event!("map",
+                    "input" => format!("{:?}", input),
+                    "operation" => format!("{:?}", operation));
+        self.mapping.register(input.clone(), *operation.clone());
+    }
+
+    fn on_multi(&mut self, operations: &Vec<Operation>) {
+        for op in operations {
+            self.operate(op)
+        }
+    }
+
+    fn on_next(&mut self, change: &mut Change, len: usize) {
+        change.pointer = self.entries.pointer.next(len);
+    }
+
+    fn on_previous(&mut self, change: &mut Change) {
+        change.pointer = self.entries.pointer.previous();
+    }
+
+    fn on_print_entries(&self) {
+        use std::io::{Write, stderr};
+        for entry in self.entries.to_displays() {
+            writeln!(&mut stderr(), "{}", entry).unwrap();
         }
     }
 
@@ -280,42 +286,46 @@ impl App {
         self.operate(&Operation::PushPath(Path::new(&path).to_path_buf()));
     }
 
-    fn on_push_path(&mut self, file: PathBuf) -> bool {
-        self.entries.push_path(&file)
+    fn on_push_archive_entry(&mut self, change: &mut Change, archive_path: &PathBuf, entry: &ArchiveEntry) {
+        change.pointer = self.entries.push_archive_entry(archive_path, entry);
+        change.label = true;
     }
 
-    fn on_push_http_cache(&mut self, file: PathBuf, url: String) -> bool {
-        self.entries.push_http_cache(&file, &url)
+    fn on_push_http_cache(&mut self, change: &mut Change, file: &PathBuf, url: &String) {
+        change.pointer = self.entries.push_http_cache(file, url);
+        change.label = true;
+    }
+
+    fn on_push_path(&mut self, change: &mut Change, file: PathBuf) {
+        change.pointer = self.entries.push_path(&file);
+        change.label = true;
     }
 
     fn on_push_url(&mut self, url: String) {
         self.http_cache.fetch(url);
     }
 
-    fn on_key(&mut self, key: &KeyData) {
-        let key_name = key.text();
-        if let Some(op) = self.mapping.matched(&Input::key(&key_name)) {
-            self.operate(&op);
-        } else {
-            self.puts_event_with_current(
-                "keyboard",
-                Some(&vec![("name".to_owned(), key.text().to_owned())]));
-        }
+    fn on_toggle(&mut self, change: &mut Change) {
+        self.options.show_text = !self.options.show_text;
+        self.update_label_visibility();
+        change.label = true;
     }
 
-    fn on_button(&self, button: &u32) {
-        if let Some(op) = self.mapping.matched(&Input::mouse_button(*button)) {
-            self.tx.send(op).unwrap();
-        } else {
-            self.puts_event_with_current(
-                "mouse_button",
-                Some(&vec![("name".to_owned(), format!("{}", button))]));
-        }
+    fn on_shuffle(&mut self, change: &mut Change, fix_current: bool) {
+        self.entries.shuffle(fix_current);
+        change.label = true;
+    }
+
+    fn on_sort(&mut self, change: &mut Change) {
+        self.entries.sort();
+        change.label = true;
     }
 
     fn on_user(&self, data: &Vec<(String, String)>) {
         self.puts_event_with_current("user", Some(data));
     }
+
+    /* Private methods */
 
     fn current_info(&self) -> Vec<(String, String)> {
         use entry::Entry::*;
@@ -348,30 +358,17 @@ impl App {
         pairs
     }
 
-    fn puts_event_with_current(&self, event: &str, data: Option<&Vec<(String, String)>>) {
-        let mut pairs = vec![(s!("event"), s!(event))];
-        pairs.extend_from_slice(self.current_info().as_slice());
-        if let Some(data) = data {
-            pairs.extend_from_slice(data.as_slice());
-        }
-        output::puts(&pairs);
-    }
-
-    pub fn get_pixbuf_animation(&self, entry: &Entry) -> Result<PixbufAnimation, gtk::Error> {
+    fn get_meta(&self, entry: &Entry) -> Result<GenericMetadata, immeta::Error> {
         match *entry {
-            Entry::File(ref path) => PixbufAnimation::new_from_file(path_to_str(path)),
-            Entry::Http(ref path, _) => PixbufAnimation::new_from_file(path_to_str(path)),
-            Entry::Archive(_, ref entry) => {
-                let loader = PixbufLoader::new();
-                loader.loader_write(&*entry.content.as_slice()).map(|_| {
-                    loader.close().unwrap();
-                    loader.get_animation().unwrap()
-                })
+            Entry::File(ref path) => immeta::load_from_file(&path),
+            Entry::Http(ref path, _) => immeta::load_from_file(&path),
+            Entry::Archive(_, ref entry) =>  {
+                immeta::load_from_buf(&entry.content)
             }
         }
     }
 
-    pub fn get_pixbuf(&self, entry: &Entry, width: i32, height: i32) -> Result<Pixbuf, gtk::Error> {
+    fn get_pixbuf(&self, entry: &Entry, width: i32, height: i32) -> Result<Pixbuf, gtk::Error> {
         use gdk_pixbuf::InterpType;
 
         match *entry {
@@ -392,13 +389,66 @@ impl App {
         }
     }
 
-    pub fn get_meta(&self, entry: &Entry) -> Result<GenericMetadata, immeta::Error> {
+    fn get_pixbuf_animation(&self, entry: &Entry) -> Result<PixbufAnimation, gtk::Error> {
         match *entry {
-            Entry::File(ref path) => immeta::load_from_file(&path),
-            Entry::Http(ref path, _) => immeta::load_from_file(&path),
-            Entry::Archive(_, ref entry) =>  {
-                immeta::load_from_buf(&entry.content)
+            Entry::File(ref path) => PixbufAnimation::new_from_file(path_to_str(path)),
+            Entry::Http(ref path, _) => PixbufAnimation::new_from_file(path_to_str(path)),
+            Entry::Archive(_, ref entry) => {
+                let loader = PixbufLoader::new();
+                loader.loader_write(&*entry.content.as_slice()).map(|_| {
+                    loader.close().unwrap();
+                    loader.get_animation().unwrap()
+                })
             }
+        }
+    }
+
+    fn puts_event_with_current(&self, event: &str, data: Option<&Vec<(String, String)>>) {
+        let mut pairs = vec![(s!("event"), s!(event))];
+        pairs.extend_from_slice(self.current_info().as_slice());
+        if let Some(data) = data {
+            pairs.extend_from_slice(data.as_slice());
+        }
+        output::puts(&pairs);
+    }
+
+    fn show_image(&self, entry: Entry, with_label: bool) {
+        let (width, mut height) = self.gui.window.get_size();
+
+        if with_label {
+            height -=  self.gui.label.get_allocated_height();;
+        }
+
+        if let Ok(img) = self.get_meta(&entry) {
+            if let Ok(gif) = img.into::<Gif>() {
+                if gif.is_animated() {
+                    match self.get_pixbuf_animation(&entry) {
+                        Ok(buf) => self.gui.image.set_from_animation(&buf),
+                        Err(err) => puts_error!("at" => "show_image", "reason" => err)
+                    }
+                    return
+                }
+            }
+        }
+
+        match self.get_pixbuf(&&entry, width, height) {
+            Ok(buf) => self.gui.image.set_from_pixbuf(Some(&buf)),
+            Err(err) => puts_error!("at" => "show_image", "reason" => err)
+        }
+    }
+
+    fn update_label(&self, text: &str) {
+        self.gui.window.set_title(text);
+        if self.options.show_text {
+            self.gui.label.set_text(text);
+        }
+    }
+
+    fn update_label_visibility(&self) {
+        if self.options.show_text {
+            self.gui.label.show();
+        } else {
+            self.gui.label.hide();
         }
     }
 }

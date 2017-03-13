@@ -13,32 +13,32 @@ use options::AppOptionName;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Operation {
-    First,
-    Next,
-    Previous,
-    Last,
-    Refresh,
-    Push(String),
-    PushPath(PathBuf),
-    PushHttpCache(PathBuf, String),
-    PushURL(String),
-    PushArchiveEntry(PathBuf, ArchiveEntry),
-    Key(KeyData),
     Button(u32),
     Count(Option<usize>),
     CountDigit(u8),
-    Toggle(AppOptionName),
     Expand(Option<PathBuf>),
     ExpandRecursive(Option<PathBuf>),
-    Shuffle(bool), /* Fix current */
-    User(Vec<(String, String)>),
+    First,
+    Key(KeyData),
+    Last,
     Map(Input, Box<Operation>),
-    PrintEntries,
-    Sort,
-    Quit,
     Multi(Vec<Operation>),
+    Next,
+    Nop,
+    Previous,
+    PrintEntries,
+    Push(String),
+    PushArchiveEntry(PathBuf, ArchiveEntry),
+    PushHttpCache(PathBuf, String),
+    PushPath(PathBuf),
+    PushURL(String),
+    Quit,
+    Refresh,
     Script(bool, String, Vec<String>), /* async, command_name, arguments */
-    Nop
+    Shuffle(bool), /* Fix current */
+    Sort,
+    Toggle(AppOptionName),
+    User(Vec<(String, String)>),
 }
 
 

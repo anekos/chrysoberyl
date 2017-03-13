@@ -26,6 +26,7 @@ pub enum Operation {
     PushArchiveEntry(PathBuf, ArchiveEntry, Arc<Vec<u8>>),
     Key(KeyData),
     Button(u32),
+    Count(Option<usize>),
     CountDigit(u8),
     Toggle(AppOptionName),
     Expand(Option<PathBuf>),
@@ -112,6 +113,13 @@ fn parse_from_vec(whole: Vec<String>) -> Option<Operation> {
                     })
                 })
             }),
+            "@count" => if args.is_empty() {
+                Some(Count(None))
+            } else {
+                iter_let!(args => [count] {
+                    count.parse().ok().map(|count| Count(Some(count)))
+                })
+            },
             "@toggle" => iter_let!(args => [name] {
                 use options::AppOptionName::*;
                 match &*name.to_lowercase() {

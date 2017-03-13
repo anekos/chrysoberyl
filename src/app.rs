@@ -143,6 +143,7 @@ impl App {
                     self.update_label_visibility();
                     changed = true;
                 }
+                Count(count) => self.entries.pointer.set_count(count),
                 CountDigit(digit) => self.entries.pointer.push_count_digit(digit),
                 Expand(ref base) => {
                     let count = self.entries.pointer.counted();

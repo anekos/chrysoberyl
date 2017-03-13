@@ -69,7 +69,7 @@ fn setup_gui() -> app::Gui {
 
     let image = Image::new_from_pixbuf(None);
 
-    let label = Label::new(Some("HogeMoge"));
+    let label = Label::new(Some(&format!("Chrysoberyl v{}", env!("CARGO_PKG_VERSION"))));
 
     vbox.pack_end(&label, false, false, 0);
     vbox.pack_end(&image, true, true, 0);

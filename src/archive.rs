@@ -77,12 +77,15 @@ pub fn fetch_entries(path: &PathBuf, encodings: &Vec<EncodingRef>, tx: Sender<Op
 
     }
 
-    candidates.sort();
-
-    let mut index_to_serial: HashMap<usize, usize> = HashMap::new();
-    for (serial, candidate) in candidates.iter().enumerate() {
-        index_to_serial.insert(candidate.index, serial);
-    }
+    let index_to_serial: HashMap<usize, usize> = {
+        let mut i2s = HashMap::new();
+        let mut candidates = candidates.clone();
+        candidates.sort();
+        for (serial, candidate) in candidates.iter().enumerate() {
+            i2s.insert(candidate.index, serial);
+        }
+        i2s
+    };
 
     spawn(clone_army!([path] move || {
         let mut builder = Builder::new();

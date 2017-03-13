@@ -279,13 +279,18 @@ impl App {
             return;
         }
 
-        let path = Path::new(&path).canonicalize().expect("canonicalize");
-        if let Some(ext) = path.extension() {
-            match &*ext.to_str().unwrap().to_lowercase() {
-                "zip" | "rar" | "tar.gz" | "lzh" | "lha" =>
-                    archive::fetch_entries(&path, &self.encodings, self.tx.clone()),
-                _ => ()
+        match Path::new(&path).canonicalize() {
+            Ok(path) => {
+                if let Some(ext) = path.extension() {
+                    match &*ext.to_str().unwrap().to_lowercase() {
+                        "zip" | "rar" | "tar.gz" | "lzh" | "lha" =>
+                            return archive::fetch_entries(&path, &self.encodings, self.tx.clone()),
+                        _ => ()
+                    }
+                }
+
             }
+            _ => ()
         }
 
         self.operate(&Operation::PushPath(Path::new(&path).to_path_buf()));

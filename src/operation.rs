@@ -26,7 +26,7 @@ pub enum Operation {
     PushArchiveEntry(PathBuf, ArchiveEntry, Arc<Vec<u8>>),
     Key(KeyData),
     Button(u32),
-    Count(u8),
+    CountDigit(u8),
     Toggle(AppOptionName),
     Expand(Option<PathBuf>),
     ExpandRecursive(Option<PathBuf>),

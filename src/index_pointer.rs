@@ -11,11 +11,15 @@ impl IndexPointer {
         IndexPointer { current: None, count: None }
     }
 
-    pub fn push_counting_number(&mut self, n: u8) {
+    pub fn set_count(&mut self, count: Option<usize>) {
+        self.count = count;
+    }
+
+    pub fn push_count_digit(&mut self, n: u8) {
         if let Some(current) = self.count {
-            self.count = Some(current * 10 + n as usize);
+            self.set_count(Some(current * 10 + n as usize));
         } else if n > 0 {
-            self.count = Some(n as usize);
+            self.set_count(Some(n as usize));
         }
     }
 

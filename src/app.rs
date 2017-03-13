@@ -143,7 +143,7 @@ impl App {
                     self.update_label_visibility();
                     changed = true;
                 }
-                Count(value) => self.entries.pointer.push_counting_number(value),
+                CountDigit(digit) => self.entries.pointer.push_count_digit(digit),
                 Expand(ref base) => {
                     let count = self.entries.pointer.counted();
                     self.entries.expand(base.clone(), count as u8, count as u8- 1);

@@ -118,7 +118,7 @@ impl App {
         use self::Operation::*;
 
         let mut changed = false;
-        let mut do_refresh = false;
+        let mut label_updated = false;
         let len = self.entries.len();
 
         debug!("Operate\t{:?}", operation);
@@ -130,38 +130,29 @@ impl App {
                 Next => changed = self.entries.pointer.next(len),
                 Previous => changed = self.entries.pointer.previous(),
                 Last => changed = self.entries.pointer.last(len),
-                Refresh => do_refresh = true,
+                Refresh => changed = true,
                 Push(ref path) => self.on_push(path.clone()),
-                PushPath(ref file) => {
-                    changed = self.on_push_path(file.clone());
-                    do_refresh = self.options.show_text;
-                }
-                PushHttpCache(ref file, ref url) => {
-                    changed = self.on_push_http_cache(file.clone(), url.clone());
-                    do_refresh = self.options.show_text;
-                }
+                PushPath(ref file) => changed = self.on_push_path(file.clone()),
+                PushHttpCache(ref file, ref url) => changed = self.on_push_http_cache(file.clone(), url.clone()),
                 PushURL(ref url) => self.on_push_url(url.clone()),
-                PushArchiveEntry(ref archive_path, ref entry, ref buffer) => {
-                    changed = self.entries.push_archive_entry(archive_path, entry, buffer.clone());
-                    do_refresh = self.options.show_text;
-                },
+                PushArchiveEntry(ref archive_path, ref entry, ref buffer) => changed = self.entries.push_archive_entry(archive_path, entry, buffer.clone()),
                 Key(ref key) => self.on_key(key),
                 Button(ref button) => self.on_button(button),
                 Toggle(AppOptionName::ShowText) => {
                     self.options.show_text = !self.options.show_text;
                     self.update_label_visibility();
-                    do_refresh = true;
+                    changed = true;
                 }
                 Count(value) => self.entries.pointer.push_counting_number(value),
                 Expand(ref base) => {
                     let count = self.entries.pointer.counted();
                     self.entries.expand(base.clone(), count as u8, count as u8- 1);
-                    do_refresh = self.options.show_text;
+                    label_updated = true;
                 }
                 ExpandRecursive(ref base) => {
                     let count = self.entries.pointer.counted();
                     self.entries.expand(base.clone(), 1, count as u8);
-                    changed = self.options.show_text;
+                    label_updated = true;
                 }
                 Shuffle(fix_current) => {
                     self.entries.shuffle(fix_current);
@@ -190,20 +181,15 @@ impl App {
         }
 
         if let Some((entry, index)) = self.entries.current() {
-            if changed || do_refresh {
+            if changed {
+                time!("show_image" => self.show_image(entry.clone(), self.options.show_text));
+                self.puts_event_with_current("show", None);
+            }
+
+            if changed || label_updated {
                 let len = self.entries.len();
                 let path = entry.display_path();
-                let text = &format!("[{}/{}] {}", index + 1, len, path);
-
-                time!("show_image" => {
-                    let text: Option<&str> = if self.options.show_text { Some(&text) } else { None };
-                    self.show_image(entry.clone(), text);
-                });
-
-                self.gui.window.set_title(text);
-                if changed {
-                    self.puts_event_with_current("show", None);
-                }
+                self.update_label(&format!("[{}/{}] {}", index + 1, len, path));
             }
         }
     }
@@ -214,13 +200,18 @@ impl App {
     //     }
     // }
 
-    fn show_image(&self, entry: Entry, text: Option<&str>) {
+    fn update_label(&self, text: &str) {
+        self.gui.window.set_title(text);
+        if self.options.show_text {
+            self.gui.label.set_text(text);
+        }
+    }
+
+    fn show_image(&self, entry: Entry, with_label: bool) {
         let (width, mut height) = self.gui.window.get_size();
 
-        if let Some(text) = text {
-            let label_height = self.gui.label.get_allocated_height();
-            self.gui.label.set_text(text);
-            height -= label_height;
+        if with_label {
+            height -=  self.gui.label.get_allocated_height();;
         }
 
         if let Ok(img) = self.get_meta(&entry) {

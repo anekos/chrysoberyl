@@ -140,7 +140,10 @@ fn parse_from_vec(whole: Vec<String>) -> Option<Operation> {
             "@expandrecursive"           => Some(ExpandRecursive(pb(args, 0))),
             "@quit"                      => Some(Quit),
             "@user"                      => Some(Operation::user(args)),
-            ";"                          => parse_multi(args, ";").ok(),
+            ";"                          => parse_multi(args.iter().collect(), ";").ok(),
+            "@multi" => iter_let!(args => [separator] {
+                parse_multi(args.collect(), separator).ok()
+            }),
             _ => None
         }
     } else {
@@ -148,7 +151,7 @@ fn parse_from_vec(whole: Vec<String>) -> Option<Operation> {
     }
 }
 
-fn parse_multi(xs: Vec<String>, separator: &str) -> Result<Operation, String> {
+fn parse_multi(xs: Vec<&String>, separator: &str) -> Result<Operation, String> {
     let mut ops: Vec<Vec<String>> = vec![];
     let mut buffer: Vec<String> = vec![];
 
@@ -157,7 +160,7 @@ fn parse_multi(xs: Vec<String>, separator: &str) -> Result<Operation, String> {
             ops.push(buffer.clone());
             buffer.clear();
         } else {
-            buffer.push(x);
+            buffer.push(x.clone());
         }
     }
 

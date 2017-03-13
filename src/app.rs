@@ -5,7 +5,7 @@ use std::sync::mpsc::{channel, Sender, Receiver};
 use encoding::types::EncodingRef;
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
 use gtk::prelude::*;
-use gtk::{Image, Window};
+use gtk::{Image, Window, Label};
 use gtk;
 use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
@@ -40,6 +40,7 @@ pub struct App {
 pub struct Gui {
     pub window: Window,
     pub image: Image,
+    pub label: Label,
 }
 
 pub struct Initial {
@@ -79,6 +80,8 @@ impl App {
         events::register(gui, primary_tx.clone());
         controller::register(tx.clone(), &initial.controllers);
 
+        app.update_label_visibility();
+
         for file in initial.files.iter() {
            app.on_push(file.clone());
         }
@@ -115,7 +118,7 @@ impl App {
         use self::Operation::*;
 
         let mut changed = false;
-        let mut do_refresh = false;
+        let mut label_updated = false;
         let len = self.entries.len();
 
         debug!("Operate\t{:?}", operation);
@@ -127,37 +130,29 @@ impl App {
                 Next => changed = self.entries.pointer.next(len),
                 Previous => changed = self.entries.pointer.previous(),
                 Last => changed = self.entries.pointer.last(len),
-                Refresh => do_refresh = true,
+                Refresh => changed = true,
                 Push(ref path) => self.on_push(path.clone()),
-                PushPath(ref file) => {
-                    changed = self.on_push_path(file.clone());
-                    do_refresh = self.options.show_text;
-                }
-                PushHttpCache(ref file, ref url) => {
-                    changed = self.on_push_http_cache(file.clone(), url.clone());
-                    do_refresh = self.options.show_text;
-                }
+                PushPath(ref file) => changed = self.on_push_path(file.clone()),
+                PushHttpCache(ref file, ref url) => changed = self.on_push_http_cache(file.clone(), url.clone()),
                 PushURL(ref url) => self.on_push_url(url.clone()),
-                PushArchiveEntry(ref archive_path, ref entry, ref buffer) => {
-                    changed = self.entries.push_archive_entry(archive_path, entry, buffer.clone());
-                    do_refresh = self.options.show_text;
-                },
+                PushArchiveEntry(ref archive_path, ref entry, ref buffer) => changed = self.entries.push_archive_entry(archive_path, entry, buffer.clone()),
                 Key(ref key) => self.on_key(key),
                 Button(ref button) => self.on_button(button),
                 Toggle(AppOptionName::ShowText) => {
                     self.options.show_text = !self.options.show_text;
-                    do_refresh = true;
+                    self.update_label_visibility();
+                    changed = true;
                 }
                 Count(value) => self.entries.pointer.push_counting_number(value),
                 Expand(ref base) => {
                     let count = self.entries.pointer.counted();
                     self.entries.expand(base.clone(), count as u8, count as u8- 1);
-                    do_refresh = self.options.show_text;
+                    label_updated = true;
                 }
                 ExpandRecursive(ref base) => {
                     let count = self.entries.pointer.counted();
                     self.entries.expand(base.clone(), 1, count as u8);
-                    changed = self.options.show_text;
+                    label_updated = true;
                 }
                 Shuffle(fix_current) => {
                     self.entries.shuffle(fix_current);
@@ -186,20 +181,15 @@ impl App {
         }
 
         if let Some((entry, index)) = self.entries.current() {
-            if changed || do_refresh {
+            if changed {
+                time!("show_image" => self.show_image(entry.clone(), self.options.show_text));
+                self.puts_event_with_current("show", None);
+            }
+
+            if changed || label_updated {
                 let len = self.entries.len();
                 let path = entry.display_path();
-                let text = &format!("[{}/{}] {}", index + 1, len, path);
-
-                time!("show_image" => {
-                    let text: Option<&str> = if self.options.show_text { Some(&text) } else { None };
-                    self.show_image(entry.clone(), text);
-                });
-
-                self.gui.window.set_title(text);
-                if changed {
-                    self.puts_event_with_current("show", None);
-                }
+                self.update_label(&format!("[{}/{}] {}", index + 1, len, path));
             }
         }
     }
@@ -210,8 +200,19 @@ impl App {
     //     }
     // }
 
-    fn show_image(&self, entry: Entry, text: Option<&str>) {
-        let (width, height) = self.gui.window.get_size();
+    fn update_label(&self, text: &str) {
+        self.gui.window.set_title(text);
+        if self.options.show_text {
+            self.gui.label.set_text(text);
+        }
+    }
+
+    fn show_image(&self, entry: Entry, with_label: bool) {
+        let (width, mut height) = self.gui.window.get_size();
+
+        if with_label {
+            height -=  self.gui.label.get_allocated_height();;
+        }
 
         if let Ok(img) = self.get_meta(&entry) {
             if let Ok(gif) = img.into::<Gif>() {
@@ -226,50 +227,16 @@ impl App {
         }
 
         match self.get_pixbuf(&&entry, width, height) {
-            Ok(buf) => {
-                if let Some(text) = text {
-                    use cairo::{Context, ImageSurface, Format};
-                    use gdk::prelude::ContextExt;
-
-                    let (width, height) = (buf.get_width(), buf.get_height());
-
-                    let surface = ImageSurface::create(Format::ARgb32, width, height);
-
-                    {
-                        let height = height as f64;
-
-                        let context = Context::new(&surface);
-                        let alpha = 0.8;
-
-                        context.set_source_pixbuf(&buf, 0.0, 0.0);
-                        context.paint();
-
-                        let font_size = 12.0;
-                        context.set_font_size(font_size);
-
-                        let text_y = {
-                            let extents = context.text_extents(&text);
-                            context.set_source_rgba(0.0, 0.25, 0.25, alpha);
-                            context.rectangle(
-                                0.0,
-                                height - extents.height - 4.0,
-                                extents.x_bearing + extents.x_advance + 2.0,
-                                height);
-                            context.fill();
-                            height - 4.0
-                        };
-
-                        context.move_to(2.0, text_y);
-                        context.set_source_rgba(1.0, 1.0, 1.0, alpha);
-                        context.show_text(text);
-                    }
-
-                    self.gui.image.set_from_surface(&surface);
-                } else {
-                    self.gui.image.set_from_pixbuf(Some(&buf));
-                }
-            }
+            Ok(buf) => self.gui.image.set_from_pixbuf(Some(&buf)),
             Err(err) => puts_error!("at" => "show_image", "reason" => err)
+        }
+    }
+
+    fn update_label_visibility(&self) {
+        if self.options.show_text {
+            self.gui.label.show();
+        } else {
+            self.gui.label.hide();
         }
     }
 

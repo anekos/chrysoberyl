@@ -31,16 +31,15 @@ pub fn main() {
         puts_event!("info", "name" => "pid", "value" => libc::getpid());
     }
 
-    let (window, image) = setup();
-
-    let (mut app, rx, inputs, fragiles, commands) = parse_arguments(&window, image);
+    let gui = setup_gui();
+    let (mut app, rx, inputs, fragiles, commands) = parse_arguments(gui.clone());
 
     let tx = app.tx.clone();
     let (primary_tx, primary_rx) = channel();
 
-    window.connect_key_press_event(clone_army!([primary_tx] move |_, key| events::on_key_press(primary_tx.clone(), KeyData::new(key))));
-    window.connect_configure_event(clone_army!([primary_tx] move |_, _| events::on_configure(primary_tx.clone())));
-    window.connect_button_press_event(clone_army!([primary_tx] move |_, button| events::on_button_press(primary_tx.clone(), button)));
+    gui.window.connect_key_press_event(clone_army!([primary_tx] move |_, key| events::on_key_press(primary_tx.clone(), KeyData::new(key))));
+    gui.window.connect_configure_event(clone_army!([primary_tx] move |_, _| events::on_configure(primary_tx.clone())));
+    gui.window.connect_button_press_event(clone_army!([primary_tx] move |_, button| events::on_button_press(primary_tx.clone(), button)));
 
     for path in inputs {
         controller::run_file_controller(tx.clone(), path);
@@ -53,7 +52,7 @@ pub fn main() {
     }
     controller::run_stdin_controller(tx.clone());
 
-    window.show_all();
+    gui.window.show_all();
 
     'outer: loop {
         while gtk::events_pending() {
@@ -78,7 +77,7 @@ pub fn main() {
 }
 
 
-fn setup() -> (Window, Image) {
+fn setup_gui() -> app::Gui {
     gtk::init().unwrap();
 
     let window = gtk::Window::new(gtk::WindowType::Toplevel);
@@ -92,22 +91,21 @@ fn setup() -> (Window, Image) {
     let image = Image::new_from_pixbuf(None);
     window.add(&image);
 
-    (window, image)
+    app::Gui {
+        window: window,
+        image: image,
+    }
 }
 
 
-fn parse_arguments(window: &Window, image: Image) -> (app::App, Receiver<Operation>, Vec<String>, Vec<String>, Vec<String>) {
+fn parse_arguments(gui: app::Gui) -> (app::App, Receiver<Operation>, Vec<String>, Vec<String>, Vec<String>) {
     let mut files: Vec<String> = vec![];
     let mut inputs: Vec<String> = vec![];
-    let mut fragiles: Vec<String> = vec![];
     let mut commands: Vec<String> = vec![];
-    let mut expand: bool = false;
-    let mut expand_recursive: bool = false;
-    let mut shuffle: bool = false;
-    let mut max_http_threads: u8 = 3;
     let mut eco = EntryContainerOptions::new();
     let mut app_options = AppOptions::new();
     let mut encodings: Vec<String> = vec![];
+    let mut initial = app::Initial::new();
 
     {
         let mut width: Option<u32> = None;
@@ -121,13 +119,17 @@ fn parse_arguments(window: &Window, image: Image) -> (app::App, Receiver<Operati
 
             // Controllers
             ap.refer(&mut inputs).add_option(&["--input", "-i"], Collect, "Controller files");
-            ap.refer(&mut fragiles).add_option(&["--fragile", "-f"], Collect, "Chrysoberyl makes `fifo` controller file");
             ap.refer(&mut commands).add_option(&["--command", "-c"], Collect, "Controller command");
-            // Listing
-            ap.refer(&mut expand).add_option(&["--expand", "-e"], StoreTrue, "`Expand` first file");
-            ap.refer(&mut expand_recursive).add_option(&["--expand-recursive", "-E"], StoreTrue, "`Expand` first file");
-            ap.refer(&mut shuffle).add_option(&["--shuffle", "-z"], StoreTrue, "Shuffle file list");
-            // Filter
+            // Initial
+            ap.refer(&mut initial.fragiles).add_option(&["--fragile", "-f"], Collect, "Chrysoberyl makes `fifo` controller file");
+            ap.refer(&mut initial.expand).add_option(&["--expand", "-e"], StoreTrue, "`Expand` first file");
+            ap.refer(&mut initial.expand_recursive).add_option(&["--expand-recursive", "-E"], StoreTrue, "`Expand` first file");
+            ap.refer(&mut initial.shuffle).add_option(&["--shuffle", "-z"], StoreTrue, "Shuffle file list");
+            ap.refer(&mut initial.http_threads).add_option(&["--max-http-threads", "-t"], Store, "Maximum number of HTTP Threads");
+            ap.refer(&mut encodings).add_option(&["--encoding", "--enc"], Collect, "Character encoding for filename in archives");
+            // Options
+            ap.refer(&mut app_options.show_text).add_option(&["--show-info"], StoreTrue, "Show information bar on window bottom");
+            // Container
             ap.refer(&mut eco.min_width).add_option(&["--min-width", "-w"], StoreOption, "Minimum width");
             ap.refer(&mut eco.min_height).add_option(&["--min-height", "-h"], StoreOption, "Minimum height");
             ap.refer(&mut eco.max_width).add_option(&["--max-width", "-W"], StoreOption, "Maximum width");
@@ -135,12 +137,6 @@ fn parse_arguments(window: &Window, image: Image) -> (app::App, Receiver<Operati
             ap.refer(&mut eco.ratio).add_option(&["--ratio", "-R"], StoreOption, "Width / Height");
             ap.refer(&mut width).add_option(&["--width"], StoreOption, "Width");
             ap.refer(&mut height).add_option(&["--height"], StoreOption, "Height");
-            // Options
-            ap.refer(&mut app_options.show_text).add_option(&["--show-info"], StoreTrue, "Show information bar on window bottom");
-            // Limitation
-            ap.refer(&mut max_http_threads).add_option(&["--max-http-threads", "-t"], Store, "Maximum number of HTTP Threads");
-            // Archive
-            ap.refer(&mut encodings).add_option(&["--encoding", "--enc"], Collect, "Character encoding for filename in archives");
             // Files
             ap.refer(&mut files).add_argument("images", List, "Image files or URLs");
 
@@ -151,9 +147,10 @@ fn parse_arguments(window: &Window, image: Image) -> (app::App, Receiver<Operati
         if let Some(height) = height { eco.min_height = Some(height); eco.max_height = Some(height); }
     }
 
-    let encodings = parse_encodings(&encodings);
+    let fragiles = initial.fragiles.clone();
+    initial.encodings = parse_encodings(&encodings);
 
-    let (app, rx) = app::App::new(eco, max_http_threads, expand, expand_recursive, shuffle, files, fragiles.clone(), window.clone(), image, encodings, app_options);
+    let (app, rx) = app::App::new(initial, app_options, gui, eco);
 
     load_config(app.tx.clone());
 

@@ -26,40 +26,54 @@ use utils::path_to_str;
 
 pub struct App {
     entries: EntryContainer,
-    window: Window,
-    image: Image,
     mapping: Mapping,
     http_cache: HttpCache,
     encodings: Vec<EncodingRef>,
+    gui: Gui,
     pub tx: Sender<Operation>,
     pub options: AppOptions
 }
 
+#[derive(Clone)]
+pub struct Gui {
+    pub window: Window,
+    pub image: Image,
+}
+
+pub struct Initial {
+    pub http_threads: u8,
+    pub expand: bool,
+    pub expand_recursive: bool,
+    pub shuffle: bool,
+    pub files: Vec<String>,
+    pub fragiles: Vec<String>,
+    pub encodings: Vec<EncodingRef>
+}
+
 
 impl App {
-    pub fn new(entry_options:EntryContainerOptions, http_threads: u8, expand: bool, expand_recursive: bool, shuffle: bool, files: Vec<String>, fragiles: Vec<String>, window: Window, image: Image, _encodings: Vec<EncodingRef>, options: AppOptions) -> (App, Receiver<Operation>) {
+    pub fn new(initial: Initial, options: AppOptions, gui: Gui, entry_options:EntryContainerOptions) -> (App, Receiver<Operation>) {
         let (tx, rx) = channel();
 
-        let mut _encodings = _encodings;
+        let mut initial = initial;
 
-        if _encodings.is_empty() {
+        if initial.encodings.is_empty() {
             use encoding::all::*;
-            _encodings.push(UTF_8);
-            _encodings.push(WINDOWS_31J);
+            initial.encodings.push(UTF_8);
+            initial.encodings.push(WINDOWS_31J);
         }
 
         let mut app = App {
             entries: EntryContainer::new(entry_options),
-            window: window,
-            image: image,
+            gui: gui,
             tx: tx.clone(),
-            http_cache: HttpCache::new(http_threads, tx.clone()),
+            http_cache: HttpCache::new(initial.http_threads, tx.clone()),
             options: options,
-            encodings: _encodings,
+            encodings: initial.encodings,
             mapping: Mapping::new()
         };
 
-        for file in files.iter() {
+        for file in initial.files.iter() {
            app.on_push(file.clone());
         }
 
@@ -67,24 +81,24 @@ impl App {
             let mut expand_base = None;
 
             if app.entries.len() == 0 {
-                if let Some(file) = files.get(0) {
+                if let Some(file) = initial.files.get(0) {
                     expand_base = Path::new(file).to_path_buf().parent().map(|it| it.to_path_buf());
                 }
             }
 
-            if expand {
+            if initial.expand {
                 tx.send(Operation::Expand(expand_base)).unwrap();
-            } else if expand_recursive {
+            } else if initial.expand_recursive {
                 tx.send(Operation::ExpandRecursive(expand_base)).unwrap();
             }
         }
 
-        if shuffle {
-            let fix = files.get(0).map(|it| Path::new(it).is_file()).unwrap_or(false);
+        if initial.shuffle {
+            let fix = initial.files.get(0).map(|it| Path::new(it).is_file()).unwrap_or(false);
             tx.send(Operation::Shuffle(fix)).unwrap();
         }
 
-        for fragile in fragiles.clone() {
+        for fragile in initial.fragiles.clone() {
             new_fragile_input(&fragile);
         }
 
@@ -176,7 +190,7 @@ impl App {
                     self.show_image(entry.clone(), text);
                 });
 
-                self.window.set_title(text);
+                self.gui.window.set_title(text);
                 if changed {
                     self.puts_event_with_current("show", None);
                 }
@@ -191,13 +205,13 @@ impl App {
     // }
 
     fn show_image(&self, entry: Entry, text: Option<&str>) {
-        let (width, height) = self.window.get_size();
+        let (width, height) = self.gui.window.get_size();
 
         if let Ok(img) = self.get_meta(&entry) {
             if let Ok(gif) = img.into::<Gif>() {
                 if gif.is_animated() {
                     match self.get_pixbuf_animation(&entry) {
-                        Ok(buf) => self.image.set_from_animation(&buf),
+                        Ok(buf) => self.gui.image.set_from_animation(&buf),
                         Err(err) => puts_error!("at" => "show_image", "reason" => err)
                     }
                     return
@@ -244,9 +258,9 @@ impl App {
                         context.show_text(text);
                     }
 
-                    self.image.set_from_surface(&surface);
+                    self.gui.image.set_from_surface(&surface);
                 } else {
-                    self.image.set_from_pixbuf(Some(&buf));
+                    self.gui.image.set_from_pixbuf(Some(&buf));
                 }
             }
             Err(err) => puts_error!("at" => "show_image", "reason" => err)
@@ -371,6 +385,21 @@ impl App {
             Entry::Archive(_, _, ref buffer) =>  {
                 immeta::load_from_buf(&buffer)
             }
+        }
+    }
+}
+
+
+impl Initial {
+    pub fn new() -> Initial {
+        Initial {
+            http_threads: 3,
+            expand: false,
+            expand_recursive: false,
+            shuffle: false,
+            files: vec![],
+            fragiles: vec![],
+            encodings: vec![],
         }
     }
 }

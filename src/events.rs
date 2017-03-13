@@ -26,7 +26,7 @@ fn on_key_press(tx: Sender<Operation>, key: KeyData) -> Inhibit {
     let keyval = key.code;
     tx.send({
         if 48 <= keyval && keyval <= 57 {
-            Count((keyval - 48) as u8)
+            CountDigit((keyval - 48) as u8)
         } else {
             Key(key)
         }

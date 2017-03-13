@@ -26,7 +26,8 @@ pub enum Operation {
     PushArchiveEntry(PathBuf, ArchiveEntry, Arc<Vec<u8>>),
     Key(KeyData),
     Button(u32),
-    Count(u8),
+    Count(Option<usize>),
+    CountDigit(u8),
     Toggle(AppOptionName),
     Expand(Option<PathBuf>),
     ExpandRecursive(Option<PathBuf>),
@@ -36,6 +37,7 @@ pub enum Operation {
     PrintEntries,
     Sort,
     Quit,
+    Multi(Vec<Operation>),
     Nop
 }
 
@@ -112,6 +114,13 @@ fn parse_from_vec(whole: Vec<String>) -> Option<Operation> {
                     })
                 })
             }),
+            "@count" => if args.is_empty() {
+                Some(Count(None))
+            } else {
+                iter_let!(args => [count] {
+                    count.parse().ok().map(|count| Count(Some(count)))
+                })
+            },
             "@toggle" => iter_let!(args => [name] {
                 use options::AppOptionName::*;
                 match &*name.to_lowercase() {
@@ -131,6 +140,10 @@ fn parse_from_vec(whole: Vec<String>) -> Option<Operation> {
             "@expandrecursive"           => Some(ExpandRecursive(pb(args, 0))),
             "@quit"                      => Some(Quit),
             "@user"                      => Some(Operation::user(args)),
+            ";"                          => parse_multi(args.iter().collect(), ";").ok(),
+            "@multi" => iter_let!(args => [separator] {
+                parse_multi(args.collect(), separator).ok()
+            }),
             _ => None
         }
     } else {
@@ -138,6 +151,35 @@ fn parse_from_vec(whole: Vec<String>) -> Option<Operation> {
     }
 }
 
+fn parse_multi(xs: Vec<&String>, separator: &str) -> Result<Operation, String> {
+    let mut ops: Vec<Vec<String>> = vec![];
+    let mut buffer: Vec<String> = vec![];
+
+    for x in  xs.into_iter() {
+        if x == separator {
+            ops.push(buffer.clone());
+            buffer.clear();
+        } else {
+            buffer.push(x.clone());
+        }
+    }
+
+    if !buffer.is_empty() {
+        ops.push(buffer);
+    }
+
+    let mut result: Vec<Operation> = vec![];
+
+    for op in ops {
+        if let Some(op) = parse_from_vec(op) {
+            result.push(op);
+        } else {
+            return Err("Invalid command".to_owned())
+        }
+    }
+
+    Ok(Operation::Multi(result))
+}
 
 fn parse(s: &str) -> Operation {
     use self::Operation::*;

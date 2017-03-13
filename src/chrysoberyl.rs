@@ -6,7 +6,7 @@ use std::sync::mpsc::{Sender, Receiver};
 use std::thread::{sleep};
 use std::time::{Duration, Instant};
 
-use argparse::{ArgumentParser, List, Collect, Store, StoreTrue, StoreOption};
+use argparse::{ArgumentParser, List, Collect, Store, StoreTrue, StoreOption, Print};
 use encoding::EncodingRef;
 use encoding::label::encoding_from_whatwg_label;
 use env_logger;
@@ -24,12 +24,12 @@ use options::AppOptions;
 pub fn main() {
     env_logger::init().unwrap();
 
+    let gui = setup_gui();
+    let (mut app, primary_rx, secondary_rx) = parse_arguments(gui.clone());
+
     unsafe {
         puts_event!("info", "name" => "pid", "value" => libc::getpid());
     }
-
-    let gui = setup_gui();
-    let (mut app, primary_rx, secondary_rx) = parse_arguments(gui.clone());
 
     'outer: loop {
         while gtk::events_pending() {
@@ -124,6 +124,8 @@ fn parse_arguments(gui: app::Gui) -> (app::App, Receiver<Operation>, Receiver<Op
             ap.refer(&mut eco.ratio).add_option(&["--ratio", "-R"], StoreOption, "Width / Height");
             ap.refer(&mut width).add_option(&["--width"], StoreOption, "Width");
             ap.refer(&mut height).add_option(&["--height"], StoreOption, "Height");
+
+            ap.add_option(&["-V", "--version"], Print(env!("CARGO_PKG_VERSION").to_string()), "Show version");
 
             ap.parse_args_or_exit();
         }

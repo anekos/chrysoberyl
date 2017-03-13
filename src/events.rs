@@ -2,11 +2,20 @@
 use std::sync::mpsc::Sender;
 
 use gdk::EventButton;
+use gtk::prelude::*;
 use gtk::{Inhibit, main_quit};
 
+use app;
 use key::KeyData;
 use operation::Operation;
 
+
+
+pub fn register(gui: app::Gui, tx: Sender<Operation>) {
+    gui.window.connect_key_press_event(clone_army!([tx] move |_, key| on_key_press(tx.clone(), KeyData::new(key))));
+    gui.window.connect_configure_event(clone_army!([tx] move |_, _| on_configure(tx.clone())));
+    gui.window.connect_button_press_event(clone_army!([tx] move |_, button| on_button_press(tx.clone(), button)));
+}
 
 
 pub fn on_key_press(tx: Sender<Operation>, key: KeyData) -> Inhibit {

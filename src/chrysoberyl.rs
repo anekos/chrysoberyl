@@ -2,7 +2,7 @@
 use std::env::home_dir;
 use std::fs::File;
 use std::io::{BufReader, BufRead};
-use std::sync::mpsc::{Sender, Receiver, channel};
+use std::sync::mpsc::{Sender, Receiver};
 use std::thread::{sleep};
 use std::time::{Duration, Instant};
 
@@ -11,14 +11,12 @@ use encoding::EncodingRef;
 use encoding::label::encoding_from_whatwg_label;
 use env_logger;
 use gtk::prelude::*;
-use gtk::{self, Image, Window};
+use gtk::{self, Image};
 use libc;
 
 use app;
-use controller;
 use entry::EntryContainerOptions;
 use events;
-use key::KeyData;
 use operation::Operation;
 use options::AppOptions;
 
@@ -32,25 +30,7 @@ pub fn main() {
     }
 
     let gui = setup_gui();
-    let (mut app, rx, inputs, fragiles, commands) = parse_arguments(gui.clone());
-
-    let tx = app.tx.clone();
-    let (primary_tx, primary_rx) = channel();
-
-    gui.window.connect_key_press_event(clone_army!([primary_tx] move |_, key| events::on_key_press(primary_tx.clone(), KeyData::new(key))));
-    gui.window.connect_configure_event(clone_army!([primary_tx] move |_, _| events::on_configure(primary_tx.clone())));
-    gui.window.connect_button_press_event(clone_army!([primary_tx] move |_, button| events::on_button_press(primary_tx.clone(), button)));
-
-    for path in inputs {
-        controller::run_file_controller(tx.clone(), path);
-    }
-    for path in fragiles {
-        controller::run_fifo_controller(tx.clone(), path);
-    }
-    for path in commands {
-        controller::run_command_controller(tx.clone(), path);
-    }
-    controller::run_stdin_controller(tx.clone());
+    let (mut app, primary_rx, secondary_rx) = parse_arguments(gui.clone());
 
     gui.window.show_all();
 
@@ -65,7 +45,7 @@ pub fn main() {
 
         let t = Instant::now();
 
-        for op in rx.try_iter() {
+        for op in secondary_rx.try_iter() {
             app.operate(&op);
             if t.elapsed() > Duration::from_millis(10) {
                 continue 'outer;
@@ -98,10 +78,7 @@ fn setup_gui() -> app::Gui {
 }
 
 
-fn parse_arguments(gui: app::Gui) -> (app::App, Receiver<Operation>, Vec<String>, Vec<String>, Vec<String>) {
-    let mut files: Vec<String> = vec![];
-    let mut inputs: Vec<String> = vec![];
-    let mut commands: Vec<String> = vec![];
+fn parse_arguments(gui: app::Gui) -> (app::App, Receiver<Operation>, Receiver<Operation>) {
     let mut eco = EntryContainerOptions::new();
     let mut app_options = AppOptions::new();
     let mut encodings: Vec<String> = vec![];
@@ -117,16 +94,17 @@ fn parse_arguments(gui: app::Gui) -> (app::App, Receiver<Operation>, Vec<String>
 
             ap.set_description("Controllable Image Viewer");
 
-            // Controllers
-            ap.refer(&mut inputs).add_option(&["--input", "-i"], Collect, "Controller files");
-            ap.refer(&mut commands).add_option(&["--command", "-c"], Collect, "Controller command");
             // Initial
-            ap.refer(&mut initial.fragiles).add_option(&["--fragile", "-f"], Collect, "Chrysoberyl makes `fifo` controller file");
             ap.refer(&mut initial.expand).add_option(&["--expand", "-e"], StoreTrue, "`Expand` first file");
             ap.refer(&mut initial.expand_recursive).add_option(&["--expand-recursive", "-E"], StoreTrue, "`Expand` first file");
             ap.refer(&mut initial.shuffle).add_option(&["--shuffle", "-z"], StoreTrue, "Shuffle file list");
             ap.refer(&mut initial.http_threads).add_option(&["--max-http-threads", "-t"], Store, "Maximum number of HTTP Threads");
             ap.refer(&mut encodings).add_option(&["--encoding", "--enc"], Collect, "Character encoding for filename in archives");
+            ap.refer(&mut initial.files).add_argument("images", List, "Image files or URLs");
+            // Controllers
+            ap.refer(&mut initial.controllers.inputs).add_option(&["--input", "-i"], Collect, "Controller files");
+            ap.refer(&mut initial.controllers.commands).add_option(&["--command", "-c"], Collect, "Controller command");
+            ap.refer(&mut initial.controllers.fragiles).add_option(&["--fragile", "-f"], Collect, "Chrysoberyl makes `fifo` controller file");
             // Options
             ap.refer(&mut app_options.show_text).add_option(&["--show-info"], StoreTrue, "Show information bar on window bottom");
             // Container
@@ -137,8 +115,6 @@ fn parse_arguments(gui: app::Gui) -> (app::App, Receiver<Operation>, Vec<String>
             ap.refer(&mut eco.ratio).add_option(&["--ratio", "-R"], StoreOption, "Width / Height");
             ap.refer(&mut width).add_option(&["--width"], StoreOption, "Width");
             ap.refer(&mut height).add_option(&["--height"], StoreOption, "Height");
-            // Files
-            ap.refer(&mut files).add_argument("images", List, "Image files or URLs");
 
             ap.parse_args_or_exit();
         }
@@ -147,14 +123,13 @@ fn parse_arguments(gui: app::Gui) -> (app::App, Receiver<Operation>, Vec<String>
         if let Some(height) = height { eco.min_height = Some(height); eco.max_height = Some(height); }
     }
 
-    let fragiles = initial.fragiles.clone();
     initial.encodings = parse_encodings(&encodings);
 
-    let (app, rx) = app::App::new(initial, app_options, gui, eco);
+    let (app, primary_rx, rx) = app::App::new(initial, app_options, gui, eco);
 
     load_config(app.tx.clone());
 
-    (app, rx, inputs, fragiles, commands)
+    (app, primary_rx, rx)
 }
 
 

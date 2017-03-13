@@ -11,7 +11,9 @@ use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
 
 use archive;
+use controller;
 use entry::{Entry,EntryContainer, EntryContainerOptions};
+use events;
 use fragile_input::new_fragile_input;
 use http_cache::HttpCache;
 use key::KeyData;
@@ -45,15 +47,16 @@ pub struct Initial {
     pub expand: bool,
     pub expand_recursive: bool,
     pub shuffle: bool,
+    pub controllers: controller::Controllers,
     pub files: Vec<String>,
-    pub fragiles: Vec<String>,
     pub encodings: Vec<EncodingRef>
 }
 
 
 impl App {
-    pub fn new(initial: Initial, options: AppOptions, gui: Gui, entry_options:EntryContainerOptions) -> (App, Receiver<Operation>) {
+    pub fn new(initial: Initial, options: AppOptions, gui: Gui, entry_options:EntryContainerOptions) -> (App, Receiver<Operation>, Receiver<Operation>) {
         let (tx, rx) = channel();
+        let (primary_tx, primary_rx) = channel();
 
         let mut initial = initial;
 
@@ -65,13 +68,16 @@ impl App {
 
         let mut app = App {
             entries: EntryContainer::new(entry_options),
-            gui: gui,
+            gui: gui.clone(),
             tx: tx.clone(),
             http_cache: HttpCache::new(initial.http_threads, tx.clone()),
             options: options,
             encodings: initial.encodings,
             mapping: Mapping::new()
         };
+
+        events::register(gui, primary_tx.clone());
+        controller::register(tx.clone(), &initial.controllers);
 
         for file in initial.files.iter() {
            app.on_push(file.clone());
@@ -98,11 +104,11 @@ impl App {
             tx.send(Operation::Shuffle(fix)).unwrap();
         }
 
-        for fragile in initial.fragiles.clone() {
+        for fragile in initial.controllers.fragiles.clone() {
             new_fragile_input(&fragile);
         }
 
-        (app, rx)
+        (app, primary_rx, rx)
     }
 
     pub fn operate(&mut self, operation: &Operation) {
@@ -398,7 +404,7 @@ impl Initial {
             expand_recursive: false,
             shuffle: false,
             files: vec![],
-            fragiles: vec![],
+            controllers: controller::Controllers::new(),
             encodings: vec![],
         }
     }

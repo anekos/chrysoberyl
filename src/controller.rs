@@ -9,6 +9,41 @@ use termination;
 
 
 
+pub struct Controllers {
+    pub inputs: Vec<String>,
+    pub fragiles: Vec<String>,
+    pub commands: Vec<String>
+}
+
+
+impl Controllers {
+    pub fn new() -> Controllers {
+        Controllers {
+            inputs: vec![],
+            fragiles: vec![],
+            commands: vec![],
+        }
+    }
+}
+
+
+
+pub fn register(tx: Sender<Operation>, controllers: &Controllers) {
+    for path in controllers.inputs.iter() {
+        run_file_controller(tx.clone(), path.clone());
+    }
+    for path in controllers.fragiles.iter() {
+        run_fifo_controller(tx.clone(), path.clone());
+    }
+    for path in controllers.commands.iter() {
+        run_command_controller(tx.clone(), path.clone());
+    }
+
+    run_stdin_controller(tx.clone());
+}
+
+
+
 pub fn run_fifo_controller(tx: Sender<Operation>, filepath: String) {
     use std::io::{BufReader, BufRead};
 

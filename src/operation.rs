@@ -21,6 +21,7 @@ pub enum Operation {
     First,
     Key(KeyData),
     Last,
+    LazyDraw(u64), /* serial */
     Map(Input, Box<Operation>),
     Multi(Vec<Operation>),
     Next,

@@ -19,7 +19,7 @@ pub struct Mapping {
 
 impl Input {
     pub fn key(key_name: &str) -> Input {
-        Input::Key(normalize_key_name(key_name))
+        Input::Key(key_name.to_owned())
     }
 
     pub fn mouse_button(button: u32) -> Input {
@@ -40,9 +40,4 @@ impl Mapping {
     pub fn matched(&self, input: &Input) -> Option<Operation> {
         self.table.get(input).map(|it| it.clone())
     }
-}
-
-
-fn normalize_key_name(key_name: &str) -> String {
-    key_name.to_lowercase()
 }

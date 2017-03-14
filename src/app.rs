@@ -192,7 +192,7 @@ impl App {
                         self.operate(op)
                     }
                 },
-                Script(_, ref command_name, ref arguments) => script::call(command_name, arguments, self.current_info()),
+                Script(async, ref command_name, ref arguments) => script::call(async, command_name, arguments, self.current_info()),
                 Quit => termination::execute(),
             }
         }

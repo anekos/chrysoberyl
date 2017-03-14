@@ -1,9 +1,10 @@
 
 use std::process::Command;
+use std::thread::spawn;
 
 
 
-pub fn call(command_name: &str, arguments: &Vec<String>, info: Vec<(String, String)>) {
+pub fn call(async: bool, command_name: &str, arguments: &Vec<String>, info: Vec<(String, String)>) {
     let mut command = Command::new("bash");
     command.arg("-c")
         .arg(command_name.clone())
@@ -14,7 +15,10 @@ pub fn call(command_name: &str, arguments: &Vec<String>, info: Vec<(String, Stri
         command.env(format!("Chrysoberyl_{}", key).to_uppercase(), value);
     }
 
-
     let mut child = command.spawn().expect(&*format!("Failed to run: {}", command_name));
-    child.wait().unwrap();
+    if async {
+        spawn(move || child.wait().unwrap());
+    } else {
+        child.wait().unwrap();
+    }
 }

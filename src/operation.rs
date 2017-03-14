@@ -38,7 +38,7 @@ pub enum Operation {
     Sort,
     Quit,
     Multi(Vec<Operation>),
-    Script(bool, String, Vec<String>), /* sync, command_name, arguments */
+    Script(bool, String, Vec<String>), /* async, command_name, arguments */
     Nop
 }
 
@@ -129,8 +129,14 @@ fn parse_from_vec(whole: Vec<String>) -> Option<Operation> {
                     _                      => None
                 }
             }),
-            "@script" => iter_let!(args => [command_name] {
-                Some(Script(true, command_name.to_owned(), args.map(|it| it.clone()).collect()))
+            "@script" => iter_let!(args => [async, command_name] {
+                let async = match &*async.to_lowercase() {
+                    "sync" | "s" => Some(false),
+                    "async" | "a" => Some(true),
+                    _ => None
+                };
+
+                async.map(|async| Script(async, command_name.to_owned(), args.map(|it| it.clone()).collect()))
             }),
             "@next" | "@n"               => Some(Next),
             "@prev" | "@p" | "@previous" => Some(Previous),

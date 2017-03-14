@@ -1,7 +1,6 @@
 
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use std::sync::Arc;
 
 use cmdline_parser::Parser;
 
@@ -23,7 +22,7 @@ pub enum Operation {
     PushPath(PathBuf),
     PushHttpCache(PathBuf, String),
     PushURL(String),
-    PushArchiveEntry(PathBuf, ArchiveEntry, Arc<Vec<u8>>),
+    PushArchiveEntry(PathBuf, ArchiveEntry),
     Key(KeyData),
     Button(u32),
     Count(Option<usize>),

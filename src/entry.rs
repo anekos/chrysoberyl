@@ -4,7 +4,6 @@ use std::fmt;
 use std::io;
 use std::path::PathBuf;
 use std::rc::Rc;
-use std::sync::Arc;
 
 use immeta;
 use rand::{thread_rng, Rng, ThreadRng};
@@ -36,7 +35,7 @@ pub struct EntryContainerOptions {
 pub enum Entry {
     File(PathBuf),
     Http(PathBuf, String),
-    Archive(Rc<PathBuf>, ArchiveEntry, Arc<Vec<u8>>)
+    Archive(Rc<PathBuf>, ArchiveEntry)
 }
 
 
@@ -195,8 +194,8 @@ impl EntryContainer {
         self.push_entry(Entry::Http(path, url.to_owned()))
     }
 
-    pub fn push_archive_entry(&mut self, archive_path: &PathBuf, entry: &ArchiveEntry, buffer: Arc<Vec<u8>>) -> bool {
-        self.push_entry(Entry::Archive(Rc::new(archive_path.clone()), entry.clone(), buffer))
+    pub fn push_archive_entry(&mut self, archive_path: &PathBuf, entry: &ArchiveEntry) -> bool {
+        self.push_entry(Entry::Archive(Rc::new(archive_path.clone()), entry.clone()))
     }
 
     fn push_file(&mut self, file: &PathBuf) -> bool {
@@ -227,7 +226,7 @@ impl EntryContainer {
         match *entry {
             File(ref path) => self.is_valid_image_file(path),
             Http(ref path, _) => self.is_valid_image_file(path),
-            Archive(_, _, _) => true // FIXME ??
+            Archive(_, _) => true // FIXME ??
         }
     }
 
@@ -297,7 +296,7 @@ impl Entry {
         match *self {
             File(ref path) => path_to_str(path).to_owned(),
             Http(_, ref url) => url.clone(),
-            Archive(ref archive_path, ref entry, _) => format!("{}@{}", entry.name, path_to_str(&*archive_path))
+            Archive(ref archive_path, ref entry) => format!("{}@{}", entry.name, path_to_str(&*archive_path))
         }
     }
 }

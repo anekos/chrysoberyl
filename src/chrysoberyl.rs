@@ -1,8 +1,5 @@
 
-use std::env::home_dir;
-use std::fs::File;
-use std::io::{BufReader, BufRead};
-use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc::Receiver;
 use std::thread::{sleep};
 use std::time::{Duration, Instant};
 
@@ -15,6 +12,7 @@ use gtk::{self, Image, Label};
 use libc;
 
 use app;
+use config;
 use entry::EntryContainerOptions;
 use operation::Operation;
 use options::AppOptions;
@@ -138,7 +136,7 @@ fn parse_arguments(gui: app::Gui) -> (app::App, Receiver<Operation>, Receiver<Op
 
     let (app, primary_rx, rx) = app::App::new(initial, app_options, gui, eco);
 
-    load_config(app.tx.clone());
+    config::load_config(app.tx.clone());
 
     (app, primary_rx, rx)
 }
@@ -156,40 +154,4 @@ fn parse_encodings(names: &Vec<String>) -> Vec<EncodingRef> {
     }
 
     result
-}
-
-
-fn load_config(tx: Sender<Operation>) {
-    use operation::Operation::*;
-    use mapping::Input;
-    use options::AppOptionName::*;
-
-    let filepath = {
-        let mut path = home_dir().unwrap();
-        path.push(".config");
-        path.push("chrysoberyl");
-        path.push("rc.conf");
-        path
-    };
-
-    if let Ok(file) = File::open(&filepath) {
-        puts_event!("config_file", "state" => "open");
-        let file = BufReader::new(file);
-        for line in file.lines() {
-            let line = line.unwrap();
-            tx.send(Operation::from_str_force(&line)).unwrap();
-        }
-        puts_event!("config_file", "state" => "close");
-    } else {
-        tx.send(Map(Input::key("h"), Box::new(First))).unwrap();
-        tx.send(Map(Input::key("j"), Box::new(Next))).unwrap();
-        tx.send(Map(Input::key("k"), Box::new(Previous))).unwrap();
-        tx.send(Map(Input::key("l"), Box::new(Last))).unwrap();
-        tx.send(Map(Input::key("q"), Box::new(Quit))).unwrap();
-        tx.send(Map(Input::key("z"), Box::new(Shuffle(false)))).unwrap();
-        tx.send(Map(Input::key("e"), Box::new(Expand(None)))).unwrap();
-        tx.send(Map(Input::key("E"), Box::new(ExpandRecursive(None)))).unwrap();
-        tx.send(Map(Input::key("i"), Box::new(Toggle(ShowText)))).unwrap();
-        tx.send(Map(Input::key("r"), Box::new(Refresh))).unwrap();
-    }
 }

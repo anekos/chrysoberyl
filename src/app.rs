@@ -141,8 +141,8 @@ impl App {
                     label_updated = true;
                 }
                 PushURL(ref url) => self.on_push_url(url.clone()),
-                PushArchiveEntry(ref archive_path, ref entry, ref buffer) => {
-                    changed = self.entries.push_archive_entry(archive_path, entry, buffer.clone());
+                PushArchiveEntry(ref archive_path, ref entry) => {
+                    changed = self.entries.push_archive_entry(archive_path, entry);
                     label_updated = true;
                 },
                 Key(ref key) => self.on_key(key),
@@ -325,7 +325,7 @@ impl App {
                 match entry {
                     File(ref path) => push_pair!(pairs, "file" => path_to_str(path)),
                     Http(ref path, ref url) => push_pair!(pairs, "file" => path_to_str(path), "url" => url),
-                    Archive(ref archive_file, ref entry, _) => push_pair!(pairs, "file" => entry.name, "archive_file" => path_to_str(archive_file)),
+                    Archive(ref archive_file, ref entry) => push_pair!(pairs, "file" => entry.name, "archive_file" => path_to_str(archive_file)),
                 }
                 push_pair!(pairs, "index" => index + 1, "count" => self.entries.len());
             }
@@ -340,9 +340,9 @@ impl App {
         match *entry {
             Entry::File(ref path) => PixbufAnimation::new_from_file(path_to_str(path)),
             Entry::Http(ref path, _) => PixbufAnimation::new_from_file(path_to_str(path)),
-            Entry::Archive(_, _, ref buffer) => {
+            Entry::Archive(_, ref entry) => {
                 let loader = PixbufLoader::new();
-                loader.loader_write(&*buffer.as_slice()).map(|_| {
+                loader.loader_write(&*entry.content.as_slice()).map(|_| {
                     loader.close().unwrap();
                     loader.get_animation().unwrap()
                 })
@@ -356,9 +356,9 @@ impl App {
         match *entry {
             Entry::File(ref path) => Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
             Entry::Http(ref path, _) => Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
-            Entry::Archive(_, _, ref buffer) => {
+            Entry::Archive(_, ref entry) => {
                 let loader = PixbufLoader::new();
-                let pixbuf = loader.loader_write(&*buffer.as_slice()).map(|_| {
+                let pixbuf = loader.loader_write(&*entry.content.as_slice()).map(|_| {
                     loader.close().unwrap();
                     let source = loader.get_pixbuf().unwrap();
                     let (scale, out_width, out_height) = calculate_scale(&source, width, height);
@@ -375,8 +375,8 @@ impl App {
         match *entry {
             Entry::File(ref path) => immeta::load_from_file(&path),
             Entry::Http(ref path, _) => immeta::load_from_file(&path),
-            Entry::Archive(_, _, ref buffer) =>  {
-                immeta::load_from_buf(&buffer)
+            Entry::Archive(_, ref entry) =>  {
+                immeta::load_from_buf(&entry.content)
             }
         }
     }

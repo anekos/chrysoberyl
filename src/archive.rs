@@ -1,6 +1,6 @@
 
 use std::cmp::Ordering;
-use std::collections::{HashSet, HashMap};
+use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -22,6 +22,7 @@ use validation::is_valid_image_filename;
 pub struct ArchiveEntry {
     pub index: usize,
     pub name: String,
+    pub content: Arc<Vec<u8>>
 }
 
 
@@ -51,38 +52,58 @@ impl Hash for ArchiveEntry {
 
 
 pub fn fetch_entries(path: &PathBuf, encodings: &Vec<EncodingRef>, tx: Sender<Operation>) {
-
-    let mut candidates = Vec::new();
-
-    let mut builder = Builder::new();
-    builder.support_format(ReadFormat::All).ok();
-    builder.support_filter(ReadFilter::All).ok();
-
-    let mut reader = builder.open_file(&path).unwrap();
-    let mut index = 0;
-    let mut targets = HashSet::new();
-
-    while let Some(entry) = reader.next_header() {
-        let name = get_filename(entry, index, encodings);
-
-        match entry.filetype() {
-            FileType::RegularFile if is_valid_image_filename(&name) => {
-                targets.insert(index);
-                candidates.push(ArchiveEntry { name: name.to_owned(), index: index });
-            }
-            _ => ()
+    let from_index: HashMap<usize, (usize, String)> = {
+        #[derive(Eq, Clone, Debug, PartialOrd)]
+        struct IndexWithName {
+            index: usize,
+            name: String,
         }
 
-        index += 1;
+        impl Ord for IndexWithName {
+            fn cmp(&self, other: &IndexWithName) -> Ordering {
+                self.name.cmp(&other.name)
+            }
+        }
 
-    }
+        impl PartialEq for IndexWithName {
+            fn eq(&self, other: &IndexWithName) -> bool {
+                self.name == other.name
+            }
+        }
 
-    candidates.sort();
+        let mut candidates = {
+            let mut result = vec![];
 
-    let mut index_to_serial: HashMap<usize, usize> = HashMap::new();
-    for (serial, candidate) in candidates.iter().enumerate() {
-        index_to_serial.insert(candidate.index, serial);
-    }
+            let mut builder = Builder::new();
+            builder.support_format(ReadFormat::All).ok();
+            builder.support_filter(ReadFilter::All).ok();
+
+            let mut reader = builder.open_file(&path).unwrap();
+            let mut index = 0;
+
+            while let Some(entry) = reader.next_header() {
+                let name = get_filename(entry, index, encodings);
+                match entry.filetype() {
+                    FileType::RegularFile if is_valid_image_filename(&name) => {
+                        result.push(IndexWithName { index: index, name: name });
+                    }
+                    _ => ()
+                }
+                index += 1;
+            }
+
+            result
+        };
+
+        candidates.sort();
+
+        let mut result = HashMap::new();
+        for (serial, candidate) in candidates.iter().enumerate() {
+            result.insert(candidate.index, (serial, candidate.name.clone()));
+        }
+
+        result
+    };
 
     spawn(clone_army!([path] move || {
         let mut builder = Builder::new();
@@ -92,12 +113,11 @@ pub fn fetch_entries(path: &PathBuf, encodings: &Vec<EncodingRef>, tx: Sender<Op
         let mut reader = builder.open_file(&path).unwrap();
 
         let mut buffer = SortingBuffer::new(0);
-        let mut candidates = candidates.iter();
         let mut index = 0;
 
         while let Some(_) = reader.next_header() {
-            if targets.contains(&index) {
-                let candidate = candidates.next().unwrap();
+            if let Some(serial_name) = from_index.get(&index) {
+                let (serial, ref name) = *serial_name;
 
                 let mut content = vec![];
                 loop {
@@ -108,23 +128,21 @@ pub fn fetch_entries(path: &PathBuf, encodings: &Vec<EncodingRef>, tx: Sender<Op
                         } else if content.is_empty() {
                             panic!("Empty content in archive");
                         } else {
-                            buffer.push(*index_to_serial.get(&candidate.index).unwrap(), (candidate, content));
+                            buffer.push(serial, ArchiveEntry { name: (*name).to_owned(), index: index, content: Arc::new(content) });
                         }
                     } else {
-                        buffer.skip(*index_to_serial.get(&candidate.index).unwrap());
+                        buffer.skip(serial);
                     }
                     break;
                 }
             }
 
-            while let Some((entry, buffer)) = buffer.pull() {
-                tx.send(Operation::PushArchiveEntry(path.clone(), entry.clone(), Arc::new(buffer))).unwrap();
+            while let Some(entry) = buffer.pull() {
+                tx.send(Operation::PushArchiveEntry(path.clone(), entry.clone())).unwrap();
             }
 
             index += 1;
         }
-
-
     }));
 }
 

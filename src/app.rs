@@ -21,6 +21,7 @@ use mapping::{Mapping, Input};
 use operation::Operation;
 use options::{AppOptions, AppOptionName};
 use output;
+use script;
 use termination;
 use utils::path_to_str;
 
@@ -191,6 +192,7 @@ impl App {
                         self.operate(op)
                     }
                 },
+                Script(async, ref command_name, ref arguments) => script::call(async, command_name, arguments, self.current_info()),
                 Quit => termination::execute(),
             }
         }
@@ -315,25 +317,44 @@ impl App {
         self.puts_event_with_current("user", Some(data));
     }
 
-    fn puts_event_with_current(&self, event: &str, data: Option<&Vec<(String, String)>>) {
+    fn current_info(&self) -> Vec<(String, String)> {
         use entry::Entry::*;
+        use std::fmt::Display;
 
-        puts_with!(pairs => {
-            push_pair!(pairs, "event" => event);
+        fn push<K: Display, V: Display>(pairs: &mut Vec<(String, String)>, key: K, value: V) {
+            pairs.push((s!(key), s!(value)));
+        }
 
-            if let Some((entry, index)) = self.entries.current() {
-                match entry {
-                    File(ref path) => push_pair!(pairs, "file" => path_to_str(path)),
-                    Http(ref path, ref url) => push_pair!(pairs, "file" => path_to_str(path), "url" => url),
-                    Archive(ref archive_file, ref entry) => push_pair!(pairs, "file" => entry.name, "archive_file" => path_to_str(archive_file)),
+        let mut pairs: Vec<(String, String)> = vec![];
+
+        if let Some((entry, index)) = self.entries.current() {
+            match entry {
+                File(ref path) => {
+                    push(&mut pairs, "file", path_to_str(path));
                 }
-                push_pair!(pairs, "index" => index + 1, "count" => self.entries.len());
+                Http(ref path, ref url) => {
+                    push(&mut pairs, "file", path_to_str(path));
+                    push(&mut pairs, "url", url);
+                }
+                Archive(ref archive_file, ref entry) => {
+                    push(&mut pairs, "file", entry.name.clone());
+                    push(&mut pairs, "archive_file", path_to_str(archive_file));
+                }
             }
+            push(&mut pairs, "index", index + 1);
+            push(&mut pairs, "count", self.entries.len());
+        }
 
-            if let Some(data) = data {
-                pairs.extend_from_slice(data.as_slice());
-            }
-        });
+        pairs
+    }
+
+    fn puts_event_with_current(&self, event: &str, data: Option<&Vec<(String, String)>>) {
+        let mut pairs = vec![(s!("event"), s!(event))];
+        pairs.extend_from_slice(self.current_info().as_slice());
+        if let Some(data) = data {
+            pairs.extend_from_slice(data.as_slice());
+        }
+        output::puts(&pairs);
     }
 
     pub fn get_pixbuf_animation(&self, entry: &Entry) -> Result<PixbufAnimation, gtk::Error> {

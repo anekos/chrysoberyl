@@ -71,6 +71,27 @@ macro_rules! time {
     }
 }
 
+macro_rules! vec_push {
+    ( $vec:expr $(, $name:expr => $value:expr)* ) => {
+        {
+            let vec = $vec;
+            $( vec.push(($name, $value)); )*
+        }
+    };
+    ( $vec:expr $(, $item:expr)* ) => {
+        {
+            let vec = $vec;
+            $( vec.push($item); )*
+        }
+    }
+}
+
+macro_rules! s {
+    ( $expr:expr ) => {
+        format!("{}", $expr)
+    }
+}
+
 
 pub fn duration_to_string(t: Duration) -> String {
     let msec: u64 = t.as_secs() * 1000 + t.subsec_nanos() as u64 / 1000000;

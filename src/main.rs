@@ -36,6 +36,7 @@ mod key;
 mod mapping;
 mod operation;
 mod options;
+mod script;
 mod sorting_buffer;
 mod termination;
 mod validation;

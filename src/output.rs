@@ -63,24 +63,6 @@ macro_rules! puts_event {
     }
 }
 
-macro_rules! puts_with {
-    ( $pairs:ident => $body:expr) => {
-        let mut $pairs: Vec<(String, String)> = vec![];
-        $body;
-        output::puts(&$pairs);
-    }
-}
-
-macro_rules! push_pair {
-    ( $pairs:ident $(, $name:expr => $value:expr)*) => {
-        {
-            let ref mut pairs = $pairs;
-            $(
-                pairs.push((format!("{}", $name), format!("{}", $value)));
-             )*
-        }
-    }
-}
 
 macro_rules! puts_error {
     ( $($name:expr => $value:expr),* ) => {

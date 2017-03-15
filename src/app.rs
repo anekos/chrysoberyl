@@ -163,7 +163,7 @@ impl App {
                     self.on_print_entries(),
                 Push(ref path) =>
                     self.on_push(path.clone()),
-                PushArchiveEntry(ref archive_path, ref entry) => 
+                PushArchiveEntry(ref archive_path, ref entry) =>
                     self.on_push_archive_entry(&mut updated, archive_path, entry),
                 PushHttpCache(ref file, ref url) =>
                     self.on_push_http_cache(&mut updated, file, url),

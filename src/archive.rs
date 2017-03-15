@@ -178,10 +178,7 @@ fn test_open_archive() {
     let mut reader = builder.open_file("test/maru-sankaku-sikaku.zip").unwrap();
     reader.next_header();
 
-    {
-        let mut entry = reader.entry();
-        assert_eq!(entry.pathname(), "maru.png");
-    }
+    assert_eq!(reader.entry().pathname(), "maru.png");
 
     {
         let in_zip = reader.read_block().unwrap().unwrap();
@@ -192,10 +189,7 @@ fn test_open_archive() {
 
     reader.next_header();
 
-    {
-        let mut entry = reader.entry();
-        assert_eq!(entry.pathname(), "sankaku.png");
-    }
+    assert_eq!(reader.entry().pathname(), "sankaku.png");
 
     {
         let in_zip = reader.read_block().unwrap().unwrap();

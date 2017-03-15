@@ -45,9 +45,10 @@ pub enum Operation {
 
 
 impl FromStr for Operation {
-    type Err = ();
-    fn from_str(src: &str) -> Result<Operation, ()> {
-        Ok(parse(src))
+    type Err = String;
+
+    fn from_str(src: &str) -> Result<Operation, String> {
+        parse(src)
     }
 }
 
@@ -119,11 +120,9 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
     }
 }
 
-fn parse(s: &str) -> Operation {
-    use self::Operation::*;
-
+fn parse(s: &str) -> Result<Operation, String> {
     let ps: Vec<String> = Parser::new(s).map(|(_, it)| it).collect();
-    parse_from_vec(ps).unwrap_or(Push(s.to_owned()))
+    parse_from_vec(ps)
 }
 
 
@@ -142,7 +141,7 @@ fn parse_count(args: Vec<String>) -> Result<Operation, String> {
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut count).add_argument("count", StoreOption, "Put count");
-        parse_args(ap, args)
+        parse_args(&mut ap, args)
     } .map(|_| {
         Operation::Count(count)
     })
@@ -156,7 +155,7 @@ fn parse_expand(args: Vec<String>) -> Result<Operation, String> {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut recursive).add_option(&["--recursive", "-r", "--recur", "--rec"], StoreTrue, "Recursive");
         ap.refer(&mut base).add_argument("base-path", StoreOption, "Base path");
-        parse_args(ap, args)
+        parse_args(&mut ap, args)
     } .map(|_| {
         Operation::Expand(recursive, base.map(|it| pathbuf(&it)))
     })
@@ -180,7 +179,7 @@ fn parse_map(args: Vec<String>) -> Result<Operation, String> {
             .add_option(&["--mouse-button", "-m"], StoreConst(InputType::MouseButton), "For mouse button");
         ap.refer(&mut from).add_argument("from", Store, "Map from (Key name or button number)").required();
         ap.refer(&mut to).add_argument("to", List, "Map to (Command)").required();
-        parse_args(ap, args)
+        parse_args(&mut ap, args)
     } .and_then(|_| {
         match input_type {
             InputType::Keyboard => Ok(Input::key(&from)),
@@ -206,7 +205,7 @@ fn parse_multi(args: Vec<String>) -> Result<Operation, String> {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut separator).add_argument("separator", Store, "Commands separator").required();
         ap.refer(&mut commands).add_argument("arguments", List, "Commands");
-        parse_args(ap, args)
+        parse_args(&mut ap, args)
     } .and_then(|_| {
         parse_multi_args(commands, &separator)
     })
@@ -251,7 +250,7 @@ fn parse_script(args: Vec<String>) -> Result<Operation, String> {
         ap.refer(&mut async).add_option(&["--async", "-a"], StoreTrue, "Async");
         ap.refer(&mut command).add_argument("command", Store, "Command").required();
         ap.refer(&mut command_arguments).add_argument("arguments", List, "Command arguments");
-        parse_args(ap, args)
+        parse_args(&mut ap, args)
     } .map(|_| {
         Operation::Script(async, command, command_arguments)
     })
@@ -265,7 +264,7 @@ fn parse_toggle(args: Vec<String>) -> Result<Operation, String> {
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut name).add_argument("option_name", Store, "Option name").required();
-        parse_args(ap, args)
+        parse_args(&mut ap, args)
     } .and_then(|_| {
         match &*name.to_lowercase() {
             "info" | "information" => Ok(Operation::Toggle(ShowText)),
@@ -274,7 +273,8 @@ fn parse_toggle(args: Vec<String>) -> Result<Operation, String> {
     })
 }
 
-fn parse_args(parser: ArgumentParser, args: Vec<String>) -> Result<(), String> {
+fn parse_args(parser: &mut ArgumentParser, args: Vec<String>) -> Result<(), String> {
+    parser.stop_on_first_argument(true);
     parser.parse(args, &mut sink(), &mut sink()).map_err(|code| s!(code))
 }
 
@@ -282,64 +282,72 @@ fn parse_args(parser: ArgumentParser, args: Vec<String>) -> Result<(), String> {
 fn test_parse() {
     use self::Operation::*;
 
+    fn p(s: &str) -> Operation {
+        Operation::from_str_force(s)
+    }
+
     // Simple
-    assert_eq!(parse("@First"), First);
-    assert_eq!(parse("@Next"), Next);
-    assert_eq!(parse("@Previous"), Previous);
-    assert_eq!(parse("@Prev"), Previous);
-    assert_eq!(parse("@Last"), Last);
-    assert_eq!(parse("@shuffle"), Shuffle(false));
-    assert_eq!(parse("@entries"), PrintEntries);
-    assert_eq!(parse("@refresh"), Refresh);
-    assert_eq!(parse("@sort"), Sort);
+    assert_eq!(p("@First"), First);
+    assert_eq!(p("@Next"), Next);
+    assert_eq!(p("@Previous"), Previous);
+    assert_eq!(p("@Prev"), Previous);
+    assert_eq!(p("@Last"), Last);
+    assert_eq!(p("@shuffle"), Shuffle(false));
+    assert_eq!(p("@entries"), PrintEntries);
+    assert_eq!(p("@refresh"), Refresh);
+    assert_eq!(p("@sort"), Sort);
 
     // @push*
-    assert_eq!(parse("@push http://example.com/moge.jpg"), Push("http://example.com/moge.jpg".to_owned()));
-    assert_eq!(parse("@pushpath /hoge/moge.jpg"), PushPath(pathbuf("/hoge/moge.jpg")));
-    assert_eq!(parse("@pushurl http://example.com/moge.jpg"), PushURL("http://example.com/moge.jpg".to_owned()));
+    assert_eq!(p("@push http://example.com/moge.jpg"), Push("http://example.com/moge.jpg".to_owned()));
+    assert_eq!(p("@pushpath /hoge/moge.jpg"), PushPath(pathbuf("/hoge/moge.jpg")));
+    assert_eq!(p("@pushurl http://example.com/moge.jpg"), PushURL("http://example.com/moge.jpg".to_owned()));
 
     // @map
-    assert_eq!(parse("@map k @first"), Map(Input::key("k"), Box::new(First)));
-    assert_eq!(parse("@map --keyboard k @next"), Map(Input::key("k"), Box::new(Next)));
-    assert_eq!(parse("@map -k k @next"), Map(Input::key("k"), Box::new(Next)));
-    assert_eq!(parse("@map --mouse-button 6 @last"), Map(Input::MouseButton(6), Box::new(Last)));
-    assert_eq!(parse("@map -m 6 @last"), Map(Input::MouseButton(6), Box::new(Last)));
+    assert_eq!(p("@map k @first"), Map(Input::key("k"), Box::new(First)));
+    assert_eq!(p("@map --keyboard k @next"), Map(Input::key("k"), Box::new(Next)));
+    assert_eq!(p("@map -k k @next"), Map(Input::key("k"), Box::new(Next)));
+    assert_eq!(p("@map --mouse-button 6 @last"), Map(Input::MouseButton(6), Box::new(Last)));
+    assert_eq!(p("@map -m 6 @last"), Map(Input::MouseButton(6), Box::new(Last)));
 
     // Expand
-    assert_eq!(parse("@expand /foo/bar.txt"), Expand(false, Some(pathbuf("/foo/bar.txt"))));
-    assert_eq!(parse("@expand"), Expand(false, None));
-    assert_eq!(parse("@expand --recursive /foo/bar.txt"), Expand(true, Some(pathbuf("/foo/bar.txt"))));
-    assert_eq!(parse("@expand --recursive"), Expand(true, None));
+    assert_eq!(p("@expand /foo/bar.txt"), Expand(false, Some(pathbuf("/foo/bar.txt"))));
+    assert_eq!(p("@expand"), Expand(false, None));
+    assert_eq!(p("@expand --recursive /foo/bar.txt"), Expand(true, Some(pathbuf("/foo/bar.txt"))));
+    assert_eq!(p("@expand --recursive"), Expand(true, None));
 
     // Toggle
-    assert_eq!(parse("@toggle info"), Toggle(AppOptionName::ShowText));
-    assert_eq!(parse("@toggle information"), Toggle(AppOptionName::ShowText));
+    assert_eq!(p("@toggle info"), Toggle(AppOptionName::ShowText));
+    assert_eq!(p("@toggle information"), Toggle(AppOptionName::ShowText));
 
     // Multi
-    assert_eq!(parse("; @first ; @next"), Multi(vec![First, Next]));
-    assert_eq!(parse("@multi / @first / @next"), Multi(vec![First, Next]));
+    assert_eq!(p("; @first ; @next"), Multi(vec![First, Next]));
+    assert_eq!(p("@multi / @first / @next"), Multi(vec![First, Next]));
+
+    // Script
+    assert_eq!(p("@script ls -l -a"), Script(false, s!("ls"), vec![s!("-l"), s!("-a")]));
+    assert_eq!(p("@script --async ls -l -a"), Script(true, s!("ls"), vec![s!("-l"), s!("-a")]));
 
     // Invalid command
-    assert_eq!(parse("Meow Meow"), Push("Meow Meow".to_owned()));
-    assert_eq!(parse("expand /foo/bar.txt"), Push("expand /foo/bar.txt".to_owned()));
+    assert_eq!(p("Meow Meow"), Push("Meow Meow".to_owned()));
+    assert_eq!(p("expand /foo/bar.txt"), Push("expand /foo/bar.txt".to_owned()));
 
     // Shell quotes
     assert_eq!(
-        parse(r#"@Push "http://example.com/sample.png""#),
+        p(r#"@Push "http://example.com/sample.png""#),
         Push("http://example.com/sample.png".to_owned()));
 
     // Shell quotes
     assert_eq!(
-        parse(r#"@Push 'http://example.com/sample.png'"#),
+        p(r#"@Push 'http://example.com/sample.png'"#),
         Push("http://example.com/sample.png".to_owned()));
 
     // Ignore leftover arguments
     assert_eq!(
-        parse(r#"@Push "http://example.com/sample.png" CAT IS PRETTY"#),
+        p(r#"@Push "http://example.com/sample.png" CAT IS PRETTY"#),
         Push("http://example.com/sample.png".to_owned()));
 
     // Ignore case
-    assert_eq!(parse("@ShuFFle"), Shuffle(false));
+    assert_eq!(p("@ShuFFle"), Shuffle(false));
 }
 
 fn pathbuf(s: &str) -> PathBuf {

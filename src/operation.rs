@@ -311,6 +311,14 @@ fn test_parse() {
     assert_eq!(parse("@expand --recursive /foo/bar.txt"), Expand(true, Some(pathbuf("/foo/bar.txt"))));
     assert_eq!(parse("@expand --recursive"), Expand(true, None));
 
+    // Toggle
+    assert_eq!(parse("@toggle info"), Toggle(AppOptionName::ShowText));
+    assert_eq!(parse("@toggle information"), Toggle(AppOptionName::ShowText));
+
+    // Multi
+    assert_eq!(parse("; @first ; @next"), Multi(vec![First, Next]));
+    assert_eq!(parse("@multi / @first / @next"), Multi(vec![First, Next]));
+
     // Invalid command
     assert_eq!(parse("Meow Meow"), Push("Meow Meow".to_owned()));
     assert_eq!(parse("expand /foo/bar.txt"), Push("expand /foo/bar.txt".to_owned()));

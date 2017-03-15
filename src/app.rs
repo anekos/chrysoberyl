@@ -33,6 +33,7 @@ pub struct App {
     http_cache: HttpCache,
     encodings: Vec<EncodingRef>,
     gui: Gui,
+    draw_serial: u64,
     pub tx: Sender<Operation>,
     pub options: AppOptions
 }
@@ -54,9 +55,10 @@ pub struct Initial {
     pub encodings: Vec<EncodingRef>
 }
 
-struct Change {
+struct Updated {
     pointer: bool,
-    label: bool
+    label: bool,
+    image: bool
 }
 
 
@@ -80,7 +82,8 @@ impl App {
             http_cache: HttpCache::new(initial.http_threads, tx.clone()),
             options: options,
             encodings: initial.encodings,
-            mapping: Mapping::new()
+            mapping: Mapping::new(),
+            draw_serial: 0,
         };
 
         events::register(gui, primary_tx.clone());
@@ -123,7 +126,7 @@ impl App {
     pub fn operate(&mut self, operation: &Operation) {
         use self::Operation::*;
 
-        let mut change = Change { pointer: false, label: false };
+        let mut updated = Updated { pointer: false, label: false, image: false };
         let len = self.entries.len();
 
         debug!("Operate\t{:?}", operation);
@@ -137,47 +140,49 @@ impl App {
                 CountDigit(digit) =>
                     self.entries.pointer.push_count_digit(digit),
                 Expand(ref base) =>
-                    self.on_expand(&mut change, base),
+                    self.on_expand(&mut updated, base),
                 ExpandRecursive(ref base) =>
-                    self.on_expand_recursive(&mut change, base),
+                    self.on_expand_recursive(&mut updated, base),
                 First =>
-                    change.pointer = self.entries.pointer.first(len),
+                    updated.pointer = self.entries.pointer.first(len),
                 Key(ref key) =>
                     self.on_key(key),
                 Last =>
-                    change.pointer = self.entries.pointer.last(len),
+                    updated.pointer = self.entries.pointer.last(len),
+                LazyDraw(serial) =>
+                    self.on_lazy_draw(&mut updated, serial),
                 Map(ref input, ref mapped_operation) =>
                     self.on_map(input, mapped_operation),
                 Multi(ref ops) =>
                     self.on_multi(ops),
                 Next =>
-                    self.on_next(&mut change, len),
+                    self.on_next(&mut updated, len),
                 Nop =>
                     (),
                 Previous =>
-                    self.on_previous(&mut change),
+                    self.on_previous(&mut updated),
                 PrintEntries =>
                     self.on_print_entries(),
                 Push(ref path) =>
                     self.on_push(path.clone()),
                 PushArchiveEntry(ref archive_path, ref entry) => 
-                    self.on_push_archive_entry(&mut change, archive_path, entry),
+                    self.on_push_archive_entry(&mut updated, archive_path, entry),
                 PushHttpCache(ref file, ref url) =>
-                    self.on_push_http_cache(&mut change, file, url),
+                    self.on_push_http_cache(&mut updated, file, url),
                 PushPath(ref file) =>
-                    self.on_push_path(&mut change, file.clone()),
+                    self.on_push_path(&mut updated, file.clone()),
                 PushURL(ref url) =>
                     self.on_push_url(url.clone()),
                 Quit =>
                     termination::execute(),
                 Refresh =>
-                    change.pointer = true,
+                    updated.pointer = true,
                 Toggle(AppOptionName::ShowText) =>
-                    self.on_toggle(&mut change),
+                    self.on_toggle(&mut updated),
                 Shuffle(fix_current) =>
-                    self.on_shuffle(&mut change, fix_current),
+                    self.on_shuffle(&mut updated, fix_current),
                 Sort =>
-                    self.on_sort(&mut change),
+                    self.on_sort(&mut updated),
                 User(ref data) =>
                     self.on_user(data),
                 Script(async, ref command_name, ref arguments) =>
@@ -186,12 +191,15 @@ impl App {
         }
 
         if let Some((entry, index)) = self.entries.current() {
-            if change.pointer {
+            if updated.pointer {
+                self.draw_serial += 1;
+                self.tx.send(Operation::LazyDraw(self.draw_serial)).unwrap();
+            }
+            if updated.image {
                 time!("show_image" => self.show_image(entry.clone(), self.options.show_text));
                 self.puts_event_with_current("show", None);
             }
-
-            if change.pointer || change.label {
+            if updated.image || updated.label {
                 let len = self.entries.len();
                 let path = entry.display_path();
                 self.update_label(&format!("[{}/{}] {}", index + 1, len, path));
@@ -211,16 +219,16 @@ impl App {
         }
     }
 
-    fn on_expand(&mut self, change: &mut Change, base: &Option<PathBuf>) {
+    fn on_expand(&mut self, updated: &mut Updated, base: &Option<PathBuf>) {
         let count = self.entries.pointer.counted();
         self.entries.expand(base.clone(), count as u8, count as u8- 1);
-        change.label = true;
+        updated.label = true;
     }
 
-    fn on_expand_recursive(&mut self, change: &mut Change, base: &Option<PathBuf>) {
+    fn on_expand_recursive(&mut self, updated: &mut Updated, base: &Option<PathBuf>) {
         let count = self.entries.pointer.counted();
         self.entries.expand(base.clone(), 1, count as u8);
-        change.label = true;
+        updated.label = true;
     }
 
     fn on_key(&mut self, key: &KeyData) {
@@ -231,6 +239,13 @@ impl App {
             self.puts_event_with_current(
                 "keyboard",
                 Some(&vec![("name".to_owned(), key.text().to_owned())]));
+        }
+    }
+
+    fn on_lazy_draw(&mut self, updated: &mut Updated, serial: u64) {
+        trace!("draw_serial: {}, serial: {}", self.draw_serial, serial);
+        if self.draw_serial == serial {
+            updated.image = true;
         }
     }
 
@@ -248,12 +263,12 @@ impl App {
         }
     }
 
-    fn on_next(&mut self, change: &mut Change, len: usize) {
-        change.pointer = self.entries.pointer.next(len);
+    fn on_next(&mut self, updated: &mut Updated, len: usize) {
+        updated.pointer = self.entries.pointer.next(len);
     }
 
-    fn on_previous(&mut self, change: &mut Change) {
-        change.pointer = self.entries.pointer.previous();
+    fn on_previous(&mut self, updated: &mut Updated) {
+        updated.pointer = self.entries.pointer.previous();
     }
 
     fn on_print_entries(&self) {
@@ -286,39 +301,39 @@ impl App {
         self.operate(&Operation::PushPath(Path::new(&path).to_path_buf()));
     }
 
-    fn on_push_archive_entry(&mut self, change: &mut Change, archive_path: &PathBuf, entry: &ArchiveEntry) {
-        change.pointer = self.entries.push_archive_entry(archive_path, entry);
-        change.label = true;
+    fn on_push_archive_entry(&mut self, updated: &mut Updated, archive_path: &PathBuf, entry: &ArchiveEntry) {
+        updated.pointer = self.entries.push_archive_entry(archive_path, entry);
+        updated.label = true;
     }
 
-    fn on_push_http_cache(&mut self, change: &mut Change, file: &PathBuf, url: &String) {
-        change.pointer = self.entries.push_http_cache(file, url);
-        change.label = true;
+    fn on_push_http_cache(&mut self, updated: &mut Updated, file: &PathBuf, url: &String) {
+        updated.pointer = self.entries.push_http_cache(file, url);
+        updated.label = true;
     }
 
-    fn on_push_path(&mut self, change: &mut Change, file: PathBuf) {
-        change.pointer = self.entries.push_path(&file);
-        change.label = true;
+    fn on_push_path(&mut self, updated: &mut Updated, file: PathBuf) {
+        updated.pointer = self.entries.push_path(&file);
+        updated.label = true;
     }
 
     fn on_push_url(&mut self, url: String) {
         self.http_cache.fetch(url);
     }
 
-    fn on_toggle(&mut self, change: &mut Change) {
+    fn on_toggle(&mut self, updated: &mut Updated) {
         self.options.show_text = !self.options.show_text;
         self.update_label_visibility();
-        change.label = true;
+        updated.label = true;
     }
 
-    fn on_shuffle(&mut self, change: &mut Change, fix_current: bool) {
+    fn on_shuffle(&mut self, updated: &mut Updated, fix_current: bool) {
         self.entries.shuffle(fix_current);
-        change.label = true;
+        updated.label = true;
     }
 
-    fn on_sort(&mut self, change: &mut Change) {
+    fn on_sort(&mut self, updated: &mut Updated) {
         self.entries.sort();
-        change.label = true;
+        updated.label = true;
     }
 
     fn on_user(&self, data: &Vec<(String, String)>) {

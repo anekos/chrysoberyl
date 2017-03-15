@@ -168,6 +168,9 @@ fn get_filename(entry: &Entry, index: usize, encodings: &Vec<EncodingRef>) -> St
 
 #[cfg(test)]#[test]
 fn test_open_archive() {
+    use std::fs::File;
+    use std::io::Read;
+
     let mut builder = Builder::new();
     builder.support_format(ReadFormat::All).ok();
     builder.support_filter(ReadFilter::All).ok();

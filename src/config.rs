@@ -16,7 +16,7 @@ static DEFAULT_CONFIG: &'static str = "
 @map keyboard q @quit
 @map keyboard z @shuffle
 @map keyboard e @expand
-@map keyboard E @expandrecursive
+@map keyboard E @expand --recursive
 @map keyboard i @toggle information
 @map keyboard r @refresh
 ";

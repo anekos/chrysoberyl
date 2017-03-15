@@ -105,9 +105,9 @@ impl App {
             }
 
             if initial.expand {
-                tx.send(Operation::Expand(expand_base)).unwrap();
+                tx.send(Operation::Expand(false, expand_base)).unwrap();
             } else if initial.expand_recursive {
-                tx.send(Operation::ExpandRecursive(expand_base)).unwrap();
+                tx.send(Operation::Expand(true, expand_base)).unwrap();
             }
         }
 
@@ -139,10 +139,8 @@ impl App {
                     self.entries.pointer.set_count(count),
                 CountDigit(digit) =>
                     self.entries.pointer.push_count_digit(digit),
-                Expand(ref base) =>
-                    self.on_expand(&mut updated, base),
-                ExpandRecursive(ref base) =>
-                    self.on_expand_recursive(&mut updated, base),
+                Expand(recursive, ref base) =>
+                    self.on_expand(&mut updated, recursive, base),
                 First =>
                     updated.pointer = self.entries.pointer.first(len),
                 Key(ref key) =>
@@ -219,15 +217,13 @@ impl App {
         }
     }
 
-    fn on_expand(&mut self, updated: &mut Updated, base: &Option<PathBuf>) {
+    fn on_expand(&mut self, updated: &mut Updated, recursive: bool, base: &Option<PathBuf>) {
         let count = self.entries.pointer.counted();
-        self.entries.expand(base.clone(), count as u8, count as u8- 1);
-        updated.label = true;
-    }
-
-    fn on_expand_recursive(&mut self, updated: &mut Updated, base: &Option<PathBuf>) {
-        let count = self.entries.pointer.counted();
-        self.entries.expand(base.clone(), 1, count as u8);
+        if recursive {
+            self.entries.expand(base.clone(), 1, count as u8);
+        } else {
+            self.entries.expand(base.clone(), count as u8, count as u8- 1);
+        }
         updated.label = true;
     }
 

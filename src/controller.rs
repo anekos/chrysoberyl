@@ -100,6 +100,8 @@ fn command_controller(tx: Sender<Operation>, command: String) {
 
     spawn(move || {
         let child = Command::new("setsid")
+            .arg("bash")
+            .arg("-c")
             .arg(&command)
             .stdout(Stdio::piped())
             .stderr(Stdio::null())

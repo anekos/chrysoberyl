@@ -5,11 +5,6 @@ set -C
 # set -x
 
 
-function has_command () {
-  type "$1" &> /dev/null
-}
-
-
 function chrysoberyl_filter_call () {
   local line="$1"
 
@@ -19,23 +14,11 @@ function chrysoberyl_filter_call () {
     return 1
   fi
 
-  case "$event" in
-    key)
-      if has_command "key_$name" && [ -n "$file" ]
-      then
-        "key_$name" "$file"
-      fi
-      ;;
-    user)
-      if [ -n "$key" ] && has_command "key_$key"
-      then
-        "key_$key" "$file"
-      elif [ -n "$function" ] && has_command "user_$function"
-      then
-        "user_$function" "$file"
-      fi
-      ;;
-  esac
+  # shellcheck disable=SC2154
+  if [ "$event" = HTTP ] && [ "$state" = "done" ] && [ "$queue" = 0 ]
+  then
+    notify-send Chrysoberyl 'HTTP: Done'
+  fi
 }
 
 

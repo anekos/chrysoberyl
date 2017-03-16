@@ -1,9 +1,10 @@
 
-use shell_escape::escape;
 use std::borrow::Cow;
 use std::sync::mpsc::{Sender, channel};
 use std::sync::{Arc, Mutex};
 use std::thread::spawn;
+
+use shell_escape::escape;
 
 
 

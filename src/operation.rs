@@ -34,7 +34,7 @@ pub enum Operation {
     PushURL(String),
     Quit,
     Refresh,
-    Script(bool, String, Vec<String>), /* async, command_name, arguments */
+    Shell(bool, String, Vec<String>), /* async, command_name, arguments */
     Shuffle(bool), /* Fix current */
     Sort,
     Toggle(AppOptionName),
@@ -107,7 +107,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@pushurl"                   => parse_command1(whole, PushURL),
             "@quit"                      => Ok(Quit),
             "@refresh" | "@r"            => Ok(Refresh),
-            "@script"                    => parse_script(whole),
+            "@shell"                     => parse_shell(whole),
             "@shuffle"                   => Ok(Shuffle(false)),
             "@sort"                      => Ok(Sort),
             "@toggle"                    => parse_toggle(whole),
@@ -244,7 +244,7 @@ fn parse_multi_args(xs: Vec<String>, separator: &str) -> Result<Operation, Strin
     Ok(Operation::Multi(result))
 }
 
-fn parse_script(args: Vec<String>) -> Result<Operation, String> {
+fn parse_shell(args: Vec<String>) -> Result<Operation, String> {
     let mut async = false;
     let mut command = "".to_owned();
     let mut command_arguments: Vec<String> = vec![];
@@ -256,7 +256,7 @@ fn parse_script(args: Vec<String>) -> Result<Operation, String> {
         ap.refer(&mut command_arguments).add_argument("arguments", List, "Command arguments");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Script(async, command, command_arguments)
+        Operation::Shell(async, command, command_arguments)
     })
 }
 
@@ -327,9 +327,9 @@ fn test_parse() {
     assert_eq!(p("; @first ; @next"), Multi(vec![First, Next]));
     assert_eq!(p("@multi / @first / @next"), Multi(vec![First, Next]));
 
-    // Script
-    assert_eq!(p("@script ls -l -a"), Script(false, s!("ls"), vec![s!("-l"), s!("-a")]));
-    assert_eq!(p("@script --async ls -l -a"), Script(true, s!("ls"), vec![s!("-l"), s!("-a")]));
+    // Shell
+    assert_eq!(p("@shell ls -l -a"), Shell(false, s!("ls"), vec![s!("-l"), s!("-a")]));
+    assert_eq!(p("@shell --async ls -l -a"), Shell(true, s!("ls"), vec![s!("-l"), s!("-a")]));
 
     // Invalid command
     assert_eq!(p("Meow Meow"), Push("Meow Meow".to_owned()));

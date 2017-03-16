@@ -20,7 +20,7 @@ use mapping::{Mapping, Input};
 use operation::Operation;
 use options::{AppOptions, AppOptionName};
 use output;
-use script;
+use shell;
 use termination;
 use utils::path_to_str;
 
@@ -180,8 +180,8 @@ impl App {
                     self.on_sort(&mut updated),
                 User(ref data) =>
                     self.on_user(data),
-                Script(async, ref command_name, ref arguments) =>
-                    script::call(async, command_name, arguments, self.current_info()),
+                Shell(async, ref command_name, ref arguments) =>
+                    shell::call(async, command_name, arguments, self.current_info()),
             }
         }
 

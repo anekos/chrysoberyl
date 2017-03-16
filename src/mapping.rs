@@ -1,6 +1,8 @@
 
 use std::collections::HashMap;
 
+use gdk;
+
 use operation::Operation;
 
 
@@ -9,6 +11,12 @@ use operation::Operation;
 pub enum Input {
     Key(String),
     MouseButton(u32)
+}
+
+#[derive(Clone, Copy)]
+pub enum InputType {
+    Key,
+    MouseButton
 }
 
 
@@ -22,8 +30,44 @@ impl Input {
         Input::Key(key_name.to_owned())
     }
 
+    pub fn key_from_event_key(key: &gdk::EventKey) -> Input {
+        let keyval = key.as_ref().keyval;
+        Input::Key(
+            gdk::keyval_name(keyval).unwrap_or(format!("{}", keyval)))
+    }
+
     pub fn mouse_button(button: u32) -> Input {
         Input::MouseButton(button)
+    }
+
+    pub fn text(&self) -> String {
+        match *self {
+            Input::Key(ref name) => s!(name),
+            Input::MouseButton(button) => s!(button),
+        }
+    }
+
+    pub fn type_name(&self) -> &str {
+        match *self {
+            Input::Key(_) => "key",
+            Input::MouseButton(_) => "mouse_button"
+        }
+    }
+}
+
+
+impl InputType {
+    pub fn input_from_text(&self, text: &str) -> Result<Input, String> {
+        match *self {
+            InputType::Key =>
+                Ok(Input::key(text)),
+            InputType::MouseButton => {
+                match text.parse() {
+                    Ok(button) => Ok(Input::mouse_button(button)),
+                    Err(err) => Err(s!(err)),
+                }
+            }
+        }
     }
 }
 

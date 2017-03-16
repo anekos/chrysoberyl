@@ -33,7 +33,6 @@ mod events;
 mod fragile_input;
 mod http_cache;
 mod index_pointer;
-mod key;
 mod mapping;
 mod operation;
 mod options;

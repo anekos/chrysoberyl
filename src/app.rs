@@ -16,7 +16,6 @@ use entry::{Entry,EntryContainer, EntryContainerOptions};
 use events;
 use fragile_input::new_fragile_input;
 use http_cache::HttpCache;
-use key::KeyData;
 use mapping::{Mapping, Input};
 use operation::Operation;
 use options::{AppOptions, AppOptionName};
@@ -133,8 +132,6 @@ impl App {
 
         {
             match *operation {
-                Button(ref button) =>
-                    self.on_button(button),
                 Count(count) =>
                     self.entries.pointer.set_count(count),
                 CountDigit(digit) =>
@@ -143,8 +140,8 @@ impl App {
                     self.on_expand(&mut updated, recursive, base),
                 First =>
                     updated.pointer = self.entries.pointer.first(len),
-                Key(ref key) =>
-                    self.on_key(key),
+                Input(ref input) =>
+                    self.on_input(input),
                 Last =>
                     updated.pointer = self.entries.pointer.last(len),
                 LazyDraw(serial) =>
@@ -207,16 +204,6 @@ impl App {
 
     /* Operation event */
 
-    fn on_button(&self, button: &u32) {
-        if let Some(op) = self.mapping.matched(&Input::mouse_button(*button)) {
-            self.tx.send(op).unwrap();
-        } else {
-            self.puts_event_with_current(
-                "mouse_button",
-                Some(&vec![("name".to_owned(), format!("{}", button))]));
-        }
-    }
-
     fn on_expand(&mut self, updated: &mut Updated, recursive: bool, base: &Option<PathBuf>) {
         let count = self.entries.pointer.counted();
         if recursive {
@@ -227,14 +214,14 @@ impl App {
         updated.label = true;
     }
 
-    fn on_key(&mut self, key: &KeyData) {
-        let key_name = key.text();
-        if let Some(op) = self.mapping.matched(&Input::key(&key_name)) {
-            self.operate(&op);
+    fn on_input(&mut self, input: &Input) {
+
+        if let Some(op) = self.mapping.matched(input) {
+            self.tx.send(op).unwrap();
         } else {
             self.puts_event_with_current(
-                "keyboard",
-                Some(&vec![("name".to_owned(), key.text().to_owned())]));
+                input.type_name(),
+                Some(&vec![("name".to_owned(), format!("{}", input.text()))]));
         }
     }
 

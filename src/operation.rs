@@ -7,23 +7,21 @@ use argparse::{ArgumentParser, Store, StoreConst, StoreTrue, StoreOption, List};
 use cmdline_parser::Parser;
 
 use archive::ArchiveEntry;
-use key::KeyData;
-use mapping::Input;
+use mapping::{self, InputType};
 use options::AppOptionName;
 
 
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Operation {
-    Button(u32),
     Count(Option<usize>),
     CountDigit(u8),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First,
-    Key(KeyData),
+    Input(mapping::Input),
     Last,
     LazyDraw(u64), /* serial */
-    Map(Input, Box<Operation>),
+    Map(mapping::Input, Box<Operation>),
     Multi(Vec<Operation>),
     Next,
     Nop,
@@ -98,6 +96,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@entries"                   => Ok(PrintEntries),
             "@expand"                    => parse_expand(whole),
             "@first" | "@f"              => Ok(First),
+            "@input"                     => parse_input(whole),
             "@last" | "@l"               => Ok(Last),
             "@map"                       => parse_map(whole),
             "@multi"                     => parse_multi(whole),
@@ -162,35 +161,39 @@ fn parse_expand(args: Vec<String>) -> Result<Operation, String> {
     })
 }
 
-fn parse_map(args: Vec<String>) -> Result<Operation, String> {
-    #[derive(Clone, Copy)]
-    enum InputType {
-        Keyboard,
-        MouseButton
-    }
+fn parse_input(args: Vec<String>) -> Result<Operation, String> {
+    let mut input_type = InputType::Key;
+    let mut input = "".to_owned();
 
-    let mut input_type = InputType::Keyboard;
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut input_type)
+            .add_option(&["--key", "-k"], StoreConst(InputType::Key), "For keyboard (default)")
+            .add_option(&["--mouse-button", "-m"], StoreConst(InputType::MouseButton), "For mouse button");
+        ap.refer(&mut input).add_argument("input", Store, "Input").required();
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        input_type.input_from_text(&input).map(|input| {
+            Operation::Input(input)
+        })
+    })
+}
+
+fn parse_map(args: Vec<String>) -> Result<Operation, String> {
+    let mut input_type = InputType::Key;
     let mut from = "".to_owned();
     let mut to: Vec<String> = vec![];
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut input_type)
-            .add_option(&["--keyboard", "-k"], StoreConst(InputType::Keyboard), "For keyboard (default)")
+            .add_option(&["--key", "-k"], StoreConst(InputType::Key), "For keyboard (default)")
             .add_option(&["--mouse-button", "-m"], StoreConst(InputType::MouseButton), "For mouse button");
         ap.refer(&mut from).add_argument("from", Store, "Map from (Key name or button number)").required();
         ap.refer(&mut to).add_argument("to", List, "Map to (Command)").required();
         parse_args(&mut ap, args)
     } .and_then(|_| {
-        match input_type {
-            InputType::Keyboard => Ok(Input::key(&from)),
-            InputType::MouseButton => {
-                match from.parse() {
-                    Ok(button) => Ok(Input::mouse_button(button)),
-                    Err(err) => Err(s!(err)),
-                }
-            }
-        } .and_then(|input| {
+        input_type.input_from_text(&from).and_then(|input| {
             parse_from_vec(to).map(|op| {
                 Operation::Map(input, Box::new(op))
             })
@@ -304,11 +307,11 @@ fn test_parse() {
     assert_eq!(p("@pushurl http://example.com/moge.jpg"), PushURL("http://example.com/moge.jpg".to_owned()));
 
     // @map
-    assert_eq!(p("@map k @first"), Map(Input::key("k"), Box::new(First)));
-    assert_eq!(p("@map --keyboard k @next"), Map(Input::key("k"), Box::new(Next)));
-    assert_eq!(p("@map -k k @next"), Map(Input::key("k"), Box::new(Next)));
-    assert_eq!(p("@map --mouse-button 6 @last"), Map(Input::MouseButton(6), Box::new(Last)));
-    assert_eq!(p("@map -m 6 @last"), Map(Input::MouseButton(6), Box::new(Last)));
+    assert_eq!(p("@map k @first"), Map(mapping::Input::key("k"), Box::new(First)));
+    assert_eq!(p("@map --key k @next"), Map(mapping::Input::key("k"), Box::new(Next)));
+    assert_eq!(p("@map -k k @next"), Map(mapping::Input::key("k"), Box::new(Next)));
+    assert_eq!(p("@map --mouse-button 6 @last"), Map(mapping::Input::MouseButton(6), Box::new(Last)));
+    assert_eq!(p("@map -m 6 @last"), Map(mapping::Input::MouseButton(6), Box::new(Last)));
 
     // Expand
     assert_eq!(p("@expand /foo/bar.txt"), Expand(false, Some(pathbuf("/foo/bar.txt"))));

@@ -1,13 +1,7 @@
 #!/bin/bash
 
-# set -euC
+set -C
 # set -x
-
-
-source ~/project/chrysoberyl/res/filter.bash
-
-
-DEST_DIR=/tmp/chrysoberyl
 
 
 function msg () {
@@ -15,31 +9,26 @@ function msg () {
 }
 
 
-# Set wallpaper
-function key_b () {
-  feh --bg-scale "$1"
+function chrysoberyl_filter_call () {
+  local line="$1"
 
-  msg Wallpaper
+  if ! eval "local $line"
+  then
+    echo "Error for: $line" 1>&2
+    return 1
+  fi
+
+  # shellcheck disable=SC2154
+  if [ "$event" = HTTP ] && [ "$state" = "done" ] && [ "$queue" = 0 ]
+  then
+    msg 'Queue Empty'
+  fi
 }
 
 
-# Copy filepath to clipboard
-function key_y () {
-  echo -n "$1" | xclip -i
+while read -r line
+do
+  [[ $line =~ ^O=O\ .* ]] && chrysoberyl_filter_call "$line"
 
-  msg Yank
-}
-
-
-# Copy file
-function key_p () {
-  [ -d "$DEST_DIR" ] || mkdir "$DEST_DIR"
-
-  cp "$1" "$DEST_DIR"
-
-  msg Push
-}
-
-
-# Call main loop
-chrysoberyl_filter_main
+  echo "$line"
+done

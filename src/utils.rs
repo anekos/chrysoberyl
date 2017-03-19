@@ -1,6 +1,7 @@
 
-use std::time::Duration;
+use std::fmt::Display;
 use std::path::PathBuf;
+use std::time::Duration;
 
 
 
@@ -92,6 +93,14 @@ macro_rules! s {
     }
 }
 
+
+pub fn s<T: Display>(x: T) -> String {
+    format!("{}", x)
+}
+
+pub fn mangle<T>(_: T) -> () {
+    ()
+}
 
 pub fn duration_to_string(t: Duration) -> String {
     let msec: u64 = t.as_secs() * 1000 + t.subsec_nanos() as u64 / 1000000;

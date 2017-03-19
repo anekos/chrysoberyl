@@ -11,6 +11,7 @@ use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
 
 use archive::{self, ArchiveEntry};
+use command;
 use controller;
 use entry::{Entry,EntryContainer, EntryContainerOptions};
 use events;
@@ -132,6 +133,8 @@ impl App {
 
         {
             match *operation {
+                Command(ref command) =>
+                    self.on_command(command),
                 Count(count) =>
                     self.entries.pointer.set_count(count),
                 CountDigit(digit) =>
@@ -203,6 +206,22 @@ impl App {
     }
 
     /* Operation event */
+
+    fn on_command(&mut self, command: &command::Command) {
+        use entry::Entry::*;
+
+        if let Some((entry, _)) = self.entries.current() {
+            let result = match entry {
+                File(ref path) => command.execute(path),
+                Http(ref path, _) => command.execute(path),
+                Archive(_ , _) => Err(s!("copy/move does not support archive files."))
+            };
+            match result {
+                Ok(_) => puts_event!("command", "status" => "ok"),
+                Err(err) => puts_event!("command", "status" => "fail", "reason" => err),
+            }
+        }
+    }
 
     fn on_expand(&mut self, updated: &mut Updated, recursive: bool, base: &Option<PathBuf>) {
         let count = self.entries.pointer.counted();

@@ -7,6 +7,7 @@ use argparse::{ArgumentParser, Store, StoreConst, StoreTrue, StoreOption, List};
 use cmdline_parser::Parser;
 
 use archive::ArchiveEntry;
+use command;
 use mapping::{self, InputType};
 use options::AppOptionName;
 
@@ -14,6 +15,7 @@ use options::AppOptionName;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Operation {
+    Command(command::Command),
     Count(Option<usize>),
     CountDigit(u8),
     Expand(bool, Option<PathBuf>), /* recursive, base */
@@ -81,6 +83,7 @@ impl Operation {
 
 fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
     use self::Operation::*;
+    use command::Command::{Copy, Move};
 
     if let Some(head) = whole.get(0) {
         let name = &*head.to_lowercase();
@@ -92,6 +95,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
         }
 
         match name {
+            "@copy"                      => parse_copy_or_move(whole).map(|(path, if_exist)| Command(Copy(path, if_exist))),
             "@count"                     => parse_count(whole),
             "@entries"                   => Ok(PrintEntries),
             "@expand"                    => parse_expand(whole),
@@ -100,6 +104,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@last" | "@l"               => Ok(Last),
             "@map"                       => parse_map(whole),
             "@multi"                     => parse_multi(whole),
+            "@move"                      => parse_copy_or_move(whole).map(|(path, if_exist)| Command(Move(path, if_exist))),
             "@next" | "@n"               => Ok(Next),
             "@prev" | "@p" | "@previous" => Ok(Previous),
             "@push"                      => parse_command1(whole, Push),
@@ -133,6 +138,23 @@ where T: FnOnce(String) -> Operation {
     } else {
         Err("Not enough argument".to_owned())
     }
+}
+
+fn parse_copy_or_move(args: Vec<String>) -> Result<(PathBuf, command::IfExist), String> {
+    let mut destination = "".to_owned();
+    let mut if_exist = command::IfExist::NewFileName;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut if_exist)
+            .add_option(&["--fail", "-f"], StoreConst(command::IfExist::Fail), "Fail if file exists")
+            .add_option(&["--overwrite", "-o"], StoreConst(command::IfExist::Overwrite), "Overwrite the file if file exists")
+            .add_option(&["--new", "--new-file-name", "-n"], StoreConst(command::IfExist::NewFileName), "Generate new file name if file exists (default)");
+        ap.refer(&mut destination).add_argument("destination", Store, "Destination directory").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        (Path::new(&destination).to_owned(), if_exist)
+    })
 }
 
 fn parse_count(args: Vec<String>) -> Result<Operation, String> {

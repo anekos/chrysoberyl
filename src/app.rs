@@ -216,9 +216,10 @@ impl App {
                 Http(ref path, _) => command.execute(path),
                 Archive(_ , _) => Err(s!("copy/move does not support archive files."))
             };
+            let command_str = format!("{:?}", command);
             match result {
-                Ok(_) => puts_event!("command", "status" => "ok"),
-                Err(err) => puts_event!("command", "status" => "fail", "reason" => err),
+                Ok(_) => puts_event!("command", "status" => "ok", "command" => command_str),
+                Err(err) => puts_event!("command", "status" => "fail", "reason" => err, "command" => command_str),
             }
         }
     }

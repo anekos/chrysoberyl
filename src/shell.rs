@@ -42,7 +42,6 @@ pub fn call(async: bool, command_name: &str, arguments: &Vec<String>, info: Vec<
 fn read_from_stdout(stdout: Option<ChildStdout>, tx: Option<Sender<Operation>>) {
     if let Some(stdout) = stdout {
         if let Some(tx) = tx {
-            println!("stdout");
             read_operations(stdout, tx);
         }
     }

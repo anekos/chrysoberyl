@@ -27,6 +27,7 @@ extern crate url;
 mod app;
 mod archive;
 mod chrysoberyl;
+mod command;
 mod config;
 mod controller;
 mod entry;

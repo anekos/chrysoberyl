@@ -5,6 +5,7 @@ use std::io::sink;
 
 use argparse::{ArgumentParser, Store, StoreConst, StoreTrue, StoreOption, List};
 use cmdline_parser::Parser;
+use shellexpand;
 
 use archive::ArchiveEntry;
 use command;
@@ -58,7 +59,7 @@ impl Operation {
     pub fn from_str_force(s: &str) -> Operation {
         use std::str::FromStr;
 
-        Operation::from_str(s).unwrap_or(Operation::Push(s.to_owned()))
+        Operation::from_str(s).unwrap_or(Operation::Push(expand(s)))
     }
 
     fn user(args: Vec<String>) -> Operation {
@@ -107,8 +108,8 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@move"                      => parse_copy_or_move(whole).map(|(path, if_exist)| Command(Move(path, if_exist))),
             "@next" | "@n"               => Ok(Next),
             "@prev" | "@p" | "@previous" => Ok(Previous),
-            "@push"                      => parse_command1(whole, Push),
-            "@pushpath"                  => parse_command1(whole, |it| PushPath(pathbuf(&it))),
+            "@push"                      => parse_command1(whole, |it| Push(expand(&it))),
+            "@pushpath"                  => parse_command1(whole, |it| PushPath(expand_to_pathbuf(&it))),
             "@pushurl"                   => parse_command1(whole, PushURL),
             "@quit"                      => Ok(Quit),
             "@refresh" | "@r"            => Ok(Refresh),
@@ -153,7 +154,7 @@ fn parse_copy_or_move(args: Vec<String>) -> Result<(PathBuf, command::IfExist), 
         ap.refer(&mut destination).add_argument("destination", Store, "Destination directory").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        (Path::new(&destination).to_owned(), if_exist)
+        (expand_to_pathbuf(&destination).to_owned(), if_exist)
     })
 }
 
@@ -381,4 +382,12 @@ fn test_parse() {
 
 fn pathbuf(s: &str) -> PathBuf {
     Path::new(s).to_path_buf()
+}
+
+fn expand(s: &str) -> String {
+    shellexpand::tilde(&s).into_owned()
+}
+
+fn expand_to_pathbuf(s: &str) -> PathBuf {
+    Path::new(&expand(s)).to_path_buf()
 }

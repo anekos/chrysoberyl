@@ -20,6 +20,7 @@ extern crate libc;
 extern crate onig;
 extern crate rand;
 extern crate shell_escape;
+extern crate shellexpand;
 extern crate url;
 
 #[macro_use] mod output;

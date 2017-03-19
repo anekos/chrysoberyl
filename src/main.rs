@@ -37,6 +37,7 @@ mod http_cache;
 mod index_pointer;
 mod mapping;
 mod operation;
+mod operation_utils;
 mod options;
 mod shell;
 mod sorting_buffer;

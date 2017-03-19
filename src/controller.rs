@@ -5,6 +5,7 @@ use std::sync::mpsc::Sender;
 use std::thread::spawn;
 
 use operation::Operation;
+use operation_utils::read_operations;
 use termination;
 
 
@@ -43,18 +44,11 @@ pub fn register(tx: Sender<Operation>, controllers: &Controllers) {
 }
 
 
-
 fn fifo_controller(tx: Sender<Operation>, filepath: String) {
-    use std::io::{BufReader, BufRead};
-
     spawn(move || {
         while let Ok(file) = File::open(&filepath) {
             puts_event!("fifo_controller", "state" => "open");
-            let file = BufReader::new(file);
-            for line in file.lines() {
-                let line = line.unwrap();
-                tx.send(from_string(&line)).unwrap();
-            }
+            read_operations(file, tx.clone());
             puts_event!("fifo_controller", "state" => "close");
         }
         puts_error!("at" => "file_controller", "reason" => "Could not open file", "for" => filepath);
@@ -62,16 +56,10 @@ fn fifo_controller(tx: Sender<Operation>, filepath: String) {
 }
 
 fn file_controller(tx: Sender<Operation>, filepath: String) {
-    use std::io::{BufReader, BufRead};
-
     spawn(move || {
         if let Ok(file) = File::open(&filepath) {
             puts_event!("file_controller", "state" => "open");
-            let file = BufReader::new(file);
-            for line in file.lines() {
-                let line = line.unwrap();
-                tx.send(from_string(&line)).unwrap();
-            }
+            read_operations(file, tx.clone());
             puts_event!("file_controller", "state" => "close");
         } else {
             puts_error!("at" => "file_controller", "reason" => "Could not open file", "for" => filepath);
@@ -88,7 +76,7 @@ fn stdin_controller(tx: Sender<Operation>) {
         puts_event!("stdin_controller", "state" => "open");
         for line in stdin.lock().lines() {
             let line = line.unwrap();
-            tx.send(from_string(&line)).unwrap();
+            tx.send(Operation::from_str_force(&line)).unwrap();
         }
         puts_event!("stdin_controller", "state" => "close");
     });
@@ -114,17 +102,11 @@ fn command_controller(tx: Sender<Operation>, command: String) {
         if let Some(stdout) = child.stdout {
             for line in BufReader::new(stdout).lines() {
                 let line = line.unwrap();
-                tx.send(from_string(&line)).unwrap();
+                tx.send(Operation::from_str_force(&line)).unwrap();
             }
             puts_event!("command_controller", "state" => "close");
         } else {
             puts_error!("at" => "command_controller", "for" => command);
         }
     });
-}
-
-fn from_string(s: &str) -> Operation {
-    use std::str::FromStr;
-
-    Operation::from_str(s).unwrap_or(Operation::Push(s.to_owned()))
 }

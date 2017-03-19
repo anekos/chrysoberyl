@@ -36,7 +36,7 @@ pub enum Operation {
     PushURL(String),
     Quit,
     Refresh,
-    Shell(bool, String, Vec<String>), /* async, command_name, arguments */
+    Shell(bool, bool, String, Vec<String>), /* async, operation, command_name, arguments */
     Shuffle(bool), /* Fix current */
     Sort,
     Toggle(AppOptionName),
@@ -268,17 +268,19 @@ fn parse_multi_args(xs: Vec<String>, separator: &str) -> Result<Operation, Strin
 
 fn parse_shell(args: Vec<String>) -> Result<Operation, String> {
     let mut async = false;
+    let mut read_operations = false;
     let mut command = "".to_owned();
     let mut command_arguments: Vec<String> = vec![];
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut async).add_option(&["--async", "-a"], StoreTrue, "Async");
+        ap.refer(&mut read_operations).add_option(&["--operation", "-o"], StoreTrue, "Read operations form stdout");
         ap.refer(&mut command).add_argument("command", Store, "Command").required();
         ap.refer(&mut command_arguments).add_argument("arguments", List, "Command arguments");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Shell(async, command, command_arguments)
+        Operation::Shell(async, read_operations, command, command_arguments)
     })
 }
 
@@ -350,8 +352,9 @@ fn test_parse() {
     assert_eq!(p("@multi / @first / @next"), Multi(vec![First, Next]));
 
     // Shell
-    assert_eq!(p("@shell ls -l -a"), Shell(false, s!("ls"), vec![s!("-l"), s!("-a")]));
-    assert_eq!(p("@shell --async ls -l -a"), Shell(true, s!("ls"), vec![s!("-l"), s!("-a")]));
+    assert_eq!(p("@shell ls -l -a"), Shell(false, false, s!("ls"), vec![s!("-l"), s!("-a")]));
+    assert_eq!(p("@shell --async ls -l -a"), Shell(true, false, s!("ls"), vec![s!("-l"), s!("-a")]));
+    assert_eq!(p("@shell --async --operation ls -l -a"), Shell(true, true, s!("ls"), vec![s!("-l"), s!("-a")]));
 
     // Invalid command
     assert_eq!(p("Meow Meow"), Push("Meow Meow".to_owned()));

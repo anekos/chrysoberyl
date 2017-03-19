@@ -93,6 +93,16 @@ macro_rules! s {
     }
 }
 
+macro_rules! option {
+    ( $condition:expr, $value:expr ) => {
+        if $condition {
+            Some($value)
+        } else {
+            None
+        }
+    }
+}
+
 
 pub fn s<T: Display>(x: T) -> String {
     format!("{}", x)

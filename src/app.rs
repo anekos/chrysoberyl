@@ -183,8 +183,8 @@ impl App {
                     self.on_sort(&mut updated),
                 User(ref data) =>
                     self.on_user(data),
-                Shell(async, ref command_name, ref arguments) =>
-                    shell::call(async, command_name, arguments, self.current_info()),
+                Shell(async, read_operations, ref command_name, ref arguments) =>
+                    shell::call(async, command_name, arguments, self.current_info(), option!(read_operations, self.tx.clone())),
             }
         }
 

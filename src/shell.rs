@@ -1,14 +1,17 @@
 
 use std::borrow::Cow;
-use std::process::Command;
+use std::process::{Command, ChildStdout, Stdio};
+use std::sync::mpsc::Sender;
 use std::thread::spawn;
 
 use onig::Regex;
+use operation::Operation;
+use operation_utils::read_operations;
 use shell_escape::escape;
 
 
 
-pub fn call(async: bool, command_name: &str, arguments: &Vec<String>, info: Vec<(String, String)>) {
+pub fn call(async: bool, command_name: &str, arguments: &Vec<String>, info: Vec<(String, String)>, tx: Option<Sender<Operation>>) {
     let mut command = Command::new("bash");
     let mut command_line = command_name.to_owned();
 
@@ -28,11 +31,20 @@ pub fn call(async: bool, command_name: &str, arguments: &Vec<String>, info: Vec<
         command.env(format!("Chrysoberyl_{}", key).to_uppercase(), value);
     }
 
-    let mut child = command.spawn().expect(&*format!("Failed to run: {}", command_name));
+    let child = command.stdout(Stdio::piped()).spawn().expect(&*format!("Failed to run: {}", command_name));
     if async {
-        spawn(move || child.wait().unwrap());
+        spawn(move || read_from_stdout(child.stdout, tx));
     } else {
-        child.wait().unwrap();
+        read_from_stdout(child.stdout, tx);
+    }
+}
+
+fn read_from_stdout(stdout: Option<ChildStdout>, tx: Option<Sender<Operation>>) {
+    if let Some(stdout) = stdout {
+        if let Some(tx) = tx {
+            println!("stdout");
+            read_operations(stdout, tx);
+        }
     }
 }
 

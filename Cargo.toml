@@ -26,6 +26,7 @@ libarchive3-sys = "*"
 encoding = "*"
 onig = "*"
 shellexpand = "*"
+app_dirs = "*"
 
 [dependencies.gtk]
 version = "0.1.1"

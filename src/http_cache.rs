@@ -1,5 +1,4 @@
 
-use std::env::home_dir;
 use std::fs::{File, create_dir_all};
 use std::io::{BufWriter, Write, Read};
 use std::path::PathBuf;
@@ -12,6 +11,7 @@ use hyper::net::HttpsConnector;
 use hyper_native_tls::NativeTlsClient;
 use url::Url;
 
+use app_path;
 use operation::Operation;
 use sorting_buffer::SortingBuffer;
 
@@ -158,18 +158,9 @@ fn write_to_file(filepath: &PathBuf, mut response: Response) {
 }
 
 fn generate_temporary_filename(url: &str) -> PathBuf {
-
-    let mut result = home_dir().unwrap();
-    result.push(".cache");
-    result.push("chrysoberyl");
-    result.push("http");
-
-    {
-        let url = Url::parse(url).unwrap();
-        result.push(format!("{}{}", url.host().unwrap(), url.path()));
-    }
-
+    let mut result = app_path::cache_dir("http");
+    let url = Url::parse(url).unwrap();
+    result.push(format!("{}{}", url.host().unwrap(), url.path()));
     create_dir_all(&result.parent().unwrap()).unwrap();
-
     result
 }

@@ -2,6 +2,7 @@
 #[macro_use] extern crate closet;
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate log;
+extern crate app_dirs;
 extern crate argparse;
 extern crate cairo;
 extern crate cmdline_parser;
@@ -26,6 +27,7 @@ extern crate url;
 #[macro_use] mod output;
 #[macro_use] mod utils;
 mod app;
+mod app_path;
 mod archive;
 mod chrysoberyl;
 mod command;

@@ -298,7 +298,8 @@ fn parse_toggle(args: Vec<String>) -> Result<Operation, String> {
         parse_args(&mut ap, args)
     } .and_then(|_| {
         match &*name.to_lowercase() {
-            "info" | "information" => Ok(Operation::Toggle(ShowText)),
+            "information" | "info" => Ok(Operation::Toggle(ShowText)),
+            "reverse" | "rev" => Ok(Operation::Toggle(Reverse)),
             _  => Err(format!("Unknown option: {}", name))
         }
     })

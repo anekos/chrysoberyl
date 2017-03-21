@@ -176,8 +176,8 @@ impl App {
                     termination::execute(),
                 Refresh =>
                     updated.pointer = true,
-                Toggle(AppOptionName::ShowText) =>
-                    self.on_toggle(&mut updated),
+                Toggle(ref name) =>
+                    self.on_toggle(&mut updated, name),
                 Shell(async, read_operations, ref command_name, ref arguments) =>
                     shell::call(async, command_name, arguments, self.current_info(), option!(read_operations, self.tx.clone())),
                 Shuffle(fix_current) =>
@@ -327,11 +327,20 @@ impl App {
     fn on_push_url(&mut self, url: String) {
         self.http_cache.fetch(url);
     }
+    fn on_toggle(&mut self, updated: &mut Updated, name: &AppOptionName) {
+        use options::AppOptionName::*;
 
-    fn on_toggle(&mut self, updated: &mut Updated) {
-        self.options.show_text = !self.options.show_text;
-        self.update_label_visibility();
-        updated.label = true;
+        match *name {
+            ShowText => {
+                self.options.show_text ^= true;
+                self.update_label_visibility();
+                updated.label = true;
+            }
+            Reverse => {
+                self.options.reverse ^= true;
+                updated.image = true;
+            }
+        }
     }
 
     fn on_shuffle(&mut self, updated: &mut Updated, fix_current: bool) {
@@ -479,14 +488,19 @@ impl App {
     }
 
     fn show_image(&self, with_label: bool) {
+        let images_len = self.gui.images.len();
+
         let (width, mut height) = self.gui.window.get_size();
-        let width = width / self.gui.images.len() as i32;
+        let width = width / images_len as i32;
 
         if with_label {
             height -=  self.gui.label.get_allocated_height();;
         }
 
-        for (index, image) in self.gui.images.iter().enumerate() {
+        for (mut index, image) in self.gui.images.iter().enumerate() {
+            if self.options.reverse {
+                index = images_len - index - 1;
+            }
             if let Some(entry) = self.entries.current_with(index).map(|(entry,_)| entry) {
                 self.show_image1(entry, image, width, height);
             } else {

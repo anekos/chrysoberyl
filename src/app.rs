@@ -12,6 +12,7 @@ use immeta::{self, GenericMetadata};
 
 use archive::{self, ArchiveEntry};
 use command;
+use constant;
 use controller;
 use entry::{Entry,EntryContainer, EntryContainerOptions};
 use events;
@@ -195,19 +196,23 @@ impl App {
             }
         }
 
-        if let Some((entry, index)) = self.entries.current() {
-            if updated.pointer {
-                self.draw_serial += 1;
-                self.tx.send(Operation::LazyDraw(self.draw_serial)).unwrap();
-            }
-            if updated.image {
-                time!("show_image" => self.show_image(self.options.show_text));
-                self.puts_event_with_current("show", None);
-            }
-            if updated.image || updated.label {
+        if updated.pointer {
+            self.draw_serial += 1;
+            self.tx.send(Operation::LazyDraw(self.draw_serial)).unwrap();
+        }
+        if updated.image {
+            time!("show_image" => self.show_image(self.options.show_text));
+            self.puts_event_with_current("show", None);
+        }
+
+        if updated.image || updated.label {
+            if let Some((entry, index)) = self.entries.current() {
                 let len = self.entries.len();
                 let path = entry.display_path();
                 self.update_label(&format!("[{}/{}] {}", index + 1, len, path));
+            } else {
+                self.gui.window.set_title(constant::DEFAULT_TITLE);
+                self.update_label(constant::DEFAULT_INFORMATION);
             }
         }
     }

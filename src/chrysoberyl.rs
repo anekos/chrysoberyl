@@ -13,6 +13,7 @@ use libc;
 
 use app;
 use config;
+use constant;
 use entry::EntryContainerOptions;
 use operation::Operation;
 use options::AppOptions;
@@ -59,7 +60,7 @@ fn setup_gui() -> app::Gui {
 
     let window = gtk::Window::new(gtk::WindowType::Toplevel);
 
-    window.set_title("Chrysoberyl");
+    window.set_title(constant::DEFAULT_TITLE);
     window.set_border_width(0);
     window.set_position(gtk::WindowPosition::Center);
 
@@ -68,7 +69,7 @@ fn setup_gui() -> app::Gui {
 
     let image = Image::new_from_pixbuf(None);
 
-    let label = Label::new(Some(&format!("Chrysoberyl v{}", env!("CARGO_PKG_VERSION"))));
+    let label = Label::new(Some(constant::DEFAULT_INFORMATION));
 
     hbox.pack_start(&image, true, true, 0);
 

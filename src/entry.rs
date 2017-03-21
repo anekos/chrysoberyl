@@ -62,6 +62,14 @@ impl EntryContainer {
         })
     }
 
+    pub fn current_with(&self, delta: usize) -> Option<(Entry, usize)> {
+        self.pointer.current_with(delta).and_then(|index| {
+            self.files.get(index).map(|it: &Rc<Entry>| {
+                ((**it).clone(), index)
+            })
+        })
+    }
+
     pub fn current_entry(&self) -> Option<Entry> {
         self.current().map(|(entry, _)| entry)
     }

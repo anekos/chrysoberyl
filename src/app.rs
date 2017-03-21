@@ -41,7 +41,8 @@ pub struct App {
 #[derive(Clone)]
 pub struct Gui {
     pub window: Window,
-    pub image: Image,
+    pub images: Vec<Image>,
+    pub image_box: gtk::Box,
     pub label: Label,
 }
 
@@ -175,16 +176,20 @@ impl App {
                     termination::execute(),
                 Refresh =>
                     updated.pointer = true,
-                Toggle(AppOptionName::ShowText) =>
-                    self.on_toggle(&mut updated),
+                Toggle(ref name) =>
+                    self.on_toggle(&mut updated, name),
+                Shell(async, read_operations, ref command_name, ref arguments) =>
+                    shell::call(async, command_name, arguments, self.current_info(), option!(read_operations, self.tx.clone())),
                 Shuffle(fix_current) =>
                     self.on_shuffle(&mut updated, fix_current),
                 Sort =>
                     self.on_sort(&mut updated),
                 User(ref data) =>
                     self.on_user(data),
-                Shell(async, read_operations, ref command_name, ref arguments) =>
-                    shell::call(async, command_name, arguments, self.current_info(), option!(read_operations, self.tx.clone())),
+                Views => {
+                    let count = self.entries.pointer.counted();
+                    self.on_views(&mut updated, count);
+                },
             }
         }
 
@@ -194,7 +199,7 @@ impl App {
                 self.tx.send(Operation::LazyDraw(self.draw_serial)).unwrap();
             }
             if updated.image {
-                time!("show_image" => self.show_image(entry.clone(), self.options.show_text));
+                time!("show_image" => self.show_image(self.options.show_text));
                 self.puts_event_with_current("show", None);
             }
             if updated.image || updated.label {
@@ -322,11 +327,20 @@ impl App {
     fn on_push_url(&mut self, url: String) {
         self.http_cache.fetch(url);
     }
+    fn on_toggle(&mut self, updated: &mut Updated, name: &AppOptionName) {
+        use options::AppOptionName::*;
 
-    fn on_toggle(&mut self, updated: &mut Updated) {
-        self.options.show_text = !self.options.show_text;
-        self.update_label_visibility();
-        updated.label = true;
+        match *name {
+            ShowText => {
+                self.options.show_text ^= true;
+                self.update_label_visibility();
+                updated.label = true;
+            }
+            Reverse => {
+                self.options.reverse ^= true;
+                updated.image = true;
+            }
+        }
     }
 
     fn on_shuffle(&mut self, updated: &mut Updated, fix_current: bool) {
@@ -341,6 +355,28 @@ impl App {
 
     fn on_user(&self, data: &Vec<(String, String)>) {
         self.puts_event_with_current("user", Some(data));
+    }
+
+    fn on_views(&mut self, updated: &mut Updated, size: usize) {
+        self.entries.pointer.multiply(size);
+        let len = self.gui.images.len();
+        if len < size {
+            for _ in 0..(size - len) {
+                let image = Image::new_from_pixbuf(None);
+                image.show();
+                self.gui.image_box.pack_start(&image, true, true, 0);
+                self.gui.images.push(image);
+            }
+            updated.image = true;
+        } else if size < len {
+            for i in 0..(len - size) {
+                let image = self.gui.images.get(len - i - 1).unwrap();
+                image.set_from_pixbuf(None);
+                self.gui.image_box.remove(image);
+            }
+            self.gui.images.truncate(size);
+            updated.image = true;
+        }
     }
 
     /* Private methods */
@@ -430,18 +466,12 @@ impl App {
         output::puts(&pairs);
     }
 
-    fn show_image(&self, entry: Entry, with_label: bool) {
-        let (width, mut height) = self.gui.window.get_size();
-
-        if with_label {
-            height -=  self.gui.label.get_allocated_height();;
-        }
-
+    fn show_image1(&self, entry: Entry, image: &Image, width: i32, height: i32) {
         if let Ok(img) = self.get_meta(&entry) {
             if let Ok(gif) = img.into::<Gif>() {
                 if gif.is_animated() {
                     match self.get_pixbuf_animation(&entry) {
-                        Ok(buf) => self.gui.image.set_from_animation(&buf),
+                        Ok(buf) => image.set_from_animation(&buf),
                         Err(err) => puts_error!("at" => "show_image", "reason" => err)
                     }
                     return
@@ -450,8 +480,32 @@ impl App {
         }
 
         match self.get_pixbuf(&&entry, width, height) {
-            Ok(buf) => self.gui.image.set_from_pixbuf(Some(&buf)),
+            Ok(buf) => {
+                image.set_from_pixbuf(Some(&buf));
+            },
             Err(err) => puts_error!("at" => "show_image", "reason" => err)
+        }
+    }
+
+    fn show_image(&self, with_label: bool) {
+        let images_len = self.gui.images.len();
+
+        let (width, mut height) = self.gui.window.get_size();
+        let width = width / images_len as i32;
+
+        if with_label {
+            height -=  self.gui.label.get_allocated_height();;
+        }
+
+        for (mut index, image) in self.gui.images.iter().enumerate() {
+            if self.options.reverse {
+                index = images_len - index - 1;
+            }
+            if let Some(entry) = self.entries.current_with(index).map(|(entry,_)| entry) {
+                self.show_image1(entry, image, width, height);
+            } else {
+                image.set_from_pixbuf(None);
+            }
         }
     }
 

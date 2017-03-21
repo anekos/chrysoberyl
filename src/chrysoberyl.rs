@@ -64,23 +64,28 @@ fn setup_gui() -> app::Gui {
     window.set_position(gtk::WindowPosition::Center);
 
     let vbox = gtk::Box::new(Orientation::Vertical, 0);
+    let hbox = gtk::Box::new(Orientation::Horizontal, 0);
 
     let image = Image::new_from_pixbuf(None);
 
     let label = Label::new(Some(&format!("Chrysoberyl v{}", env!("CARGO_PKG_VERSION"))));
 
+    hbox.pack_start(&image, true, true, 0);
+
     vbox.pack_end(&label, false, false, 0);
-    vbox.pack_end(&image, true, true, 0);
+    vbox.pack_end(&hbox, true, true, 0);
     window.add(&vbox);
 
+    hbox.show();
     vbox.show();
     image.show();
     window.show();
 
     app::Gui {
         window: window,
-        image: image,
-        label: label
+        images: vec![image],
+        image_box: hbox,
+        label: label,
     }
 }
 

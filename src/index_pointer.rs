@@ -3,16 +3,28 @@
 pub struct IndexPointer {
     pub current: Option<usize>,
     count: Option<usize>,
+    multiplier: usize,
 }
 
 
 impl IndexPointer {
     pub fn new() -> IndexPointer {
-        IndexPointer { current: None, count: None }
+        IndexPointer { current: None, count: None, multiplier: 1 }
+    }
+
+    pub fn current_with(&self, delta: usize) -> Option<usize> {
+        self.current.map(|current| current + delta)
     }
 
     pub fn set_count(&mut self, count: Option<usize>) {
         self.count = count;
+    }
+
+    pub fn multiply(&mut self, x: usize) {
+        if x == 0 {
+            panic!("Invalid multiplier: {}", x);
+        }
+        self.multiplier = x;
     }
 
     pub fn push_count_digit(&mut self, n: u8) {
@@ -52,12 +64,12 @@ impl IndexPointer {
     }
 
     pub fn next(&mut self, container_size: usize) -> bool {
-        if container_size < 1 {
+        if container_size < self.multiplier {
             return false
         }
 
         if let Some(current) = self.current {
-            let mut result = current + self.counted();
+            let mut result = current + self.counted() * self.multiplier;
             if container_size <= result {
                 result = container_size - 1
             }
@@ -69,7 +81,7 @@ impl IndexPointer {
 
     pub fn previous(&mut self) -> bool {
         if let Some(current) = self.current {
-            let delta = self.counted();
+            let delta = self.counted() * self.multiplier;
 
             let result = if delta <= current {
                 current - delta

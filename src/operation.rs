@@ -42,6 +42,7 @@ pub enum Operation {
     Sort,
     Toggle(AppOptionName),
     User(Vec<(String, String)>),
+    Views,
 }
 
 
@@ -118,6 +119,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@sort"                      => Ok(Sort),
             "@toggle"                    => parse_toggle(whole),
             "@user"                      => Ok(Operation::user(args)),
+            "@views"                     => Ok(Views),
             ";"                          => parse_multi_args(args, ";"),
             _ => Err(format!("Invalid commnad: {}", name))
         }

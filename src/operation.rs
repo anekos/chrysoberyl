@@ -37,6 +37,7 @@ pub enum Operation {
     PushPath(PathBuf),
     PushURL(String),
     Quit,
+    Random,
     Refresh,
     Shell(bool, bool, String, Vec<String>), /* async, operation, command_name, arguments */
     Shuffle(bool), /* Fix current */
@@ -115,6 +116,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@pushpath"                  => parse_command1(whole, |it| PushPath(expand_to_pathbuf(&it))),
             "@pushurl"                   => parse_command1(whole, PushURL),
             "@quit"                      => Ok(Quit),
+            "@random" | "@rand"          => Ok(Random),
             "@refresh" | "@r"            => Ok(Refresh),
             "@shell"                     => parse_shell(whole),
             "@shuffle"                   => Ok(Shuffle(false)),

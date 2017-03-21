@@ -9,6 +9,8 @@ use gtk::{Image, Window, Label};
 use gtk;
 use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
+use rand::{self, ThreadRng};
+use rand::distributions::{IndependentSample, Range};
 
 use archive::{self, ArchiveEntry};
 use command;
@@ -35,6 +37,7 @@ pub struct App {
     encodings: Vec<EncodingRef>,
     gui: Gui,
     draw_serial: u64,
+    rng: ThreadRng,
     pub tx: Sender<Operation>,
     pub options: AppOptions
 }
@@ -86,6 +89,7 @@ impl App {
             encodings: initial.encodings,
             mapping: Mapping::new(),
             draw_serial: 0,
+            rng: rand::thread_rng(),
         };
 
         events::register(gui, primary_tx.clone());
@@ -177,6 +181,8 @@ impl App {
                     self.on_push_url(url.clone()),
                 Quit =>
                     termination::execute(),
+                Random =>
+                    self.on_random(&mut updated, len),
                 Refresh =>
                     updated.pointer = true,
                 Toggle(ref name) =>
@@ -339,6 +345,14 @@ impl App {
     fn on_push_url(&mut self, url: String) {
         self.http_cache.fetch(url);
     }
+
+    fn on_random(&mut self, updated: &mut Updated, len: usize) {
+        if len > 0 {
+            self.entries.pointer.current = Some(Range::new(0, len).ind_sample(&mut self.rng));
+            updated.image = true;
+        }
+    }
+
     fn on_toggle(&mut self, updated: &mut Updated, name: &AppOptionName) {
         use options::AppOptionName::*;
 
@@ -357,6 +371,9 @@ impl App {
 
     fn on_shuffle(&mut self, updated: &mut Updated, fix_current: bool) {
         self.entries.shuffle(fix_current);
+        if !fix_current {
+            updated.image = true;
+        }
         updated.label = true;
     }
 

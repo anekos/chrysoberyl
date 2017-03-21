@@ -16,6 +16,7 @@ use options::AppOptionName;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Operation {
+    Clear,
     Command(command::Command),
     Count(Option<usize>),
     CountDigit(u8),
@@ -97,6 +98,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
         }
 
         match name {
+            "@clear"                     => Ok(Clear),
             "@copy"                      => parse_copy_or_move(whole).map(|(path, if_exist)| Command(Copy(path, if_exist))),
             "@count"                     => parse_count(whole),
             "@entries"                   => Ok(PrintEntries),

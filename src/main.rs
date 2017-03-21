@@ -32,6 +32,7 @@ mod archive;
 mod chrysoberyl;
 mod command;
 mod config;
+mod constant;
 mod controller;
 mod entry;
 mod events;

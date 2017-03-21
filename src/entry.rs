@@ -50,6 +50,11 @@ impl EntryContainer {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.files.clear();
+        self.pointer.current = None;
+    }
+
     pub fn len(&self) -> usize {
         self.files.len()
     }

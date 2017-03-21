@@ -134,6 +134,8 @@ impl App {
 
         {
             match *operation {
+                Clear => 
+                    self.on_clear(&mut updated),
                 Command(ref command) =>
                     self.on_command(command),
                 Count(count) =>
@@ -211,6 +213,11 @@ impl App {
     }
 
     /* Operation event */
+
+    fn on_clear(&mut self, updated: &mut Updated) {
+        self.entries.clear();
+        updated.image = true;
+    }
 
     fn on_command(&mut self, command: &command::Command) {
         use entry::Entry::*;

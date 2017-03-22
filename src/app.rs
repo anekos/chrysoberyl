@@ -397,7 +397,7 @@ impl App {
             updated.image = true;
         } else if size < len {
             for i in 0..(len - size) {
-                let image = self.gui.images.get(len - i - 1).unwrap();
+                let image = &self.gui.images[len - i - 1];
                 image.set_from_pixbuf(None);
                 self.gui.image_box.remove(image);
             }

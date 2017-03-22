@@ -82,6 +82,6 @@ impl Mapping {
     }
 
     pub fn matched(&self, input: &Input) -> Option<Operation> {
-        self.table.get(input).map(|it| it.clone())
+        self.table.get(input).cloned()
     }
 }

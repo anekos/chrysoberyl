@@ -62,7 +62,7 @@ impl Operation {
     pub fn from_str_force(s: &str) -> Operation {
         use std::str::FromStr;
 
-        Operation::from_str(s).unwrap_or(Operation::Push(expand(s)))
+        Operation::from_str(s).unwrap_or_else(|_| Operation::Push(expand(s)))
     }
 
     fn user(args: Vec<String>) -> Operation {

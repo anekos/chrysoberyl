@@ -33,7 +33,7 @@ impl Input {
     pub fn key_from_event_key(key: &gdk::EventKey) -> Input {
         let keyval = key.as_ref().keyval;
         Input::Key(
-            gdk::keyval_name(keyval).unwrap_or(format!("{}", keyval)))
+            gdk::keyval_name(keyval).unwrap_or_else(|| s!(keyval)))
     }
 
     pub fn mouse_button(button: u32) -> Input {

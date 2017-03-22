@@ -3,7 +3,7 @@ use std::sync::mpsc::Sender;
 
 use gdk::{EventButton, EventKey};
 use gtk::prelude::*;
-use gtk::{Inhibit, main_quit};
+use gtk::Inhibit;
 
 use app;
 use mapping::Input;

@@ -503,7 +503,7 @@ impl App {
                 if gif.is_animated() {
                     match self.get_pixbuf_animation(&entry) {
                         Ok(buf) => image.set_from_animation(&buf),
-                        Err(err) => puts_error!("at" => "show_image", "reason" => err)
+                        Err(err) => puts_error!("at" => "show_image", "reason" => s!(err))
                     }
                     return
                 }
@@ -514,7 +514,7 @@ impl App {
             Ok(buf) => {
                 image.set_from_pixbuf(Some(&buf));
             },
-            Err(err) => puts_error!("at" => "show_image", "reason" => err)
+            Err(err) => puts_error!("at" => "show_image", "reason" => s!(err))
         }
     }
 

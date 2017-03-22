@@ -27,7 +27,7 @@ pub fn main() {
     let (mut app, primary_rx, secondary_rx) = parse_arguments(gui.clone());
 
     unsafe {
-        puts_event!("info", "name" => "pid", "value" => libc::getpid());
+        puts_event!("info", "name" => "pid", "value" => s!(libc::getpid()));
     }
 
     'outer: loop {

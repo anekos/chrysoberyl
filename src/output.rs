@@ -52,7 +52,7 @@ macro_rules! puts {
         {
             use output;
             output::puts(&vec![
-                $( ($name.to_owned(), format!("{}", $value)) ),*
+                $( ($name.to_owned(), $value.to_owned()) ),*
             ])
         }
     }
@@ -77,7 +77,7 @@ fn generate_text(data: &Vec<(String, String)>) -> String {
 
     for (index, pair) in data.iter().enumerate() {
         let (ref key, ref value) = *pair;
-        let value = Cow::from(format!("{}", value));
+        let value = Cow::from(value.to_owned());
         if index == 0 {
             result += "O=O";
         }

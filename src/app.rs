@@ -238,8 +238,7 @@ impl App {
 
         if let Some((entry, _)) = self.entries.current(&self.pointer) {
             let result = match entry {
-                File(ref path) => command.execute(path),
-                Http(ref path, _) => command.execute(path),
+                File(ref path) | Http(ref path, _) => command.execute(path),
                 Archive(_ , _) => Err(s!("copy/move does not support archive files."))
             };
             let command_str = format!("{:?}", command);
@@ -446,8 +445,8 @@ impl App {
 
     fn get_meta(&self, entry: &Entry) -> Result<GenericMetadata, immeta::Error> {
         match *entry {
-            Entry::File(ref path) => immeta::load_from_file(&path),
-            Entry::Http(ref path, _) => immeta::load_from_file(&path),
+            Entry::File(ref path) | Entry::Http(ref path, _) =>
+                immeta::load_from_file(&path),
             Entry::Archive(_, ref entry) =>  {
                 immeta::load_from_buf(&entry.content)
             }
@@ -458,8 +457,8 @@ impl App {
         use gdk_pixbuf::InterpType;
 
         match *entry {
-            Entry::File(ref path) => Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
-            Entry::Http(ref path, _) => Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
+            Entry::File(ref path) | Entry::Http(ref path, _) =>
+                Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
             Entry::Archive(_, ref entry) => {
                 let loader = PixbufLoader::new();
                 loader.loader_write(&*entry.content.as_slice()).map(|_| {
@@ -476,8 +475,8 @@ impl App {
 
     fn get_pixbuf_animation(&self, entry: &Entry) -> Result<PixbufAnimation, gtk::Error> {
         match *entry {
-            Entry::File(ref path) => PixbufAnimation::new_from_file(path_to_str(path)),
-            Entry::Http(ref path, _) => PixbufAnimation::new_from_file(path_to_str(path)),
+            Entry::File(ref path) | Entry::Http(ref path, _) =>
+                PixbufAnimation::new_from_file(path_to_str(path)),
             Entry::Archive(_, ref entry) => {
                 let loader = PixbufLoader::new();
                 loader.loader_write(&*entry.content.as_slice()).map(|_| {

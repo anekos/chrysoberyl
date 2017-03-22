@@ -235,8 +235,7 @@ impl EntryContainer {
         use self::Entry::*;
 
         match *entry {
-            File(ref path) => self.is_valid_image_file(path),
-            Http(ref path, _) => self.is_valid_image_file(path),
+            File(ref path) | Http(ref path, _) => self.is_valid_image_file(path),
             Archive(_, _) => true // FIXME ??
         }
     }

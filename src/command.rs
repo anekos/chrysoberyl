@@ -51,9 +51,8 @@ fn destination_path(source: &PathBuf, destination: &PathBuf, if_exist: &IfExist)
     path.push(file_name);
 
     match *if_exist {
-        Overwrite => Ok(path),
         Fail if path.exists() => Err(format!("File already exists: {:?}", path)),
-        Fail => Ok(path),
+        Fail | Overwrite  => Ok(path),
         NewFileName => {
             let mut suffix = 0;
             let stem = os(Path::new(file_name).file_stem().unwrap());

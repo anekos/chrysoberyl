@@ -15,9 +15,7 @@ pub fn register(gui: app::Gui, tx: Sender<Operation>) {
     gui.window.connect_key_press_event(clone_army!([tx] move |_, key| on_key_press(tx.clone(), key)));
     gui.window.connect_configure_event(clone_army!([tx] move |_, _| on_configure(tx.clone())));
     gui.window.connect_button_press_event(clone_army!([tx] move |_, button| on_button_press(tx.clone(), button)));
-    gui.window.connect_delete_event(|_, _| on_delete());
-    gui.window.connect_destroy_event(|_, _| on_delete());
-
+    gui.window.connect_delete_event(clone_army!([tx] move |_, _| on_delete(tx.clone())));
 }
 
 
@@ -46,7 +44,7 @@ fn on_configure(tx: Sender<Operation>) -> bool {
     false
 }
 
-fn on_delete() -> Inhibit {
-    main_quit();
+fn on_delete(tx: Sender<Operation>) -> Inhibit {
+    tx.send(Operation::Quit).unwrap();
     Inhibit(false)
 }

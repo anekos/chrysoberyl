@@ -100,7 +100,7 @@ impl App {
 
         app.update_label_visibility();
 
-        for file in initial.files.iter() {
+        for file in &initial.files {
            app.on_push(file.clone());
         }
 

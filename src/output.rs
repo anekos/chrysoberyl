@@ -29,7 +29,7 @@ impl Output {
     }
 
     fn puts_each_channel(&self, text: String) {
-        for tx in self.txs.iter() {
+        for tx in &self.txs {
             tx.send(text.clone()).unwrap();
         }
     }

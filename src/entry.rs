@@ -273,7 +273,7 @@ impl EntryContainer {
 
 impl fmt::Display for EntryContainer {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for entry in self.files.iter() {
+        for entry in &self.files {
             writeln!(f, "{:?}", entry).unwrap();
         }
         Ok(())

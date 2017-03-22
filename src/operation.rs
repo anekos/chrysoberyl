@@ -69,7 +69,7 @@ impl Operation {
         let mut result: Vec<(String, String)> = vec![];
         let mut index = 0;
 
-        for  arg in args.iter() {
+        for  arg in &args {
             let sep = arg.find("=").unwrap_or(0);
             let (key, value) = arg.split_at(sep);
             if key.is_empty() {

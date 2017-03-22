@@ -259,7 +259,7 @@ fn parse_multi_args(xs: Vec<String>, separator: &str) -> Result<Operation, Strin
     let mut ops: Vec<Vec<String>> = vec![];
     let mut buffer: Vec<String> = vec![];
 
-    for x in  xs.into_iter() {
+    for x in &xs {
         if x == separator {
             ops.push(buffer.clone());
             buffer.clear();

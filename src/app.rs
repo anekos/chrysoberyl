@@ -20,6 +20,7 @@ use entry::{Entry,EntryContainer, EntryContainerOptions};
 use events;
 use fragile_input::new_fragile_input;
 use http_cache::HttpCache;
+use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
 use operation::Operation;
 use options::{AppOptions, AppOptionName};
@@ -38,6 +39,7 @@ pub struct App {
     gui: Gui,
     draw_serial: u64,
     rng: ThreadRng,
+    pointer: IndexPointer,
     pub tx: Sender<Operation>,
     pub options: AppOptions
 }
@@ -90,6 +92,7 @@ impl App {
             mapping: Mapping::new(),
             draw_serial: 0,
             rng: rand::thread_rng(),
+            pointer: IndexPointer::new(),
         };
 
         events::register(gui, primary_tx.clone());
@@ -144,17 +147,17 @@ impl App {
                 Command(ref command) =>
                     self.on_command(command),
                 Count(count) =>
-                    self.entries.pointer.set_count(count),
+                    self.pointer.set_count(count),
                 CountDigit(digit) =>
-                    self.entries.pointer.push_count_digit(digit),
+                    self.pointer.push_count_digit(digit),
                 Expand(recursive, ref base) =>
                     self.on_expand(&mut updated, recursive, base),
                 First =>
-                    updated.pointer = self.entries.pointer.first(len),
+                    updated.pointer = self.pointer.first(len),
                 Input(ref input) =>
                     self.on_input(input),
                 Last =>
-                    updated.pointer = self.entries.pointer.last(len),
+                    updated.pointer = self.pointer.last(len),
                 LazyDraw(serial) =>
                     self.on_lazy_draw(&mut updated, serial),
                 Map(ref input, ref mapped_operation) =>
@@ -196,7 +199,7 @@ impl App {
                 User(ref data) =>
                     self.on_user(data),
                 Views => {
-                    let count = self.entries.pointer.counted();
+                    let count = self.pointer.counted();
                     self.on_views(&mut updated, count);
                 },
             }
@@ -212,7 +215,7 @@ impl App {
         }
 
         if updated.image || updated.label {
-            if let Some((entry, index)) = self.entries.current() {
+            if let Some((entry, index)) = self.entries.current(&self.pointer) {
                 let len = self.entries.len();
                 let path = entry.display_path();
                 self.update_label(&format!("[{}/{}] {}", index + 1, len, path));
@@ -226,14 +229,14 @@ impl App {
     /* Operation event */
 
     fn on_clear(&mut self, updated: &mut Updated) {
-        self.entries.clear();
+        self.entries.clear(&mut self.pointer);
         updated.image = true;
     }
 
     fn on_command(&mut self, command: &command::Command) {
         use entry::Entry::*;
 
-        if let Some((entry, _)) = self.entries.current() {
+        if let Some((entry, _)) = self.entries.current(&self.pointer) {
             let result = match entry {
                 File(ref path) => command.execute(path),
                 Http(ref path, _) => command.execute(path),
@@ -248,11 +251,11 @@ impl App {
     }
 
     fn on_expand(&mut self, updated: &mut Updated, recursive: bool, base: &Option<PathBuf>) {
-        let count = self.entries.pointer.counted();
+        let count = self.pointer.counted();
         if recursive {
-            self.entries.expand(base.clone(), 1, count as u8);
+            self.entries.expand(&mut self.pointer, base.clone(), 1, count as u8);
         } else {
-            self.entries.expand(base.clone(), count as u8, count as u8- 1);
+            self.entries.expand(&mut self.pointer, base.clone(), count as u8, count as u8- 1);
         }
         updated.label = true;
     }
@@ -290,11 +293,11 @@ impl App {
     }
 
     fn on_next(&mut self, updated: &mut Updated, len: usize) {
-        updated.pointer = self.entries.pointer.next(len);
+        updated.pointer = self.pointer.next(len);
     }
 
     fn on_previous(&mut self, updated: &mut Updated) {
-        updated.pointer = self.entries.pointer.previous();
+        updated.pointer = self.pointer.previous();
     }
 
     fn on_print_entries(&self) {
@@ -328,17 +331,17 @@ impl App {
     }
 
     fn on_push_archive_entry(&mut self, updated: &mut Updated, archive_path: &PathBuf, entry: &ArchiveEntry) {
-        updated.pointer = self.entries.push_archive_entry(archive_path, entry);
+        updated.pointer = self.entries.push_archive_entry(&mut self.pointer, archive_path, entry);
         updated.label = true;
     }
 
     fn on_push_http_cache(&mut self, updated: &mut Updated, file: &PathBuf, url: &String) {
-        updated.pointer = self.entries.push_http_cache(file, url);
+        updated.pointer = self.entries.push_http_cache(&mut self.pointer, file, url);
         updated.label = true;
     }
 
     fn on_push_path(&mut self, updated: &mut Updated, file: PathBuf) {
-        updated.pointer = self.entries.push_path(&file);
+        updated.pointer = self.entries.push_path(&mut self.pointer, &file);
         updated.label = true;
     }
 
@@ -348,7 +351,7 @@ impl App {
 
     fn on_random(&mut self, updated: &mut Updated, len: usize) {
         if len > 0 {
-            self.entries.pointer.current = Some(Range::new(0, len).ind_sample(&mut self.rng));
+            self.pointer.current = Some(Range::new(0, len).ind_sample(&mut self.rng));
             updated.image = true;
         }
     }
@@ -370,7 +373,7 @@ impl App {
     }
 
     fn on_shuffle(&mut self, updated: &mut Updated, fix_current: bool) {
-        self.entries.shuffle(fix_current);
+        self.entries.shuffle(&mut self.pointer, fix_current);
         if !fix_current {
             updated.image = true;
         }
@@ -378,7 +381,7 @@ impl App {
     }
 
     fn on_sort(&mut self, updated: &mut Updated) {
-        self.entries.sort();
+        self.entries.sort(&mut self.pointer);
         updated.label = true;
     }
 
@@ -387,7 +390,7 @@ impl App {
     }
 
     fn on_views(&mut self, updated: &mut Updated, size: usize) {
-        self.entries.pointer.multiply(size);
+        self.pointer.multiply(size);
         let len = self.gui.images.len();
         if len < size {
             for _ in 0..(size - len) {
@@ -420,7 +423,7 @@ impl App {
 
         let mut pairs: Vec<(String, String)> = vec![];
 
-        if let Some((entry, index)) = self.entries.current() {
+        if let Some((entry, index)) = self.entries.current(&self.pointer) {
             match entry {
                 File(ref path) => {
                     push(&mut pairs, "file", path_to_str(path));
@@ -530,7 +533,7 @@ impl App {
             if self.options.reverse {
                 index = images_len - index - 1;
             }
-            if let Some(entry) = self.entries.current_with(index).map(|(entry,_)| entry) {
+            if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
                 self.show_image1(entry, image, width, height);
             } else {
                 image.set_from_pixbuf(None);

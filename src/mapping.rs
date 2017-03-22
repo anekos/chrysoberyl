@@ -42,7 +42,7 @@ impl Input {
 
     pub fn text(&self) -> String {
         match *self {
-            Input::Key(ref name) => s!(name),
+            Input::Key(ref name) => o!(name),
             Input::MouseButton(button) => s!(button),
         }
     }

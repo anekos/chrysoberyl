@@ -87,7 +87,7 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
                     }
 
                     queued += 1;
-                    puts!("event" => "HTTP", "state" => "get", "thread_id" => s!(min_index), "url" => s!(&url), "queue" => s!(queued));
+                    puts!("event" => "HTTP", "state" => "get", "thread_id" => s!(min_index), "url" => o!(&url), "queue" => s!(queued));
 
                     let mut stack = stacks.get_mut(min_index).unwrap();
                     *stack += 1;
@@ -115,7 +115,7 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
                     let mut stack = stacks.get_mut(index).unwrap();
                     *stack -= 1;
                     buffer.skip(request.serial);
-                    puts_error!("at" => "HTTP/Get", "reason" => err, "url" => s!(request.url), "queue" => s!(queued));
+                    puts_error!("at" => "HTTP/Get", "reason" => err, "url" => o!(request.url), "queue" => s!(queued));
                 }
             }
         }

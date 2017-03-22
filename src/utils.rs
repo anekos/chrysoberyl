@@ -93,6 +93,12 @@ macro_rules! s {
     }
 }
 
+macro_rules! o {
+    ( $expr:expr ) => {
+        $expr.to_owned()
+    }
+}
+
 macro_rules! option {
     ( $condition:expr, $value:expr ) => {
         if $condition {

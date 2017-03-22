@@ -239,7 +239,7 @@ impl App {
         if let Some((entry, _)) = self.entries.current(&self.pointer) {
             let result = match entry {
                 File(ref path) | Http(ref path, _) => command.execute(path),
-                Archive(_ , _) => Err(s!("copy/move does not support archive files."))
+                Archive(_ , _) => Err(o!("copy/move does not support archive files."))
             };
             let command_str = format!("{:?}", command);
             match result {
@@ -266,7 +266,7 @@ impl App {
         } else {
             self.puts_event_with_current(
                 input.type_name(),
-                Some(&vec![("name".to_owned(), format!("{}", input.text()))]));
+                Some(&vec![(o!("name"), o!(input.text()))]));
         }
     }
 
@@ -488,7 +488,7 @@ impl App {
     }
 
     fn puts_event_with_current(&self, event: &str, data: Option<&Vec<(String, String)>>) {
-        let mut pairs = vec![(s!("event"), s!(event))];
+        let mut pairs = vec![(o!("event"), o!(event))];
         pairs.extend_from_slice(self.current_info().as_slice());
         if let Some(data) = data {
             pairs.extend_from_slice(data.as_slice());

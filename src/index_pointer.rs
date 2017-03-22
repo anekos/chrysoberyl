@@ -20,6 +20,16 @@ impl IndexPointer {
         self.count = count;
     }
 
+    /**
+     * If `count` is not None, overwrite `self.count`
+     */
+    pub fn with_count(&mut self, count: Option<usize>) -> &mut IndexPointer {
+        if count.is_some() {
+            self.count = count;
+        }
+        self
+    }
+
     pub fn multiply(&mut self, x: usize) {
         if x == 0 {
             panic!("Invalid multiplier: {}", x);

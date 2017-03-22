@@ -152,24 +152,24 @@ impl App {
                     self.pointer.push_count_digit(digit),
                 Expand(recursive, ref base) =>
                     self.on_expand(&mut updated, recursive, base),
-                First =>
-                    updated.pointer = self.pointer.first(len),
+                First(count) =>
+                    updated.pointer = self.pointer.with_count(count).first(len),
                 Input(ref input) =>
                     self.on_input(input),
-                Last =>
-                    updated.pointer = self.pointer.last(len),
+                Last(count) =>
+                    updated.pointer = self.pointer.with_count(count).last(len),
                 LazyDraw(serial) =>
                     self.on_lazy_draw(&mut updated, serial),
                 Map(ref input, ref mapped_operation) =>
                     self.on_map(input, mapped_operation),
                 Multi(ref ops) =>
                     self.on_multi(ops),
-                Next =>
-                    self.on_next(&mut updated, len),
+                Next(count) =>
+                    self.on_next(&mut updated, count, len),
                 Nop =>
                     (),
-                Previous =>
-                    self.on_previous(&mut updated),
+                Previous(count) =>
+                    self.on_previous(&mut updated, count),
                 PrintEntries =>
                     self.on_print_entries(),
                 Push(ref path) =>
@@ -292,12 +292,12 @@ impl App {
         }
     }
 
-    fn on_next(&mut self, updated: &mut Updated, len: usize) {
-        updated.pointer = self.pointer.next(len);
+    fn on_next(&mut self, updated: &mut Updated, count: Option<usize>, len: usize) {
+        updated.pointer = self.pointer.with_count(count).next(len);
     }
 
-    fn on_previous(&mut self, updated: &mut Updated) {
-        updated.pointer = self.pointer.previous();
+    fn on_previous(&mut self, updated: &mut Updated,  count: Option<usize>) {
+        updated.pointer = self.pointer.with_count(count).previous();
     }
 
     fn on_print_entries(&self) {

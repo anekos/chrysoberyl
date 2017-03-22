@@ -21,15 +21,15 @@ pub enum Operation {
     Count(Option<usize>),
     CountDigit(u8),
     Expand(bool, Option<PathBuf>), /* recursive, base */
-    First,
+    First(Option<usize>),
     Input(mapping::Input),
-    Last,
+    Last(Option<usize>),
     LazyDraw(u64), /* serial */
     Map(mapping::Input, Box<Operation>),
     Multi(Vec<Operation>),
-    Next,
+    Next(Option<usize>),
     Nop,
-    Previous,
+    Previous(Option<usize>),
     PrintEntries,
     Push(String),
     PushArchiveEntry(PathBuf, ArchiveEntry),
@@ -104,14 +104,14 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@count"                     => parse_count(whole),
             "@entries"                   => Ok(PrintEntries),
             "@expand"                    => parse_expand(whole),
-            "@first" | "@f"              => Ok(First),
+            "@first" | "@f"              => parse_command_usize1(whole, First),
             "@input"                     => parse_input(whole),
-            "@last" | "@l"               => Ok(Last),
+            "@last" | "@l"               => parse_command_usize1(whole, Last),
             "@map"                       => parse_map(whole),
             "@multi"                     => parse_multi(whole),
             "@move"                      => parse_copy_or_move(whole).map(|(path, if_exist)| Command(Move(path, if_exist))),
-            "@next" | "@n"               => Ok(Next),
-            "@prev" | "@p" | "@previous" => Ok(Previous),
+            "@next" | "@n"               => parse_command_usize1(whole, Next),
+            "@prev" | "@p" | "@previous" => parse_command_usize1(whole, Previous),
             "@push"                      => parse_command1(whole, |it| Push(expand(&it))),
             "@pushpath"                  => parse_command1(whole, |it| PushPath(expand_to_pathbuf(&it))),
             "@pushurl"                   => parse_command1(whole, PushURL),
@@ -144,6 +144,17 @@ where T: FnOnce(String) -> Operation {
         Ok(op(arg.to_owned()))
     } else {
         Err("Not enough argument".to_owned())
+    }
+}
+
+fn parse_command_usize1<T>(args: Vec<String>, op: T) -> Result<Operation, String>
+where T: FnOnce(Option<usize>) -> Operation {
+    use utils::s;
+
+    if let Some(arg) = args.get(1) {
+        arg.parse().map(|it| op(Some(it))).map_err(s)
+    } else {
+        Ok(op(None))
     }
 }
 

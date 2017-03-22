@@ -461,7 +461,7 @@ impl App {
                     loader.close().unwrap();
                     let source = loader.get_pixbuf().unwrap();
                     let (scale, out_width, out_height) = calculate_scale(&source, width, height);
-                    let mut scaled = unsafe { Pixbuf::new(0, false, 8, out_width, out_height).unwrap() };
+                    let scaled = unsafe { Pixbuf::new(0, false, 8, out_width, out_height).unwrap() };
                     source.scale(&scaled, 0, 0, out_width, out_height, 0.0, 0.0, scale, scale, InterpType::Bilinear);
                     scaled
                 })

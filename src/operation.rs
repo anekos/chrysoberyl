@@ -94,7 +94,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
         let args = whole[1..].to_vec();
         let whole = whole.clone();
 
-        if Some('#') == name.chars().next() {
+        if name.starts_with('#') {
             return Ok(Nop)
         }
 

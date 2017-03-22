@@ -462,15 +462,14 @@ impl App {
             Entry::Http(ref path, _) => Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
             Entry::Archive(_, ref entry) => {
                 let loader = PixbufLoader::new();
-                let pixbuf = loader.loader_write(&*entry.content.as_slice()).map(|_| {
+                loader.loader_write(&*entry.content.as_slice()).map(|_| {
                     loader.close().unwrap();
                     let source = loader.get_pixbuf().unwrap();
                     let (scale, out_width, out_height) = calculate_scale(&source, width, height);
                     let mut scaled = unsafe { Pixbuf::new(0, false, 8, out_width, out_height).unwrap() };
                     source.scale(&mut scaled, 0, 0, out_width, out_height, 0.0, 0.0, scale, scale, InterpType::Bilinear);
                     scaled
-                });
-                pixbuf
+                })
             }
         }
     }

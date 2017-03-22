@@ -21,6 +21,7 @@ static DEFAULT_CONFIG: &'static str = "
 @map keyboard i @toggle information
 @map keyboard v @views
 @map keyboard r @toggle reverse
+@map keyboard q @quit
 ";
 
 

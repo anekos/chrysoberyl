@@ -95,9 +95,9 @@ impl EntryContainer {
             if let Some((file, index, current_entry)) = self.current_for_file(pointer) {
                 let dir = n_parents(file.clone(), n);
                 expand(&dir.to_path_buf(), recursive).ok().and_then(|middle| {
-                    let mut middle: Vec<Rc<Entry>> = middle.into_iter().map(|path| Entry::File(path)).filter(|entry| {
+                    let mut middle: Vec<Rc<Entry>> = middle.into_iter().map(Entry::File).filter(|entry| {
                         current_entry == *entry || (!self.is_duplicated(entry) && self.is_valid_image(entry))
-                    }).map(|it| Rc::new(it)).collect();
+                    }).map(Rc::new).collect();
 
                     middle.sort();
 
@@ -114,9 +114,9 @@ impl EntryContainer {
                 let dir = n_parents(dir, n - 1);
                 expand(&dir.to_path_buf(), recursive).ok().map(|files| {
                     let mut result = self.files.clone();
-                    let mut tail: Vec<Rc<Entry>> = files.into_iter().map(|path| Entry::File(path)).filter(|entry| {
+                    let mut tail: Vec<Rc<Entry>> = files.into_iter().map(Entry::File).filter(|entry| {
                         !self.is_duplicated(entry) && self.is_valid_image(entry)
-                    }).map(|it| Rc::new(it)).collect();
+                    }).map(Rc::new).collect();
                     tail.sort();
                     result.extend_from_slice(tail.as_slice());
                     (result, None)

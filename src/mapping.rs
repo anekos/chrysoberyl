@@ -33,7 +33,7 @@ impl Input {
     pub fn key_from_event_key(key: &gdk::EventKey) -> Input {
         let keyval = key.as_ref().keyval;
         Input::Key(
-            gdk::keyval_name(keyval).unwrap_or(format!("{}", keyval)))
+            gdk::keyval_name(keyval).unwrap_or_else(|| s!(keyval)))
     }
 
     pub fn mouse_button(button: u32) -> Input {
@@ -42,7 +42,7 @@ impl Input {
 
     pub fn text(&self) -> String {
         match *self {
-            Input::Key(ref name) => s!(name),
+            Input::Key(ref name) => o!(name),
             Input::MouseButton(button) => s!(button),
         }
     }
@@ -82,6 +82,6 @@ impl Mapping {
     }
 
     pub fn matched(&self, input: &Input) -> Option<Operation> {
-        self.table.get(input).map(|it| it.clone())
+        self.table.get(input).cloned()
     }
 }

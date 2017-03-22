@@ -27,7 +27,7 @@ macro_rules! through {
         {
             match $e {
                 Ok($name) => through!([$($rest_n = $rest_e),*] $body),
-                Err(err) => puts_error!("reason" => err)
+                Err(err) => puts_error!("reason" => s!(err))
             }
         }
     }
@@ -90,6 +90,12 @@ macro_rules! vec_push {
 macro_rules! s {
     ( $expr:expr ) => {
         format!("{}", $expr)
+    }
+}
+
+macro_rules! o {
+    ( $expr:expr ) => {
+        $expr.to_owned()
     }
 }
 

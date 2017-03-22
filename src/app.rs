@@ -100,7 +100,7 @@ impl App {
 
         app.update_label_visibility();
 
-        for file in initial.files.iter() {
+        for file in &initial.files {
            app.on_push(file.clone());
         }
 
@@ -238,9 +238,8 @@ impl App {
 
         if let Some((entry, _)) = self.entries.current(&self.pointer) {
             let result = match entry {
-                File(ref path) => command.execute(path),
-                Http(ref path, _) => command.execute(path),
-                Archive(_ , _) => Err(s!("copy/move does not support archive files."))
+                File(ref path) | Http(ref path, _) => command.execute(path),
+                Archive(_ , _) => Err(o!("copy/move does not support archive files."))
             };
             let command_str = format!("{:?}", command);
             match result {
@@ -267,7 +266,7 @@ impl App {
         } else {
             self.puts_event_with_current(
                 input.type_name(),
-                Some(&vec![("name".to_owned(), format!("{}", input.text()))]));
+                Some(&[(o!("name"), o!(input.text()))]));
         }
     }
 
@@ -286,7 +285,7 @@ impl App {
         self.mapping.register(input.clone(), *operation.clone());
     }
 
-    fn on_multi(&mut self, operations: &Vec<Operation>) {
+    fn on_multi(&mut self, operations: &[Operation]) {
         for op in operations {
             self.operate(op)
         }
@@ -313,18 +312,14 @@ impl App {
             return;
         }
 
-        match Path::new(&path).canonicalize() {
-            Ok(path) => {
-                if let Some(ext) = path.extension() {
-                    match &*ext.to_str().unwrap().to_lowercase() {
-                        "zip" | "rar" | "tar.gz" | "lzh" | "lha" =>
-                            return archive::fetch_entries(&path, &self.encodings, self.tx.clone()),
-                        _ => ()
-                    }
+        if let Ok(path) = Path::new(&path).canonicalize() {
+            if let Some(ext) = path.extension() {
+                match &*ext.to_str().unwrap().to_lowercase() {
+                    "zip" | "rar" | "tar.gz" | "lzh" | "lha" =>
+                        return archive::fetch_entries(&path, &self.encodings, self.tx.clone()),
+                    _ => ()
                 }
-
             }
-            _ => ()
         }
 
         self.operate(&Operation::PushPath(Path::new(&path).to_path_buf()));
@@ -335,7 +330,7 @@ impl App {
         updated.label = true;
     }
 
-    fn on_push_http_cache(&mut self, updated: &mut Updated, file: &PathBuf, url: &String) {
+    fn on_push_http_cache(&mut self, updated: &mut Updated, file: &PathBuf, url: &str) {
         updated.pointer = self.entries.push_http_cache(&mut self.pointer, file, url);
         updated.label = true;
     }
@@ -385,7 +380,7 @@ impl App {
         updated.label = true;
     }
 
-    fn on_user(&self, data: &Vec<(String, String)>) {
+    fn on_user(&self, data: &[(String, String)]) {
         self.puts_event_with_current("user", Some(data));
     }
 
@@ -402,7 +397,7 @@ impl App {
             updated.image = true;
         } else if size < len {
             for i in 0..(len - size) {
-                let image = self.gui.images.get(len - i - 1).unwrap();
+                let image = &self.gui.images[len - i - 1];
                 image.set_from_pixbuf(None);
                 self.gui.image_box.remove(image);
             }
@@ -446,8 +441,8 @@ impl App {
 
     fn get_meta(&self, entry: &Entry) -> Result<GenericMetadata, immeta::Error> {
         match *entry {
-            Entry::File(ref path) => immeta::load_from_file(&path),
-            Entry::Http(ref path, _) => immeta::load_from_file(&path),
+            Entry::File(ref path) | Entry::Http(ref path, _) =>
+                immeta::load_from_file(&path),
             Entry::Archive(_, ref entry) =>  {
                 immeta::load_from_buf(&entry.content)
             }
@@ -458,27 +453,26 @@ impl App {
         use gdk_pixbuf::InterpType;
 
         match *entry {
-            Entry::File(ref path) => Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
-            Entry::Http(ref path, _) => Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
+            Entry::File(ref path) | Entry::Http(ref path, _) =>
+                Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
             Entry::Archive(_, ref entry) => {
                 let loader = PixbufLoader::new();
-                let pixbuf = loader.loader_write(&*entry.content.as_slice()).map(|_| {
+                loader.loader_write(&*entry.content.as_slice()).map(|_| {
                     loader.close().unwrap();
                     let source = loader.get_pixbuf().unwrap();
                     let (scale, out_width, out_height) = calculate_scale(&source, width, height);
-                    let mut scaled = unsafe { Pixbuf::new(0, false, 8, out_width, out_height).unwrap() };
-                    source.scale(&mut scaled, 0, 0, out_width, out_height, 0.0, 0.0, scale, scale, InterpType::Bilinear);
+                    let scaled = unsafe { Pixbuf::new(0, false, 8, out_width, out_height).unwrap() };
+                    source.scale(&scaled, 0, 0, out_width, out_height, 0.0, 0.0, scale, scale, InterpType::Bilinear);
                     scaled
-                });
-                pixbuf
+                })
             }
         }
     }
 
     fn get_pixbuf_animation(&self, entry: &Entry) -> Result<PixbufAnimation, gtk::Error> {
         match *entry {
-            Entry::File(ref path) => PixbufAnimation::new_from_file(path_to_str(path)),
-            Entry::Http(ref path, _) => PixbufAnimation::new_from_file(path_to_str(path)),
+            Entry::File(ref path) | Entry::Http(ref path, _) =>
+                PixbufAnimation::new_from_file(path_to_str(path)),
             Entry::Archive(_, ref entry) => {
                 let loader = PixbufLoader::new();
                 loader.loader_write(&*entry.content.as_slice()).map(|_| {
@@ -489,11 +483,11 @@ impl App {
         }
     }
 
-    fn puts_event_with_current(&self, event: &str, data: Option<&Vec<(String, String)>>) {
-        let mut pairs = vec![(s!("event"), s!(event))];
+    fn puts_event_with_current(&self, event: &str, data: Option<&[(String, String)]>) {
+        let mut pairs = vec![(o!("event"), o!(event))];
         pairs.extend_from_slice(self.current_info().as_slice());
         if let Some(data) = data {
-            pairs.extend_from_slice(data.as_slice());
+            pairs.extend_from_slice(data);
         }
         output::puts(&pairs);
     }
@@ -504,18 +498,18 @@ impl App {
                 if gif.is_animated() {
                     match self.get_pixbuf_animation(&entry) {
                         Ok(buf) => image.set_from_animation(&buf),
-                        Err(err) => puts_error!("at" => "show_image", "reason" => err)
+                        Err(err) => puts_error!("at" => "show_image", "reason" => s!(err))
                     }
                     return
                 }
             }
         }
 
-        match self.get_pixbuf(&&entry, width, height) {
+        match self.get_pixbuf(&entry, width, height) {
             Ok(buf) => {
                 image.set_from_pixbuf(Some(&buf));
             },
-            Err(err) => puts_error!("at" => "show_image", "reason" => err)
+            Err(err) => puts_error!("at" => "show_image", "reason" => s!(err))
         }
     }
 

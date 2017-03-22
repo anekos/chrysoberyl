@@ -62,15 +62,15 @@ impl Operation {
     pub fn from_str_force(s: &str) -> Operation {
         use std::str::FromStr;
 
-        Operation::from_str(s).unwrap_or(Operation::Push(expand(s)))
+        Operation::from_str(s).unwrap_or_else(|_| Operation::Push(expand(s)))
     }
 
     fn user(args: Vec<String>) -> Operation {
         let mut result: Vec<(String, String)> = vec![];
         let mut index = 0;
 
-        for  arg in args.iter() {
-            let sep = arg.find("=").unwrap_or(0);
+        for  arg in &args {
+            let sep = arg.find('=').unwrap_or(0);
             let (key, value) = arg.split_at(sep);
             if key.is_empty() {
                 result.push((format!("arg{}", index), value.to_owned()));
@@ -94,7 +94,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
         let args = whole[1..].to_vec();
         let whole = whole.clone();
 
-        if Some('#') == name.chars().next() {
+        if name.starts_with('#') {
             return Ok(Nop)
         }
 
@@ -259,7 +259,7 @@ fn parse_multi_args(xs: Vec<String>, separator: &str) -> Result<Operation, Strin
     let mut ops: Vec<Vec<String>> = vec![];
     let mut buffer: Vec<String> = vec![];
 
-    for x in  xs.into_iter() {
+    for x in &xs {
         if x == separator {
             ops.push(buffer.clone());
             buffer.clear();

@@ -51,7 +51,7 @@ impl Hash for ArchiveEntry {
 }
 
 
-pub fn fetch_entries(path: &PathBuf, encodings: &Vec<EncodingRef>, tx: Sender<Operation>) {
+pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Operation>) {
     let from_index: HashMap<usize, (usize, String)> = {
         #[derive(Eq, Clone, Debug, PartialOrd)]
         struct IndexWithName {
@@ -147,7 +147,7 @@ pub fn fetch_entries(path: &PathBuf, encodings: &Vec<EncodingRef>, tx: Sender<Op
 }
 
 
-fn get_filename(entry: &Entry, index: usize, encodings: &Vec<EncodingRef>) -> String {
+fn get_filename(entry: &Entry, index: usize, encodings: &[EncodingRef]) -> String {
     use libarchive3_sys::ffi;
     use std::ffi::CStr;
     use encoding::Encoding;

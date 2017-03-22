@@ -40,7 +40,7 @@ pub fn load_config(tx: Sender<Operation>) {
         puts_event!("config_file", "state" => "close");
     } else {
         for line in DEFAULT_CONFIG.lines() {
-            tx.send(Operation::from_str_force(&line)).unwrap();
+            tx.send(Operation::from_str_force(line)).unwrap();
         }
     }
 }

@@ -27,7 +27,7 @@ pub fn main() {
     let (mut app, primary_rx, secondary_rx) = parse_arguments(gui.clone());
 
     unsafe {
-        puts_event!("info", "name" => "pid", "value" => libc::getpid());
+        puts_event!("info", "name" => "pid", "value" => s!(libc::getpid()));
     }
 
     'outer: loop {
@@ -148,7 +148,7 @@ fn parse_arguments(gui: app::Gui) -> (app::App, Receiver<Operation>, Receiver<Op
 }
 
 
-fn parse_encodings(names: &Vec<String>) -> Vec<EncodingRef> {
+fn parse_encodings(names: &[String]) -> Vec<EncodingRef> {
     let mut result = vec![];
 
     for name in names.iter() {

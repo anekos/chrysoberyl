@@ -11,7 +11,8 @@ use termination;
 pub fn new_fragile_input(path: &str) {
     let res = unsafe {
         let mode = 0o600;
-        libc::mkfifo(CString::new(path.as_bytes()).unwrap().as_ptr(), mode as libc::mode_t)
+        let cstr = CString::new(path.as_bytes());
+        libc::mkfifo(cstr.unwrap().as_ptr(), mode as libc::mode_t)
     };
 
     if res != 0 {

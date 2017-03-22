@@ -11,7 +11,7 @@ use shell_escape::escape;
 
 
 
-pub fn call(async: bool, command_name: &str, arguments: &Vec<String>, info: Vec<(String, String)>, tx: Option<Sender<Operation>>) {
+pub fn call(async: bool, command_name: &str, arguments: &[String], info: Vec<(String, String)>, tx: Option<Sender<Operation>>) {
     let mut command = Command::new("bash");
     let mut command_line = command_name.to_owned();
 

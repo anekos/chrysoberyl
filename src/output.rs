@@ -24,12 +24,12 @@ pub struct Output {
 
 
 impl Output {
-    pub fn puts(&self, data: &Vec<(String, String)>) {
+    pub fn puts(&self, data: &[(String, String)]) {
         self.puts_each_channel(generate_text(data));
     }
 
     fn puts_each_channel(&self, text: String) {
-        for tx in self.txs.iter() {
+        for tx in &self.txs {
             tx.send(text.clone()).unwrap();
         }
     }
@@ -41,7 +41,7 @@ impl Output {
 
 
 
-pub fn puts(data: &Vec<(String, String)>) {
+pub fn puts(data: &[(String, String)]) {
     let out = (*OUTPUT_INSTANCE).lock().unwrap();
     out.puts(data);
 }
@@ -51,8 +51,8 @@ macro_rules! puts {
     ( $($name:expr => $value:expr),* ) => {
         {
             use output;
-            output::puts(&vec![
-                $( ($name.to_owned(), format!("{}", $value)) ),*
+            output::puts(&[
+                $( ($name.to_owned(), $value.to_owned()) ),*
             ])
         }
     }
@@ -72,12 +72,12 @@ macro_rules! puts_error {
 }
 
 
-fn generate_text(data: &Vec<(String, String)>) -> String {
+fn generate_text(data: &[(String, String)]) -> String {
     let mut result = "".to_owned();
 
     for (index, pair) in data.iter().enumerate() {
         let (ref key, ref value) = *pair;
-        let value = Cow::from(format!("{}", value));
+        let value = Cow::from(value.to_owned());
         if index == 0 {
             result += "O=O";
         }

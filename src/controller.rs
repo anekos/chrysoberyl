@@ -30,13 +30,13 @@ impl Controllers {
 
 
 pub fn register(tx: Sender<Operation>, controllers: &Controllers) {
-    for path in controllers.inputs.iter() {
+    for path in &controllers.inputs {
         file_controller(tx.clone(), path.clone());
     }
-    for path in controllers.fragiles.iter() {
+    for path in &controllers.fragiles {
         fifo_controller(tx.clone(), path.clone());
     }
-    for path in controllers.commands.iter() {
+    for path in &controllers.commands {
         command_controller(tx.clone(), path.clone());
     }
 

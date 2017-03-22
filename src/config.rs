@@ -9,19 +9,22 @@ use operation::Operation;
 
 
 static DEFAULT_CONFIG: &'static str = "
-@map keyboard h @first
-@map keyboard j @next
-@map keyboard k @previous
-@map keyboard l @last
-@map keyboard q @quit
-@map keyboard z @shuffle
-@map keyboard e @expand
-@map keyboard E @expand --recursive
-@map keyboard R @refresh
-@map keyboard i @toggle information
-@map keyboard v @views
-@map keyboard r @toggle reverse
-@map keyboard q @quit
+@map h @first
+@map j @next
+@map k @previous
+@map l @last
+@map q @quit
+@map z @shuffle
+@map e @expand
+@map E @expand --recursive
+@map R @refresh
+@map i @toggle information
+@map v @views
+@map r @toggle reverse
+@map q @quit
+
+@map --mouse-button 1 @next
+@map --mouse-button 3 @previous
 ";
 
 

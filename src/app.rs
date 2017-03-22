@@ -360,7 +360,7 @@ impl App {
             ShowText => {
                 self.options.show_text ^= true;
                 self.update_label_visibility();
-                updated.label = true;
+                updated.image = true;
             }
             Reverse => {
                 self.options.reverse ^= true;

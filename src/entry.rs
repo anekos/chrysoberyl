@@ -193,7 +193,7 @@ impl EntryContainer {
         if file.is_dir() {
             self.push_directory(pointer, file)
         } else if file.is_file() {
-            self.push_file(pointer, &file)
+            self.push_file(pointer, file)
         } else {
             puts_error!("at" => "push", "reason" => "Invalid path", "for" => path_to_str(&file));
             false

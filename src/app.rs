@@ -505,7 +505,7 @@ impl App {
             }
         }
 
-        match self.get_pixbuf(&&entry, width, height) {
+        match self.get_pixbuf(&entry, width, height) {
             Ok(buf) => {
                 image.set_from_pixbuf(Some(&buf));
             },

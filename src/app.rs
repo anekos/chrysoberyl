@@ -266,7 +266,7 @@ impl App {
         } else {
             self.puts_event_with_current(
                 input.type_name(),
-                Some(&vec![(o!("name"), o!(input.text()))]));
+                Some(&[(o!("name"), o!(input.text()))]));
         }
     }
 
@@ -285,7 +285,7 @@ impl App {
         self.mapping.register(input.clone(), *operation.clone());
     }
 
-    fn on_multi(&mut self, operations: &Vec<Operation>) {
+    fn on_multi(&mut self, operations: &[Operation]) {
         for op in operations {
             self.operate(op)
         }
@@ -330,7 +330,7 @@ impl App {
         updated.label = true;
     }
 
-    fn on_push_http_cache(&mut self, updated: &mut Updated, file: &PathBuf, url: &String) {
+    fn on_push_http_cache(&mut self, updated: &mut Updated, file: &PathBuf, url: &str) {
         updated.pointer = self.entries.push_http_cache(&mut self.pointer, file, url);
         updated.label = true;
     }
@@ -380,7 +380,7 @@ impl App {
         updated.label = true;
     }
 
-    fn on_user(&self, data: &Vec<(String, String)>) {
+    fn on_user(&self, data: &[(String, String)]) {
         self.puts_event_with_current("user", Some(data));
     }
 
@@ -483,11 +483,11 @@ impl App {
         }
     }
 
-    fn puts_event_with_current(&self, event: &str, data: Option<&Vec<(String, String)>>) {
+    fn puts_event_with_current(&self, event: &str, data: Option<&[(String, String)]>) {
         let mut pairs = vec![(o!("event"), o!(event))];
         pairs.extend_from_slice(self.current_info().as_slice());
         if let Some(data) = data {
-            pairs.extend_from_slice(data.as_slice());
+            pairs.extend_from_slice(data);
         }
         output::puts(&pairs);
     }

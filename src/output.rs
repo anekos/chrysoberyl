@@ -24,7 +24,7 @@ pub struct Output {
 
 
 impl Output {
-    pub fn puts(&self, data: &Vec<(String, String)>) {
+    pub fn puts(&self, data: &[(String, String)]) {
         self.puts_each_channel(generate_text(data));
     }
 
@@ -41,7 +41,7 @@ impl Output {
 
 
 
-pub fn puts(data: &Vec<(String, String)>) {
+pub fn puts(data: &[(String, String)]) {
     let out = (*OUTPUT_INSTANCE).lock().unwrap();
     out.puts(data);
 }
@@ -51,7 +51,7 @@ macro_rules! puts {
     ( $($name:expr => $value:expr),* ) => {
         {
             use output;
-            output::puts(&vec![
+            output::puts(&[
                 $( ($name.to_owned(), $value.to_owned()) ),*
             ])
         }
@@ -72,7 +72,7 @@ macro_rules! puts_error {
 }
 
 
-fn generate_text(data: &Vec<(String, String)>) -> String {
+fn generate_text(data: &[(String, String)]) -> String {
     let mut result = "".to_owned();
 
     for (index, pair) in data.iter().enumerate() {

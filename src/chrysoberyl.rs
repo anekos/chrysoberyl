@@ -148,7 +148,7 @@ fn parse_arguments(gui: app::Gui) -> (app::App, Receiver<Operation>, Receiver<Op
 }
 
 
-fn parse_encodings(names: &Vec<String>) -> Vec<EncodingRef> {
+fn parse_encodings(names: &[String]) -> Vec<EncodingRef> {
     let mut result = vec![];
 
     for name in names.iter() {

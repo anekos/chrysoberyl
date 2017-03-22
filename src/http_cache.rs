@@ -154,7 +154,7 @@ fn write_to_file(filepath: &PathBuf, mut response: Response) {
     let mut writer = BufWriter::new(File::create(filepath).unwrap());
     let mut data = vec![];
     response.read_to_end(&mut data).unwrap();
-    writer.write(data.as_slice()).unwrap();
+    writer.write_all(data.as_slice()).unwrap();
 }
 
 fn generate_temporary_filename(url: &str) -> PathBuf {

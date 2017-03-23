@@ -513,6 +513,16 @@ impl App {
         }
     }
 
+    fn show_image1_of_n(&self, entry: Entry, image: &Image, width: i32, height: i32) {
+        println!("show_image1_of_n");
+        match self.get_pixbuf(&entry, width, height) {
+            Ok(buf) => {
+                image.set_from_pixbuf(Some(&buf));
+            },
+            Err(err) => puts_error!("at" => "show_image", "reason" => s!(err))
+        }
+    }
+
     fn show_image(&self, with_label: bool) {
         let images_len = self.gui.images.len();
 
@@ -528,7 +538,7 @@ impl App {
                 index = images_len - index - 1;
             }
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                self.show_image1(entry, image, width, height);
+                self.show_image1_of_n(entry, image, width, height);
             } else {
                 image.set_from_pixbuf(None);
             }

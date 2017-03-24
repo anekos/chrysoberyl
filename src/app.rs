@@ -1,11 +1,12 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Sender, Receiver};
+use std::slice::Iter;
 
 use encoding::types::EncodingRef;
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
 use gtk::prelude::*;
-use gtk::{Image, Window, Label};
+use gtk::Image;
 use gtk;
 use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
@@ -19,6 +20,7 @@ use controller;
 use entry::{Entry,EntryContainer, EntryContainerOptions};
 use events;
 use fragile_input::new_fragile_input;
+use gui::Gui;
 use http_cache::HttpCache;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
@@ -42,14 +44,6 @@ pub struct App {
     pointer: IndexPointer,
     pub tx: Sender<Operation>,
     pub options: AppOptions
-}
-
-#[derive(Clone)]
-pub struct Gui {
-    pub window: Window,
-    pub images: Vec<Image>,
-    pub image_box: gtk::Box,
-    pub label: Label,
 }
 
 pub struct Initial {
@@ -142,7 +136,7 @@ impl App {
 
         {
             match *operation {
-                Clear => 
+                Clear =>
                     self.on_clear(&mut updated),
                 Command(ref command) =>
                     self.on_command(command),
@@ -386,24 +380,8 @@ impl App {
 
     fn on_views(&mut self, updated: &mut Updated, size: usize) {
         self.pointer.multiply(size);
-        let len = self.gui.images.len();
-        if len < size {
-            for _ in 0..(size - len) {
-                let image = Image::new_from_pixbuf(None);
-                image.show();
-                self.gui.image_box.pack_start(&image, true, true, 0);
-                self.gui.images.push(image);
-            }
-            updated.image = true;
-        } else if size < len {
-            for i in 0..(len - size) {
-                let image = &self.gui.images[len - i - 1];
-                image.set_from_pixbuf(None);
-                self.gui.image_box.remove(image);
-            }
-            self.gui.images.truncate(size);
-            updated.image = true;
-        }
+        self.gui.reset_images(Some(size), Some(1));
+        updated.image = true;
     }
 
     /* Private methods */
@@ -513,32 +491,17 @@ impl App {
         }
     }
 
-    fn show_image1_of_n(&self, entry: Entry, image: &Image, width: i32, height: i32) {
-        println!("show_image1_of_n");
-        match self.get_pixbuf(&entry, width, height) {
-            Ok(buf) => {
-                image.set_from_pixbuf(Some(&buf));
-            },
-            Err(err) => puts_error!("at" => "show_image", "reason" => s!(err))
-        }
-    }
-
     fn show_image(&self, with_label: bool) {
+        let (width, height) = self.gui.get_image_size(with_label);
         let images_len = self.gui.images.len();
-
-        let (width, mut height) = self.gui.window.get_size();
-        let width = width / images_len as i32;
-
-        if with_label {
-            height -=  self.gui.label.get_allocated_height();;
-        }
 
         for (mut index, image) in self.gui.images.iter().enumerate() {
             if self.options.reverse {
                 index = images_len - index - 1;
             }
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                self.show_image1_of_n(entry, image, width, height);
+                println!("index: {}", index);
+                self.show_image1(entry, image, width, height);
             } else {
                 image.set_from_pixbuf(None);
             }

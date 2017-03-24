@@ -1,6 +1,6 @@
 
 use gtk::prelude::*;
-use gtk::{self, Window, Image, Label};
+use gtk::{self, Window, Image, Label, Orientation};
 
 use constant;
 
@@ -44,37 +44,50 @@ impl Gui {
         vbox.show();
         window.show();
 
-        Gui {
-            cols: 0,
-            rows: 0,
+        let mut result = Gui {
+            cols: 1,
+            rows: 1,
             window: window,
             images: vec![],
             image_outer: image_outer,
             image_inners: vec![],
             label: label,
-        }
-    }
+        };
 
-    pub fn clear_images(&mut self) {
-        for inner in &self.image_inners {
-            self.image_outer.remove(inner);
-        }
-        self.images.clear();
-        self.image_inners.clear();
+        result.create_images();
+
+        result
     }
 
     pub fn reset_images(&mut self, cols: Option<usize>, rows: Option<usize>) -> bool {
-        use gtk::Orientation;
-
-        self.clear_images();
-
         if (cols.is_none() || cols == Some(self.cols)) && (rows.is_none() || rows == Some(self.rows)) {
             return false;
         }
 
+        self.clear_images();
+
         if let Some(cols) = cols { self.cols = cols; }
         if let Some(rows) = rows { self.rows = rows; }
 
+        self.create_images();
+
+        true
+    }
+
+    pub fn get_cell_size(&self, with_label: bool) -> (i32, i32) {
+        let (width, height) = self.window.get_size();
+
+        let width = width / self.cols as i32;
+        let height = if with_label {
+            (height / self.rows as i32) - self.label.get_allocated_height()
+        } else {
+            height / self.rows as i32
+        };
+
+        (width, height)
+    }
+
+    fn create_images(&mut self) {
         for _ in 0..self.rows {
             let inner = gtk::Box::new(Orientation::Horizontal, 0);
             self.image_outer.pack_start(&inner, true, true, 0);
@@ -87,20 +100,13 @@ impl Gui {
             inner.show();
             self.image_inners.push(inner);
         }
-
-        true
     }
 
-    pub fn get_image_size(&self, with_label: bool) -> (i32, i32) {
-        let (width, height) = self.window.get_size();
-
-        let width = width / self.cols as i32;
-        let height = if with_label {
-            (height / self.rows as i32) - self.label.get_allocated_height()
-        } else {
-            height / self.rows as i32
-        };
-
-        (width, height)
+    fn clear_images(&mut self) {
+        for inner in &self.image_inners {
+            self.image_outer.remove(inner);
+        }
+        self.images.clear();
+        self.image_inners.clear();
     }
 }

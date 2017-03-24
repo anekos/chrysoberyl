@@ -500,7 +500,7 @@ impl App {
     }
 
     fn show_image(&self, with_label: bool) {
-        let (width, height) = self.gui.get_image_size(with_label);
+        let (width, height) = self.gui.get_cell_size(with_label);
         let images_len = self.gui.images.len();
 
         for (mut index, image) in self.gui.images.iter().enumerate() {

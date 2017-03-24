@@ -332,16 +332,21 @@ fn parse_views(args: Vec<String>) -> Result<Operation, String> {
         ap.refer(&mut cols).add_argument("columns", StoreOption, "Columns");
         ap.refer(&mut rows).add_argument("rows", StoreOption, "Rows");
         parse_args(&mut ap, args)
-    } .map(|_| {
-        if cols.is_some() || rows.is_some() {
-            if for_rows {
-                Operation::Views(rows, cols)
-            } else {
-                Operation::Views(cols, rows)
-            }
-        } else {
-            Operation::ViewsFellow(for_rows)
+    } .and_then(|_| {
+        if Some(0) == cols || Some(0) == rows {
+            return Err(o!("Columns / rows must be greater than 0"))
         }
+        Ok(
+            if cols.is_some() || rows.is_some() {
+                if for_rows {
+                    Operation::Views(rows, cols)
+                } else {
+                    Operation::Views(cols, rows)
+                }
+            } else {
+                Operation::ViewsFellow(for_rows)
+            }
+        )
     })
 }
 

@@ -517,7 +517,6 @@ impl App {
                 index = images_len - index - 1;
             }
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                println!("index: {}", index);
                 self.show_image1(entry, image, width, height);
             } else {
                 image.set_from_pixbuf(None);

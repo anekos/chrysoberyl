@@ -20,6 +20,7 @@ static DEFAULT_CONFIG: &'static str = "
 @map R @refresh
 @map i @toggle information
 @map v @views
+@map V @views --rows
 @map r @toggle reverse
 @map q @quit
 

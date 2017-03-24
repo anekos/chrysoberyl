@@ -59,16 +59,18 @@ impl Gui {
         for inner in &self.image_inners {
             self.image_outer.remove(inner);
         }
-        self.cols = 0;
-        self.rows = 0;
         self.images.clear();
         self.image_inners.clear();
     }
 
-    pub fn reset_images(&mut self, cols: Option<usize>, rows: Option<usize>) {
+    pub fn reset_images(&mut self, cols: Option<usize>, rows: Option<usize>) -> bool {
         use gtk::Orientation;
 
         self.clear_images();
+
+        if (cols.is_none() || cols == Some(self.cols)) && (rows.is_none() || rows == Some(self.rows)) {
+            return false;
+        }
 
         if let Some(cols) = cols { self.cols = cols; }
         if let Some(rows) = rows { self.rows = rows; }
@@ -85,6 +87,8 @@ impl Gui {
             inner.show();
             self.image_inners.push(inner);
         }
+
+        true
     }
 
     pub fn get_image_size(&self, with_label: bool) -> (i32, i32) {

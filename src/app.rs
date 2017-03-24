@@ -1,7 +1,6 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Sender, Receiver};
-use std::slice::Iter;
 
 use encoding::types::EncodingRef;
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
@@ -192,10 +191,8 @@ impl App {
                     self.on_sort(&mut updated),
                 User(ref data) =>
                     self.on_user(data),
-                Views => {
-                    let count = self.pointer.counted();
-                    self.on_views(&mut updated, count);
-                },
+                Views(rows) =>
+                    self.on_views(&mut updated, rows),
             }
         }
 
@@ -378,10 +375,14 @@ impl App {
         self.puts_event_with_current("user", Some(data));
     }
 
-    fn on_views(&mut self, updated: &mut Updated, size: usize) {
+    fn on_views(&mut self, updated: &mut Updated, rows: bool) {
+        let size = self.pointer.counted();
         self.pointer.multiply(size);
-        self.gui.reset_images(Some(size), Some(1));
-        updated.image = true;
+        updated.image = if rows {
+            self.gui.reset_images(None, Some(size))
+        } else {
+            self.gui.reset_images(Some(size), None)
+        }
     }
 
     /* Private methods */

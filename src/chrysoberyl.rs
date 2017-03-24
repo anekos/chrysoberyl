@@ -91,6 +91,8 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
                 .add_option(&["--command", "-c"], Collect, "Controller command");
             ap.refer(&mut initial.controllers.fragiles)
                 .add_option(&["--fragile", "-f"], Collect, "Chrysoberyl makes `fifo` controller file");
+            ap.refer(&mut initial.before)
+                .add_option(&["--before", "-b"], Collect, "Execute operations before initialize");
             // Options
             ap.refer(&mut app_options.show_text)
                 .add_option(&["--show-info"], StoreTrue, "Show information bar on window bottom");

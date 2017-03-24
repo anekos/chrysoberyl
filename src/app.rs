@@ -1,5 +1,6 @@
 
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::sync::mpsc::{channel, Sender, Receiver};
 
 use encoding::types::EncodingRef;
@@ -52,7 +53,8 @@ pub struct Initial {
     pub shuffle: bool,
     pub controllers: controller::Controllers,
     pub files: Vec<String>,
-    pub encodings: Vec<EncodingRef>
+    pub encodings: Vec<EncodingRef>,
+    pub before: Vec<String>
 }
 
 struct Updated {
@@ -87,6 +89,13 @@ impl App {
             rng: rand::thread_rng(),
             pointer: IndexPointer::new(),
         };
+
+        for op in &initial.before {
+            match Operation::from_str(&op) {
+                Ok(op) => tx.send(op).unwrap(),
+                Err(err) => puts_error!("at" => "before", "reason" => err),
+            }
+        }
 
         events::register(gui, primary_tx.clone());
         controller::register(tx.clone(), &initial.controllers);
@@ -543,6 +552,7 @@ impl Initial {
             files: vec![],
             controllers: controller::Controllers::new(),
             encodings: vec![],
+            before: vec![],
         }
     }
 }

@@ -387,18 +387,18 @@ impl App {
     }
 
     fn on_views(&mut self, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>) {
-        self.pointer.multiply(self.gui.images.len());
         updated.image = self.gui.reset_images(cols, rows);
+        self.pointer.multiply(self.gui.images.len());
     }
 
     fn on_views_fellow(&mut self, updated: &mut Updated, for_rows: bool) {
         let size = self.pointer.counted();
-        self.pointer.multiply(self.gui.images.len());
         updated.image = if for_rows {
             self.gui.reset_images(None, Some(size))
         } else {
             self.gui.reset_images(Some(size), None)
-        }
+        };
+        self.pointer.multiply(self.gui.images.len());
     }
 
     /* Private methods */

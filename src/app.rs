@@ -191,8 +191,10 @@ impl App {
                     self.on_sort(&mut updated),
                 User(ref data) =>
                     self.on_user(data),
-                Views(rows) =>
-                    self.on_views(&mut updated, rows),
+                Views(cols, rows) =>
+                    self.on_views(&mut updated, cols, rows),
+                ViewsFellow(for_rows) =>
+                    self.on_views_fellow(&mut updated, for_rows),
             }
         }
 
@@ -375,10 +377,15 @@ impl App {
         self.puts_event_with_current("user", Some(data));
     }
 
-    fn on_views(&mut self, updated: &mut Updated, rows: bool) {
+    fn on_views(&mut self, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>) {
+        self.pointer.multiply(self.gui.images.len());
+        updated.image = self.gui.reset_images(cols, rows);
+    }
+
+    fn on_views_fellow(&mut self, updated: &mut Updated, for_rows: bool) {
         let size = self.pointer.counted();
-        self.pointer.multiply(size);
-        updated.image = if rows {
+        self.pointer.multiply(self.gui.images.len());
+        updated.image = if for_rows {
             self.gui.reset_images(None, Some(size))
         } else {
             self.gui.reset_images(Some(size), None)

@@ -44,7 +44,8 @@ pub enum Operation {
     Sort,
     Toggle(AppOptionName),
     User(Vec<(String, String)>),
-    Views(bool), /* rows */
+    Views(Option<usize>, Option<usize>),
+    ViewsFellow(bool), /* for_rows */
 }
 
 
@@ -321,13 +322,27 @@ fn parse_toggle(args: Vec<String>) -> Result<Operation, String> {
 }
 
 fn parse_views(args: Vec<String>) -> Result<Operation, String> {
-    let mut rows = false;
+    let mut for_rows = false;
+    let mut rows = None;
+    let mut cols = None;
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut rows).add_option(&["--rows", "-r"], StoreTrue, "Set rows");
+        ap.refer(&mut for_rows).add_option(&["--rows", "-r"], StoreTrue, "Set rows");
+        ap.refer(&mut cols).add_argument("columns", StoreOption, "Columns");
+        ap.refer(&mut rows).add_argument("rows", StoreOption, "Rows");
         parse_args(&mut ap, args)
-    } .map(|_| Operation::Views(rows))
+    } .map(|_| {
+        if cols.is_some() || rows.is_some() {
+            if for_rows {
+                Operation::Views(rows, cols)
+            } else {
+                Operation::Views(cols, rows)
+            }
+        } else {
+            Operation::ViewsFellow(for_rows)
+        }
+    })
 }
 
 fn parse_args(parser: &mut ArgumentParser, args: Vec<String>) -> Result<(), String> {

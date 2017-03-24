@@ -5,7 +5,7 @@ use std::sync::mpsc::{channel, Sender, Receiver};
 use encoding::types::EncodingRef;
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
 use gtk::prelude::*;
-use gtk::{Image, Window, Label};
+use gtk::Image;
 use gtk;
 use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
@@ -19,6 +19,7 @@ use controller;
 use entry::{Entry,EntryContainer, EntryContainerOptions};
 use events;
 use fragile_input::new_fragile_input;
+use gui::Gui;
 use http_cache::HttpCache;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
@@ -42,14 +43,6 @@ pub struct App {
     pointer: IndexPointer,
     pub tx: Sender<Operation>,
     pub options: AppOptions
-}
-
-#[derive(Clone)]
-pub struct Gui {
-    pub window: Window,
-    pub images: Vec<Image>,
-    pub image_box: gtk::Box,
-    pub label: Label,
 }
 
 pub struct Initial {
@@ -142,7 +135,7 @@ impl App {
 
         {
             match *operation {
-                Clear => 
+                Clear =>
                     self.on_clear(&mut updated),
                 Command(ref command) =>
                     self.on_command(command),
@@ -198,10 +191,10 @@ impl App {
                     self.on_sort(&mut updated),
                 User(ref data) =>
                     self.on_user(data),
-                Views => {
-                    let count = self.pointer.counted();
-                    self.on_views(&mut updated, count);
-                },
+                Views(cols, rows) =>
+                    self.on_views(&mut updated, cols, rows),
+                ViewsFellow(for_rows) =>
+                    self.on_views_fellow(&mut updated, for_rows),
             }
         }
 
@@ -384,25 +377,18 @@ impl App {
         self.puts_event_with_current("user", Some(data));
     }
 
-    fn on_views(&mut self, updated: &mut Updated, size: usize) {
-        self.pointer.multiply(size);
-        let len = self.gui.images.len();
-        if len < size {
-            for _ in 0..(size - len) {
-                let image = Image::new_from_pixbuf(None);
-                image.show();
-                self.gui.image_box.pack_start(&image, true, true, 0);
-                self.gui.images.push(image);
-            }
-            updated.image = true;
-        } else if size < len {
-            for i in 0..(len - size) {
-                let image = &self.gui.images[len - i - 1];
-                image.set_from_pixbuf(None);
-                self.gui.image_box.remove(image);
-            }
-            self.gui.images.truncate(size);
-            updated.image = true;
+    fn on_views(&mut self, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>) {
+        self.pointer.multiply(self.gui.images.len());
+        updated.image = self.gui.reset_images(cols, rows);
+    }
+
+    fn on_views_fellow(&mut self, updated: &mut Updated, for_rows: bool) {
+        let size = self.pointer.counted();
+        self.pointer.multiply(self.gui.images.len());
+        updated.image = if for_rows {
+            self.gui.reset_images(None, Some(size))
+        } else {
+            self.gui.reset_images(Some(size), None)
         }
     }
 
@@ -514,20 +500,15 @@ impl App {
     }
 
     fn show_image(&self, with_label: bool) {
+        let (width, height) = self.gui.get_cell_size(with_label);
         let images_len = self.gui.images.len();
-
-        let (width, mut height) = self.gui.window.get_size();
-        let width = width / images_len as i32;
-
-        if with_label {
-            height -=  self.gui.label.get_allocated_height();;
-        }
 
         for (mut index, image) in self.gui.images.iter().enumerate() {
             if self.options.reverse {
                 index = images_len - index - 1;
             }
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
+                println!("index: {}", index);
                 self.show_image1(entry, image, width, height);
             } else {
                 image.set_from_pixbuf(None);

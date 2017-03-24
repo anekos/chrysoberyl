@@ -44,7 +44,8 @@ pub enum Operation {
     Sort,
     Toggle(AppOptionName),
     User(Vec<(String, String)>),
-    Views,
+    Views(Option<usize>, Option<usize>),
+    ViewsFellow(bool), /* for_rows */
 }
 
 
@@ -123,7 +124,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@sort"                      => Ok(Sort),
             "@toggle"                    => parse_toggle(whole),
             "@user"                      => Ok(Operation::user(args)),
-            "@views"                     => Ok(Views),
+            "@views"                     => parse_views(whole),
             ";"                          => parse_multi_args(args, ";"),
             _ => Err(format!("Invalid commnad: {}", name))
         }
@@ -317,6 +318,35 @@ fn parse_toggle(args: Vec<String>) -> Result<Operation, String> {
             "reverse" | "rev" => Ok(Operation::Toggle(Reverse)),
             _  => Err(format!("Unknown option: {}", name))
         }
+    })
+}
+
+fn parse_views(args: Vec<String>) -> Result<Operation, String> {
+    let mut for_rows = false;
+    let mut rows = None;
+    let mut cols = None;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut for_rows).add_option(&["--rows", "-r"], StoreTrue, "Set rows");
+        ap.refer(&mut cols).add_argument("columns", StoreOption, "Columns");
+        ap.refer(&mut rows).add_argument("rows", StoreOption, "Rows");
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        if Some(0) == cols || Some(0) == rows {
+            return Err(o!("Columns / rows must be greater than 0"))
+        }
+        Ok(
+            if cols.is_some() || rows.is_some() {
+                if for_rows {
+                    Operation::Views(rows, cols)
+                } else {
+                    Operation::Views(cols, rows)
+                }
+            } else {
+                Operation::ViewsFellow(for_rows)
+            }
+        )
     })
 }
 

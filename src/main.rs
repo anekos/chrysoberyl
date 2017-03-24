@@ -37,6 +37,7 @@ mod controller;
 mod entry;
 mod events;
 mod fragile_input;
+mod gui;
 mod http_cache;
 mod index_pointer;
 mod mapping;

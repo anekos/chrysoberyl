@@ -7,14 +7,13 @@ use argparse::{ArgumentParser, List, Collect, Store, StoreTrue, StoreOption, Pri
 use encoding::EncodingRef;
 use encoding::label::encoding_from_whatwg_label;
 use env_logger;
-use gtk::prelude::*;
-use gtk::{self, Image, Label};
+use gtk;
 use libc;
 
 use app;
 use config;
-use constant;
 use entry::EntryContainerOptions;
+use gui::Gui;
 use operation::Operation;
 use options::AppOptions;
 
@@ -23,7 +22,10 @@ use options::AppOptions;
 pub fn main() {
     env_logger::init().unwrap();
 
-    let gui = setup_gui();
+    let mut gui = Gui::new();
+
+    gui.reset_images(Some(1), Some(1));
+
     let (mut app, primary_rx, secondary_rx) = parse_arguments(gui.clone());
 
     unsafe {
@@ -53,45 +55,7 @@ pub fn main() {
 }
 
 
-fn setup_gui() -> app::Gui {
-    use gtk::Orientation;
-
-    gtk::init().unwrap();
-
-    let window = gtk::Window::new(gtk::WindowType::Toplevel);
-
-    window.set_title(constant::DEFAULT_TITLE);
-    window.set_border_width(0);
-    window.set_position(gtk::WindowPosition::Center);
-
-    let vbox = gtk::Box::new(Orientation::Vertical, 0);
-    let hbox = gtk::Box::new(Orientation::Horizontal, 0);
-
-    let image = Image::new_from_pixbuf(None);
-
-    let label = Label::new(Some(constant::DEFAULT_INFORMATION));
-
-    hbox.pack_start(&image, true, true, 0);
-
-    vbox.pack_end(&label, false, false, 0);
-    vbox.pack_end(&hbox, true, true, 0);
-    window.add(&vbox);
-
-    hbox.show();
-    vbox.show();
-    image.show();
-    window.show();
-
-    app::Gui {
-        window: window,
-        images: vec![image],
-        image_box: hbox,
-        label: label,
-    }
-}
-
-
-fn parse_arguments(gui: app::Gui) -> (app::App, Receiver<Operation>, Receiver<Operation>) {
+fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operation>) {
     let mut eco = EntryContainerOptions::new();
     let mut app_options = AppOptions::new();
     let mut encodings: Vec<String> = vec![];
@@ -108,26 +72,50 @@ fn parse_arguments(gui: app::Gui) -> (app::App, Receiver<Operation>, Receiver<Op
             ap.set_description("Controllable Image Viewer");
 
             // Initial
-            ap.refer(&mut initial.expand).add_option(&["--expand", "-e"], StoreTrue, "`Expand` first file");
-            ap.refer(&mut initial.expand_recursive).add_option(&["--expand-recursive", "-E"], StoreTrue, "`Expand` first file");
-            ap.refer(&mut initial.shuffle).add_option(&["--shuffle", "-z"], StoreTrue, "Shuffle file list");
-            ap.refer(&mut initial.http_threads).add_option(&["--max-http-threads", "-t"], Store, "Maximum number of HTTP Threads");
-            ap.refer(&mut encodings).add_option(&["--encoding", "--enc"], Collect, "Character encoding for filename in archives");
-            ap.refer(&mut initial.files).add_argument("images", List, "Image files or URLs");
+            ap.refer(&mut initial.expand)
+                .add_option(&["--expand", "-e"], StoreTrue, "`Expand` first file");
+            ap.refer(&mut initial.expand_recursive)
+                .add_option(&["--expand-recursive", "-E"], StoreTrue, "`Expand` first file");
+            ap.refer(&mut initial.shuffle)
+                .add_option(&["--shuffle", "-z"], StoreTrue, "Shuffle file list");
+            ap.refer(&mut initial.http_threads)
+                .add_option(&["--max-http-threads", "-t"], Store, "Maximum number of HTTP Threads");
+            ap.refer(&mut encodings)
+                .add_option(&["--encoding", "--enc"], Collect, "Character encoding for filename in archives");
+            ap.refer(&mut initial.files)
+                .add_argument("images", List, "Image files or URLs");
             // Controllers
-            ap.refer(&mut initial.controllers.inputs).add_option(&["--input", "-i"], Collect, "Controller files");
-            ap.refer(&mut initial.controllers.commands).add_option(&["--command", "-c"], Collect, "Controller command");
-            ap.refer(&mut initial.controllers.fragiles).add_option(&["--fragile", "-f"], Collect, "Chrysoberyl makes `fifo` controller file");
+            ap.refer(&mut initial.controllers.inputs)
+                .add_option(&["--input", "-i"], Collect, "Controller files");
+            ap.refer(&mut initial.controllers.commands)
+                .add_option(&["--command", "-c"], Collect, "Controller command");
+            ap.refer(&mut initial.controllers.fragiles)
+                .add_option(&["--fragile", "-f"], Collect, "Chrysoberyl makes `fifo` controller file");
             // Options
-            ap.refer(&mut app_options.show_text).add_option(&["--show-info"], StoreTrue, "Show information bar on window bottom");
+            ap.refer(&mut app_options.show_text)
+                .add_option(&["--show-info"], StoreTrue, "Show information bar on window bottom");
+
             // Container
-            ap.refer(&mut eco.min_width).add_option(&["--min-width", "-w"], StoreOption, "Minimum width");
-            ap.refer(&mut eco.min_height).add_option(&["--min-height", "-h"], StoreOption, "Minimum height");
-            ap.refer(&mut eco.max_width).add_option(&["--max-width", "-W"], StoreOption, "Maximum width");
-            ap.refer(&mut eco.max_height).add_option(&["--max-height", "-H"], StoreOption, "Maximum height");
-            ap.refer(&mut eco.ratio).add_option(&["--ratio", "-R"], StoreOption, "Width / Height");
-            ap.refer(&mut width).add_option(&["--width"], StoreOption, "Width");
-            ap.refer(&mut height).add_option(&["--height"], StoreOption, "Height");
+            ap.refer(&mut eco.min_width)
+                .add_option(&["--min-width", "-w"], StoreOption, "Minimum width")
+                .metavar("PX");
+            ap.refer(&mut eco.min_height)
+                .add_option(&["--min-height", "-h"], StoreOption, "Minimum height")
+                .metavar("PX");
+            ap.refer(&mut eco.max_width)
+                .add_option(&["--max-width", "-W"], StoreOption, "Maximum width")
+                .metavar("PX");
+            ap.refer(&mut eco.max_height)
+                .add_option(&["--max-height", "-H"], StoreOption, "Maximum height")
+                .metavar("PX");
+            ap.refer(&mut eco.ratio)
+                .add_option(&["--ratio", "-R"], StoreOption, "Width / Height");
+            ap.refer(&mut width)
+                .add_option(&["--width"], StoreOption, "Width")
+                .metavar("PX");
+            ap.refer(&mut height)
+                .add_option(&["--height"], StoreOption, "Height")
+                .metavar("PX");
 
             ap.add_option(&["-V", "--version"], Print(env!("CARGO_PKG_VERSION").to_string()), "Show version");
 

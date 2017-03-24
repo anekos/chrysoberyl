@@ -5,13 +5,13 @@ use gdk::{EventButton, EventKey};
 use gtk::prelude::*;
 use gtk::Inhibit;
 
-use app;
+use gui::Gui;
 use mapping::Input;
 use operation::Operation;
 
 
 
-pub fn register(gui: app::Gui, tx: Sender<Operation>) {
+pub fn register(gui: Gui, tx: Sender<Operation>) {
     gui.window.connect_key_press_event(clone_army!([tx] move |_, key| on_key_press(tx.clone(), key)));
     gui.window.connect_configure_event(clone_army!([tx] move |_, _| on_configure(tx.clone())));
     gui.window.connect_button_press_event(clone_army!([tx] move |_, button| on_button_press(tx.clone(), button)));

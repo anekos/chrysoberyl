@@ -9,6 +9,12 @@ use utils::path_to_str;
 
 
 
+const FONT_SIZE: f64 = 12.0;
+const PADDING: f64 = 5.0;
+const ALPHA: f64 = 1.0;
+
+
+
 pub struct Error {
     pub surface: ImageSurface,
     pub error: gtk::Error,
@@ -69,16 +75,22 @@ fn write_message(width: i32, height: i32, text: &str) -> ImageSurface {
     let (width, height) = (width as f64, height as f64);
 
     let context = Context::new(&surface);
-    let alpha = 0.8;
 
-    context.set_source_rgba(0.0, 0.25, 0.25, alpha);
-    context.rectangle(0.0, 0.0, width, height);
+    context.set_font_size(FONT_SIZE);
+    let extents = context.text_extents(text);
+
+    let (x, y) = (width / 2.0 - extents.width / 2.0, height / 2.0 - extents.height / 2.0);
+
+    context.set_source_rgba(1.0, 0.00, 0.00, ALPHA);
+    context.rectangle(
+        x - PADDING,
+        y - extents.height - PADDING,
+        extents.width + PADDING * 2.0,
+        extents.height + PADDING * 2.0);
     context.fill();
 
-    context.set_font_size(12.0);
-    let extents = context.text_extents(text);
-    context.move_to(width / 2.0 - extents.width / 2.0, height / 2.0 - extents.height / 2.0);
-    context.set_source_rgba(1.0, 1.0, 1.0, alpha);
+    context.move_to(x, y);
+    context.set_source_rgba(1.0, 1.0, 1.0, ALPHA);
     context.show_text(text);
 
     surface

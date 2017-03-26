@@ -39,6 +39,7 @@ mod events;
 mod fragile_input;
 mod gui;
 mod http_cache;
+mod image_buffer;
 mod index_pointer;
 mod mapping;
 mod operation;

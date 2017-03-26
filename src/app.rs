@@ -4,10 +4,8 @@ use std::str::FromStr;
 use std::sync::mpsc::{channel, Sender, Receiver};
 
 use encoding::types::EncodingRef;
-use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
 use gtk::prelude::*;
 use gtk::Image;
-use gtk;
 use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
 use rand::{self, ThreadRng};
@@ -458,9 +456,9 @@ impl App {
         if let Ok(img) = self.get_meta(&entry) {
             if let Ok(gif) = img.into::<Gif>() {
                 if gif.is_animated() {
-                    match image_buffer::get_pixbuf_animation(&entry) {
+                    match image_buffer::get_pixbuf_animation(&entry, width, height) {
                         Ok(buf) => image.set_from_animation(&buf),
-                        Err(err) => puts_error!("at" => "show_image", "reason" => s!(err))
+                        Err(error) => error.show(image)
                     }
                     return
                 }
@@ -471,7 +469,7 @@ impl App {
             Ok(buf) => {
                 image.set_from_pixbuf(Some(&buf));
             },
-            Err(err) => puts_error!("at" => "show_image", "reason" => s!(err))
+            Err(error) => error.show(image)
         }
     }
 

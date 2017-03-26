@@ -1,24 +1,35 @@
 
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-use std::sync::mpsc::{channel, Sender, Receiver};
-
-use encoding::types::EncodingRef;
+use cairo::{Context, ImageSurface, Format};
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
-use gtk::prelude::*;
 use gtk::Image;
 use gtk;
-use immeta::markers::Gif;
-use immeta::{self, GenericMetadata};
-use rand::{self, ThreadRng};
-use rand::distributions::{IndependentSample, Range};
 
-use entry::{Entry,EntryContainer, EntryContainerOptions};
+use entry::Entry;
 use utils::path_to_str;
 
 
 
-pub fn get_pixbuf(entry: &Entry, width: i32, height: i32) -> Result<Pixbuf, gtk::Error> {
+pub struct Error {
+    pub surface: ImageSurface,
+    pub error: gtk::Error,
+}
+
+
+impl Error {
+    pub fn new(width: i32, height: i32, error: gtk::Error) -> Error {
+        let message = write_message(width, height, &s!(error));
+        Error { error: error, surface: message }
+    }
+
+    pub fn show(&self, image: &Image) {
+        image.set_from_surface(&self.surface);
+        puts_error!("at" => "show_image", "reason" => s!(self.error));
+    }
+}
+
+
+
+pub fn get_pixbuf(entry: &Entry, width: i32, height: i32) -> Result<Pixbuf, Error> {
     use gdk_pixbuf::InterpType;
 
     match *entry {
@@ -35,10 +46,10 @@ pub fn get_pixbuf(entry: &Entry, width: i32, height: i32) -> Result<Pixbuf, gtk:
                 scaled
             })
         }
-    }
+    } .map_err(|err| Error::new(width, height, err))
 }
 
-pub fn get_pixbuf_animation(entry: &Entry) -> Result<PixbufAnimation, gtk::Error> {
+pub fn get_pixbuf_animation(entry: &Entry, width: i32, height: i32) -> Result<PixbufAnimation, Error> {
     match *entry {
         Entry::File(ref path) | Entry::Http(ref path, _) =>
             PixbufAnimation::new_from_file(path_to_str(path)),
@@ -49,7 +60,28 @@ pub fn get_pixbuf_animation(entry: &Entry) -> Result<PixbufAnimation, gtk::Error
                 loader.get_animation().unwrap()
             })
         }
-    }
+    } .map_err(|err| Error::new(width, height, err))
+}
+
+fn write_message(width: i32, height: i32, text: &str) -> ImageSurface {
+    let surface = ImageSurface::create(Format::ARgb32, width, height);
+
+    let (width, height) = (width as f64, height as f64);
+
+    let context = Context::new(&surface);
+    let alpha = 0.8;
+
+    context.set_source_rgba(0.0, 0.25, 0.25, alpha);
+    context.rectangle(0.0, 0.0, width, height);
+    context.fill();
+
+    context.set_font_size(12.0);
+    let extents = context.text_extents(text);
+    context.move_to(width / 2.0 - extents.width / 2.0, height / 2.0 - extents.height / 2.0);
+    context.set_source_rgba(1.0, 1.0, 1.0, alpha);
+    context.show_text(text);
+
+    surface
 }
 
 fn calculate_scale(pixbuf: &Pixbuf, max_width: i32, max_height: i32) -> (f64, i32, i32) {

@@ -145,6 +145,8 @@ impl App {
             match *operation {
                 Clear =>
                     self.on_clear(&mut updated),
+                Color(ref color) =>
+                    self.gui.update_background_color(color),
                 Command(ref command) =>
                     self.on_command(command),
                 Count(count) =>

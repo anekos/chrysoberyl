@@ -30,6 +30,7 @@ mod app;
 mod app_path;
 mod archive;
 mod chrysoberyl;
+mod color;
 mod command;
 mod config;
 mod constant;

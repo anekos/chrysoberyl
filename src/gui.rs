@@ -1,8 +1,8 @@
 
 use gtk::prelude::*;
 use gtk::{self, Window, Image, Label, Orientation};
-use gdk::RGBA;
 
+use color;
 use constant;
 
 
@@ -19,7 +19,6 @@ pub struct Gui {
 }
 
 
-const BG_COLOR: RGBA = RGBA { red: 0.0, green: 0.25, blue: 0.25, alpha: 1.0 };
 
 
 impl Gui {
@@ -33,8 +32,6 @@ impl Gui {
         window.set_title(constant::DEFAULT_TITLE);
         window.set_border_width(0);
         window.set_position(gtk::WindowPosition::Center);
-
-        window.override_background_color(window.get_state_flags(), &BG_COLOR);
 
         let vbox = gtk::Box::new(Orientation::Vertical, 0);
         let image_outer = gtk::Box::new(Orientation::Vertical, 0);
@@ -90,6 +87,10 @@ impl Gui {
         };
 
         (width, height)
+    }
+
+    pub fn update_background_color(&self, color: &color::RGB) {
+        self.window.override_background_color(self.window.get_state_flags(), &color.gdk_rgba());
     }
 
     fn create_images(&mut self) {

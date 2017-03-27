@@ -1,8 +1,10 @@
 
+use std::str::FromStr;
+
 use gtk::prelude::*;
 use gtk::{self, Window, Image, Label, Orientation};
 
-use color;
+use color::RGB;
 use constant;
 
 
@@ -13,12 +15,29 @@ pub struct Gui {
     rows: usize,
     image_outer: gtk::Box,
     image_inners: Vec<gtk::Box>,
+    pub colors: Colors,
     pub window: Window,
     pub images: Vec<Image>,
     pub label: Label,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct Colors {
+    // pub window_background: RGB,
+    // pub information: RGB,
+    // pub information_background: RGB,
+    pub error: RGB,
+    pub error_background: RGB,
+}
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum ColorTarget {
+    WindowBackground,
+    Information,
+    InformationBackground,
+    Error,
+    ErrorBackground,
+}
 
 
 impl Gui {
@@ -54,6 +73,7 @@ impl Gui {
             image_outer: image_outer,
             image_inners: vec![],
             label: label,
+            colors: Colors::default()
         };
 
         result.create_images();
@@ -89,8 +109,18 @@ impl Gui {
         (width, height)
     }
 
-    pub fn update_background_color(&self, color: &color::RGB) {
-        self.window.override_background_color(self.window.get_state_flags(), &color.gdk_rgba());
+    pub fn update_color(&mut self, target: &ColorTarget, color: &RGB) {
+        use self::ColorTarget::*;
+
+        match *target {
+            WindowBackground =>
+                self.window.override_background_color(self.window.get_state_flags(), &color.gdk_rgba()),
+            // Information => (),
+            // InformationBackground => (),
+            Error => self.colors.error = color.to_owned(),
+            ErrorBackground => self.colors.error_background = color.to_owned(),
+            _ => puts_error("at" => "@color", "reason" => "Not implemented")
+        }
     }
 
     fn create_images(&mut self) {
@@ -114,5 +144,34 @@ impl Gui {
         }
         self.images.clear();
         self.image_inners.clear();
+    }
+}
+
+impl FromStr for ColorTarget {
+    type Err = String;
+
+    fn from_str(src: &str) -> Result<ColorTarget, String> {
+        use self::ColorTarget::*;
+
+        match src {
+            "window-background" => Ok(WindowBackground),
+            "information" => Ok(Information),
+            "information-background" => Ok(InformationBackground),
+            "error" => Ok(Error),
+            "error-background" => Ok(ErrorBackground),
+            _ => Err(format!("Invalid name: {}", src))
+        }
+    }
+}
+
+impl Colors {
+    pub fn default() -> Colors {
+        Colors {
+            // window_background: RGB::new(1.0, 1.0, 1.0),
+            // information: RGB::new(0.0, 0.0, 0.0),
+            // information_background: RGB::new(1.0, 1.0, 1.0),
+            error: RGB::new(1.0, 1.0, 1.0),
+            error_background: RGB::new(1.0, 0.0, 0.0),
+        }
     }
 }

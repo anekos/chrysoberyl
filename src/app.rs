@@ -12,13 +12,14 @@ use rand::{self, ThreadRng};
 use rand::distributions::{IndependentSample, Range};
 
 use archive::{self, ArchiveEntry};
+use color::RGB;
 use command;
 use constant;
 use controller;
 use entry::{Entry,EntryContainer, EntryContainerOptions};
 use events;
 use fragile_input::new_fragile_input;
-use gui::Gui;
+use gui::{Gui, ColorTarget};
 use http_cache::HttpCache;
 use image_buffer;
 use index_pointer::IndexPointer;
@@ -145,8 +146,8 @@ impl App {
             match *operation {
                 Clear =>
                     self.on_clear(&mut updated),
-                Color(ref color) =>
-                    self.gui.update_background_color(color),
+                Color(ref target, ref color) =>
+                    self.on_color(&mut updated, target, color),
                 Command(ref command) =>
                     self.on_command(command),
                 Count(count) =>
@@ -234,6 +235,17 @@ impl App {
     fn on_clear(&mut self, updated: &mut Updated) {
         self.entries.clear(&mut self.pointer);
         updated.image = true;
+    }
+
+    fn on_color(&mut self, updated: &mut Updated, target: &ColorTarget, color: &RGB) {
+        use self::ColorTarget::*;
+
+        self.gui.update_color(target, color);
+
+        updated.image = match *target {
+            Error | ErrorBackground => true,
+            _ => false
+        };
     }
 
     fn on_command(&mut self, command: &command::Command) {

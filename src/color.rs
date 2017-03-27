@@ -43,8 +43,12 @@ impl FromStr for Value {
 }
 
 impl RGB {
-    pub fn new(red: Value, green: Value, blue: Value) -> RGB {
-        RGB { red: red.value, green: green.value, blue: blue.value }
+    pub fn new(red: f64, green: f64, blue: f64) -> RGB {
+        RGB { red: red, green: green, blue: blue }
+    }
+
+    pub fn from_values(red: Value, green: Value, blue: Value) -> RGB {
+        RGB::new(red.value, green.value, blue.value)
     }
 
     pub fn gdk_rgba(&self) -> gdk::RGBA {

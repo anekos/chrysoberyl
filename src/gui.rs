@@ -116,10 +116,11 @@ impl Gui {
             WindowBackground =>
                 self.window.override_background_color(self.window.get_state_flags(), &color.gdk_rgba()),
             // Information => (),
-            // InformationBackground => (),
+            InformationBackground =>
+                self.label.override_background_color(self.label.get_state_flags(), &color.gdk_rgba()),
             Error => self.colors.error = color.to_owned(),
             ErrorBackground => self.colors.error_background = color.to_owned(),
-            _ => puts_error("at" => "@color", "reason" => "Not implemented")
+            _ => puts_error!("at" => "@color", "reason" => "Not implemented")
         }
     }
 

@@ -97,6 +97,10 @@ impl App {
             }
         }
 
+        for fragile in initial.controllers.fragiles.clone() {
+            new_fragile_input(&fragile);
+        }
+
         events::register(gui, primary_tx.clone());
         controller::register(tx.clone(), &initial.controllers);
 
@@ -125,10 +129,6 @@ impl App {
         if initial.shuffle {
             let fix = initial.files.get(0).map(|it| Path::new(it).is_file()).unwrap_or(false);
             tx.send(Operation::Shuffle(fix)).unwrap();
-        }
-
-        for fragile in initial.controllers.fragiles.clone() {
-            new_fragile_input(&fragile);
         }
 
         (app, primary_rx, rx)

@@ -51,7 +51,7 @@ fn fifo_controller(tx: Sender<Operation>, filepath: String) {
             read_operations(file, tx.clone());
             puts_event!("fifo_controller", "state" => "close");
         }
-        puts_error!("at" => "file_controller", "reason" => "Could not open file", "for" => filepath);
+        puts_error!("at" => "fifo_controller", "reason" => "Could not open file", "for" => filepath);
     });
 }
 

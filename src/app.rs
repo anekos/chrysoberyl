@@ -91,7 +91,7 @@ impl App {
         };
 
         for op in &initial.before {
-            match Operation::from_str(&op) {
+            match Operation::from_str(op) {
                 Ok(op) => tx.send(op).unwrap(),
                 Err(err) => puts_error!("at" => "before", "reason" => err),
             }
@@ -398,9 +398,8 @@ impl App {
             }
         }
 
-        match *name {
-            ShowText => self.update_label_visibility(),
-            _ => ()
+        if let ShowText = *name {
+            self.update_label_visibility()
         }
 
         updated.image = true;

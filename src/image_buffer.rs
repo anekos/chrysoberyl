@@ -4,6 +4,7 @@ use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
 use gtk::Image;
 use gtk;
 
+use color::RGB;
 use entry::Entry;
 use utils::path_to_str;
 
@@ -16,20 +17,44 @@ const ALPHA: f64 = 1.0;
 
 
 pub struct Error {
-    pub surface: ImageSurface,
     pub error: gtk::Error,
 }
 
 
 impl Error {
-    pub fn new(width: i32, height: i32, error: gtk::Error) -> Error {
-        let message = write_message(width, height, &s!(error));
-        Error { error: error, surface: message }
+    pub fn new(error: gtk::Error) -> Error {
+        Error { error: error }
     }
 
-    pub fn show(&self, image: &Image) {
-        image.set_from_surface(&self.surface);
-        puts_error!("at" => "show_image", "reason" => s!(self.error));
+    pub fn show(&self, image: &Image, width: i32, height: i32, fg: &RGB, bg: &RGB) {
+        let text = s!(self.error);
+
+        let surface = ImageSurface::create(Format::ARgb32, width, height);
+
+        let (width, height) = (width as f64, height as f64);
+
+        let context = Context::new(&surface);
+
+        context.set_font_size(FONT_SIZE);
+        let extents = context.text_extents(&text);
+
+        let (x, y) = (width / 2.0 - extents.width / 2.0, height / 2.0 - extents.height / 2.0);
+
+        context.set_source_rgba(bg.red, bg.green, bg.blue, ALPHA);
+        context.rectangle(
+            x - PADDING,
+            y - extents.height - PADDING,
+            extents.width + PADDING * 2.0,
+            extents.height + PADDING * 2.0);
+        context.fill();
+
+        context.move_to(x, y);
+        context.set_source_rgba(fg.red, fg.green, fg.blue, ALPHA);
+        context.show_text(&text);
+
+        image.set_from_surface(&surface);
+
+        puts_error!("at" => "show_image", "reason" => text);
     }
 }
 
@@ -52,10 +77,10 @@ pub fn get_pixbuf(entry: &Entry, width: i32, height: i32) -> Result<Pixbuf, Erro
                 scaled
             })
         }
-    } .map_err(|err| Error::new(width, height, err))
+    } .map_err(Error::new)
 }
 
-pub fn get_pixbuf_animation(entry: &Entry, width: i32, height: i32) -> Result<PixbufAnimation, Error> {
+pub fn get_pixbuf_animation(entry: &Entry) -> Result<PixbufAnimation, Error> {
     match *entry {
         Entry::File(ref path) | Entry::Http(ref path, _) =>
             PixbufAnimation::new_from_file(path_to_str(path)),
@@ -66,35 +91,9 @@ pub fn get_pixbuf_animation(entry: &Entry, width: i32, height: i32) -> Result<Pi
                 loader.get_animation().unwrap()
             })
         }
-    } .map_err(|err| Error::new(width, height, err))
+    } .map_err(Error::new)
 }
 
-fn write_message(width: i32, height: i32, text: &str) -> ImageSurface {
-    let surface = ImageSurface::create(Format::ARgb32, width, height);
-
-    let (width, height) = (width as f64, height as f64);
-
-    let context = Context::new(&surface);
-
-    context.set_font_size(FONT_SIZE);
-    let extents = context.text_extents(text);
-
-    let (x, y) = (width / 2.0 - extents.width / 2.0, height / 2.0 - extents.height / 2.0);
-
-    context.set_source_rgba(1.0, 0.00, 0.00, ALPHA);
-    context.rectangle(
-        x - PADDING,
-        y - extents.height - PADDING,
-        extents.width + PADDING * 2.0,
-        extents.height + PADDING * 2.0);
-    context.fill();
-
-    context.move_to(x, y);
-    context.set_source_rgba(1.0, 1.0, 1.0, ALPHA);
-    context.show_text(text);
-
-    surface
-}
 
 fn calculate_scale(pixbuf: &Pixbuf, max_width: i32, max_height: i32) -> (f64, i32, i32) {
     let (in_width, in_height) = (pixbuf.get_width(), pixbuf.get_height());

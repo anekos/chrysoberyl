@@ -470,9 +470,9 @@ impl App {
         if let Ok(img) = self.get_meta(&entry) {
             if let Ok(gif) = img.into::<Gif>() {
                 if gif.is_animated() {
-                    match image_buffer::get_pixbuf_animation(&entry, width, height) {
+                    match image_buffer::get_pixbuf_animation(&entry) {
                         Ok(buf) => image.set_from_animation(&buf),
-                        Err(error) => error.show(image)
+                        Err(error) => error.show(image, width, height, &self.gui.colors.error, &self.gui.colors.error_background)
                     }
                     return
                 }
@@ -483,7 +483,7 @@ impl App {
             Ok(buf) => {
                 image.set_from_pixbuf(Some(&buf));
             },
-            Err(error) => error.show(image)
+            Err(error) => error.show(image, width, height, &self.gui.colors.error, &self.gui.colors.error_background)
         }
     }
 

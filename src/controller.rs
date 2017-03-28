@@ -34,7 +34,7 @@ pub fn register(tx: Sender<Operation>, controllers: &Controllers) {
         file_controller(tx.clone(), path.clone());
     }
     for path in &controllers.fragiles {
-        fifo_controller(tx.clone(), path.clone());
+        fragile_controller(tx.clone(), path.clone());
     }
     for path in &controllers.commands {
         command_controller(tx.clone(), path.clone());
@@ -44,14 +44,14 @@ pub fn register(tx: Sender<Operation>, controllers: &Controllers) {
 }
 
 
-fn fifo_controller(tx: Sender<Operation>, filepath: String) {
+fn fragile_controller(tx: Sender<Operation>, filepath: String) {
     spawn(move || {
         while let Ok(file) = File::open(&filepath) {
-            puts_event!("fifo_controller", "state" => "open");
+            puts_event!("fragile_controller", "state" => "open");
             read_operations(file, tx.clone());
-            puts_event!("fifo_controller", "state" => "close");
+            puts_event!("fragile_controller", "state" => "close");
         }
-        puts_error!("at" => "fifo_controller", "reason" => "Could not open file", "for" => filepath);
+        puts_error!("at" => "fragile_controller", "reason" => "Could not open file", "for" => filepath);
     });
 }
 

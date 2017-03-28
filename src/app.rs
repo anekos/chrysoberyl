@@ -24,7 +24,7 @@ use http_cache::HttpCache;
 use image_buffer;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
-use operation::Operation;
+use operation::{Operation, OptionModifier};
 use options::{AppOptions, AppOptionName};
 use output;
 use shell;
@@ -192,14 +192,14 @@ impl App {
                     self.on_random(&mut updated, len),
                 Refresh =>
                     updated.pointer = true,
-                Toggle(ref name) =>
-                    self.on_toggle(&mut updated, name),
                 Shell(async, read_operations, ref command_name, ref arguments) =>
                     shell::call(async, command_name, arguments, self.current_info(), option!(read_operations, self.tx.clone())),
                 Shuffle(fix_current) =>
                     self.on_shuffle(&mut updated, fix_current),
                 Sort =>
                     self.on_sort(&mut updated),
+                UpdateOption(ref name, ref modifier) =>
+                    self.on_update_option(&mut updated, name, modifier),
                 User(ref data) =>
                     self.on_user(data),
                 Views(cols, rows) =>
@@ -214,7 +214,8 @@ impl App {
             self.tx.send(Operation::LazyDraw(self.draw_serial)).unwrap();
         }
         if updated.image {
-            time!("show_image" => self.show_image(self.options.show_text));
+            let text = self.options.show_text;
+            time!("show_image" => self.show_image(text));
             self.puts_event_with_current("show", None);
         }
 
@@ -366,22 +367,6 @@ impl App {
         }
     }
 
-    fn on_toggle(&mut self, updated: &mut Updated, name: &AppOptionName) {
-        use options::AppOptionName::*;
-
-        match *name {
-            ShowText => {
-                self.options.show_text ^= true;
-                self.update_label_visibility();
-                updated.image = true;
-            }
-            Reverse => {
-                self.options.reverse ^= true;
-                updated.image = true;
-            }
-        }
-    }
-
     fn on_shuffle(&mut self, updated: &mut Updated, fix_current: bool) {
         self.entries.shuffle(&mut self.pointer, fix_current);
         if !fix_current {
@@ -395,13 +380,39 @@ impl App {
         updated.label = true;
     }
 
+    fn on_update_option(&mut self, updated: &mut Updated, name: &AppOptionName, modifier: &OptionModifier) {
+        use options::AppOptionName::*;
+        use self::OptionModifier::*;
+
+        {
+            let value: &mut bool = match *name {
+                ShowText => &mut self.options.show_text,
+                Reverse => &mut self.options.reverse,
+                CenterAlignment => &mut self.options.center_alignment,
+            };
+
+            match *modifier {
+                Toggle => *value ^= true,
+                Enable => *value = true,
+                Disable => *value = false,
+            }
+        }
+
+        match *name {
+            ShowText => self.update_label_visibility(),
+            _ => ()
+        }
+
+        updated.image = true;
+    }
+
     fn on_user(&self, data: &[(String, String)]) {
         self.puts_event_with_current("user", Some(data));
     }
 
     fn on_views(&mut self, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>) {
         updated.image = self.gui.reset_images(cols, rows);
-        self.pointer.multiply(self.gui.images.len());
+        self.pointer.multiply(self.gui.len());
     }
 
     fn on_views_fellow(&mut self, updated: &mut Updated, for_rows: bool) {
@@ -411,7 +422,7 @@ impl App {
         } else {
             self.gui.reset_images(Some(size), None)
         };
-        self.pointer.multiply(self.gui.images.len());
+        self.pointer.multiply(self.gui.len());
     }
 
     /* Private methods */
@@ -487,11 +498,11 @@ impl App {
         }
     }
 
-    fn show_image(&self, with_label: bool) {
+    fn show_image(&mut self, with_label: bool) {
         let (width, height) = self.gui.get_cell_size(with_label);
-        let images_len = self.gui.images.len();
+        let images_len = self.gui.len();
 
-        for (mut index, image) in self.gui.images.iter().enumerate() {
+        for (mut index, image) in self.gui.images().enumerate() {
             if self.options.reverse {
                 index = images_len - index - 1;
             }
@@ -501,6 +512,8 @@ impl App {
                 image.set_from_pixbuf(None);
             }
         }
+
+        self.gui.set_center_alignment(self.options.center_alignment);
     }
 
     fn update_label(&self, text: &str) {

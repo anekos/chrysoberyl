@@ -14,11 +14,23 @@ pub struct Gui {
     cols: usize,
     rows: usize,
     image_outer: gtk::Box,
-    image_inners: Vec<gtk::Box>,
+    image_inners: Vec<ImageInner>,
     pub colors: Colors,
     pub window: Window,
-    pub images: Vec<Image>,
     pub label: Label,
+}
+
+#[derive(Clone)]
+struct ImageInner {
+    left_spacer: gtk::Label,
+    right_spacer: gtk::Label,
+    container: gtk::Box,
+    images: Vec<Image>,
+}
+
+pub struct ImageIterator<'a> {
+    gui: &'a Gui,
+    index: usize
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -69,7 +81,6 @@ impl Gui {
             cols: 1,
             rows: 1,
             window: window,
-            images: vec![],
             image_outer: image_outer,
             image_inners: vec![],
             label: label,
@@ -79,6 +90,14 @@ impl Gui {
         result.create_images();
 
         result
+    }
+
+    pub fn len(&self) -> usize {
+        self.cols * self.rows
+    }
+
+    pub fn images(&self) -> ImageIterator {
+        ImageIterator { gui: self, index: 0 }
     }
 
     pub fn reset_images(&mut self, cols: Option<usize>, rows: Option<usize>) -> bool {
@@ -124,27 +143,81 @@ impl Gui {
         }
     }
 
+    pub fn set_center_alignment(&mut self, enabled: bool) {
+        let (window_width, _) = self.window.get_size();
+
+        for inner in &self.image_inners {
+            if enabled {
+                let mut image_width_sum = 0;
+                for image in &inner.images {
+                    image_width_sum += image.get_pixbuf().unwrap().get_width();
+                }
+                let width = (window_width - image_width_sum) as u32 / 2 / 2;
+                inner.container.set_child_packing(&inner.left_spacer, true, true, width, gtk::PackType::Start);
+                inner.container.set_child_packing(&inner.right_spacer, true, true, width, gtk::PackType::Start);
+                inner.left_spacer.show();
+                inner.right_spacer.show();
+            } else {
+                inner.left_spacer.hide();
+                inner.right_spacer.hide();
+            }
+        }
+    }
+
     fn create_images(&mut self) {
         for _ in 0..self.rows {
+            let left_spacer = gtk::Label::new(None);
+            let right_spacer = gtk::Label::new(None);
+            let mut images = vec![];
+
             let inner = gtk::Box::new(Orientation::Horizontal, 0);
+
+            inner.pack_start(&left_spacer, true, true, 0);
+            left_spacer.show();
+
             self.image_outer.pack_start(&inner, true, true, 0);
+
             for _ in 0..self.cols {
                 let image = Image::new_from_pixbuf(None);
                 image.show();
                 inner.pack_start(&image, true, true, 0);
-                self.images.push(image);
+                images.push(image);
             }
+
+            inner.pack_start(&right_spacer, true, true, 0);
+            right_spacer.show();
+
             inner.show();
-            self.image_inners.push(inner);
+            self.image_inners.push(ImageInner {
+                left_spacer: left_spacer,
+                right_spacer: right_spacer,
+                container: inner,
+                images: images
+            });
         }
     }
 
     fn clear_images(&mut self) {
         for inner in &self.image_inners {
-            self.image_outer.remove(inner);
+            self.image_outer.remove(&inner.container);
         }
-        self.images.clear();
+        // FIXME
+        // self.images.clear();
         self.image_inners.clear();
+    }
+}
+
+impl<'a> Iterator for ImageIterator<'a> {
+    type Item = &'a Image;
+
+    fn next(&mut self) -> Option<&'a Image> {
+        let rows = self.index / self.gui.cols;
+        let cols = self.index % self.gui.cols;
+        let result = self.gui.image_inners.get(rows).and_then(|inner| {
+            inner.images.get(cols)
+        });
+        self.index += 1;
+        result
     }
 }
 

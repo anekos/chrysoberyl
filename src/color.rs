@@ -34,6 +34,9 @@ impl FromStr for Value {
     type Err = String;
 
     fn from_str(src: &str) -> Result<Value, String> {
+        // src.parse().map(|it: gdk::RGBA| {
+        //     RGB::new(it.red, it.green, it.blue)
+        // }).map_err(|_| "Invalid color text".to_owned())
         src.parse().map(|it: u8| {
             Value::new(it as f64 / 255.0)
         }).or_else(|_| {
@@ -43,8 +46,12 @@ impl FromStr for Value {
 }
 
 impl RGB {
-    pub fn new(red: Value, green: Value, blue: Value) -> RGB {
-        RGB { red: red.value, green: green.value, blue: blue.value }
+    pub fn new(red: f64, green: f64, blue: f64) -> RGB {
+        RGB { red: red, green: green, blue: blue }
+    }
+
+    pub fn from_values(red: Value, green: Value, blue: Value) -> RGB {
+        RGB::new(red.value, green.value, blue.value)
     }
 
     pub fn gdk_rgba(&self) -> gdk::RGBA {

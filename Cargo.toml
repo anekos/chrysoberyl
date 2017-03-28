@@ -30,4 +30,4 @@ app_dirs = "*"
 
 [dependencies.gtk]
 version = "0.1.1"
-features = ["v3_10"]
+features = ["v3_22"]

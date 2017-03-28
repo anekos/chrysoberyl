@@ -10,6 +10,7 @@ use shellexpand;
 use archive::ArchiveEntry;
 use color;
 use command;
+use gui::ColorTarget;
 use mapping::{self, InputType};
 use options::AppOptionName;
 
@@ -18,7 +19,7 @@ use options::AppOptionName;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Operation {
     Clear,
-    Color(color::RGB),
+    Color(ColorTarget, color::RGB),
     Command(command::Command),
     Count(Option<usize>),
     CountDigit(u8),
@@ -181,16 +182,18 @@ fn parse_copy_or_move(args: Vec<String>) -> Result<(PathBuf, command::IfExist), 
 fn parse_color(args: Vec<String>) -> Result<Operation, String> {
     use color::{Value, RGB};
 
+    let mut target: ColorTarget = ColorTarget::WindowBackground;
     let (mut red, mut green, mut blue) = (Value::max(), Value::max(), Value::max());
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut red).add_argument("red", Store, "Red");
-        ap.refer(&mut green).add_argument("green", Store, "Green");
-        ap.refer(&mut blue).add_argument("blue", Store, "Blue");
+        ap.refer(&mut target).add_argument("target", Store, "Target").required();
+        ap.refer(&mut red).add_argument("red", Store, "Red").required();
+        ap.refer(&mut green).add_argument("green", Store, "Green").required();
+        ap.refer(&mut blue).add_argument("blue", Store, "Blue").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Color(RGB::new(red, green, blue))
+        Operation::Color(target, RGB::from_values(red, green, blue))
     })
 }
 

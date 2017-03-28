@@ -151,8 +151,10 @@ impl Gui {
             if enabled {
                 let mut image_width_sum = 0;
                 for image in &inner.images {
-                    if let Some(width) = image.get_pixbuf().map(|it| it.get_width()).or_else(|| image.get_animation().map(|it| it.get_width())) {
+                    if let Some((width, _)) = get_image_size(&image) {
                         image_width_sum += width;
+                    } else {
+                        image_width_sum += window_width / inner.images.len() as i32;
                     }
                 }
                 let width = (window_width - image_width_sum) as u32 / 2 / 2;
@@ -251,4 +253,12 @@ impl Colors {
             error_background: RGB::new(1.0, 0.0, 0.0),
         }
     }
+}
+
+
+fn get_image_size(image: &Image) -> Option<(i32, i32)> {
+    image.get_pixbuf()
+        .map(|it| (it.get_width(), it.get_height()))
+        .or_else(|| image.get_animation()
+                 .map(|it| (it.get_width(), it.get_height())))
 }

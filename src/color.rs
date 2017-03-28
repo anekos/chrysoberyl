@@ -34,6 +34,9 @@ impl FromStr for Value {
     type Err = String;
 
     fn from_str(src: &str) -> Result<Value, String> {
+        // src.parse().map(|it: gdk::RGBA| {
+        //     RGB::new(it.red, it.green, it.blue)
+        // }).map_err(|_| "Invalid color text".to_owned())
         src.parse().map(|it: u8| {
             Value::new(it as f64 / 255.0)
         }).or_else(|_| {

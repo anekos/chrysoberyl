@@ -155,11 +155,11 @@ impl FromStr for ColorTarget {
         use self::ColorTarget::*;
 
         match src {
-            "window-background" => Ok(WindowBackground),
-            "information" => Ok(Information),
-            "information-background" => Ok(InformationBackground),
-            "error" => Ok(Error),
-            "error-background" => Ok(ErrorBackground),
+            "window-background" | "window-bg" => Ok(WindowBackground),
+            "information" | "information-fg" => Ok(Information),
+            "information-background" | "information-bg" => Ok(InformationBackground),
+            "error" | "error-fg" => Ok(Error),
+            "error-background" | "error-bg" => Ok(ErrorBackground),
             _ => Err(format!("Invalid name: {}", src))
         }
     }

@@ -45,11 +45,15 @@ pub enum Operation {
     Shell(bool, bool, String, Vec<String>), /* async, operation, command_name, arguments */
     Shuffle(bool), /* Fix current */
     Sort,
-    Toggle(AppOptionName),
+    UpdateOption(AppOptionName, OptionModifier),
     User(Vec<(String, String)>),
     Views(Option<usize>, Option<usize>),
     ViewsFellow(bool), /* for_rows */
 }
+
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum OptionModifier { Toggle, Enable, Disable }
 
 
 impl FromStr for Operation {
@@ -106,6 +110,8 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@copy"                      => parse_copy_or_move(whole).map(|(path, if_exist)| Command(Copy(path, if_exist))),
             "@color"                     => parse_color(whole),
             "@count"                     => parse_count(whole),
+            "@disable"                   => parse_option_updater(whole, OptionModifier::Disable),
+            "@enable"                    => parse_option_updater(whole, OptionModifier::Enable),
             "@entries"                   => Ok(PrintEntries),
             "@expand"                    => parse_expand(whole),
             "@first" | "@f"              => parse_command_usize1(whole, First),
@@ -125,7 +131,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@shell"                     => parse_shell(whole),
             "@shuffle"                   => Ok(Shuffle(false)),
             "@sort"                      => Ok(Sort),
-            "@toggle"                    => parse_toggle(whole),
+            "@toggle"                    => parse_option_updater(whole, OptionModifier::Toggle),
             "@user"                      => Ok(Operation::user(args)),
             "@views"                     => parse_views(whole),
             ";"                          => parse_multi_args(args, ";"),
@@ -306,6 +312,26 @@ fn parse_multi_args(xs: Vec<String>, separator: &str) -> Result<Operation, Strin
     Ok(Operation::Multi(result))
 }
 
+fn parse_option_updater(args: Vec<String>, modifier: OptionModifier) -> Result<Operation, String> {
+    use options::AppOptionName::*;
+    use self::Operation::UpdateOption;
+
+    let mut name = "".to_owned();
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut name).add_argument("option_name", Store, "Option name").required();
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        match &*name.to_lowercase() {
+            "information" | "info" => Ok(UpdateOption(ShowText, modifier)),
+            "reverse" | "rev" => Ok(UpdateOption(Reverse, modifier)),
+            "center" | "center-alignment" => Ok(UpdateOption(CenterAlignment, modifier)),
+            _  => Err(format!("Unknown option: {}", name))
+        }
+    })
+}
+
 fn parse_shell(args: Vec<String>) -> Result<Operation, String> {
     let mut async = false;
     let mut read_operations = false;
@@ -321,24 +347,6 @@ fn parse_shell(args: Vec<String>) -> Result<Operation, String> {
         parse_args(&mut ap, args)
     } .map(|_| {
         Operation::Shell(async, read_operations, command, command_arguments)
-    })
-}
-
-fn parse_toggle(args: Vec<String>) -> Result<Operation, String> {
-    use options::AppOptionName::*;
-
-    let mut name = "".to_owned();
-
-    {
-        let mut ap = ArgumentParser::new();
-        ap.refer(&mut name).add_argument("option_name", Store, "Option name").required();
-        parse_args(&mut ap, args)
-    } .and_then(|_| {
-        match &*name.to_lowercase() {
-            "information" | "info" => Ok(Operation::Toggle(ShowText)),
-            "reverse" | "rev" => Ok(Operation::Toggle(Reverse)),
-            _  => Err(format!("Unknown option: {}", name))
-        }
     })
 }
 

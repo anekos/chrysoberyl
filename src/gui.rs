@@ -13,12 +13,25 @@ use constant;
 pub struct Gui {
     cols: usize,
     rows: usize,
+    center_alignment: bool,
+    top_spacer: Image,
+    bottom_spacer: Image,
     image_outer: gtk::Box,
-    image_inners: Vec<gtk::Box>,
+    image_inners: Vec<ImageInner>,
     pub colors: Colors,
     pub window: Window,
-    pub images: Vec<Image>,
     pub label: Label,
+}
+
+#[derive(Clone)]
+struct ImageInner {
+    container: gtk::Box,
+    images: Vec<Image>,
+}
+
+pub struct ImageIterator<'a> {
+    gui: &'a Gui,
+    index: usize
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -68,21 +81,31 @@ impl Gui {
         let mut result = Gui {
             cols: 1,
             rows: 1,
+            center_alignment: false,
             window: window,
-            images: vec![],
+            top_spacer: gtk::Image::new_from_pixbuf(None),
+            bottom_spacer: gtk::Image::new_from_pixbuf(None),
             image_outer: image_outer,
             image_inners: vec![],
             label: label,
             colors: Colors::default()
         };
 
-        result.create_images();
+        result.create_images(false);
 
         result
     }
 
-    pub fn reset_images(&mut self, cols: Option<usize>, rows: Option<usize>) -> bool {
-        if (cols.is_none() || cols == Some(self.cols)) && (rows.is_none() || rows == Some(self.rows)) {
+    pub fn len(&self) -> usize {
+        self.cols * self.rows
+    }
+
+    pub fn images(&self) -> ImageIterator {
+        ImageIterator { gui: self, index: 0 }
+    }
+
+    pub fn reset_images(&mut self, cols: Option<usize>, rows: Option<usize>, center_alignment: bool) -> bool {
+        if (cols.is_none() || cols == Some(self.cols)) && (rows.is_none() || rows == Some(self.rows)) && (center_alignment == self.center_alignment) {
             return false;
         }
 
@@ -90,8 +113,9 @@ impl Gui {
 
         if let Some(cols) = cols { self.cols = cols; }
         if let Some(rows) = rows { self.rows = rows; }
+        self.center_alignment = center_alignment;
 
-        self.create_images();
+        self.create_images(center_alignment);
 
         true
     }
@@ -124,27 +148,76 @@ impl Gui {
         }
     }
 
-    fn create_images(&mut self) {
+    fn create_images(&mut self, center_alignment: bool) {
+        if center_alignment {
+            self.image_outer.pack_start(&self.top_spacer, true, true, 0);
+            self.top_spacer.show();
+        } else {
+            self.top_spacer.hide();
+        }
+
         for _ in 0..self.rows {
+            let mut images = vec![];
+
             let inner = gtk::Box::new(Orientation::Horizontal, 0);
-            self.image_outer.pack_start(&inner, true, true, 0);
+
+            if center_alignment {
+                let left_spacer = gtk::Image::new_from_pixbuf(None);
+                inner.pack_start(&left_spacer, true, true, 0);
+                left_spacer.show();
+            }
+
             for _ in 0..self.cols {
                 let image = Image::new_from_pixbuf(None);
                 image.show();
-                inner.pack_start(&image, true, true, 0);
-                self.images.push(image);
+                inner.pack_start(&image, !center_alignment, true, 0);
+                images.push(image);
             }
+
+            if center_alignment {
+                let right_spacer = gtk::Image::new_from_pixbuf(None);
+                inner.pack_start(&right_spacer, true, true, 0);
+                right_spacer.show();
+            }
+
+            self.image_outer.pack_start(&inner, !center_alignment, true, 0);
             inner.show();
-            self.image_inners.push(inner);
+
+            self.image_inners.push(ImageInner {
+                container: inner,
+                images: images
+            });
+        }
+
+        if center_alignment {
+            self.image_outer.pack_start(&self.bottom_spacer, true, true, 0);
+            self.bottom_spacer.show();
+        } else {
+            self.bottom_spacer.hide();
         }
     }
 
     fn clear_images(&mut self) {
         for inner in &self.image_inners {
-            self.image_outer.remove(inner);
+            self.image_outer.remove(&inner.container);
         }
-        self.images.clear();
+        self.image_outer.remove(&self.top_spacer);
+        self.image_outer.remove(&self.bottom_spacer);
         self.image_inners.clear();
+    }
+}
+
+impl<'a> Iterator for ImageIterator<'a> {
+    type Item = &'a Image;
+
+    fn next(&mut self) -> Option<&'a Image> {
+        let rows = self.index / self.gui.cols;
+        let cols = self.index % self.gui.cols;
+        let result = self.gui.image_inners.get(rows).and_then(|inner| {
+            inner.images.get(cols)
+        });
+        self.index += 1;
+        result
     }
 }
 

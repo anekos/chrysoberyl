@@ -22,9 +22,7 @@ use options::AppOptions;
 pub fn main() {
     env_logger::init().unwrap();
 
-    let mut gui = Gui::new();
-
-    gui.reset_images(Some(1), Some(1));
+    let gui = Gui::new();
 
     let (mut app, primary_rx, secondary_rx) = parse_arguments(gui.clone());
 

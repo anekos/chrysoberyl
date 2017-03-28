@@ -398,8 +398,10 @@ impl App {
             }
         }
 
-        if let ShowText = *name {
-            self.update_label_visibility()
+        match *name {
+            ShowText => self.update_label_visibility(),
+            CenterAlignment => { self.gui.reset_images(None, None, self.options.center_alignment); },
+            _ => ()
         }
 
         updated.image = true;
@@ -410,16 +412,16 @@ impl App {
     }
 
     fn on_views(&mut self, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>) {
-        updated.image = self.gui.reset_images(cols, rows);
+        updated.image = self.gui.reset_images(cols, rows, self.options.center_alignment);
         self.pointer.multiply(self.gui.len());
     }
 
     fn on_views_fellow(&mut self, updated: &mut Updated, for_rows: bool) {
         let size = self.pointer.counted();
         updated.image = if for_rows {
-            self.gui.reset_images(None, Some(size))
+            self.gui.reset_images(None, Some(size), self.options.center_alignment)
         } else {
-            self.gui.reset_images(Some(size), None)
+            self.gui.reset_images(Some(size), None, self.options.center_alignment)
         };
         self.pointer.multiply(self.gui.len());
     }
@@ -511,8 +513,6 @@ impl App {
                 image.set_from_pixbuf(None);
             }
         }
-
-        self.gui.set_center_alignment(self.options.center_alignment);
     }
 
     fn update_label(&self, text: &str) {

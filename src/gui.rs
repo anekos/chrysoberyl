@@ -1,7 +1,6 @@
 
 use std::str::FromStr;
 
-use gdk_pixbuf::PixbufAnimationExt;
 use gtk::prelude::*;
 use gtk::{self, Window, Image, Label, Orientation};
 
@@ -14,6 +13,9 @@ use constant;
 pub struct Gui {
     cols: usize,
     rows: usize,
+    center_alignment: bool,
+    top_spacer: Image,
+    bottom_spacer: Image,
     image_outer: gtk::Box,
     image_inners: Vec<ImageInner>,
     pub colors: Colors,
@@ -23,8 +25,6 @@ pub struct Gui {
 
 #[derive(Clone)]
 struct ImageInner {
-    left_spacer: gtk::Label,
-    right_spacer: gtk::Label,
     container: gtk::Box,
     images: Vec<Image>,
 }
@@ -81,14 +81,17 @@ impl Gui {
         let mut result = Gui {
             cols: 1,
             rows: 1,
+            center_alignment: false,
             window: window,
+            top_spacer: gtk::Image::new_from_pixbuf(None),
+            bottom_spacer: gtk::Image::new_from_pixbuf(None),
             image_outer: image_outer,
             image_inners: vec![],
             label: label,
             colors: Colors::default()
         };
 
-        result.create_images();
+        result.create_images(false);
 
         result
     }
@@ -101,8 +104,8 @@ impl Gui {
         ImageIterator { gui: self, index: 0 }
     }
 
-    pub fn reset_images(&mut self, cols: Option<usize>, rows: Option<usize>) -> bool {
-        if (cols.is_none() || cols == Some(self.cols)) && (rows.is_none() || rows == Some(self.rows)) {
+    pub fn reset_images(&mut self, cols: Option<usize>, rows: Option<usize>, center_alignment: bool) -> bool {
+        if (cols.is_none() || cols == Some(self.cols)) && (rows.is_none() || rows == Some(self.rows)) && (center_alignment == self.center_alignment) {
             return false;
         }
 
@@ -110,8 +113,9 @@ impl Gui {
 
         if let Some(cols) = cols { self.cols = cols; }
         if let Some(rows) = rows { self.rows = rows; }
+        self.center_alignment = center_alignment;
 
-        self.create_images();
+        self.create_images(center_alignment);
 
         true
     }
@@ -144,61 +148,52 @@ impl Gui {
         }
     }
 
-    pub fn set_center_alignment(&mut self, enabled: bool) {
-        let (window_width, _) = self.window.get_size();
-
-        for inner in &self.image_inners {
-            if enabled {
-                let mut image_width_sum = 0;
-                for image in &inner.images {
-                    if let Some((width, _)) = get_image_size(&image) {
-                        image_width_sum += width;
-                    } else {
-                        image_width_sum += window_width / inner.images.len() as i32;
-                    }
-                }
-                let width = (window_width - image_width_sum) as u32 / 2 / 2;
-                inner.container.set_child_packing(&inner.left_spacer, true, true, width, gtk::PackType::Start);
-                inner.container.set_child_packing(&inner.right_spacer, true, true, width, gtk::PackType::Start);
-                inner.left_spacer.show();
-                inner.right_spacer.show();
-            } else {
-                inner.left_spacer.hide();
-                inner.right_spacer.hide();
-            }
+    fn create_images(&mut self, center_alignment: bool) {
+        if center_alignment {
+            self.image_outer.pack_start(&self.top_spacer, true, true, 0);
+            self.top_spacer.show();
+        } else {
+            self.top_spacer.hide();
         }
-    }
 
-    fn create_images(&mut self) {
         for _ in 0..self.rows {
-            let left_spacer = gtk::Label::new(None);
-            let right_spacer = gtk::Label::new(None);
             let mut images = vec![];
 
             let inner = gtk::Box::new(Orientation::Horizontal, 0);
 
-            inner.pack_start(&left_spacer, true, true, 0);
-            left_spacer.show();
-
-            self.image_outer.pack_start(&inner, true, true, 0);
+            if center_alignment {
+                let left_spacer = gtk::Image::new_from_pixbuf(None);
+                inner.pack_start(&left_spacer, true, true, 0);
+                left_spacer.show();
+            }
 
             for _ in 0..self.cols {
                 let image = Image::new_from_pixbuf(None);
                 image.show();
-                inner.pack_start(&image, true, true, 0);
+                inner.pack_start(&image, !center_alignment, true, 0);
                 images.push(image);
             }
 
-            inner.pack_start(&right_spacer, true, true, 0);
-            right_spacer.show();
+            if center_alignment {
+                let right_spacer = gtk::Image::new_from_pixbuf(None);
+                inner.pack_start(&right_spacer, true, true, 0);
+                right_spacer.show();
+            }
 
+            self.image_outer.pack_start(&inner, !center_alignment, true, 0);
             inner.show();
+
             self.image_inners.push(ImageInner {
-                left_spacer: left_spacer,
-                right_spacer: right_spacer,
                 container: inner,
                 images: images
             });
+        }
+
+        if center_alignment {
+            self.image_outer.pack_start(&self.bottom_spacer, true, true, 0);
+            self.bottom_spacer.show();
+        } else {
+            self.bottom_spacer.hide();
         }
     }
 
@@ -206,8 +201,8 @@ impl Gui {
         for inner in &self.image_inners {
             self.image_outer.remove(&inner.container);
         }
-        // FIXME
-        // self.images.clear();
+        self.image_outer.remove(&self.top_spacer);
+        self.image_outer.remove(&self.bottom_spacer);
         self.image_inners.clear();
     }
 }
@@ -253,12 +248,4 @@ impl Colors {
             error_background: RGB::new(1.0, 0.0, 0.0),
         }
     }
-}
-
-
-fn get_image_size(image: &Image) -> Option<(i32, i32)> {
-    image.get_pixbuf()
-        .map(|it| (it.get_width(), it.get_height()))
-        .or_else(|| image.get_animation()
-                 .map(|it| (it.get_width(), it.get_height())))
 }

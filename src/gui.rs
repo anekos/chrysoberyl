@@ -1,6 +1,7 @@
 
 use std::str::FromStr;
 
+use gdk_pixbuf::PixbufAnimationExt;
 use gtk::prelude::*;
 use gtk::{self, Window, Image, Label, Orientation};
 
@@ -150,7 +151,9 @@ impl Gui {
             if enabled {
                 let mut image_width_sum = 0;
                 for image in &inner.images {
-                    image_width_sum += image.get_pixbuf().unwrap().get_width();
+                    if let Some(width) = image.get_pixbuf().map(|it| it.get_width()).or_else(|| image.get_animation().map(|it| it.get_width())) {
+                        image_width_sum += width;
+                    }
                 }
                 let width = (window_width - image_width_sum) as u32 / 2 / 2;
                 inner.container.set_child_packing(&inner.left_spacer, true, true, width, gtk::PackType::Start);

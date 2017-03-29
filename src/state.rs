@@ -4,6 +4,12 @@
 pub struct States {
     pub status_bar: bool,
     pub reverse: bool,
+    pub view: ViewState
+}
+
+pub struct ViewState {
+    pub cols: usize,
+    pub rows: usize,
     pub center_alignment: bool,
 }
 
@@ -17,6 +23,14 @@ pub enum StateName {
 
 impl States {
     pub fn new() -> States {
-        States { status_bar: false, reverse: false, center_alignment: false }
+        States {
+            status_bar: false,
+            reverse: false,
+            view: ViewState {
+                cols: 1,
+                rows: 1,
+                center_alignment: false,
+            }
+        }
     }
 }

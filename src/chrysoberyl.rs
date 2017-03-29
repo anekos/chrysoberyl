@@ -55,7 +55,7 @@ pub fn main() {
 
 fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operation>) {
     let mut eco = EntryContainerOptions::new();
-    let mut app_options = States::new();
+    let mut states = States::new();
     let mut encodings: Vec<String> = vec![];
     let mut initial = app::Initial::new();
 
@@ -82,6 +82,7 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
                 .add_option(&["--encoding", "--enc"], Collect, "Character encoding for filename in archives");
             ap.refer(&mut initial.files)
                 .add_argument("images", List, "Image files or URLs");
+
             // Controllers
             ap.refer(&mut initial.controllers.inputs)
                 .add_option(&["--input", "-i"], Collect, "Controller files");
@@ -91,9 +92,14 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
                 .add_option(&["--fragile", "-f"], Collect, "Chrysoberyl makes `fifo` controller file");
             ap.refer(&mut initial.before)
                 .add_option(&["--before", "-b"], Collect, "Execute operations before initialize");
+
             // Options
-            ap.refer(&mut app_options.status_bar)
+            ap.refer(&mut states.status_bar)
                 .add_option(&["--status-bar"], StoreTrue, "Show status bar");
+            ap.refer(&mut states.reverse)
+                .add_option(&["--reverse"], StoreTrue, "Reverse in multi view");
+            ap.refer(&mut states.view.center_alignment)
+                .add_option(&["--center"], StoreTrue, "Center alignment in multi view");
 
             // Container
             ap.refer(&mut eco.min_width)
@@ -128,7 +134,7 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
 
     initial.encodings = parse_encodings(&encodings);
 
-    let (app, primary_rx, rx) = app::App::new(initial, app_options, gui, eco);
+    let (app, primary_rx, rx) = app::App::new(initial, states, gui, eco);
 
     config::load_config(app.tx.clone());
 

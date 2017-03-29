@@ -6,14 +6,12 @@ use gtk::{self, Window, Image, Label, Orientation};
 
 use color::RGB;
 use constant;
+use state::ViewState;
 
 
 
 #[derive(Clone)]
 pub struct Gui {
-    cols: usize,
-    rows: usize,
-    center_alignment: bool,
     top_spacer: Image,
     bottom_spacer: Image,
     image_outer: gtk::Box,
@@ -78,10 +76,7 @@ impl Gui {
         vbox.show();
         window.show();
 
-        let mut result = Gui {
-            cols: 1,
-            rows: 1,
-            center_alignment: false,
+        Gui {
             window: window,
             top_spacer: gtk::Image::new_from_pixbuf(None),
             bottom_spacer: gtk::Image::new_from_pixbuf(None),
@@ -89,45 +84,38 @@ impl Gui {
             image_inners: vec![],
             label: label,
             colors: Colors::default()
-        };
+        }
+    }
 
-        result.create_images(false);
+    fn rows(&self) -> usize {
+        self.image_inners.len()
+    }
 
-        result
+    fn cols(&self) -> usize {
+        self.image_inners.first().unwrap().images.len()
     }
 
     pub fn len(&self) -> usize {
-        self.cols * self.rows
+        self.cols() * self.rows()
     }
 
     pub fn images(&self) -> ImageIterator {
         ImageIterator { gui: self, index: 0 }
     }
 
-    pub fn reset_images(&mut self, cols: Option<usize>, rows: Option<usize>, center_alignment: bool) -> bool {
-        if (cols.is_none() || cols == Some(self.cols)) && (rows.is_none() || rows == Some(self.rows)) && (center_alignment == self.center_alignment) {
-            return false;
-        }
-
+    pub fn reset_view(&mut self, state: &ViewState) {
         self.clear_images();
-
-        if let Some(cols) = cols { self.cols = cols; }
-        if let Some(rows) = rows { self.rows = rows; }
-        self.center_alignment = center_alignment;
-
-        self.create_images(center_alignment);
-
-        true
+        self.create_images(state);
     }
 
-    pub fn get_cell_size(&self, with_label: bool) -> (i32, i32) {
+    pub fn get_cell_size(&self, state: &ViewState, with_label: bool) -> (i32, i32) {
         let (width, height) = self.window.get_size();
 
-        let width = width / self.cols as i32;
+        let width = width / state.cols as i32;
         let height = if with_label {
-            (height / self.rows as i32) - self.label.get_allocated_height()
+            (height / state.rows as i32) - self.label.get_allocated_height()
         } else {
-            height / self.rows as i32
+            height / state.rows as i32
         };
 
         (width, height)
@@ -148,39 +136,39 @@ impl Gui {
         }
     }
 
-    fn create_images(&mut self, center_alignment: bool) {
-        if center_alignment {
+    fn create_images(&mut self, state: &ViewState) {
+        if state.center_alignment {
             self.image_outer.pack_start(&self.top_spacer, true, true, 0);
             self.top_spacer.show();
         } else {
             self.top_spacer.hide();
         }
 
-        for _ in 0..self.rows {
+        for _ in 0..state.rows {
             let mut images = vec![];
 
             let inner = gtk::Box::new(Orientation::Horizontal, 0);
 
-            if center_alignment {
+            if state.center_alignment {
                 let left_spacer = gtk::Image::new_from_pixbuf(None);
                 inner.pack_start(&left_spacer, true, true, 0);
                 left_spacer.show();
             }
 
-            for _ in 0..self.cols {
+            for _ in 0..state.cols {
                 let image = Image::new_from_pixbuf(None);
                 image.show();
-                inner.pack_start(&image, !center_alignment, true, 0);
+                inner.pack_start(&image, !state.center_alignment, true, 0);
                 images.push(image);
             }
 
-            if center_alignment {
+            if state.center_alignment {
                 let right_spacer = gtk::Image::new_from_pixbuf(None);
                 inner.pack_start(&right_spacer, true, true, 0);
                 right_spacer.show();
             }
 
-            self.image_outer.pack_start(&inner, !center_alignment, true, 0);
+            self.image_outer.pack_start(&inner, !state.center_alignment, true, 0);
             inner.show();
 
             self.image_inners.push(ImageInner {
@@ -189,7 +177,7 @@ impl Gui {
             });
         }
 
-        if center_alignment {
+        if state.center_alignment {
             self.image_outer.pack_start(&self.bottom_spacer, true, true, 0);
             self.bottom_spacer.show();
         } else {
@@ -211,8 +199,9 @@ impl<'a> Iterator for ImageIterator<'a> {
     type Item = &'a Image;
 
     fn next(&mut self) -> Option<&'a Image> {
-        let rows = self.index / self.gui.cols;
-        let cols = self.index % self.gui.cols;
+        let cols = self.gui.cols();
+        let rows = self.index / cols;
+        let cols = self.index % cols;
         let result = self.gui.image_inners.get(rows).and_then(|inner| {
             inner.images.get(cols)
         });

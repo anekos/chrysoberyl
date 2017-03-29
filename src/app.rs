@@ -90,6 +90,8 @@ impl App {
             pointer: IndexPointer::new(),
         };
 
+        app.reset_view();
+
         for op in &initial.before {
             match Operation::from_str(op) {
                 Ok(op) => tx.send(op).unwrap(),
@@ -229,6 +231,10 @@ impl App {
                 self.update_label(constant::DEFAULT_INFORMATION);
             }
         }
+    }
+
+    fn reset_view(&mut self) {
+        self.gui.reset_view(&self.states.view);
     }
 
     /* Operation event */
@@ -388,7 +394,7 @@ impl App {
             let value: &mut bool = match *name {
                 StatusBar => &mut self.states.status_bar,
                 Reverse => &mut self.states.reverse,
-                CenterAlignment => &mut self.states.center_alignment,
+                CenterAlignment => &mut self.states.view.center_alignment,
             };
 
             match *modifier {
@@ -400,7 +406,7 @@ impl App {
 
         match *name {
             StatusBar => self.update_label_visibility(),
-            CenterAlignment => { self.gui.reset_images(None, None, self.states.center_alignment); },
+            CenterAlignment => self.reset_view(),
             _ => ()
         }
 
@@ -412,17 +418,26 @@ impl App {
     }
 
     fn on_views(&mut self, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>) {
-        updated.image = self.gui.reset_images(cols, rows, self.states.center_alignment);
+        self.reset_view();
+        if let Some(cols) = cols {
+            self.states.view.cols = cols
+        }
+        if let Some(rows) = rows {
+            self.states.view.rows = rows
+        }
+        updated.image = true;
         self.pointer.multiply(self.gui.len());
     }
 
     fn on_views_fellow(&mut self, updated: &mut Updated, for_rows: bool) {
-        let size = self.pointer.counted();
-        updated.image = if for_rows {
-            self.gui.reset_images(None, Some(size), self.states.center_alignment)
+        let count = self.pointer.counted();
+        if for_rows {
+            self.states.view.rows = count;
         } else {
-            self.gui.reset_images(Some(size), None, self.states.center_alignment)
+            self.states.view.cols = count;
         };
+        updated.image = true;
+        self.reset_view();
         self.pointer.multiply(self.gui.len());
     }
 
@@ -500,7 +515,7 @@ impl App {
     }
 
     fn show_image(&mut self, with_label: bool) {
-        let (width, height) = self.gui.get_cell_size(with_label);
+        let (width, height) = self.gui.get_cell_size(&self.states.view, with_label);
         let images_len = self.gui.len();
 
         for (mut index, image) in self.gui.images().enumerate() {

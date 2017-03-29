@@ -15,7 +15,7 @@ use config;
 use entry::EntryContainerOptions;
 use gui::Gui;
 use operation::Operation;
-use options::AppOptions;
+use state::States;
 
 
 
@@ -55,7 +55,7 @@ pub fn main() {
 
 fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operation>) {
     let mut eco = EntryContainerOptions::new();
-    let mut app_options = AppOptions::new();
+    let mut app_options = States::new();
     let mut encodings: Vec<String> = vec![];
     let mut initial = app::Initial::new();
 

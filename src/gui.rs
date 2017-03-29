@@ -37,8 +37,8 @@ pub struct ImageIterator<'a> {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Colors {
     // pub window_background: RGB,
-    // pub information: RGB,
-    // pub information_background: RGB,
+    // pub status_bar: RGB,
+    // pub status_bar_background: RGB,
     pub error: RGB,
     pub error_background: RGB,
 }
@@ -242,8 +242,8 @@ impl Colors {
     pub fn default() -> Colors {
         Colors {
             // window_background: RGB::new(1.0, 1.0, 1.0),
-            // information: RGB::new(0.0, 0.0, 0.0),
-            // information_background: RGB::new(1.0, 1.0, 1.0),
+            // status_bar: RGB::new(0.0, 0.0, 0.0),
+            // status_bar_background: RGB::new(1.0, 1.0, 1.0),
             error: RGB::new(1.0, 1.0, 1.0),
             error_background: RGB::new(1.0, 0.0, 0.0),
         }

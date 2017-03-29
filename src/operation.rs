@@ -12,7 +12,7 @@ use color;
 use command;
 use gui::ColorTarget;
 use mapping::{self, InputType};
-use options::AppOptionName;
+use state::StateName;
 
 
 
@@ -45,7 +45,7 @@ pub enum Operation {
     Shell(bool, bool, String, Vec<String>), /* async, operation, command_name, arguments */
     Shuffle(bool), /* Fix current */
     Sort,
-    UpdateOption(AppOptionName, OptionModifier),
+    UpdateOption(StateName, StateUpdater),
     User(Vec<(String, String)>),
     Views(Option<usize>, Option<usize>),
     ViewsFellow(bool), /* for_rows */
@@ -53,7 +53,7 @@ pub enum Operation {
 
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum OptionModifier { Toggle, Enable, Disable }
+pub enum StateUpdater { Toggle, Enable, Disable }
 
 
 impl FromStr for Operation {
@@ -110,8 +110,8 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@copy"                      => parse_copy_or_move(whole).map(|(path, if_exist)| Command(Copy(path, if_exist))),
             "@color"                     => parse_color(whole),
             "@count"                     => parse_count(whole),
-            "@disable"                   => parse_option_updater(whole, OptionModifier::Disable),
-            "@enable"                    => parse_option_updater(whole, OptionModifier::Enable),
+            "@disable"                   => parse_option_updater(whole, StateUpdater::Disable),
+            "@enable"                    => parse_option_updater(whole, StateUpdater::Enable),
             "@entries"                   => Ok(PrintEntries),
             "@expand"                    => parse_expand(whole),
             "@first" | "@f"              => parse_command_usize1(whole, First),
@@ -131,7 +131,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@shell"                     => parse_shell(whole),
             "@shuffle"                   => Ok(Shuffle(false)),
             "@sort"                      => Ok(Sort),
-            "@toggle"                    => parse_option_updater(whole, OptionModifier::Toggle),
+            "@toggle"                    => parse_option_updater(whole, StateUpdater::Toggle),
             "@user"                      => Ok(Operation::user(args)),
             "@views"                     => parse_views(whole),
             ";"                          => parse_multi_args(args, ";"),
@@ -312,8 +312,8 @@ fn parse_multi_args(xs: Vec<String>, separator: &str) -> Result<Operation, Strin
     Ok(Operation::Multi(result))
 }
 
-fn parse_option_updater(args: Vec<String>, modifier: OptionModifier) -> Result<Operation, String> {
-    use options::AppOptionName::*;
+fn parse_option_updater(args: Vec<String>, modifier: StateUpdater) -> Result<Operation, String> {
+    use state::StateName::*;
     use self::Operation::UpdateOption;
 
     let mut name = "".to_owned();
@@ -429,10 +429,10 @@ fn test_parse() {
     assert_eq!(p("@expand --recursive"), Expand(true, None));
 
     // Option
-    assert_eq!(p("@toggle info"), UpdateOption(AppOptionName::StatusBar, OptionModifier::Toggle));
-    assert_eq!(p("@toggle status-bar"), UpdateOption(AppOptionName::StatusBar, OptionModifier::Toggle));
-    assert_eq!(p("@enable center"), UpdateOption(AppOptionName::CenterAlignment, OptionModifier::Enable));
-    assert_eq!(p("@disable center-alignment"), UpdateOption(AppOptionName::CenterAlignment, OptionModifier::Disable));
+    assert_eq!(p("@toggle status"), UpdateOption(StateName::StatusBar, StateUpdater::Toggle));
+    assert_eq!(p("@toggle status-bar"), UpdateOption(StateName::StatusBar, StateUpdater::Toggle));
+    assert_eq!(p("@enable center"), UpdateOption(StateName::CenterAlignment, StateUpdater::Enable));
+    assert_eq!(p("@disable center-alignment"), UpdateOption(StateName::CenterAlignment, StateUpdater::Disable));
 
     // Multi
     assert_eq!(p("; @first ; @next"), Multi(vec![First(None), Next(None)]));

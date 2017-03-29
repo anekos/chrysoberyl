@@ -418,7 +418,6 @@ impl App {
     }
 
     fn on_views(&mut self, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>) {
-        self.reset_view();
         if let Some(cols) = cols {
             self.states.view.cols = cols
         }
@@ -426,6 +425,7 @@ impl App {
             self.states.view.rows = rows
         }
         updated.image = true;
+        self.reset_view();
         self.pointer.multiply(self.gui.len());
     }
 

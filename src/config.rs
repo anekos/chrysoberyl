@@ -18,7 +18,7 @@ static DEFAULT_CONFIG: &'static str = "
 @map e @expand
 @map E @expand --recursive
 @map R @refresh
-@map i @toggle information
+@map i @toggle status-bar
 @map v @views
 @map V @views --rows
 @map r @toggle reverse

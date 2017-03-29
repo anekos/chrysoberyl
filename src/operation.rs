@@ -324,7 +324,7 @@ fn parse_option_updater(args: Vec<String>, modifier: OptionModifier) -> Result<O
         parse_args(&mut ap, args)
     } .and_then(|_| {
         match &*name.to_lowercase() {
-            "information" | "info" => Ok(UpdateOption(ShowText, modifier)),
+            "status-bar" | "status" => Ok(UpdateOption(StatusBar, modifier)),
             "reverse" | "rev" => Ok(UpdateOption(Reverse, modifier)),
             "center" | "center-alignment" => Ok(UpdateOption(CenterAlignment, modifier)),
             _  => Err(format!("Unknown option: {}", name))
@@ -429,8 +429,8 @@ fn test_parse() {
     assert_eq!(p("@expand --recursive"), Expand(true, None));
 
     // Option
-    assert_eq!(p("@toggle info"), UpdateOption(AppOptionName::ShowText, OptionModifier::Toggle));
-    assert_eq!(p("@toggle information"), UpdateOption(AppOptionName::ShowText, OptionModifier::Toggle));
+    assert_eq!(p("@toggle info"), UpdateOption(AppOptionName::StatusBar, OptionModifier::Toggle));
+    assert_eq!(p("@toggle status-bar"), UpdateOption(AppOptionName::StatusBar, OptionModifier::Toggle));
     assert_eq!(p("@enable center"), UpdateOption(AppOptionName::CenterAlignment, OptionModifier::Enable));
     assert_eq!(p("@disable center-alignment"), UpdateOption(AppOptionName::CenterAlignment, OptionModifier::Disable));
 

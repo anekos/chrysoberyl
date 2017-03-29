@@ -214,7 +214,7 @@ impl App {
             self.tx.send(Operation::LazyDraw(self.draw_serial)).unwrap();
         }
         if updated.image {
-            let text = self.options.show_text;
+            let text = self.options.status_bar;
             time!("show_image" => self.show_image(text));
             self.puts_event_with_current("show", None);
         }
@@ -386,7 +386,7 @@ impl App {
 
         {
             let value: &mut bool = match *name {
-                ShowText => &mut self.options.show_text,
+                StatusBar => &mut self.options.status_bar,
                 Reverse => &mut self.options.reverse,
                 CenterAlignment => &mut self.options.center_alignment,
             };
@@ -399,7 +399,7 @@ impl App {
         }
 
         match *name {
-            ShowText => self.update_label_visibility(),
+            StatusBar => self.update_label_visibility(),
             CenterAlignment => { self.gui.reset_images(None, None, self.options.center_alignment); },
             _ => ()
         }
@@ -517,13 +517,13 @@ impl App {
 
     fn update_label(&self, text: &str) {
         self.gui.window.set_title(text);
-        if self.options.show_text {
+        if self.options.status_bar {
             self.gui.label.set_text(text);
         }
     }
 
     fn update_label_visibility(&self) {
-        if self.options.show_text {
+        if self.options.status_bar {
             self.gui.label.show();
         } else {
             self.gui.label.hide();

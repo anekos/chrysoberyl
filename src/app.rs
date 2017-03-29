@@ -16,7 +16,7 @@ use color::RGB;
 use command;
 use constant;
 use controller;
-use entry::{Entry,EntryContainer, EntryContainerOptions};
+use entry::{Entry, EntryContainer, EntryContainerOptions};
 use events;
 use fragile_input::new_fragile_input;
 use gui::{Gui, ColorTarget};
@@ -24,8 +24,8 @@ use http_cache::HttpCache;
 use image_buffer;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
-use operation::{Operation, OptionModifier};
-use options::{AppOptions, AppOptionName};
+use operation::{Operation, StateUpdater};
+use state::{States, StateName};
 use output;
 use shell;
 use termination;
@@ -43,7 +43,7 @@ pub struct App {
     rng: ThreadRng,
     pointer: IndexPointer,
     pub tx: Sender<Operation>,
-    pub options: AppOptions
+    pub states: States
 }
 
 pub struct Initial {
@@ -65,7 +65,7 @@ struct Updated {
 
 
 impl App {
-    pub fn new(initial: Initial, options: AppOptions, gui: Gui, entry_options:EntryContainerOptions) -> (App, Receiver<Operation>, Receiver<Operation>) {
+    pub fn new(initial: Initial, states: States, gui: Gui, entry_options:EntryContainerOptions) -> (App, Receiver<Operation>, Receiver<Operation>) {
         let (tx, rx) = channel();
         let (primary_tx, primary_rx) = channel();
 
@@ -82,7 +82,7 @@ impl App {
             gui: gui.clone(),
             tx: tx.clone(),
             http_cache: HttpCache::new(initial.http_threads, tx.clone()),
-            options: options,
+            states: states,
             encodings: initial.encodings,
             mapping: Mapping::new(),
             draw_serial: 0,
@@ -214,7 +214,7 @@ impl App {
             self.tx.send(Operation::LazyDraw(self.draw_serial)).unwrap();
         }
         if updated.image {
-            let text = self.options.show_text;
+            let text = self.states.status_bar;
             time!("show_image" => self.show_image(text));
             self.puts_event_with_current("show", None);
         }
@@ -380,15 +380,15 @@ impl App {
         updated.label = true;
     }
 
-    fn on_update_option(&mut self, updated: &mut Updated, name: &AppOptionName, modifier: &OptionModifier) {
-        use options::AppOptionName::*;
-        use self::OptionModifier::*;
+    fn on_update_option(&mut self, updated: &mut Updated, name: &StateName, modifier: &StateUpdater) {
+        use state::StateName::*;
+        use self::StateUpdater::*;
 
         {
             let value: &mut bool = match *name {
-                ShowText => &mut self.options.show_text,
-                Reverse => &mut self.options.reverse,
-                CenterAlignment => &mut self.options.center_alignment,
+                StatusBar => &mut self.states.status_bar,
+                Reverse => &mut self.states.reverse,
+                CenterAlignment => &mut self.states.center_alignment,
             };
 
             match *modifier {
@@ -399,8 +399,8 @@ impl App {
         }
 
         match *name {
-            ShowText => self.update_label_visibility(),
-            CenterAlignment => { self.gui.reset_images(None, None, self.options.center_alignment); },
+            StatusBar => self.update_label_visibility(),
+            CenterAlignment => { self.gui.reset_images(None, None, self.states.center_alignment); },
             _ => ()
         }
 
@@ -412,16 +412,16 @@ impl App {
     }
 
     fn on_views(&mut self, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>) {
-        updated.image = self.gui.reset_images(cols, rows, self.options.center_alignment);
+        updated.image = self.gui.reset_images(cols, rows, self.states.center_alignment);
         self.pointer.multiply(self.gui.len());
     }
 
     fn on_views_fellow(&mut self, updated: &mut Updated, for_rows: bool) {
         let size = self.pointer.counted();
         updated.image = if for_rows {
-            self.gui.reset_images(None, Some(size), self.options.center_alignment)
+            self.gui.reset_images(None, Some(size), self.states.center_alignment)
         } else {
-            self.gui.reset_images(Some(size), None, self.options.center_alignment)
+            self.gui.reset_images(Some(size), None, self.states.center_alignment)
         };
         self.pointer.multiply(self.gui.len());
     }
@@ -504,7 +504,7 @@ impl App {
         let images_len = self.gui.len();
 
         for (mut index, image) in self.gui.images().enumerate() {
-            if self.options.reverse {
+            if self.states.reverse {
                 index = images_len - index - 1;
             }
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
@@ -517,13 +517,13 @@ impl App {
 
     fn update_label(&self, text: &str) {
         self.gui.window.set_title(text);
-        if self.options.show_text {
+        if self.states.status_bar {
             self.gui.label.set_text(text);
         }
     }
 
     fn update_label_visibility(&self) {
-        if self.options.show_text {
+        if self.states.status_bar {
             self.gui.label.show();
         } else {
             self.gui.label.hide();

@@ -15,7 +15,7 @@ use config;
 use entry::EntryContainerOptions;
 use gui::Gui;
 use operation::Operation;
-use options::AppOptions;
+use state::States;
 
 
 
@@ -55,7 +55,7 @@ pub fn main() {
 
 fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operation>) {
     let mut eco = EntryContainerOptions::new();
-    let mut app_options = AppOptions::new();
+    let mut app_options = States::new();
     let mut encodings: Vec<String> = vec![];
     let mut initial = app::Initial::new();
 
@@ -92,8 +92,8 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
             ap.refer(&mut initial.before)
                 .add_option(&["--before", "-b"], Collect, "Execute operations before initialize");
             // Options
-            ap.refer(&mut app_options.show_text)
-                .add_option(&["--show-info"], StoreTrue, "Show information bar on window bottom");
+            ap.refer(&mut app_options.status_bar)
+                .add_option(&["--status-bar"], StoreTrue, "Show status bar");
 
             // Container
             ap.refer(&mut eco.min_width)

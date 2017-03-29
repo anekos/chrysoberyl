@@ -37,8 +37,8 @@ pub struct ImageIterator<'a> {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Colors {
     // pub window_background: RGB,
-    // pub information: RGB,
-    // pub information_background: RGB,
+    // pub status_bar: RGB,
+    // pub status_bar_background: RGB,
     pub error: RGB,
     pub error_background: RGB,
 }
@@ -46,8 +46,8 @@ pub struct Colors {
 #[derive(Clone, Debug, PartialEq)]
 pub enum ColorTarget {
     WindowBackground,
-    Information,
-    InformationBackground,
+    StatusBar,
+    StatusBarBackground,
     Error,
     ErrorBackground,
 }
@@ -139,9 +139,9 @@ impl Gui {
         match *target {
             WindowBackground =>
                 self.window.override_background_color(self.window.get_state_flags(), &color.gdk_rgba()),
-            Information =>
+            StatusBar =>
                 self.label.override_color(self.label.get_state_flags(), &color.gdk_rgba()),
-            InformationBackground =>
+            StatusBarBackground =>
                 self.label.override_background_color(self.label.get_state_flags(), &color.gdk_rgba()),
             Error => self.colors.error = color.to_owned(),
             ErrorBackground => self.colors.error_background = color.to_owned(),
@@ -229,8 +229,8 @@ impl FromStr for ColorTarget {
 
         match src {
             "window-background" | "window-bg" => Ok(WindowBackground),
-            "information" | "information-fg" => Ok(Information),
-            "information-background" | "information-bg" => Ok(InformationBackground),
+            "status-bar" | "status-bar-fg" => Ok(StatusBar),
+            "status-bar-background" | "status-bar-bg" => Ok(StatusBarBackground),
             "error" | "error-fg" => Ok(Error),
             "error-background" | "error-bg" => Ok(ErrorBackground),
             _ => Err(format!("Invalid name: {}", src))
@@ -242,8 +242,8 @@ impl Colors {
     pub fn default() -> Colors {
         Colors {
             // window_background: RGB::new(1.0, 1.0, 1.0),
-            // information: RGB::new(0.0, 0.0, 0.0),
-            // information_background: RGB::new(1.0, 1.0, 1.0),
+            // status_bar: RGB::new(0.0, 0.0, 0.0),
+            // status_bar_background: RGB::new(1.0, 1.0, 1.0),
             error: RGB::new(1.0, 1.0, 1.0),
             error_background: RGB::new(1.0, 0.0, 0.0),
         }

@@ -393,15 +393,22 @@ fn test_parse() {
     }
 
     // Simple
-    assert_eq!(p("@First"), First);
-    assert_eq!(p("@Next"), Next);
-    assert_eq!(p("@Previous"), Previous);
-    assert_eq!(p("@Prev"), Previous);
-    assert_eq!(p("@Last"), Last);
     assert_eq!(p("@shuffle"), Shuffle(false));
     assert_eq!(p("@entries"), PrintEntries);
     assert_eq!(p("@refresh"), Refresh);
     assert_eq!(p("@sort"), Sort);
+
+    // Move
+    assert_eq!(p("@First"), First(None));
+    assert_eq!(p("@Next"), Next(None));
+    assert_eq!(p("@Previous"), Previous(None));
+    assert_eq!(p("@Prev"), Previous(None));
+    assert_eq!(p("@Last"), Last(None));
+    assert_eq!(p("@First 1"), First(Some(1)));
+    assert_eq!(p("@Next 2"), Next(Some(2)));
+    assert_eq!(p("@Previous 3"), Previous(Some(3)));
+    assert_eq!(p("@Prev 4"), Previous(Some(4)));
+    assert_eq!(p("@Last 5"), Last(Some(5)));
 
     // @push*
     assert_eq!(p("@push http://example.com/moge.jpg"), Push("http://example.com/moge.jpg".to_owned()));
@@ -409,11 +416,11 @@ fn test_parse() {
     assert_eq!(p("@pushurl http://example.com/moge.jpg"), PushURL("http://example.com/moge.jpg".to_owned()));
 
     // @map
-    assert_eq!(p("@map k @first"), Map(mapping::Input::key("k"), Box::new(First)));
-    assert_eq!(p("@map --key k @next"), Map(mapping::Input::key("k"), Box::new(Next)));
-    assert_eq!(p("@map -k k @next"), Map(mapping::Input::key("k"), Box::new(Next)));
-    assert_eq!(p("@map --mouse-button 6 @last"), Map(mapping::Input::MouseButton(6), Box::new(Last)));
-    assert_eq!(p("@map -m 6 @last"), Map(mapping::Input::MouseButton(6), Box::new(Last)));
+    assert_eq!(p("@map k @first"), Map(mapping::Input::key("k"), Box::new(First(None))));
+    assert_eq!(p("@map --key k @next"), Map(mapping::Input::key("k"), Box::new(Next(None))));
+    assert_eq!(p("@map -k k @next"), Map(mapping::Input::key("k"), Box::new(Next(None))));
+    assert_eq!(p("@map --mouse-button 6 @last"), Map(mapping::Input::MouseButton(6), Box::new(Last(None))));
+    assert_eq!(p("@map -m 6 @last"), Map(mapping::Input::MouseButton(6), Box::new(Last(None))));
 
     // Expand
     assert_eq!(p("@expand /foo/bar.txt"), Expand(false, Some(pathbuf("/foo/bar.txt"))));
@@ -421,13 +428,15 @@ fn test_parse() {
     assert_eq!(p("@expand --recursive /foo/bar.txt"), Expand(true, Some(pathbuf("/foo/bar.txt"))));
     assert_eq!(p("@expand --recursive"), Expand(true, None));
 
-    // Toggle
-    assert_eq!(p("@toggle info"), Toggle(AppOptionName::ShowText));
-    assert_eq!(p("@toggle information"), Toggle(AppOptionName::ShowText));
+    // Option
+    assert_eq!(p("@toggle info"), UpdateOption(AppOptionName::ShowText, OptionModifier::Toggle));
+    assert_eq!(p("@toggle information"), UpdateOption(AppOptionName::ShowText, OptionModifier::Toggle));
+    assert_eq!(p("@enable center"), UpdateOption(AppOptionName::CenterAlignment, OptionModifier::Enable));
+    assert_eq!(p("@disable center-alignment"), UpdateOption(AppOptionName::CenterAlignment, OptionModifier::Disable));
 
     // Multi
-    assert_eq!(p("; @first ; @next"), Multi(vec![First, Next]));
-    assert_eq!(p("@multi / @first / @next"), Multi(vec![First, Next]));
+    assert_eq!(p("; @first ; @next"), Multi(vec![First(None), Next(None)]));
+    assert_eq!(p("@multi / @first / @next"), Multi(vec![First(None), Next(None)]));
 
     // Shell
     assert_eq!(p("@shell ls -l -a"), Shell(false, false, s!("ls"), vec![s!("-l"), s!("-a")]));

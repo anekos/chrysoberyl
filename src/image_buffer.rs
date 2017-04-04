@@ -3,8 +3,9 @@ use cairo::{Context, ImageSurface, Format};
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
 use gtk::Image;
 use gtk;
+use css_color_parser::Color;
 
-use color::RGB;
+use color::gdk_rgba;
 use entry::Entry;
 use utils::path_to_str;
 
@@ -12,7 +13,6 @@ use utils::path_to_str;
 
 const FONT_SIZE: f64 = 12.0;
 const PADDING: f64 = 5.0;
-const ALPHA: f64 = 1.0;
 
 
 
@@ -26,7 +26,7 @@ impl Error {
         Error { error: error }
     }
 
-    pub fn show(&self, image: &Image, width: i32, height: i32, fg: &RGB, bg: &RGB) {
+    pub fn show(&self, image: &Image, width: i32, height: i32, fg: &Color, bg: &Color) {
         let text = s!(self.error);
 
         let surface = ImageSurface::create(Format::ARgb32, width, height);
@@ -40,7 +40,8 @@ impl Error {
 
         let (x, y) = (width / 2.0 - extents.width / 2.0, height / 2.0 - extents.height / 2.0);
 
-        context.set_source_rgba(bg.red, bg.green, bg.blue, ALPHA);
+        let bg = gdk_rgba(bg);
+        context.set_source_rgba(bg.red, bg.green, bg.blue, bg.alpha);
         context.rectangle(
             x - PADDING,
             y - extents.height - PADDING,
@@ -49,7 +50,8 @@ impl Error {
         context.fill();
 
         context.move_to(x, y);
-        context.set_source_rgba(fg.red, fg.green, fg.blue, ALPHA);
+        let fg = gdk_rgba(fg);
+        context.set_source_rgba(fg.red, fg.green, fg.blue, fg.alpha);
         context.show_text(&text);
 
         image.set_from_surface(&surface);
@@ -57,7 +59,6 @@ impl Error {
         puts_error!("at" => "show_image", "reason" => text);
     }
 }
-
 
 
 pub fn get_pixbuf(entry: &Entry, width: i32, height: i32) -> Result<Pixbuf, Error> {
@@ -80,6 +81,7 @@ pub fn get_pixbuf(entry: &Entry, width: i32, height: i32) -> Result<Pixbuf, Erro
     } .map_err(Error::new)
 }
 
+
 pub fn get_pixbuf_animation(entry: &Entry) -> Result<PixbufAnimation, Error> {
     match *entry {
         Entry::File(ref path) | Entry::Http(ref path, _) =>
@@ -93,7 +95,6 @@ pub fn get_pixbuf_animation(entry: &Entry) -> Result<PixbufAnimation, Error> {
         }
     } .map_err(Error::new)
 }
-
 
 fn calculate_scale(pixbuf: &Pixbuf, max_width: i32, max_height: i32) -> (f64, i32, i32) {
     let (in_width, in_height) = (pixbuf.get_width(), pixbuf.get_height());

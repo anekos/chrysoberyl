@@ -109,6 +109,39 @@ macro_rules! option {
     }
 }
 
+macro_rules! max {
+    ($x:expr) => {
+        $x
+    };
+    ($x:expr $(,$ys:expr)*) => {
+        {
+            let (x, y) = ($x, max!($($ys),*));
+            if x > y {
+                x
+            } else {
+                y
+            }
+        }
+    }
+}
+
+
+macro_rules! min {
+    ($x:expr) => {
+        $x
+    };
+    ($x:expr $(,$ys:expr)*) => {
+        {
+            let (x, y) = ($x, min!($($ys),*));
+            if x < y {
+                x
+            } else {
+                y
+            }
+        }
+    }
+}
+
 
 pub fn s<T: Display>(x: T) -> String {
     format!("{}", x)

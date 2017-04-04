@@ -175,7 +175,7 @@ fn test_open_archive() {
     builder.support_format(ReadFormat::All).ok();
     builder.support_filter(ReadFilter::All).ok();
 
-    let mut reader = builder.open_file("test/maru-sankaku-sikaku.zip").unwrap();
+    let mut reader = builder.open_file("test-files/maru-sankaku-sikaku.zip").unwrap();
     reader.next_header();
 
     assert_eq!(reader.entry().pathname(), "maru.png");
@@ -183,7 +183,7 @@ fn test_open_archive() {
     {
         let in_zip = reader.read_block().unwrap().unwrap();
         let mut raw = vec![];
-        File::open("test/raw/maru.png").unwrap().read_to_end(&mut raw).unwrap();
+        File::open("test-files/raw/maru.png").unwrap().read_to_end(&mut raw).unwrap();
         assert_eq!(in_zip, raw.as_slice());
     }
 
@@ -194,7 +194,7 @@ fn test_open_archive() {
     {
         let in_zip = reader.read_block().unwrap().unwrap();
         let mut raw = vec![];
-        File::open("test/raw/sankaku.png").unwrap().read_to_end(&mut raw).unwrap();
+        File::open("test-files/raw/sankaku.png").unwrap().read_to_end(&mut raw).unwrap();
         assert_eq!(in_zip, raw.as_slice());
     }
 

@@ -1,10 +1,11 @@
 
 use std::str::FromStr;
 
+use css_color_parser::Color;
 use gtk::prelude::*;
 use gtk::{self, Window, Image, Label, Orientation};
 
-use color::RGB;
+use color::gdk_rgba;
 use constant;
 use state::ViewState;
 
@@ -37,8 +38,8 @@ pub struct Colors {
     // pub window_background: RGB,
     // pub status_bar: RGB,
     // pub status_bar_background: RGB,
-    pub error: RGB,
-    pub error_background: RGB,
+    pub error: Color,
+    pub error_background: Color,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -121,16 +122,16 @@ impl Gui {
         (width, height)
     }
 
-    pub fn update_color(&mut self, target: &ColorTarget, color: &RGB) {
+    pub fn update_color(&mut self, target: &ColorTarget, color: &Color) {
         use self::ColorTarget::*;
 
         match *target {
             WindowBackground =>
-                self.window.override_background_color(self.window.get_state_flags(), &color.gdk_rgba()),
+                self.window.override_background_color(self.window.get_state_flags(), &gdk_rgba(&color)),
             StatusBar =>
-                self.label.override_color(self.label.get_state_flags(), &color.gdk_rgba()),
+                self.label.override_color(self.label.get_state_flags(), &gdk_rgba(&color)),
             StatusBarBackground =>
-                self.label.override_background_color(self.label.get_state_flags(), &color.gdk_rgba()),
+                self.label.override_background_color(self.label.get_state_flags(), &gdk_rgba(&color)),
             Error => self.colors.error = color.to_owned(),
             ErrorBackground => self.colors.error_background = color.to_owned(),
         }
@@ -230,11 +231,11 @@ impl FromStr for ColorTarget {
 impl Colors {
     pub fn default() -> Colors {
         Colors {
-            // window_background: RGB::new(1.0, 1.0, 1.0),
-            // status_bar: RGB::new(0.0, 0.0, 0.0),
-            // status_bar_background: RGB::new(1.0, 1.0, 1.0),
-            error: RGB::new(1.0, 1.0, 1.0),
-            error_background: RGB::new(1.0, 0.0, 0.0),
+            // window_background: "#004040",
+            // status_bar: "#004040",
+            // status_bar_background: "#004040",
+            error: "white".parse().unwrap(),
+            error_background: "red".parse().unwrap(),
         }
     }
 }

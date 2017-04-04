@@ -33,9 +33,10 @@ fn on_key_press(tx: Sender<Operation>, key: &EventKey) -> Inhibit {
 }
 
 fn on_button_press(tx: Sender<Operation>, button: &EventButton) -> Inhibit {
+    let (x, y) = button.get_position();
     tx.send(
         Operation::Input(
-            Input::mouse_button(button.get_button()))).unwrap();
+            Input::mouse_button(x as i32, y as i32, button.get_button()))).unwrap();
     Inhibit(true)
 }
 

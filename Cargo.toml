@@ -27,6 +27,7 @@ encoding = "*"
 onig = "*"
 shellexpand = "*"
 app_dirs = "*"
+css-color-parser = "*"
 
 [dependencies.gtk]
 version = "0.1.1"

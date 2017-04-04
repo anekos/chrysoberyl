@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::mpsc::{channel, Sender, Receiver};
 
+use css_color_parser::Color;
 use encoding::types::EncodingRef;
 use gtk::prelude::*;
 use gtk::Image;
@@ -12,7 +13,7 @@ use rand::{self, ThreadRng};
 use rand::distributions::{IndependentSample, Range};
 
 use archive::{self, ArchiveEntry};
-use color::RGB;
+use cherenkov::Cherenkoved;
 use command;
 use constant;
 use controller;
@@ -24,7 +25,7 @@ use http_cache::HttpCache;
 use image_buffer;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
-use operation::{Operation, StateUpdater};
+use operation::{self, Operation, StateUpdater, OperationContext};
 use state::{States, StateName};
 use output;
 use shell;
@@ -35,6 +36,7 @@ use utils::path_to_str;
 
 pub struct App {
     entries: EntryContainer,
+    cherenkoved: Cherenkoved,
     mapping: Mapping,
     http_cache: HttpCache,
     encodings: Vec<EncodingRef>,
@@ -79,6 +81,7 @@ impl App {
 
         let mut app = App {
             entries: EntryContainer::new(entry_options),
+            cherenkoved: Cherenkoved::new(),
             gui: gui.clone(),
             tx: tx.clone(),
             http_cache: HttpCache::new(initial.http_threads, tx.clone()),
@@ -137,6 +140,10 @@ impl App {
     }
 
     pub fn operate(&mut self, operation: &Operation) {
+        self.operate_with_context(operation, None)
+    }
+
+    pub fn operate_with_context(&mut self, operation: &Operation, context: Option<&OperationContext>) {
         use self::Operation::*;
 
         let mut updated = Updated { pointer: false, label: false, image: false };
@@ -146,12 +153,18 @@ impl App {
 
         {
             match *operation {
+                Cherenkov(ref parameter) =>
+                    self.on_cherenkov(&mut updated, parameter, context),
+                CherenkovClear =>
+                    self.on_cherenkov_clear(&mut updated),
                 Clear =>
                     self.on_clear(&mut updated),
                 Color(ref target, ref color) =>
                     self.on_color(&mut updated, target, color),
                 Command(ref command) =>
                     self.on_command(command),
+                Context(ref context, ref op) =>
+                    return self.operate_with_context(op, Some(context)),
                 Count(count) =>
                     self.pointer.set_count(count),
                 CountDigit(digit) =>
@@ -216,8 +229,7 @@ impl App {
             self.tx.send(Operation::LazyDraw(self.draw_serial)).unwrap();
         }
         if updated.image {
-            let text = self.states.status_bar;
-            time!("show_image" => self.show_image(text));
+            time!("show_image" => self.show_image());
             self.puts_event_with_current("show", None);
         }
 
@@ -239,12 +251,68 @@ impl App {
 
     /* Operation event */
 
+    fn on_cherenkov(&mut self, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<&OperationContext>) {
+        use cherenkov::Che;
+        use gtk::WidgetExt;
+        use gdk_pixbuf::PixbufAnimationExt;
+
+        fn get_image_size(image: &Image) -> Option<(i32, i32)> {
+            image.get_pixbuf()
+                .map(|it| (it.get_width(), it.get_height()))
+                .or_else(|| {
+                    image.get_animation()
+                        .map(|it| (it.get_width(), it.get_height()))
+                })
+        }
+
+        if let Some(OperationContext::Input(Input::MouseButton(position, _))) = context.cloned() {
+            let (mx, my) = position.tupled();
+            let (cw, ch) = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
+
+            for (index, image) in self.gui.images().enumerate() {
+                if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
+                    let (x1, y1, w, h) = {
+                        let a = image.get_allocation();
+                        if let Some((iw, ih)) = get_image_size(image) {
+                        (a.x + (a.width - iw) / 2, a.y + (a.height - ih) / 2, iw, ih)
+                        } else {
+                            continue;
+                        }
+                    };
+                    let (x2, y2) = (x1 + w, y1 + h);
+                    if x1 <= mx && mx <= x2 && y1 <= my && my <= y2 {
+                        let center = (
+                            parameter.x.unwrap_or_else(|| mx - x1),
+                            parameter.y.unwrap_or_else(|| my - y1));
+                        self.cherenkoved.cherenkov(
+                            &entry, cw, ch,
+                            &Che {
+                                center: center,
+                                n_spokes: parameter.n_spokes,
+                                radius: parameter.radius,
+                                random_hue: parameter.random_hue,
+                                color: parameter.color,
+                            });
+                        updated.image = true;
+                    }
+                }
+            }
+        }
+    }
+
+    fn on_cherenkov_clear(&mut self, updated: &mut Updated) {
+        if let Some(entry) = self.entries.current_entry(&self.pointer) {
+            self.cherenkoved.remove(&entry);
+            updated.image = true;
+        }
+    }
+
     fn on_clear(&mut self, updated: &mut Updated) {
         self.entries.clear(&mut self.pointer);
         updated.image = true;
     }
 
-    fn on_color(&mut self, updated: &mut Updated, target: &ColorTarget, color: &RGB) {
+    fn on_color(&mut self, updated: &mut Updated, target: &ColorTarget, color: &Color) {
         use self::ColorTarget::*;
 
         self.gui.update_color(target, color);
@@ -282,8 +350,8 @@ impl App {
     }
 
     fn on_input(&mut self, input: &Input) {
-
         if let Some(op) = self.mapping.matched(input) {
+            let op = Operation::Context(OperationContext::Input(input.clone()), Box::new(op));
             self.tx.send(op).unwrap();
         } else {
             self.puts_event_with_current(
@@ -506,7 +574,7 @@ impl App {
             }
         }
 
-        match image_buffer::get_pixbuf(&entry, width, height) {
+        match self.cherenkoved.get_pixbuf(&entry, width, height) {
             Ok(buf) => {
                 image.set_from_pixbuf(Some(&buf));
             },
@@ -514,8 +582,8 @@ impl App {
         }
     }
 
-    fn show_image(&mut self, with_label: bool) {
-        let (width, height) = self.gui.get_cell_size(&self.states.view, with_label);
+    fn show_image(&mut self) {
+        let (width, height) = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
         let images_len = self.gui.len();
 
         for (mut index, image) in self.gui.images().enumerate() {

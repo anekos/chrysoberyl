@@ -5,10 +5,10 @@ use std::io::sink;
 
 use argparse::{ArgumentParser, Store, StoreConst, StoreTrue, StoreOption, List};
 use cmdline_parser::Parser;
+use css_color_parser::Color as CssColor;
 use shellexpand;
 
 use archive::ArchiveEntry;
-use color;
 use command;
 use gui::ColorTarget;
 use mapping::{self, InputType};
@@ -18,9 +18,12 @@ use state::StateName;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Operation {
+    Cherenkov(CherenkovParameter),
+    CherenkovClear,
     Clear,
-    Color(ColorTarget, color::RGB),
+    Color(ColorTarget, CssColor),
     Command(command::Command),
+    Context(OperationContext, Box<Operation>),
     Count(Option<usize>),
     CountDigit(u8),
     Expand(bool, Option<PathBuf>), /* recursive, base */
@@ -55,6 +58,20 @@ pub enum Operation {
 #[derive(Clone, Debug, PartialEq)]
 pub enum StateUpdater { Toggle, Enable, Disable }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct CherenkovParameter {
+    pub radius: f64,
+    pub random_hue: f64,
+    pub n_spokes: usize,
+    pub x: Option<i32>,
+    pub y: Option<i32>,
+    pub color: CssColor,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum OperationContext {
+    Input(mapping::Input)
+}
 
 impl FromStr for Operation {
     type Err = String;
@@ -106,6 +123,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
         }
 
         match name {
+            "@cherenkov"                 => parse_cherenkov(whole),
             "@clear"                     => Ok(Clear),
             "@copy"                      => parse_copy_or_move(whole).map(|(path, if_exist)| Command(Copy(path, if_exist))),
             "@color"                     => parse_color(whole),
@@ -168,6 +186,42 @@ where T: FnOnce(Option<usize>) -> Operation {
     }
 }
 
+fn parse_cherenkov(args: Vec<String>) -> Result<Operation, String> {
+    let mut radius = 0.1;
+    let mut random_hue = 0.0;
+    let mut n_spokes = 50;
+    let mut x = None;
+    let mut y = None;
+    let mut color: CssColor = "blue".parse().unwrap();
+    let mut clear = false;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut radius).add_option(&["--radius", "-r"], Store, "Radius");
+        ap.refer(&mut random_hue).add_option(&["--random-hue", "-h", "--hue"], Store, "Random Hue");
+        ap.refer(&mut n_spokes).add_option(&["--spokes", "-s"], Store, "Number of spokes");
+        ap.refer(&mut x).add_option(&["-x"], StoreOption, "X");
+        ap.refer(&mut y).add_option(&["-y"], StoreOption, "Y");
+        ap.refer(&mut color).add_option(&["-c", "--color"], Store, "CSS Color");
+        ap.refer(&mut clear).add_option(&["--clear"], StoreTrue, "Clear");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        if clear {
+            Operation::CherenkovClear
+        } else {
+            Operation::Cherenkov(
+                CherenkovParameter {
+                    radius: radius,
+                    random_hue: random_hue,
+                    n_spokes: n_spokes,
+                    x: x,
+                    y: y,
+                    color: color
+                })
+        }
+    })
+}
+
 fn parse_copy_or_move(args: Vec<String>) -> Result<(PathBuf, command::IfExist), String> {
     let mut destination = "".to_owned();
     let mut if_exist = command::IfExist::NewFileName;
@@ -186,20 +240,16 @@ fn parse_copy_or_move(args: Vec<String>) -> Result<(PathBuf, command::IfExist), 
 }
 
 fn parse_color(args: Vec<String>) -> Result<Operation, String> {
-    use color::{Value, RGB};
-
     let mut target: ColorTarget = ColorTarget::WindowBackground;
-    let (mut red, mut green, mut blue) = (Value::max(), Value::max(), Value::max());
+    let mut color: CssColor = "white".parse().unwrap();
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut target).add_argument("target", Store, "Target").required();
-        ap.refer(&mut red).add_argument("red", Store, "Red").required();
-        ap.refer(&mut green).add_argument("green", Store, "Green").required();
-        ap.refer(&mut blue).add_argument("blue", Store, "Blue").required();
+        ap.refer(&mut color).add_argument("color", Store, "CSS Color").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Color(target, RGB::from_values(red, green, blue))
+        Operation::Color(target, color)
     })
 }
 

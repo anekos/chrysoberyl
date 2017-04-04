@@ -25,7 +25,7 @@ use http_cache::HttpCache;
 use image_buffer;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
-use operation::{self, Operation, StateUpdater, OperationContext};
+use operation::{self, Operation, StateUpdater, OperationContext, MappingTarget};
 use state::{States, StateName};
 use output;
 use shell;
@@ -179,8 +179,8 @@ impl App {
                     updated.pointer = self.pointer.with_count(count).last(len),
                 LazyDraw(serial) =>
                     self.on_lazy_draw(&mut updated, serial),
-                Map(ref input, ref mapped_operation) =>
-                    self.on_map(input, mapped_operation),
+                Map(ref target, ref mapped_operation) =>
+                    self.on_map(target, mapped_operation),
                 Multi(ref ops) =>
                     self.on_multi(ops),
                 Next(count) =>
@@ -265,8 +265,7 @@ impl App {
                 })
         }
 
-        if let Some(OperationContext::Input(Input::MouseButton(position, _))) = context.cloned() {
-            let (mx, my) = position.tupled();
+        if let Some(OperationContext::Input(Input::MouseButton((mx, my), _))) = context.cloned() {
             let (cw, ch) = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
 
             for (index, image) in self.gui.images(self.states.reverse).enumerate() {
@@ -350,7 +349,8 @@ impl App {
     }
 
     fn on_input(&mut self, input: &Input) {
-        if let Some(op) = self.mapping.matched(input) {
+        let (width, height) = self.gui.window.get_size();
+        if let Some(op) = self.mapping.matched(input, width, height) {
             let op = Operation::Context(OperationContext::Input(input.clone()), Box::new(op));
             self.tx.send(op).unwrap();
         } else {
@@ -367,12 +367,19 @@ impl App {
         }
     }
 
-    fn on_map(&mut self, input: &Input, operation: &Box<Operation>) {
+    fn on_map(&mut self, target: &MappingTarget, operation: &Box<Operation>) {
+        use self::MappingTarget::*;
+
         // FIXME
         puts_event!("map",
-                    "input" => format!("{:?}", input),
+                    "target" => format!("{:?}", target),
                     "operation" => format!("{:?}", operation));
-        self.mapping.register(input.clone(), *operation.clone());
+        match *target {
+            Key(ref key) =>
+                self.mapping.register_key(key, *operation.clone()),
+            Mouse(ref button, ref area) =>
+                self.mapping.register_mouse(*button, area.clone(), *operation.clone())
+        }
     }
 
     fn on_multi(&mut self, operations: &[Operation]) {

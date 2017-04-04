@@ -257,7 +257,7 @@ fn test_color_converter() {
     }
 
     fn assert_color(r: f64, g: f64, b: f64) {
-        let hsv = rgb_to_hsv(r, g, b);
+        let hsv = rgb_to_hsv((r, g, b));
         let rgb = hsv_to_rgb(hsv);
         assert!(
             near(rgb[0], r) && near(rgb[1], g) && near(rgb[2], b),

@@ -269,7 +269,7 @@ impl App {
             let (mx, my) = position.tupled();
             let (cw, ch) = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
 
-            for (index, image) in self.gui.images().enumerate() {
+            for (index, image) in self.gui.images(self.states.reverse).enumerate() {
                 if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
                     let (x1, y1, w, h) = {
                         let a = image.get_allocation();
@@ -584,12 +584,8 @@ impl App {
 
     fn show_image(&mut self) {
         let (width, height) = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
-        let images_len = self.gui.len();
 
-        for (mut index, image) in self.gui.images().enumerate() {
-            if self.states.reverse {
-                index = images_len - index - 1;
-            }
+        for (index, image) in self.gui.images(self.states.reverse).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
                 self.show_image1(entry, image, width, height);
             } else {

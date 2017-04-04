@@ -30,7 +30,8 @@ struct ImageInner {
 
 pub struct ImageIterator<'a> {
     gui: &'a Gui,
-    index: usize
+    index: usize,
+    reverse: bool
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -100,8 +101,8 @@ impl Gui {
         self.cols() * self.rows()
     }
 
-    pub fn images(&self) -> ImageIterator {
-        ImageIterator { gui: self, index: 0 }
+    pub fn images(&self, reverse: bool) -> ImageIterator {
+        ImageIterator { gui: self, index: 0, reverse: reverse }
     }
 
     pub fn reset_view(&mut self, state: &ViewState) {
@@ -200,9 +201,18 @@ impl<'a> Iterator for ImageIterator<'a> {
     type Item = &'a Image;
 
     fn next(&mut self) -> Option<&'a Image> {
+        let len = self.gui.len();
         let cols = self.gui.cols();
-        let rows = self.index / cols;
-        let cols = self.index % cols;
+        let mut index = self.index;
+        if self.reverse {
+            if index < len {
+                index = self.gui.len() - index - 1;
+            } else {
+                return None
+            }
+        }
+        let rows = index / cols;
+        let cols = index % cols;
         let result = self.gui.image_inners.get(rows).and_then(|inner| {
             inner.images.get(cols)
         });

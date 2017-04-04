@@ -11,7 +11,7 @@ use shellexpand;
 use archive::ArchiveEntry;
 use command;
 use gui::ColorTarget;
-use mapping::{self, InputType};
+use mapping::{self, InputType, mouse_mapping};
 use state::StateName;
 
 
@@ -31,7 +31,7 @@ pub enum Operation {
     Input(mapping::Input),
     Last(Option<usize>),
     LazyDraw(u64), /* serial */
-    Map(mapping::Input, Box<Operation>),
+    Map(MappingTarget, Box<Operation>),
     Multi(Vec<Operation>),
     Next(Option<usize>),
     Nop,
@@ -71,6 +71,12 @@ pub struct CherenkovParameter {
 #[derive(Clone, Debug, PartialEq)]
 pub enum OperationContext {
     Input(mapping::Input)
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum MappingTarget {
+    Key(String),
+    Mouse(u32, Option<mouse_mapping::Area>)
 }
 
 impl FromStr for Operation {
@@ -298,25 +304,49 @@ fn parse_input(args: Vec<String>) -> Result<Operation, String> {
 }
 
 fn parse_map(args: Vec<String>) -> Result<Operation, String> {
-    let mut input_type = InputType::Key;
-    let mut from = "".to_owned();
-    let mut to: Vec<String> = vec![];
-
-    {
-        let mut ap = ArgumentParser::new();
-        ap.refer(&mut input_type)
-            .add_option(&["--key", "-k"], StoreConst(InputType::Key), "For keyboard (default)")
-            .add_option(&["--mouse-button", "-m"], StoreConst(InputType::MouseButton), "For mouse button");
-        ap.refer(&mut from).add_argument("from", Store, "Map from (Key name or button number)").required();
-        ap.refer(&mut to).add_argument("to", List, "Map to (Command)").required();
-        parse_args(&mut ap, args)
-    } .and_then(|_| {
-        input_type.input_from_text(&from).and_then(|input| {
+    fn parse_map_key(args: Vec<String>) -> Result<Operation, String> {
+        let mut from = "".to_owned();
+        let mut to: Vec<String> = vec![];
+        {
+            let mut ap = ArgumentParser::new();
+            ap.refer(&mut from).add_argument("from", Store, "Target key name").required();
+            ap.refer(&mut to).add_argument("to", List, "Command").required();
+            parse_args(&mut ap, args)
+        } .and_then(|_| {
             parse_from_vec(to).map(|op| {
-                Operation::Map(input, Box::new(op))
+                Operation::Map(MappingTarget::Key(from), Box::new(op))
             })
         })
-    })
+    }
+
+    fn parse_map_mouse(args: Vec<String>) -> Result<Operation, String> {
+        let mut from = 1;
+        let mut to: Vec<String> = vec![];
+        let mut area: Option<mouse_mapping::Area> = None;
+
+        {
+            let mut ap = ArgumentParser::new();
+            ap.refer(&mut from).add_argument("from", Store, "Target button").required();
+            ap.refer(&mut area).add_option(&["--area", "-a"], StoreOption, "Area");
+            ap.refer(&mut to).add_argument("to", List, "Command").required();
+            parse_args(&mut ap, args)
+        } .and_then(|_| {
+            parse_from_vec(to).map(|op| {
+                Operation::Map(MappingTarget::Mouse(from, area), Box::new(op))
+            })
+        })
+    }
+
+    if let Some(target) = args.get(1) {
+        let args = args[1..].to_vec();
+        match &**target {
+            "k" | "key" => parse_map_key(args),
+            "m" | "button" | "mouse" | "mouse-button" => parse_map_mouse(args),
+            _ => Err(format!("Invalid mapping target: {}", target))
+        }
+    } else {
+        Err(s!("Not enough arguments"))
+    }
 }
 
 fn parse_multi(args: Vec<String>) -> Result<Operation, String> {
@@ -437,9 +467,14 @@ fn parse_args(parser: &mut ArgumentParser, args: Vec<String>) -> Result<(), Stri
 #[cfg(test)]#[test]
 fn test_parse() {
     use self::Operation::*;
+    use mapping::mouse_mapping::Area;
 
     fn p(s: &str) -> Operation {
         Operation::from_str_force(s)
+    }
+
+    fn q(s: &str) -> Result<Operation, String> {
+        s.parse()
     }
 
     // Simple
@@ -466,11 +501,12 @@ fn test_parse() {
     assert_eq!(p("@pushurl http://example.com/moge.jpg"), PushURL("http://example.com/moge.jpg".to_owned()));
 
     // @map
-    assert_eq!(p("@map k @first"), Map(mapping::Input::key("k"), Box::new(First(None))));
-    assert_eq!(p("@map --key k @next"), Map(mapping::Input::key("k"), Box::new(Next(None))));
-    assert_eq!(p("@map -k k @next"), Map(mapping::Input::key("k"), Box::new(Next(None))));
-    assert_eq!(p("@map --mouse-button 6 @last"), Map(mapping::Input::MouseButton(6), Box::new(Last(None))));
-    assert_eq!(p("@map -m 6 @last"), Map(mapping::Input::MouseButton(6), Box::new(Last(None))));
+    assert_eq!(q("@map key k @first"), Ok(Map(MappingTarget::Key(s!("k")), Box::new(First(None)))));
+    assert_eq!(p("@map k k @next"), Map(MappingTarget::Key(s!("k")), Box::new(Next(None))));
+    assert_eq!(p("@map key k @next"), Map(MappingTarget::Key(s!("k")), Box::new(Next(None))));
+    assert_eq!(q("@map mouse 6 @last"), Ok(Map(MappingTarget::Mouse(6, None), Box::new(Last(None)))));
+    assert_eq!(p("@map m 6 @last"), Map(MappingTarget::Mouse(6, None), Box::new(Last(None))));
+    assert_eq!(p("@map m --area 0.1x0.2-0.3x0.4 6 @last"), Map(MappingTarget::Mouse(6, Some(Area::new(0.1, 0.2, 0.3, 0.4))), Box::new(Last(None))));
 
     // Expand
     assert_eq!(p("@expand /foo/bar.txt"), Expand(false, Some(pathbuf("/foo/bar.txt"))));

@@ -1,17 +1,17 @@
 
-use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
-
 use gdk;
 
 use operation::Operation;
 
 
+pub mod key_mapping;
+pub mod mouse_mapping;
+
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Input {
     Key(String),
-    MouseButton(NonEntityPosition, u32) // (X, Y), Button
+    MouseButton((i32, i32), u32) // (X, Y), Button
 }
 
 #[derive(Clone, Copy)]
@@ -20,15 +20,37 @@ pub enum InputType {
     MouseButton
 }
 
-#[derive(Debug, Clone, Eq)]
-pub struct NonEntityPosition {
-    pub x: i32,
-    pub y: i32,
+
+pub struct Mapping {
+    key_mapping: key_mapping::KeyMapping,
+    mouse_mapping: mouse_mapping::MouseMapping,
 }
 
 
-pub struct Mapping {
-    table: HashMap<Input, Operation>
+impl Mapping {
+    pub fn new() -> Mapping {
+        Mapping {
+            key_mapping: key_mapping::KeyMapping::new(),
+            mouse_mapping: mouse_mapping::MouseMapping::new(),
+        }
+    }
+
+    pub fn register_key(&mut self, key: &str, operation: Operation) {
+        self.key_mapping.register(key.to_owned(), operation);
+    }
+
+    pub fn register_mouse(&mut self, button: u32, area: Option<mouse_mapping::Area>, operation: Operation) {
+        self.mouse_mapping.register(button, area, operation);
+    }
+
+    pub fn matched(&self, input: &Input, width: i32, height: i32) -> Option<Operation> {
+        match *input {
+            Input::Key(ref key) =>
+                self.key_mapping.matched(key),
+            Input::MouseButton((x, y), ref button) =>
+                self.mouse_mapping.matched(*button, x, y, width, height),
+        }
+    }
 }
 
 
@@ -44,13 +66,13 @@ impl Input {
     }
 
     pub fn mouse_button(x: i32, y: i32, button: u32) -> Input {
-        Input::MouseButton(NonEntityPosition { x: x, y: y }, button)
+        Input::MouseButton((x, y), button)
     }
 
     pub fn text(&self) -> String {
         match *self {
             Input::Key(ref name) => o!(name),
-            Input::MouseButton(ref position, ref button) => format!("{:?}, {}", position.tupled(), button)
+            Input::MouseButton(ref position, ref button) => format!("{:?}, {}", position, button)
         }
     }
 
@@ -75,39 +97,5 @@ impl InputType {
                 }
             }
         }
-    }
-}
-
-
-impl Mapping {
-    pub fn new() -> Mapping {
-        Mapping { table: HashMap::new() }
-    }
-
-    pub fn register(&mut self, input: Input, operation: Operation) {
-        self.table.insert(input, operation);
-    }
-
-    pub fn matched(&self, input: &Input) -> Option<Operation> {
-        self.table.get(input).cloned()
-    }
-}
-
-
-impl NonEntityPosition {
-    pub fn tupled(&self) -> (i32, i32) {
-        (self.x, self.y)
-    }
-}
-
-impl PartialEq for NonEntityPosition {
-    fn eq(&self, _: &NonEntityPosition) -> bool {
-        true
-    }
-}
-
-impl Hash for NonEntityPosition {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        380380.hash(state);
     }
 }

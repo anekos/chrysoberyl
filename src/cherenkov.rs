@@ -119,7 +119,13 @@ fn range_rand (rng: &mut ThreadRng, from: f64, to: f64) -> f64 {
     Range::new(from, to).ind_sample(rng)
 }
 
+#[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
 fn rgb_to_hsv(rgb: TupleColor) -> TupleColor {
+    #[inline]
+    fn feq(x: f64, y: f64) -> bool {
+        (x - y).abs() < 0.000001
+    }
+
     let (r, g, b) = rgb;
     let max = max!(r, g, b);
     let min = min!(r, g, b);
@@ -127,12 +133,12 @@ fn rgb_to_hsv(rgb: TupleColor) -> TupleColor {
     let mut h = max - min;
 
     if h > 0.0 {
-        if max == r {
+        if feq(max, r) {
             h = (g - b) / h;
             if h < 0.0 {
                 h += 6.0
             }
-        } else if max == g {
+        } else if feq(max, g) {
             h = 2.0 + (b - r) / h
         } else {
             h = 4.0 + (r - g) / h
@@ -145,7 +151,7 @@ fn rgb_to_hsv(rgb: TupleColor) -> TupleColor {
         s /= max;
     }
 
-    return (h, s, max);
+    (h, s, max)
 }
 
 static HRTBL: &'static [&'static [usize;3];6] = &[
@@ -157,6 +163,7 @@ static HRTBL: &'static [&'static [usize;3];6] = &[
     &[0, 1, 2]
 ];
 
+#[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
 fn hsv_to_rgb(hsv: TupleColor) -> SliceColor {
     let (h, s, v) = hsv;
 
@@ -171,7 +178,7 @@ fn hsv_to_rgb(hsv: TupleColor) -> SliceColor {
     let rs = &[v, v * (1.0 - s), v * (1.0 - s * f), v * (1.0 - s * (1.0 - f))];
     let idx = HRTBL[i as usize];
 
-    return [rs[idx[0]], rs[idx[1]], rs[idx[2]]];
+    [rs[idx[0]], rs[idx[1]], rs[idx[2]]]
 }
 
 fn clamp<T: PartialOrd>(v: T, from: T, to: T) -> T {
@@ -184,6 +191,7 @@ fn clamp<T: PartialOrd>(v: T, from: T, to: T) -> T {
   }
 }
 
+#[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
 fn nova(che: &Che, pixels: &mut [u8], rowstride: i32, width: i32, height: i32) {
     let (cx, cy) = che.center;
     let radius = clamp(((width * width + height * height) as f64).sqrt() * che.radius, 0.00000001, 100.0);

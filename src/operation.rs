@@ -274,7 +274,7 @@ fn parse_count(args: Vec<String>) -> Result<Operation, String> {
 }
 
 fn parse_editor(args: Vec<String>) -> Result<Operation, String> {
-    Ok(Operation::Editor(args.get(1).map(|it| s!(it))))
+    Ok(Operation::Editor(args.get(1).map(|it| o!(it))))
 }
 
 fn parse_expand(args: Vec<String>) -> Result<Operation, String> {
@@ -351,7 +351,7 @@ fn parse_map(args: Vec<String>) -> Result<Operation, String> {
             _ => Err(format!("Invalid mapping target: {}", target))
         }
     } else {
-        Err(s!("Not enough arguments"))
+        Err(o!("Not enough arguments"))
     }
 }
 

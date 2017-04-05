@@ -76,15 +76,15 @@ impl FromStr for Area {
     type Err = String;
 
     fn from_str(src: &str) -> Result<Area, String> {
-        let err = Err(s!("Invalid format (e.g. 0.0x0.0-1.0x1.0)"));
+        let err = Err(o!("Invalid format (e.g. 0.0x0.0-1.0x1.0)"));
 
-        let hyphen: Vec<&str> = src.split_terminator("-").collect();
+        let hyphen: Vec<&str> = src.split_terminator('-').collect();
         if hyphen.len() != 2 {
             return err;
         }
 
-        let xs_from: Vec<&str> = hyphen[0].split_terminator("x").collect();
-        let xs_to: Vec<&str> = hyphen[1].split_terminator("x").collect();
+        let xs_from: Vec<&str> = hyphen[0].split_terminator('x').collect();
+        let xs_to: Vec<&str> = hyphen[1].split_terminator('x').collect();
 
         if xs_from.len() != 2 || xs_to.len() != 2 {
             return err

@@ -55,7 +55,7 @@ fn fragile_controller(tx: Sender<Operation>, filepath: String) {
     });
 }
 
-fn file_controller(tx: Sender<Operation>, filepath: String) {
+pub fn file_controller(tx: Sender<Operation>, filepath: String) {
     spawn(move || {
         if let Ok(file) = File::open(&filepath) {
             puts_event!("file_controller", "state" => "open");

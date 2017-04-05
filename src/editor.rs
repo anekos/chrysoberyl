@@ -1,0 +1,37 @@
+
+use std::env;
+use std::fs::File;
+use std::io::{BufReader, BufRead};
+use std::process::Command;
+use std::sync::mpsc:: Sender;
+
+use cmdline_parser::Parser;
+use mktemp::Temp;
+use operation::Operation;
+
+
+
+pub fn open_editor(tx: Sender<Operation>, editor_command: Option<String>) {
+    let temp_file = Temp::new_file().unwrap();
+
+    let (command_name, args) = {
+        let editor = editor_command.unwrap_or_else(|| {
+            env::var("EDITOR").unwrap_or_else(|_| s!("gvim"))
+        });
+        let command_line: Vec<String> = Parser::new(&editor).map(|(_, it)| it).collect();
+        let (name, args) = command_line.split_first().unwrap();
+        (name.clone(), args.to_vec())
+    };
+
+
+    let mut command = Command::new(command_name);
+    command.args(&args);
+    command.arg(temp_file.as_ref());
+    command.status().expect("Failed to execute process");
+
+    let file = BufReader::new(File::open(temp_file).unwrap());
+    for line in file.lines() {
+        let line = line.unwrap();
+        tx.send(Operation::from_str_force(&line)).unwrap();
+    }
+}

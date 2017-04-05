@@ -13,7 +13,6 @@ use operation::Operation;
 pub fn start_edit(tx: Sender<Operation>, editor_command: Option<String>) {
     let mut temp = env::temp_dir();
     temp.push("chrysoberyl.XXXXXX");
-    println!("{:?}", temp);
     let temp_file = TempFile::new(temp.to_str().unwrap(), true).unwrap();
 
     let (command_name, args) = {

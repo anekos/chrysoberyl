@@ -19,7 +19,7 @@ extern crate immeta;
 extern crate libarchive3_sys;
 extern crate libarchive;
 extern crate libc;
-extern crate mktemp;
+extern crate mkstemp;
 extern crate onig;
 extern crate rand;
 extern crate shell_escape;

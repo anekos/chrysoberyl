@@ -1,18 +1,20 @@
 
 use std::env;
-use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::process::Command;
 use std::sync::mpsc:: Sender;
 
 use cmdline_parser::Parser;
-use mktemp::Temp;
+use mkstemp::TempFile;
 use operation::Operation;
 
 
 
-pub fn open_editor(tx: Sender<Operation>, editor_command: Option<String>) {
-    let temp_file = Temp::new_file().unwrap();
+pub fn start_edit(tx: Sender<Operation>, editor_command: Option<String>) {
+    let mut temp = env::temp_dir();
+    temp.push("chrysoberyl.XXXXXX");
+    println!("{:?}", temp);
+    let temp_file = TempFile::new(temp.to_str().unwrap(), true).unwrap();
 
     let (command_name, args) = {
         let editor = editor_command.unwrap_or_else(|| {
@@ -26,10 +28,10 @@ pub fn open_editor(tx: Sender<Operation>, editor_command: Option<String>) {
 
     let mut command = Command::new(command_name);
     command.args(&args);
-    command.arg(temp_file.as_ref());
+    command.arg(temp_file.path());
     command.status().expect("Failed to execute process");
 
-    let file = BufReader::new(File::open(temp_file).unwrap());
+    let file = BufReader::new(temp_file);
     for line in file.lines() {
         let line = line.unwrap();
         tx.send(Operation::from_str_force(&line)).unwrap();

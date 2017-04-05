@@ -344,7 +344,7 @@ impl App {
 
     fn on_editor(&mut self, editor_command: Option<String>) {
         let tx = self.tx.clone();
-        spawn(|| editor::open_editor(tx, editor_command));
+        spawn(|| editor::start_edit(tx, editor_command));
     }
 
     fn on_expand(&mut self, updated: &mut Updated, recursive: bool, base: &Option<PathBuf>) {

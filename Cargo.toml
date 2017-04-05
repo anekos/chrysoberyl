@@ -10,7 +10,6 @@ cairo-rs = "*"
 closet = "*"
 cmdline-parser = "*"
 css-color-parser = "*"
-ctrlc = { version = "2.0", features = ["termination"] }
 encoding = "*"
 env_logger = "*"
 gdk = "*"
@@ -33,3 +32,7 @@ url = "*"
 [dependencies.gtk]
 version = "0.1.1"
 features = ["v3_22"]
+
+[dependencies.ctrlc]
+version = "2.0"
+features = ["termination"]

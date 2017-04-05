@@ -125,6 +125,8 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
 
             ap.add_option(&["-V", "--version"], Print(env!("CARGO_PKG_VERSION").to_string()), "Show version");
 
+            ap.add_option(&["--print-default"], Print(s!(config::DEFAULT_CONFIG)), "Print default config");
+
             ap.parse_args_or_exit();
         }
 

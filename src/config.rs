@@ -8,7 +8,7 @@ use operation::Operation;
 
 
 
-static DEFAULT_CONFIG: &'static str = "
+pub static DEFAULT_CONFIG: &'static str = "
 @map key h @first
 @map key j @next
 @map key k @previous
@@ -25,6 +25,7 @@ static DEFAULT_CONFIG: &'static str = "
 @map key q @quit
 
 @map mouse 1 @next
+@map mouse 2 @cherenkov --radius 0.02 --color purple --spokes 50
 @map mouse 3 @previous
 ";
 

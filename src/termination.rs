@@ -18,7 +18,7 @@ pub enum Process {
 
 lazy_static! {
     static ref PROCESS_LIST: Arc<Mutex<Vec<Process>>> = {
-        ctrlc::set_handler(execute);
+        ctrlc::set_handler(execute).unwrap();
         Arc::new(Mutex::new(vec![]))
     };
 }

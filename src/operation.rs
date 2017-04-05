@@ -26,6 +26,7 @@ pub enum Operation {
     Context(OperationContext, Box<Operation>),
     Count(Option<usize>),
     CountDigit(u8),
+    Editor(Option<String>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>),
     Input(mapping::Input),
@@ -135,6 +136,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@color"                     => parse_color(whole),
             "@count"                     => parse_count(whole),
             "@disable"                   => parse_option_updater(whole, StateUpdater::Disable),
+            "@editor"                    => parse_editor(whole),
             "@enable"                    => parse_option_updater(whole, StateUpdater::Enable),
             "@entries"                   => Ok(PrintEntries),
             "@expand"                    => parse_expand(whole),
@@ -269,6 +271,10 @@ fn parse_count(args: Vec<String>) -> Result<Operation, String> {
     } .map(|_| {
         Operation::Count(count)
     })
+}
+
+fn parse_editor(args: Vec<String>) -> Result<Operation, String> {
+    Ok(Operation::Editor(args.get(1).map(|it| s!(it))))
 }
 
 fn parse_expand(args: Vec<String>) -> Result<Operation, String> {
@@ -482,6 +488,7 @@ fn test_parse() {
     assert_eq!(p("@entries"), PrintEntries);
     assert_eq!(p("@refresh"), Refresh);
     assert_eq!(p("@sort"), Sort);
+    assert_eq!(p("@editor"), Editor);
 
     // Move
     assert_eq!(p("@First"), First(None));

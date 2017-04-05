@@ -2,6 +2,7 @@
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::mpsc::{channel, Sender, Receiver};
+use std::thread::spawn;
 
 use css_color_parser::Color;
 use encoding::types::EncodingRef;
@@ -17,6 +18,7 @@ use cherenkov::Cherenkoved;
 use command;
 use constant;
 use controller;
+use editor;
 use entry::{Entry, EntryContainer, EntryContainerOptions};
 use events;
 use fragile_input::new_fragile_input;
@@ -169,6 +171,8 @@ impl App {
                     self.pointer.set_count(count),
                 CountDigit(digit) =>
                     self.pointer.push_count_digit(digit),
+                Editor(ref editor_command) =>
+                   self.on_editor(editor_command.clone()),
                 Expand(recursive, ref base) =>
                     self.on_expand(&mut updated, recursive, base),
                 First(count) =>
@@ -336,6 +340,11 @@ impl App {
                 Err(err) => puts_event!("command", "status" => "fail", "reason" => err, "command" => command_str),
             }
         }
+    }
+
+    fn on_editor(&mut self, editor_command: Option<String>) {
+        let tx = self.tx.clone();
+        spawn(|| editor::start_edit(tx, editor_command));
     }
 
     fn on_expand(&mut self, updated: &mut Updated, recursive: bool, base: &Option<PathBuf>) {

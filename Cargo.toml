@@ -28,6 +28,7 @@ onig = "*"
 shellexpand = "*"
 app_dirs = "*"
 css-color-parser = "*"
+mkstemp-rs = "*"
 
 [dependencies.gtk]
 version = "0.1.1"

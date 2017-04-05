@@ -95,13 +95,17 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
 
             // Controllers
             ap.refer(&mut initial.controllers.inputs)
-                .add_option(&["--input", "-i"], Collect, "Controller files");
+                .add_option(&["--input", "-i"], Collect, "Controller files")
+                .metavar("FILEPATH");
             ap.refer(&mut initial.controllers.commands)
-                .add_option(&["--command", "-c"], Collect, "Controller command");
+                .add_option(&["--command", "-c"], Collect, "Controller command")
+                .metavar("COMMAND_LINE");
             ap.refer(&mut initial.controllers.fragiles)
-                .add_option(&["--fragile", "-f"], Collect, "Chrysoberyl makes `fifo` controller file");
+                .add_option(&["--fragile", "-f"], Collect, "Chrysoberyl makes `fifo` controller file")
+                .metavar("FILEPATH");
             ap.refer(&mut initial.before)
-                .add_option(&["--before", "-b"], Collect, "Execute operations before initialize");
+                .add_option(&["--before", "-b"], Collect, "Execute operations before initialize")
+                .metavar("OPERATION");
 
             // Options
             ap.refer(&mut states.status_bar)

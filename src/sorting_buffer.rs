@@ -38,4 +38,8 @@ impl<T> SortingBuffer<T> {
 
         None
     }
+
+    pub fn len(&self) -> usize {
+        self.buffer.len()
+    }
 }

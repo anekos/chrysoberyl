@@ -87,20 +87,19 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
                     }
 
                     queued += 1;
-                    puts!("event" => "HTTP", "state" => "get", "thread_id" => s!(min_index), "url" => o!(&url), "queue" => s!(queued));
 
                     let mut stack = stacks.get_mut(min_index).unwrap();
                     *stack += 1;
 
-                    let request = Request { serial: serial, url: url, cache_filepath: cache_filepath };
+                    let request = Request { serial: serial, url: url.clone(), cache_filepath: cache_filepath };
                     serial += 1;
 
                     threads[min_index].send(request).unwrap();
+
+                    puts!("event" => "HTTP", "state" => "get", "thread_id" => s!(min_index), "url" => o!(&url), "queue" => s!(queued), "buffer" => s!(buffer.len()));
                 }
                 Done(index, request) => {
                     queued -= 1;
-                    puts!("event" => "HTTP", "state" => "done", "thread_id" => s!(index), "queue" => s!(queued));
-
                     let mut stack = stacks.get_mut(index).unwrap();
                     *stack -= 1;
 
@@ -109,13 +108,15 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
                     while let Some(request) = buffer.pull() {
                         app_tx.send(Operation::PushHttpCache(request.cache_filepath, request.url)).unwrap();
                     }
+
+                    puts!("event" => "HTTP", "state" => "done", "thread_id" => s!(index), "queue" => s!(queued), "buffer" => s!(buffer.len()));
                 }
                 Fail(index, err, request) => {
                     queued -= 1;
                     let mut stack = stacks.get_mut(index).unwrap();
                     *stack -= 1;
                     buffer.skip(request.serial);
-                    puts_error!("at" => "HTTP/Get", "reason" => err, "url" => o!(request.url), "queue" => s!(queued));
+                    puts_error!("at" => "HTTP/Get", "reason" => err, "url" => o!(request.url), "queue" => s!(queued), "buffer" => s!(buffer.len()));
                 }
             }
         }

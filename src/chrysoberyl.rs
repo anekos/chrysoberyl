@@ -11,6 +11,7 @@ use gtk;
 use libc;
 
 use app;
+use app_path;
 use config;
 use entry::EntryContainerOptions;
 use gui::Gui;
@@ -63,11 +64,16 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
         let mut width: Option<u32> = None;
         let mut height: Option<u32> = None;
 
+        let path = format!(
+            "Configuration: {}\nCache: {}",
+            app_path::config_file().to_str().unwrap(),
+            app_path::cache_dir("/").to_str().unwrap());
+
         {
 
             let mut ap = ArgumentParser::new();
 
-            ap.set_description("Controllable Image Viewer");
+            ap.set_description("Controllable image viewer");
 
             // Initial
             ap.refer(&mut initial.expand)
@@ -126,6 +132,7 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
             ap.add_option(&["-V", "--version"], Print(env!("CARGO_PKG_VERSION").to_string()), "Show version");
 
             ap.add_option(&["--print-default"], Print(s!(config::DEFAULT_CONFIG)), "Print default config");
+            ap.add_option(&["--print-path"], Print(path), "Print application files path");
 
             ap.parse_args_or_exit();
         }

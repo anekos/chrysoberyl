@@ -18,7 +18,7 @@ pub fn start_edit(tx: Sender<Operation>, editor_command: Option<String>) {
 
     let (command_name, args) = {
         let editor = editor_command.unwrap_or_else(|| {
-            env::var("EDITOR").unwrap_or_else(|_| s!("gvim"))
+            env::var("EDITOR").unwrap_or_else(|_| s!("gvim --nofork"))
         });
         let command_line: Vec<String> = Parser::new(&editor).map(|(_, it)| it).collect();
         let (name, args) = command_line.split_first().unwrap();

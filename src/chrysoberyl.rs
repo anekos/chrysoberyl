@@ -1,4 +1,5 @@
 
+use std::env;
 use std::sync::mpsc::Receiver;
 use std::thread::{sleep};
 use std::time::{Duration, Instant};
@@ -13,6 +14,7 @@ use libc;
 use app;
 use app_path;
 use config;
+use constant;
 use entry::EntryContainerOptions;
 use gui::Gui;
 use operation::Operation;
@@ -28,7 +30,9 @@ pub fn main() {
     let (mut app, primary_rx, secondary_rx) = parse_arguments(gui.clone());
 
     unsafe {
-        puts_event!("info", "name" => "pid", "value" => s!(libc::getpid()));
+        let pid = s!(libc::getpid());
+        env::set_var(&constant::prefixed("PID"), &pid);
+        puts_event!("info", "name" => "pid", "value" => pid);
     }
 
     'outer: loop {

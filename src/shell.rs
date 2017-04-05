@@ -4,6 +4,7 @@ use std::process::{Command, ChildStdout, Stdio};
 use std::sync::mpsc::Sender;
 use std::thread::spawn;
 
+use constant;
 use onig::Regex;
 use operation::Operation;
 use operation_utils::read_operations;
@@ -28,7 +29,7 @@ pub fn call(async: bool, command_name: &str, arguments: &[String], info: Vec<(St
     command.arg("-c").arg(command_line);
 
     for (key, value) in info {
-        command.env(format!("Chrysoberyl_{}", key).to_uppercase(), value);
+        command.env(&constant::prefixed(&key).to_uppercase(), value);
     }
 
     let child = command.stdout(Stdio::piped()).spawn().expect(&*format!("Failed to run: {}", command_name));

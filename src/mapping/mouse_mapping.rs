@@ -30,10 +30,12 @@ impl MouseMapping {
     }
 
     pub fn register(&mut self, button: u32, area: Option<Area>, operation: Operation) {
-        let entry = WithArea { operation: operation, area: area };
-        if let Some(mut entries) = self.table.get_mut(&button) {
-            entries.push(entry);
-            return;
+        let entry = WithArea { operation: operation, area: area.clone() };
+        if area.is_some() {
+            if let Some(mut entries) = self.table.get_mut(&button) {
+                entries.push(entry);
+                return;
+            }
         }
         self.table.insert(button, vec![entry]);
     }

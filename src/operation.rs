@@ -10,6 +10,7 @@ use shellexpand;
 
 use archive::ArchiveEntry;
 use command;
+use config::ConfigSource;
 use gui::ColorTarget;
 use mapping::{self, InputType, mouse_mapping};
 use state::StateName;
@@ -26,6 +27,7 @@ pub enum Operation {
     Context(OperationContext, Box<Operation>),
     Count(Option<usize>),
     CountDigit(u8),
+    LoadConfig(ConfigSource),
     Editor(Option<String>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>),
@@ -79,6 +81,7 @@ pub enum MappingTarget {
     Key(String),
     Mouse(u32, Option<mouse_mapping::Area>)
 }
+
 
 impl FromStr for Operation {
     type Err = String;
@@ -143,6 +146,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@first" | "@f"              => parse_command_usize1(whole, First),
             "@input"                     => parse_input(whole),
             "@last" | "@l"               => parse_command_usize1(whole, Last),
+            "@load"                      => parse_load(whole),
             "@map"                       => parse_map(whole),
             "@multi"                     => parse_multi(whole),
             "@move"                      => parse_copy_or_move(whole).map(|(path, if_exist)| Command(Move(path, if_exist))),
@@ -306,6 +310,20 @@ fn parse_input(args: Vec<String>) -> Result<Operation, String> {
         input_type.input_from_text(&input).map(|input| {
             Operation::Input(input)
         })
+    })
+}
+
+fn parse_load(args: Vec<String>) -> Result<Operation, String> {
+    let mut config_source = ConfigSource::Default;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut config_source)
+            .add_option(&["--user", "-u"], StoreConst(ConfigSource::User), "Load user config (rc.conf)")
+            .add_option(&["--default", "-d"], StoreConst(ConfigSource::Default), "Load default config");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::LoadConfig(config_source)
     })
 }
 

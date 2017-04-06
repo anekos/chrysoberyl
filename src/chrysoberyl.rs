@@ -153,7 +153,7 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
 
     let (app, primary_rx, rx) = app::App::new(initial, states, gui, eco);
 
-    config::load_config(app.tx.clone());
+    config::load_config(app.tx.clone(), &config::ConfigSource::User);
 
     (app, primary_rx, rx)
 }

@@ -1,11 +1,17 @@
 
 use std::fs::File;
 use std::sync::mpsc::Sender;
-use std::io::{BufReader, BufRead};
+use std::io::Read;
 
 use app_path;
 use operation::Operation;
 
+
+#[derive(Clone, Debug, PartialEq, Copy)]
+pub enum ConfigSource {
+    Default,
+    User,
+}
 
 
 pub static DEFAULT_CONFIG: &'static str = "
@@ -30,19 +36,29 @@ pub static DEFAULT_CONFIG: &'static str = "
 ";
 
 
-pub fn load_config(tx: Sender<Operation>) {
-    let filepath = app_path::config_file();
-    if let Ok(file) = File::open(&filepath) {
-        puts_event!("config_file", "state" => "open");
-        let file = BufReader::new(file);
-        for line in file.lines() {
-            let line = line.unwrap();
-            tx.send(Operation::from_str_force(&line)).unwrap();
-        }
-        puts_event!("config_file", "state" => "close");
-    } else {
-        for line in DEFAULT_CONFIG.lines() {
-            tx.send(Operation::from_str_force(line)).unwrap();
-        }
+pub fn load_config(tx: Sender<Operation>, config_source: &ConfigSource) {
+    fn load_default() -> Vec<String> {
+        DEFAULT_CONFIG.lines().map(|it| o!(it)).collect()
     }
+
+    let lines: Vec<String> = {
+        match *config_source {
+            ConfigSource::User =>
+                if let Ok(mut file) = File::open(app_path::config_file()) {
+                    let mut source = o!("");
+                    file.read_to_string(&mut source).unwrap();
+                    source.lines().map(|it| o!(it)).collect()
+                } else {
+                    load_default()
+                },
+            ConfigSource::Default =>
+                load_default()
+        }
+    };
+
+    puts_event!("config_file", "state" => "open");
+    for line in lines {
+        tx.send(Operation::from_str_force(&line)).unwrap();
+    }
+    puts_event!("config_file", "state" => "close");
 }

@@ -3,13 +3,14 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::io::sink;
 
-use argparse::{ArgumentParser, Store, StoreConst, StoreTrue, StoreOption, List};
+use argparse::{ArgumentParser, Store, StoreConst, StoreTrue, StoreOption, List, PushConst};
 use cmdline_parser::Parser;
 use css_color_parser::Color as CssColor;
 use shellexpand;
 
 use archive::ArchiveEntry;
 use command;
+use config::ConfigSource;
 use gui::ColorTarget;
 use mapping::{self, InputType, mouse_mapping};
 use state::StateName;
@@ -26,7 +27,8 @@ pub enum Operation {
     Context(OperationContext, Box<Operation>),
     Count(Option<usize>),
     CountDigit(u8),
-    Editor(Option<String>),
+    LoadConfig(ConfigSource),
+    Editor(Option<String>, Vec<ConfigSource>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>),
     Input(mapping::Input),
@@ -79,6 +81,7 @@ pub enum MappingTarget {
     Key(String),
     Mouse(u32, Option<mouse_mapping::Area>)
 }
+
 
 impl FromStr for Operation {
     type Err = String;
@@ -143,6 +146,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@first" | "@f"              => parse_command_usize1(whole, First),
             "@input"                     => parse_input(whole),
             "@last" | "@l"               => parse_command_usize1(whole, Last),
+            "@load"                      => parse_load(whole),
             "@map"                       => parse_map(whole),
             "@multi"                     => parse_multi(whole),
             "@move"                      => parse_copy_or_move(whole).map(|(path, if_exist)| Command(Move(path, if_exist))),
@@ -274,7 +278,19 @@ fn parse_count(args: Vec<String>) -> Result<Operation, String> {
 }
 
 fn parse_editor(args: Vec<String>) -> Result<Operation, String> {
-    Ok(Operation::Editor(args.get(1).map(|it| o!(it))))
+    let mut config_sources: Vec<ConfigSource> = vec![];
+    let mut command_line: Option<String> = None;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut config_sources)
+            .add_option(&["--user", "-u"], PushConst(ConfigSource::User), "Insert user config")
+            .add_option(&["--default", "-d"], PushConst(ConfigSource::Default), "Insert defult config");
+        ap.refer(&mut command_line).add_argument("command-line", StoreOption, "Command line to open editor");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Editor(command_line, config_sources)
+    })
 }
 
 fn parse_expand(args: Vec<String>) -> Result<Operation, String> {
@@ -306,6 +322,20 @@ fn parse_input(args: Vec<String>) -> Result<Operation, String> {
         input_type.input_from_text(&input).map(|input| {
             Operation::Input(input)
         })
+    })
+}
+
+fn parse_load(args: Vec<String>) -> Result<Operation, String> {
+    let mut config_source = ConfigSource::Default;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut config_source)
+            .add_option(&["--user", "-u"], StoreConst(ConfigSource::User), "Load user config (rc.conf)")
+            .add_option(&["--default", "-d"], StoreConst(ConfigSource::Default), "Load default config");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::LoadConfig(config_source)
     })
 }
 

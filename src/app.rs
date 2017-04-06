@@ -16,6 +16,7 @@ use rand::distributions::{IndependentSample, Range};
 use archive::{self, ArchiveEntry};
 use cherenkov::Cherenkoved;
 use command;
+use config;
 use constant;
 use controller;
 use editor;
@@ -28,9 +29,9 @@ use image_buffer;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
 use operation::{self, Operation, StateUpdater, OperationContext, MappingTarget};
-use state::{States, StateName};
 use output;
 use shell;
+use state::{States, StateName};
 use termination;
 use utils::path_to_str;
 
@@ -171,8 +172,8 @@ impl App {
                     self.pointer.set_count(count),
                 CountDigit(digit) =>
                     self.pointer.push_count_digit(digit),
-                Editor(ref editor_command) =>
-                   self.on_editor(editor_command.clone()),
+                Editor(ref editor_command, ref config_sources) =>
+                   self.on_editor(editor_command.clone(), config_sources.to_owned()),
                 Expand(recursive, ref base) =>
                     self.on_expand(&mut updated, recursive, base),
                 First(count) =>
@@ -183,6 +184,8 @@ impl App {
                     updated.pointer = self.pointer.with_count(count).last(len),
                 LazyDraw(serial) =>
                     self.on_lazy_draw(&mut updated, serial),
+                LoadConfig(ref config_source) =>
+                    self.on_load_config(config_source),
                 Map(ref target, ref mapped_operation) =>
                     self.on_map(target, mapped_operation),
                 Multi(ref ops) =>
@@ -342,9 +345,9 @@ impl App {
         }
     }
 
-    fn on_editor(&mut self, editor_command: Option<String>) {
+    fn on_editor(&mut self, editor_command: Option<String>, config_sources: Vec<config::ConfigSource>) {
         let tx = self.tx.clone();
-        spawn(|| editor::start_edit(tx, editor_command));
+        spawn(|| editor::start_edit(tx, editor_command, config_sources));
     }
 
     fn on_expand(&mut self, updated: &mut Updated, recursive: bool, base: &Option<PathBuf>) {
@@ -374,6 +377,10 @@ impl App {
         if self.draw_serial == serial {
             updated.image = true;
         }
+    }
+
+    fn on_load_config(&mut self, config_source: &config::ConfigSource) {
+        config::load_config(self.tx.clone(), config_source);
     }
 
     fn on_map(&mut self, target: &MappingTarget, operation: &Box<Operation>) {

@@ -172,8 +172,8 @@ impl App {
                     self.pointer.set_count(count),
                 CountDigit(digit) =>
                     self.pointer.push_count_digit(digit),
-                Editor(ref editor_command) =>
-                   self.on_editor(editor_command.clone()),
+                Editor(ref editor_command, ref config_sources) =>
+                   self.on_editor(editor_command.clone(), config_sources.to_owned()),
                 Expand(recursive, ref base) =>
                     self.on_expand(&mut updated, recursive, base),
                 First(count) =>
@@ -345,9 +345,9 @@ impl App {
         }
     }
 
-    fn on_editor(&mut self, editor_command: Option<String>) {
+    fn on_editor(&mut self, editor_command: Option<String>, config_sources: Vec<config::ConfigSource>) {
         let tx = self.tx.clone();
-        spawn(|| editor::start_edit(tx, editor_command));
+        spawn(|| editor::start_edit(tx, editor_command, config_sources));
     }
 
     fn on_expand(&mut self, updated: &mut Updated, recursive: bool, base: &Option<PathBuf>) {

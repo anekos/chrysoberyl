@@ -39,28 +39,31 @@ pub static DEFAULT_CONFIG: &'static str = "
 
 
 pub fn load_config(tx: Sender<Operation>, config_source: &ConfigSource) {
-    fn load_default() -> Vec<String> {
-        DEFAULT_CONFIG.lines().map(|it| o!(it)).collect()
-    }
-
-    let lines: Vec<String> = {
-        match *config_source {
-            ConfigSource::User =>
-                if let Ok(mut file) = File::open(app_path::config_file()) {
-                    let mut source = o!("");
-                    file.read_to_string(&mut source).unwrap();
-                    source.lines().map(|it| o!(it)).collect()
-                } else {
-                    load_default()
-                },
-            ConfigSource::Default =>
-                load_default()
-        }
-    };
+    let lines = config_lines(config_source);
 
     puts_event!("config_file", "state" => "open");
     for line in lines {
         tx.send(Operation::from_str_force(&line)).unwrap();
     }
     puts_event!("config_file", "state" => "close");
+}
+
+
+pub fn config_lines(config_source: &ConfigSource) -> Vec<String> {
+    fn load_default() -> Vec<String> {
+        DEFAULT_CONFIG.lines().map(|it| o!(it)).collect()
+    }
+
+    match *config_source {
+        ConfigSource::User =>
+            if let Ok(mut file) = File::open(app_path::config_file()) {
+                let mut source = o!("");
+                file.read_to_string(&mut source).unwrap();
+                source.lines().map(|it| o!(it)).collect()
+            } else {
+                load_default()
+            },
+        ConfigSource::Default =>
+            load_default()
+    }
 }

@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::io::sink;
 
-use argparse::{ArgumentParser, Store, StoreConst, StoreTrue, StoreOption, List};
+use argparse::{ArgumentParser, Store, StoreConst, StoreTrue, StoreOption, List, PushConst};
 use cmdline_parser::Parser;
 use css_color_parser::Color as CssColor;
 use shellexpand;
@@ -28,7 +28,7 @@ pub enum Operation {
     Count(Option<usize>),
     CountDigit(u8),
     LoadConfig(ConfigSource),
-    Editor(Option<String>),
+    Editor(Option<String>, Vec<ConfigSource>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>),
     Input(mapping::Input),
@@ -278,7 +278,19 @@ fn parse_count(args: Vec<String>) -> Result<Operation, String> {
 }
 
 fn parse_editor(args: Vec<String>) -> Result<Operation, String> {
-    Ok(Operation::Editor(args.get(1).map(|it| o!(it))))
+    let mut config_sources: Vec<ConfigSource> = vec![];
+    let mut command_line: Option<String> = None;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut config_sources)
+            .add_option(&["--user", "-u"], PushConst(ConfigSource::User), "Insert user config")
+            .add_option(&["--default", "-d"], PushConst(ConfigSource::Default), "Insert defult config");
+        ap.refer(&mut command_line).add_argument("command-line", StoreOption, "Command line to open editor");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Editor(command_line, config_sources)
+    })
 }
 
 fn parse_expand(args: Vec<String>) -> Result<Operation, String> {

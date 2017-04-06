@@ -33,6 +33,7 @@ impl MouseMapping {
         let entry = WithArea { operation: operation, area: area.clone() };
         if area.is_some() {
             if let Some(mut entries) = self.table.get_mut(&button) {
+                entries.retain(|it| it.area != area);
                 entries.push(entry);
                 return;
             }

@@ -462,6 +462,7 @@ fn parse_shell(args: Vec<String>) -> Result<Operation, String> {
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
     } .map(|_| {
+        let command_line = command_line.iter().map(|it| expand(it)).collect();
         Operation::Shell(async, read_operations, command_line)
     })
 }

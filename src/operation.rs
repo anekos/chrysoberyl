@@ -594,7 +594,7 @@ fn pathbuf(s: &str) -> PathBuf {
 }
 
 fn expand(s: &str) -> String {
-    shellexpand::tilde(&s).into_owned()
+    shellexpand::full(&s).unwrap().into_owned()
 }
 
 fn expand_to_pathbuf(s: &str) -> PathBuf {

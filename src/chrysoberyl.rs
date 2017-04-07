@@ -31,7 +31,7 @@ pub fn main() {
 
     unsafe {
         let pid = s!(libc::getpid());
-        env::set_var(&constant::prefixed("PID"), &pid);
+        env::set_var(&constant::env_name("PID"), &pid);
         puts_event!("info", "name" => "pid", "value" => pid);
     }
 

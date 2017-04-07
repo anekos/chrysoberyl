@@ -4,7 +4,6 @@ use std::process::{Command, ChildStdout, Stdio};
 use std::sync::mpsc::Sender;
 use std::thread::spawn;
 
-use constant;
 use onig::Regex;
 use operation::Operation;
 use operation_utils::read_operations;
@@ -12,7 +11,7 @@ use shell_escape::escape;
 
 
 
-pub fn call(async: bool, command_name: &str, arguments: &[String], info: Vec<(String, String)>, tx: Option<Sender<Operation>>) {
+pub fn call(async: bool, command_name: &str, arguments: &[String], tx: Option<Sender<Operation>>) {
     let mut command = Command::new("bash");
     let mut command_line = command_name.to_owned();
 
@@ -27,10 +26,6 @@ pub fn call(async: bool, command_name: &str, arguments: &[String], info: Vec<(St
     }
 
     command.arg("-c").arg(command_line);
-
-    for (key, value) in info {
-        command.env(&constant::prefixed(&key).to_uppercase(), value);
-    }
 
     let child = command.stdout(Stdio::piped()).spawn().expect(&*format!("Failed to run: {}", command_name));
     if async {

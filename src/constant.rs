@@ -4,6 +4,6 @@ pub static DEFAULT_INFORMATION: &'static str = concat!(env!("CARGO_PKG_NAME"), "
 pub static VARIABLE_PREFIX: &'static str = "CHRYSOBERYL_";
 
 
-pub fn prefixed(name: &str) -> String {
-    format!("{}{}", VARIABLE_PREFIX, name)
+pub fn env_name(name: &str) -> String {
+    format!("{}{}", VARIABLE_PREFIX, name.to_uppercase())
 }

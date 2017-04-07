@@ -1,8 +1,10 @@
 
+use std::env;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::spawn;
+use std::collections::{HashMap,HashSet};
 
 use css_color_parser::Color;
 use encoding::types::EncodingRef;
@@ -47,6 +49,7 @@ pub struct App {
     draw_serial: u64,
     rng: ThreadRng,
     pointer: IndexPointer,
+    current_env_keys: HashSet<String>,
     pub tx: Sender<Operation>,
     pub states: States
 }
@@ -94,6 +97,7 @@ impl App {
             draw_serial: 0,
             rng: rand::thread_rng(),
             pointer: IndexPointer::new(),
+            current_env_keys: HashSet::new(),
         };
 
         app.reset_view();
@@ -215,7 +219,7 @@ impl App {
                 Refresh =>
                     updated.pointer = true,
                 Shell(async, read_operations, ref command_name, ref arguments) =>
-                    shell::call(async, command_name, arguments, self.current_info(), option!(read_operations, self.tx.clone())),
+                    shell::call(async, command_name, arguments, option!(read_operations, self.tx.clone())),
                 Shuffle(fix_current) =>
                     self.on_shuffle(&mut updated, fix_current),
                 Sort =>
@@ -249,6 +253,7 @@ impl App {
                 self.gui.window.set_title(constant::DEFAULT_TITLE);
                 self.update_label(constant::DEFAULT_INFORMATION);
             }
+            self.update_env();
         }
     }
 
@@ -615,6 +620,44 @@ impl App {
                 image.set_from_pixbuf(None);
             }
         }
+    }
+
+    fn update_env(&mut self) {
+        let mut new_keys = HashSet::<String>::new();
+        for (name, value) in self.current_env() {
+            new_keys.insert(o!(name));
+            env::set_var(constant::env_name(name), value);
+        }
+        for name in self.current_env_keys.difference(&new_keys) {
+            env::remove_var(name);
+        }
+        self.current_env_keys = new_keys;
+    }
+
+    fn current_env(&self) -> HashMap<&str, String> {
+        use entry::Entry::*;
+
+        let mut envs: HashMap<&str, String> = HashMap::new();
+
+        if let Some((entry, index)) = self.entries.current(&self.pointer) {
+            match entry {
+                File(ref path) => {
+                    envs.insert("file", o!(path_to_str(path)));
+                }
+                Http(ref path, ref url) => {
+                    envs.insert("file", o!(path_to_str(path)));
+                    envs.insert("url", o!(url));
+                }
+                Archive(ref archive_file, ref entry) => {
+                    envs.insert("file", entry.name.clone());
+                    envs.insert("archive_file", o!(path_to_str(archive_file)));
+                }
+            }
+            envs.insert("index", s!(index + 1));
+            envs.insert("count", s!(self.entries.len()));
+        }
+
+        envs
     }
 
     fn update_label(&self, text: &str) {

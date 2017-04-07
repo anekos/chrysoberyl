@@ -30,7 +30,7 @@ pub fn new_fragile_input(tx: Sender<Operation>, path: &str) {
     spawn(move || {
         while let Ok(file) = File::open(&path) {
             puts_event!("fragile_controller", "state" => "open");
-            read_operations(file, tx.clone());
+            read_operations(file, &tx);
             puts_event!("fragile_controller", "state" => "close");
         }
         puts_error!("at" => "fragile_controller", "reason" => "Could not open file", "for" => path);

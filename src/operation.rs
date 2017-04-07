@@ -120,14 +120,13 @@ impl Operation {
 }
 
 
-fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
+fn parse_from_vec(whole: &[String]) -> Result<Operation, String> {
     use self::Operation::*;
     use filer::FileOperation::{Copy, Move};
 
     if let Some(head) = whole.get(0) {
         let name = &*head.to_lowercase();
-        let args = whole[1..].to_vec();
-        let whole = whole.clone();
+        let args = &whole[1..];
 
         if name.starts_with('#') {
             return Ok(Nop)
@@ -164,7 +163,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@shuffle"                   => Ok(Shuffle(false)),
             "@sort"                      => Ok(Sort),
             "@toggle"                    => parse_option_updater(whole, StateUpdater::Toggle),
-            "@user"                      => Ok(Operation::user(args)),
+            "@user"                      => Ok(Operation::user(args.to_vec())),
             "@views"                     => parse_views(whole),
             ";"                          => parse_multi_args(args, ";"),
             _ => Err(format!("Invalid commnad: {}", name))
@@ -176,11 +175,11 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
 
 fn parse(s: &str) -> Result<Operation, String> {
     let ps: Vec<String> = Parser::new(s).map(|(_, it)| it).collect();
-    parse_from_vec(ps)
+    parse_from_vec(ps.as_slice())
 }
 
 
-fn parse_command1<T>(args: Vec<String>, op: T) -> Result<Operation, String>
+fn parse_command1<T>(args: &[String], op: T) -> Result<Operation, String>
 where T: FnOnce(String) -> Operation {
     if let Some(arg) = args.get(1) {
         Ok(op(arg.to_owned()))
@@ -189,18 +188,18 @@ where T: FnOnce(String) -> Operation {
     }
 }
 
-fn parse_command_usize1<T>(args: Vec<String>, op: T) -> Result<Operation, String>
+fn parse_command_usize1<T>(args: &[String], op: T) -> Result<Operation, String>
 where T: FnOnce(Option<usize>) -> Operation {
     use utils::s;
 
     if let Some(arg) = args.get(1) {
-        arg.parse().map(|it| op(Some(it))).map_err(s)
+        arg.parse().map(|it| op(Some(it))).map_err(|it| s(&it))
     } else {
         Ok(op(None))
     }
 }
 
-fn parse_cherenkov(args: Vec<String>) -> Result<Operation, String> {
+fn parse_cherenkov(args: &[String]) -> Result<Operation, String> {
     let mut radius = 0.1;
     let mut random_hue = 0.0;
     let mut n_spokes = 50;
@@ -236,7 +235,7 @@ fn parse_cherenkov(args: Vec<String>) -> Result<Operation, String> {
     })
 }
 
-fn parse_copy_or_move(args: Vec<String>) -> Result<(PathBuf, filer::IfExist), String> {
+fn parse_copy_or_move(args: &[String]) -> Result<(PathBuf, filer::IfExist), String> {
     let mut destination = "".to_owned();
     let mut if_exist = filer::IfExist::NewFileName;
 
@@ -253,7 +252,7 @@ fn parse_copy_or_move(args: Vec<String>) -> Result<(PathBuf, filer::IfExist), St
     })
 }
 
-fn parse_color(args: Vec<String>) -> Result<Operation, String> {
+fn parse_color(args: &[String]) -> Result<Operation, String> {
     let mut target: ColorTarget = ColorTarget::WindowBackground;
     let mut color: CssColor = "white".parse().unwrap();
 
@@ -267,7 +266,7 @@ fn parse_color(args: Vec<String>) -> Result<Operation, String> {
     })
 }
 
-fn parse_count(args: Vec<String>) -> Result<Operation, String> {
+fn parse_count(args: &[String]) -> Result<Operation, String> {
     let mut count: Option<usize> = None;
 
     {
@@ -279,7 +278,7 @@ fn parse_count(args: Vec<String>) -> Result<Operation, String> {
     })
 }
 
-fn parse_editor(args: Vec<String>) -> Result<Operation, String> {
+fn parse_editor(args: &[String]) -> Result<Operation, String> {
     let mut config_sources: Vec<ConfigSource> = vec![];
     let mut command_line: Option<String> = None;
 
@@ -295,7 +294,7 @@ fn parse_editor(args: Vec<String>) -> Result<Operation, String> {
     })
 }
 
-fn parse_expand(args: Vec<String>) -> Result<Operation, String> {
+fn parse_expand(args: &[String]) -> Result<Operation, String> {
     let mut recursive = false;
     let mut base: Option<String> = None;
 
@@ -309,7 +308,7 @@ fn parse_expand(args: Vec<String>) -> Result<Operation, String> {
     })
 }
 
-fn parse_input(args: Vec<String>) -> Result<Operation, String> {
+fn parse_input(args: &[String]) -> Result<Operation, String> {
     let mut input_type = InputType::Key;
     let mut input = "".to_owned();
 
@@ -327,7 +326,7 @@ fn parse_input(args: Vec<String>) -> Result<Operation, String> {
     })
 }
 
-fn parse_load(args: Vec<String>) -> Result<Operation, String> {
+fn parse_load(args: &[String]) -> Result<Operation, String> {
     let mut config_source = ConfigSource::Default;
 
     {
@@ -341,8 +340,8 @@ fn parse_load(args: Vec<String>) -> Result<Operation, String> {
     })
 }
 
-fn parse_map(args: Vec<String>) -> Result<Operation, String> {
-    fn parse_map_key(args: Vec<String>) -> Result<Operation, String> {
+fn parse_map(args: &[String]) -> Result<Operation, String> {
+    fn parse_map_key(args: &[String]) -> Result<Operation, String> {
         let mut from = "".to_owned();
         let mut to: Vec<String> = vec![];
         {
@@ -351,13 +350,13 @@ fn parse_map(args: Vec<String>) -> Result<Operation, String> {
             ap.refer(&mut to).add_argument("to", List, "Command").required();
             parse_args(&mut ap, args)
         } .and_then(|_| {
-            parse_from_vec(to).map(|op| {
+            parse_from_vec(&to).map(|op| {
                 Operation::Map(MappingTarget::Key(from), Box::new(op))
             })
         })
     }
 
-    fn parse_map_mouse(args: Vec<String>) -> Result<Operation, String> {
+    fn parse_map_mouse(args: &[String]) -> Result<Operation, String> {
         let mut from = 1;
         let mut to: Vec<String> = vec![];
         let mut area: Option<mouse_mapping::Area> = None;
@@ -369,14 +368,14 @@ fn parse_map(args: Vec<String>) -> Result<Operation, String> {
             ap.refer(&mut to).add_argument("to", List, "Command").required();
             parse_args(&mut ap, args)
         } .and_then(|_| {
-            parse_from_vec(to).map(|op| {
+            parse_from_vec(&to).map(|op| {
                 Operation::Map(MappingTarget::Mouse(from, area), Box::new(op))
             })
         })
     }
 
     if let Some(target) = args.get(1) {
-        let args = args[1..].to_vec();
+        let args = &args[1..];
         match &**target {
             "k" | "key" => parse_map_key(args),
             "m" | "button" | "mouse" | "mouse-button" => parse_map_mouse(args),
@@ -387,7 +386,7 @@ fn parse_map(args: Vec<String>) -> Result<Operation, String> {
     }
 }
 
-fn parse_multi(args: Vec<String>) -> Result<Operation, String> {
+fn parse_multi(args: &[String]) -> Result<Operation, String> {
     let mut separator = "".to_owned();
     let mut commands: Vec<String> = vec![];
 
@@ -397,15 +396,15 @@ fn parse_multi(args: Vec<String>) -> Result<Operation, String> {
         ap.refer(&mut commands).add_argument("arguments", List, "Commands");
         parse_args(&mut ap, args)
     } .and_then(|_| {
-        parse_multi_args(commands, &separator)
+        parse_multi_args(&commands, &separator)
     })
 }
 
-fn parse_multi_args(xs: Vec<String>, separator: &str) -> Result<Operation, String> {
+fn parse_multi_args(xs: &[String], separator: &str) -> Result<Operation, String> {
     let mut ops: Vec<Vec<String>> = vec![];
     let mut buffer: Vec<String> = vec![];
 
-    for x in &xs {
+    for x in xs {
         if x == separator {
             ops.push(buffer.clone());
             buffer.clear();
@@ -421,7 +420,7 @@ fn parse_multi_args(xs: Vec<String>, separator: &str) -> Result<Operation, Strin
     let mut result: Vec<Operation> = vec![];
 
     for op in ops {
-        match parse_from_vec(op) {
+        match parse_from_vec(&op) {
             Ok(op) => result.push(op),
             err => return err
         }
@@ -430,7 +429,7 @@ fn parse_multi_args(xs: Vec<String>, separator: &str) -> Result<Operation, Strin
     Ok(Operation::Multi(result))
 }
 
-fn parse_option_updater(args: Vec<String>, modifier: StateUpdater) -> Result<Operation, String> {
+fn parse_option_updater(args: &[String], modifier: StateUpdater) -> Result<Operation, String> {
     use state::StateName::*;
     use self::Operation::UpdateOption;
 
@@ -450,7 +449,7 @@ fn parse_option_updater(args: Vec<String>, modifier: StateUpdater) -> Result<Ope
     })
 }
 
-fn parse_shell(args: Vec<String>) -> Result<Operation, String> {
+fn parse_shell(args: &[String]) -> Result<Operation, String> {
     let mut async = false;
     let mut read_operations = false;
     let mut command_line: Vec<String> = vec![];
@@ -467,7 +466,7 @@ fn parse_shell(args: Vec<String>) -> Result<Operation, String> {
     })
 }
 
-fn parse_views(args: Vec<String>) -> Result<Operation, String> {
+fn parse_views(args: &[String]) -> Result<Operation, String> {
     let mut for_rows = false;
     let mut rows = None;
     let mut cols = None;
@@ -496,9 +495,9 @@ fn parse_views(args: Vec<String>) -> Result<Operation, String> {
     })
 }
 
-fn parse_args(parser: &mut ArgumentParser, args: Vec<String>) -> Result<(), String> {
+fn parse_args(parser: &mut ArgumentParser, args: &[String]) -> Result<(), String> {
     parser.stop_on_first_argument(true);
-    parser.parse(args, &mut sink(), &mut sink()).map_err(|code| s!(code))
+    parser.parse(args.to_vec(), &mut sink(), &mut sink()).map_err(|code| s!(code))
 }
 
 #[cfg(test)]#[test]

@@ -195,7 +195,7 @@ impl EntryContainer {
         } else if file.is_file() {
             self.push_file(pointer, file)
         } else {
-            puts_error!("at" => "push", "reason" => "Invalid path", "for" => path_to_str(&file));
+            puts_error!("at" => "push", "reason" => "Invalid path", "for" => path_to_str(file));
             false
         }
     }

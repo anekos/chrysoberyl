@@ -23,13 +23,13 @@ pub fn call(async: bool, command_line: &[String], tx: Option<Sender<Operation>>)
     };
 
     if async {
-        spawn(move || run(tx, command_line));
+        spawn(move || run(tx, &command_line));
     } else {
-        run(tx, command_line);
+        run(tx, &command_line);
     }
 }
 
-fn run(tx: Option<Sender<Operation>>, command_line: String) {
+fn run(tx: Option<Sender<Operation>>, command_line: &str) {
     let mut command = Command::new("setsid");
     command
         .args(&["bash", "-c"])

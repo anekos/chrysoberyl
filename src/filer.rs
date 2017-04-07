@@ -29,12 +29,12 @@ impl FileOperation {
         match *self {
             Copy(ref destination, ref if_exist) => {
                 destination_path(source, destination, if_exist).and_then(|dest| {
-                    fs::copy(source, dest).map_err(s).map(mangle)
+                    fs::copy(source, dest).map_err(|it| s(&it)).map(mangle)
                 })
             }
             Move(ref destination, ref if_exist) => {
                 destination_path(source, destination, if_exist).and_then(|dest| {
-                    fs::rename(source, dest).map_err(s).map(mangle)
+                    fs::rename(source, dest).map_err(|it| s(&it)).map(mangle)
                 })
             }
         }

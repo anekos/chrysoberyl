@@ -143,7 +143,7 @@ macro_rules! min {
 }
 
 
-pub fn s<T: Display>(x: T) -> String {
+pub fn s<T: Display>(x: &T) -> String {
     format!("{}", x)
 }
 

@@ -88,8 +88,7 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
 
                     queued += 1;
 
-                    let mut stack = stacks.get_mut(min_index).unwrap();
-                    *stack += 1;
+                    stacks[min_index] += 1;
 
                     let request = Request { serial: serial, url: url.clone(), cache_filepath: cache_filepath };
                     serial += 1;
@@ -100,8 +99,7 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
                 }
                 Done(index, request) => {
                     queued -= 1;
-                    let mut stack = stacks.get_mut(index).unwrap();
-                    *stack -= 1;
+                    stacks[index] -= 1;
 
                     buffer.push(request.serial, request);
 
@@ -113,8 +111,7 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
                 }
                 Fail(index, err, request) => {
                     queued -= 1;
-                    let mut stack = stacks.get_mut(index).unwrap();
-                    *stack -= 1;
+                    stacks[index] -= 1;
                     buffer.skip(request.serial);
                     puts_error!("at" => "HTTP/Get", "reason" => err, "url" => o!(request.url), "queue" => s!(queued), "buffer" => s!(buffer.len()));
                 }

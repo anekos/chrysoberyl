@@ -13,7 +13,7 @@ use operation::Operation;
 
 
 
-pub fn start_edit(tx: Sender<Operation>, editor_command: Option<String>, config_sources: Vec<ConfigSource>) {
+pub fn start_edit(tx: &Sender<Operation>, editor_command: Option<String>, config_sources: Vec<ConfigSource>) {
     let mut temp_file = {
         let mut temp = env::temp_dir();
         temp.push("chrysoberyl.XXXXXX");

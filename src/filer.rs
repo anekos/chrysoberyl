@@ -15,16 +15,16 @@ pub enum IfExist {
 
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Command {
+pub enum FileOperation {
     Copy(PathBuf, IfExist),
     Move(PathBuf, IfExist),
 }
 
 
 
-impl Command {
+impl FileOperation {
     pub fn execute(&self, source: &PathBuf) -> Result<(), String> {
-        use self::Command::*;
+        use self::FileOperation::*;
 
         match *self {
             Copy(ref destination, ref if_exist) => {

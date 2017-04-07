@@ -15,13 +15,13 @@ use rand::distributions::{IndependentSample, Range};
 
 use archive::{self, ArchiveEntry};
 use cherenkov::Cherenkoved;
-use command;
 use config;
 use constant;
 use controller;
 use editor;
 use entry::{Entry, EntryContainer, EntryContainerOptions};
 use events;
+use filer;
 use fragile_input::new_fragile_input;
 use gui::{Gui, ColorTarget};
 use http_cache::HttpCache;
@@ -164,8 +164,6 @@ impl App {
                     self.on_clear(&mut updated),
                 Color(ref target, ref color) =>
                     self.on_color(&mut updated, target, color),
-                Command(ref command) =>
-                    self.on_command(command),
                 Context(ref context, ref op) =>
                     return self.operate_with_context(op, Some(context)),
                 Count(count) =>
@@ -194,6 +192,8 @@ impl App {
                     self.on_next(&mut updated, count, len),
                 Nop =>
                     (),
+                OperateFile(ref file_operation) =>
+                    self.on_operate_file(file_operation),
                 Previous(count) =>
                     self.on_previous(&mut updated, count),
                 PrintEntries =>
@@ -329,22 +329,6 @@ impl App {
         };
     }
 
-    fn on_command(&mut self, command: &command::Command) {
-        use entry::Entry::*;
-
-        if let Some((entry, _)) = self.entries.current(&self.pointer) {
-            let result = match entry {
-                File(ref path) | Http(ref path, _) => command.execute(path),
-                Archive(_ , _) => Err(o!("copy/move does not support archive files."))
-            };
-            let command_str = format!("{:?}", command);
-            match result {
-                Ok(_) => puts_event!("command", "status" => "ok", "command" => command_str),
-                Err(err) => puts_event!("command", "status" => "fail", "reason" => err, "command" => command_str),
-            }
-        }
-    }
-
     fn on_editor(&mut self, editor_command: Option<String>, config_sources: Vec<config::ConfigSource>) {
         let tx = self.tx.clone();
         spawn(|| editor::start_edit(tx, editor_command, config_sources));
@@ -406,6 +390,22 @@ impl App {
 
     fn on_next(&mut self, updated: &mut Updated, count: Option<usize>, len: usize) {
         updated.pointer = self.pointer.with_count(count).next(len);
+    }
+
+    fn on_operate_file(&mut self, file_operation: &filer::FileOperation) {
+        use entry::Entry::*;
+
+        if let Some((entry, _)) = self.entries.current(&self.pointer) {
+            let result = match entry {
+                File(ref path) | Http(ref path, _) => file_operation.execute(path),
+                Archive(_ , _) => Err(o!("copy/move does not support archive files."))
+            };
+            let text = format!("{:?}", file_operation);
+            match result {
+                Ok(_) => puts_event!("operate_file", "status" => "ok", "operation" => text),
+                Err(err) => puts_event!("operate_file", "status" => "fail", "reason" => err, "operation" => text),
+            }
+        }
     }
 
     fn on_previous(&mut self, updated: &mut Updated,  count: Option<usize>) {

@@ -9,8 +9,8 @@ use css_color_parser::Color as CssColor;
 use shellexpand;
 
 use archive::ArchiveEntry;
-use command;
 use config::ConfigSource;
+use filer;
 use gui::ColorTarget;
 use mapping::{self, InputType, mouse_mapping};
 use state::StateName;
@@ -23,21 +23,21 @@ pub enum Operation {
     CherenkovClear,
     Clear,
     Color(ColorTarget, CssColor),
-    Command(command::Command),
     Context(OperationContext, Box<Operation>),
     Count(Option<usize>),
     CountDigit(u8),
-    LoadConfig(ConfigSource),
     Editor(Option<String>, Vec<ConfigSource>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>),
     Input(mapping::Input),
     Last(Option<usize>),
     LazyDraw(u64), /* serial */
+    LoadConfig(ConfigSource),
     Map(MappingTarget, Box<Operation>),
     Multi(Vec<Operation>),
     Next(Option<usize>),
     Nop,
+    OperateFile(filer::FileOperation),
     Previous(Option<usize>),
     PrintEntries,
     Push(String),
@@ -121,7 +121,7 @@ impl Operation {
 
 fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
     use self::Operation::*;
-    use command::Command::{Copy, Move};
+    use filer::FileOperation::{Copy, Move};
 
     if let Some(head) = whole.get(0) {
         let name = &*head.to_lowercase();
@@ -135,8 +135,8 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
         match name {
             "@cherenkov"                 => parse_cherenkov(whole),
             "@clear"                     => Ok(Clear),
-            "@copy"                      => parse_copy_or_move(whole).map(|(path, if_exist)| Command(Copy(path, if_exist))),
             "@color"                     => parse_color(whole),
+            "@copy"                      => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Copy(path, if_exist))),
             "@count"                     => parse_count(whole),
             "@disable"                   => parse_option_updater(whole, StateUpdater::Disable),
             "@editor"                    => parse_editor(whole),
@@ -149,7 +149,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@load"                      => parse_load(whole),
             "@map"                       => parse_map(whole),
             "@multi"                     => parse_multi(whole),
-            "@move"                      => parse_copy_or_move(whole).map(|(path, if_exist)| Command(Move(path, if_exist))),
+            "@move"                      => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Move(path, if_exist))),
             "@next" | "@n"               => parse_command_usize1(whole, Next),
             "@prev" | "@p" | "@previous" => parse_command_usize1(whole, Previous),
             "@push"                      => parse_command1(whole, |it| Push(expand(&it))),
@@ -234,16 +234,16 @@ fn parse_cherenkov(args: Vec<String>) -> Result<Operation, String> {
     })
 }
 
-fn parse_copy_or_move(args: Vec<String>) -> Result<(PathBuf, command::IfExist), String> {
+fn parse_copy_or_move(args: Vec<String>) -> Result<(PathBuf, filer::IfExist), String> {
     let mut destination = "".to_owned();
-    let mut if_exist = command::IfExist::NewFileName;
+    let mut if_exist = filer::IfExist::NewFileName;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut if_exist)
-            .add_option(&["--fail", "-f"], StoreConst(command::IfExist::Fail), "Fail if file exists")
-            .add_option(&["--overwrite", "-o"], StoreConst(command::IfExist::Overwrite), "Overwrite the file if file exists")
-            .add_option(&["--new", "--new-file-name", "-n"], StoreConst(command::IfExist::NewFileName), "Generate new file name if file exists (default)");
+            .add_option(&["--fail", "-f"], StoreConst(filer::IfExist::Fail), "Fail if file exists")
+            .add_option(&["--overwrite", "-o"], StoreConst(filer::IfExist::Overwrite), "Overwrite the file if file exists")
+            .add_option(&["--new", "--new-file-name", "-n"], StoreConst(filer::IfExist::NewFileName), "Generate new file name if file exists (default)");
         ap.refer(&mut destination).add_argument("destination", Store, "Destination directory").required();
         parse_args(&mut ap, args)
     } .map(|_| {

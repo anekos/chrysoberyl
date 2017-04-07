@@ -29,6 +29,7 @@ pub enum Operation {
     Editor(Option<String>, Vec<ConfigSource>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>),
+    Fragile(PathBuf),
     Input(mapping::Input),
     Last(Option<usize>),
     LazyDraw(u64), /* serial */
@@ -144,6 +145,7 @@ fn parse_from_vec(whole: Vec<String>) -> Result<Operation, String> {
             "@entries"                   => Ok(PrintEntries),
             "@expand"                    => parse_expand(whole),
             "@first" | "@f"              => parse_command_usize1(whole, First),
+            "@fragile"                   => parse_command1(whole, |it| Fragile(expand_to_pathbuf(&it))),
             "@input"                     => parse_input(whole),
             "@last" | "@l"               => parse_command_usize1(whole, Last),
             "@load"                      => parse_load(whole),

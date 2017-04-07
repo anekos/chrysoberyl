@@ -97,9 +97,6 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
             ap.refer(&mut initial.controllers.inputs)
                 .add_option(&["--input", "-i"], Collect, "Controller files")
                 .metavar("FILEPATH");
-            ap.refer(&mut initial.controllers.fragiles)
-                .add_option(&["--fragile", "-f"], Collect, "Chrysoberyl makes `fifo` controller file")
-                .metavar("FILEPATH");
             ap.refer(&mut initial.operations)
                 .add_option(&["--operation", "-o"], Collect, "Execute operations at start")
                 .metavar("OPERATION");

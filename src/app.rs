@@ -109,10 +109,6 @@ impl App {
             }
         }
 
-        for fragile in initial.controllers.fragiles.clone() {
-            new_fragile_input(&fragile);
-        }
-
         events::register(gui, primary_tx.clone());
         controller::register(tx.clone(), &initial.controllers);
 
@@ -180,6 +176,8 @@ impl App {
                     self.on_expand(&mut updated, recursive, base),
                 First(count) =>
                     updated.pointer = self.pointer.with_count(count).first(len),
+                Fragile(ref path) =>
+                    self.on_fragile(path),
                 Input(ref input) =>
                     self.on_input(input),
                 Last(count) =>
@@ -347,6 +345,10 @@ impl App {
             self.entries.expand(&mut self.pointer, base.clone(), count as u8, count as u8- 1);
         }
         updated.label = true;
+    }
+
+    fn on_fragile(&mut self, path: &PathBuf) {
+        new_fragile_input(self.tx.clone(), path_to_str(path));
     }
 
     fn on_input(&mut self, input: &Input) {

@@ -62,7 +62,7 @@ pub struct Initial {
     pub controllers: controller::Controllers,
     pub files: Vec<String>,
     pub encodings: Vec<EncodingRef>,
-    pub before: Vec<String>
+    pub operations: Vec<String>
 }
 
 struct Updated {
@@ -102,15 +102,11 @@ impl App {
 
         app.reset_view();
 
-        for op in &initial.before {
+        for op in &initial.operations {
             match Operation::from_str(op) {
                 Ok(op) => tx.send(op).unwrap(),
-                Err(err) => puts_error!("at" => "before", "reason" => err),
+                Err(err) => puts_error!("at" => "operation", "reason" => err),
             }
-        }
-
-        for fragile in initial.controllers.fragiles.clone() {
-            new_fragile_input(&fragile);
         }
 
         events::register(gui, primary_tx.clone());
@@ -180,6 +176,8 @@ impl App {
                     self.on_expand(&mut updated, recursive, base),
                 First(count) =>
                     updated.pointer = self.pointer.with_count(count).first(len),
+                Fragile(ref path) =>
+                    self.on_fragile(path),
                 Input(ref input) =>
                     self.on_input(input),
                 Last(count) =>
@@ -218,8 +216,8 @@ impl App {
                     self.on_random(&mut updated, len),
                 Refresh =>
                     updated.pointer = true,
-                Shell(async, read_operations, ref command_name, ref arguments) =>
-                    shell::call(async, command_name, arguments, option!(read_operations, self.tx.clone())),
+                Shell(async, read_operations, ref command_line) =>
+                    shell::call(async, command_line, option!(read_operations, self.tx.clone())),
                 Shuffle(fix_current) =>
                     self.on_shuffle(&mut updated, fix_current),
                 Sort =>
@@ -347,6 +345,10 @@ impl App {
             self.entries.expand(&mut self.pointer, base.clone(), count as u8, count as u8- 1);
         }
         updated.label = true;
+    }
+
+    fn on_fragile(&mut self, path: &PathBuf) {
+        new_fragile_input(self.tx.clone(), path_to_str(path));
     }
 
     fn on_input(&mut self, input: &Input) {
@@ -687,7 +689,7 @@ impl Initial {
             files: vec![],
             controllers: controller::Controllers::new(),
             encodings: vec![],
-            before: vec![],
+            operations: vec![],
         }
     }
 }

@@ -1,19 +1,16 @@
 
 use std::fs::File;
-use std::process::{Command, Stdio};
 use std::sync::mpsc::Sender;
 use std::thread::spawn;
 
 use operation::Operation;
 use operation_utils::read_operations;
-use termination;
 
 
 
 pub struct Controllers {
     pub inputs: Vec<String>,
-    pub fragiles: Vec<String>,
-    pub commands: Vec<String>
+    pub fragiles: Vec<String>
 }
 
 
@@ -21,8 +18,7 @@ impl Controllers {
     pub fn new() -> Controllers {
         Controllers {
             inputs: vec![],
-            fragiles: vec![],
-            commands: vec![],
+            fragiles: vec![]
         }
     }
 }
@@ -35,9 +31,6 @@ pub fn register(tx: Sender<Operation>, controllers: &Controllers) {
     }
     for path in &controllers.fragiles {
         fragile_controller(tx.clone(), path.clone());
-    }
-    for path in &controllers.commands {
-        command_controller(tx.clone(), path.clone());
     }
 
     stdin_controller(tx.clone());
@@ -79,34 +72,5 @@ fn stdin_controller(tx: Sender<Operation>) {
             tx.send(Operation::from_str_force(&line)).unwrap();
         }
         puts_event!("stdin_controller", "state" => "close");
-    });
-}
-
-
-fn command_controller(tx: Sender<Operation>, command: String) {
-    use std::io::{BufReader, BufRead};
-
-    spawn(move || {
-        let child = Command::new("setsid")
-            .arg("bash")
-            .arg("-c")
-            .arg(&command)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .spawn().unwrap();
-
-        puts_event!("command_controller", "state" => "open");
-
-        termination::register(termination::Process::Kill(child.id()));
-
-        if let Some(stdout) = child.stdout {
-            for line in BufReader::new(stdout).lines() {
-                let line = line.unwrap();
-                tx.send(Operation::from_str_force(&line)).unwrap();
-            }
-            puts_event!("command_controller", "state" => "close");
-        } else {
-            puts_error!("at" => "command_controller", "for" => command);
-        }
     });
 }

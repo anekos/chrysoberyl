@@ -48,7 +48,7 @@ pub enum Operation {
     Quit,
     Random,
     Refresh,
-    Shell(bool, bool, String, Vec<String>), /* async, operation, command_name, arguments */
+    Shell(bool, bool, Vec<String>), /* async, operation, command_line */
     Shuffle(bool), /* Fix current */
     Sort,
     UpdateOption(StateName, StateUpdater),
@@ -451,18 +451,16 @@ fn parse_option_updater(args: Vec<String>, modifier: StateUpdater) -> Result<Ope
 fn parse_shell(args: Vec<String>) -> Result<Operation, String> {
     let mut async = false;
     let mut read_operations = false;
-    let mut command = "".to_owned();
-    let mut command_arguments: Vec<String> = vec![];
+    let mut command_line: Vec<String> = vec![];
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut async).add_option(&["--async", "-a"], StoreTrue, "Async");
         ap.refer(&mut read_operations).add_option(&["--operation", "-o"], StoreTrue, "Read operations form stdout");
-        ap.refer(&mut command).add_argument("command", Store, "Command").required();
-        ap.refer(&mut command_arguments).add_argument("arguments", List, "Command arguments");
+        ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Shell(async, read_operations, command, command_arguments)
+        Operation::Shell(async, read_operations, command_line)
     })
 }
 

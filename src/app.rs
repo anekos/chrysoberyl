@@ -62,7 +62,7 @@ pub struct Initial {
     pub controllers: controller::Controllers,
     pub files: Vec<String>,
     pub encodings: Vec<EncodingRef>,
-    pub before: Vec<String>
+    pub operations: Vec<String>
 }
 
 struct Updated {
@@ -102,10 +102,10 @@ impl App {
 
         app.reset_view();
 
-        for op in &initial.before {
+        for op in &initial.operations {
             match Operation::from_str(op) {
                 Ok(op) => tx.send(op).unwrap(),
-                Err(err) => puts_error!("at" => "before", "reason" => err),
+                Err(err) => puts_error!("at" => "operation", "reason" => err),
             }
         }
 
@@ -218,8 +218,8 @@ impl App {
                     self.on_random(&mut updated, len),
                 Refresh =>
                     updated.pointer = true,
-                Shell(async, read_operations, ref command_name, ref arguments) =>
-                    shell::call(async, command_name, arguments, option!(read_operations, self.tx.clone())),
+                Shell(async, read_operations, ref command_line) =>
+                    shell::call(async, command_line, option!(read_operations, self.tx.clone())),
                 Shuffle(fix_current) =>
                     self.on_shuffle(&mut updated, fix_current),
                 Sort =>
@@ -687,7 +687,7 @@ impl Initial {
             files: vec![],
             controllers: controller::Controllers::new(),
             encodings: vec![],
-            before: vec![],
+            operations: vec![],
         }
     }
 }

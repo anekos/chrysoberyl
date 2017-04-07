@@ -1,5 +1,4 @@
 
-use std::env;
 use std::sync::mpsc::Receiver;
 use std::thread::{sleep};
 use std::time::{Duration, Instant};
@@ -13,7 +12,6 @@ use gtk;
 use app;
 use app_path;
 use config;
-use constant;
 use entry::EntryContainerOptions;
 use gui::Gui;
 use operation::Operation;

@@ -9,7 +9,6 @@ use encoding::EncodingRef;
 use encoding::label::encoding_from_whatwg_label;
 use env_logger;
 use gtk;
-use libc;
 
 use app;
 use app_path;
@@ -28,12 +27,6 @@ pub fn main() {
     let gui = Gui::new();
 
     let (mut app, primary_rx, secondary_rx) = parse_arguments(gui.clone());
-
-    unsafe {
-        let pid = s!(libc::getpid());
-        env::set_var(&constant::env_name("PID"), &pid);
-        puts_event!("info", "name" => "pid", "value" => pid);
-    }
 
     'outer: loop {
         while gtk::events_pending() {

@@ -8,12 +8,13 @@ use std::collections::{HashMap,HashSet};
 
 use css_color_parser::Color;
 use encoding::types::EncodingRef;
-use gtk::prelude::*;
 use gtk::Image;
+use gtk::prelude::*;
 use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
-use rand::{self, ThreadRng};
+use libc;
 use rand::distributions::{IndependentSample, Range};
+use rand::{self, ThreadRng};
 
 use archive::{self, ArchiveEntry};
 use cherenkov::Cherenkoved;
@@ -83,6 +84,12 @@ impl App {
             use encoding::all::*;
             initial.encodings.push(UTF_8);
             initial.encodings.push(WINDOWS_31J);
+        }
+
+        unsafe {
+            let pid = s!(libc::getpid());
+            env::set_var(&constant::env_name("PID"), &pid);
+            puts_event!("info", "name" => "pid", "value" => pid);
         }
 
         let mut app = App {

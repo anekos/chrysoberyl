@@ -116,8 +116,8 @@ impl App {
             }
         }
 
-        events::register(gui, primary_tx.clone());
-        controller::register(tx.clone(), &initial.controllers);
+        events::register(&gui, &primary_tx);
+        controller::register(&tx, &initial.controllers);
 
         app.update_label_visibility();
 
@@ -341,7 +341,7 @@ impl App {
 
     fn on_editor(&mut self, editor_command: Option<String>, config_sources: Vec<config::ConfigSource>) {
         let tx = self.tx.clone();
-        spawn(|| editor::start_edit(tx, editor_command, config_sources));
+        spawn(move || editor::start_edit(&tx, editor_command, config_sources));
     }
 
     fn on_expand(&mut self, updated: &mut Updated, recursive: bool, base: &Option<PathBuf>) {
@@ -378,7 +378,7 @@ impl App {
     }
 
     fn on_load_config(&mut self, config_source: &config::ConfigSource) {
-        config::load_config(self.tx.clone(), config_source);
+        config::load_config(&self.tx, config_source);
     }
 
     fn on_map(&mut self, target: &MappingTarget, operation: &Box<Operation>) {
@@ -552,8 +552,8 @@ impl App {
         use entry::Entry::*;
         use std::fmt::Display;
 
-        fn push<K: Display, V: Display>(pairs: &mut Vec<(String, String)>, key: K, value: V) {
-            pairs.push((s!(key), s!(value)));
+        fn push<V: Display>(pairs: &mut Vec<(String, String)>, key: &str, value: &V) {
+            pairs.push((o!(key), s!(value)));
         }
 
         let mut pairs: Vec<(String, String)> = vec![];
@@ -561,19 +561,19 @@ impl App {
         if let Some((entry, index)) = self.entries.current(&self.pointer) {
             match entry {
                 File(ref path) => {
-                    push(&mut pairs, "file", path_to_str(path));
+                    push(&mut pairs, "file", &path_to_str(path));
                 }
                 Http(ref path, ref url) => {
-                    push(&mut pairs, "file", path_to_str(path));
+                    push(&mut pairs, "file", &path_to_str(path));
                     push(&mut pairs, "url", url);
                 }
                 Archive(ref archive_file, ref entry) => {
-                    push(&mut pairs, "file", entry.name.clone());
-                    push(&mut pairs, "archive_file", path_to_str(archive_file));
+                    push(&mut pairs, "file", &entry.name);
+                    push(&mut pairs, "archive_file", &path_to_str(archive_file));
                 }
             }
-            push(&mut pairs, "index", index + 1);
-            push(&mut pairs, "count", self.entries.len());
+            push(&mut pairs, "index", &(index + 1));
+            push(&mut pairs, "count", &self.entries.len());
         }
 
         pairs

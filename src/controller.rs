@@ -23,7 +23,7 @@ impl Controllers {
 
 
 
-pub fn register(tx: Sender<Operation>, controllers: &Controllers) {
+pub fn register(tx: &Sender<Operation>, controllers: &Controllers) {
     for path in &controllers.inputs {
         file_controller(tx.clone(), path.clone());
     }
@@ -36,7 +36,7 @@ pub fn file_controller(tx: Sender<Operation>, filepath: String) {
     spawn(move || {
         if let Ok(file) = File::open(&filepath) {
             puts_event!("file_controller", "state" => "open");
-            read_operations(file, tx.clone());
+            read_operations(file, &tx);
             puts_event!("file_controller", "state" => "close");
         } else {
             puts_error!("at" => "file_controller", "reason" => "Could not open file", "for" => filepath);

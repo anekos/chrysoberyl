@@ -38,7 +38,7 @@ pub static DEFAULT_CONFIG: &'static str = "
 ";
 
 
-pub fn load_config(tx: Sender<Operation>, config_source: &ConfigSource) {
+pub fn load_config(tx: &Sender<Operation>, config_source: &ConfigSource) {
     let lines = config_lines(config_source);
 
     puts_event!("config_file", "state" => "open");

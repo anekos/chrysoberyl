@@ -124,16 +124,16 @@ pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Opera
                     if let Ok(block) = reader.read_block() {
                         if let Some(block) = block {
                             content.extend_from_slice(block);
-                            continue;
                         } else if content.is_empty() {
                             panic!("Empty content in archive");
                         } else {
                             buffer.push(serial, ArchiveEntry { name: (*name).to_owned(), index: index, content: Arc::new(content) });
+                            break;
                         }
                     } else {
                         buffer.skip(serial);
+                        break;
                     }
-                    break;
                 }
             }
 

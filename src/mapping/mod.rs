@@ -35,15 +35,15 @@ impl Mapping {
         }
     }
 
-    pub fn register_key(&mut self, key: &str, operation: Operation) {
+    pub fn register_key(&mut self, key: &str, operation: &Vec<String>) {
         self.key_mapping.register(key.to_owned(), operation);
     }
 
-    pub fn register_mouse(&mut self, button: u32, area: Option<mouse_mapping::Area>, operation: Operation) {
+    pub fn register_mouse(&mut self, button: u32, area: Option<mouse_mapping::Area>, operation: &Vec<String>) {
         self.mouse_mapping.register(button, area, operation);
     }
 
-    pub fn matched(&self, input: &Input, width: i32, height: i32) -> Option<Operation> {
+    pub fn matched(&self, input: &Input, width: i32, height: i32) -> Option<Result<Operation, String>> {
         match *input {
             Input::Key(ref key) =>
                 self.key_mapping.matched(key),

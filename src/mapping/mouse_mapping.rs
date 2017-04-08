@@ -2,7 +2,7 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use operation::Operation;
+use operation::{self, Operation};
 
 
 
@@ -11,7 +11,7 @@ pub struct MouseMapping {
 }
 
 pub struct WithArea {
-    operation: Operation,
+    operation: Vec<String>,
     area: Option<Area>
 }
 
@@ -29,8 +29,8 @@ impl MouseMapping {
         MouseMapping { table: HashMap::new() }
     }
 
-    pub fn register(&mut self, button: u32, area: Option<Area>, operation: Operation) {
-        let entry = WithArea { operation: operation, area: area.clone() };
+    pub fn register(&mut self, button: u32, area: Option<Area>, operation: &Vec<String>) {
+        let entry = WithArea { operation: operation.clone(), area: area.clone() };
         if area.is_some() {
             if let Some(mut entries) = self.table.get_mut(&button) {
                 entries.retain(|it| it.area != area);
@@ -41,18 +41,18 @@ impl MouseMapping {
         self.table.insert(button, vec![entry]);
     }
 
-    pub fn matched(&self, button: u32, x: i32, y: i32, width: i32, height: i32) -> Option<Operation> {
+    pub fn matched(&self, button: u32, x: i32, y: i32, width: i32, height: i32) -> Option<Result<Operation, String>> {
         self.table.get(&button).and_then(|entries| {
             let mut found = None;
 
             for entry in entries.iter() {
                 if let Some(area) = entry.area.clone() {
                     if area.contains(x, y, width, height) {
-                        found = Some(entry.operation.clone());
+                        found = Some(operation::parse_from_vec(&entry.operation));
                         break;
                     }
                 } else if found.is_none() {
-                    found = Some(entry.operation.clone());
+                    found = Some(operation::parse_from_vec(&entry.operation));
                 }
             }
 

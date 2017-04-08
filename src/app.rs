@@ -361,8 +361,12 @@ impl App {
     fn on_input(&mut self, input: &Input) {
         let (width, height) = self.gui.window.get_size();
         if let Some(op) = self.mapping.matched(input, width, height) {
-            let op = Operation::Context(OperationContext::Input(input.clone()), Box::new(op));
-            self.tx.send(op).unwrap();
+            match op {
+                Ok(op) =>
+                    self.operate(&Operation::Context(OperationContext::Input(input.clone()), Box::new(op))),
+                Err(err) =>
+                    puts_error!("at" => "input", "reason" => err)
+            }
         } else {
             self.puts_event_with_current(
                 input.type_name(),
@@ -381,7 +385,7 @@ impl App {
         config::load_config(&self.tx, config_source);
     }
 
-    fn on_map(&mut self, target: &MappingTarget, operation: &Box<Operation>) {
+    fn on_map(&mut self, target: &MappingTarget, operation: &Vec<String>) {
         use self::MappingTarget::*;
 
         // FIXME
@@ -390,9 +394,9 @@ impl App {
                     "operation" => format!("{:?}", operation));
         match *target {
             Key(ref key) =>
-                self.mapping.register_key(key, *operation.clone()),
+                self.mapping.register_key(key, operation),
             Mouse(ref button, ref area) =>
-                self.mapping.register_mouse(*button, area.clone(), *operation.clone())
+                self.mapping.register_mouse(*button, area.clone(), operation)
         }
     }
 

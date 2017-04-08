@@ -34,7 +34,7 @@ pub enum Operation {
     Last(Option<usize>),
     LazyDraw(u64), /* serial */
     LoadConfig(ConfigSource),
-    Map(MappingTarget, Box<Operation>),
+    Map(MappingTarget, Vec<String>),
     Multi(Vec<Operation>),
     Next(Option<usize>),
     Nop,
@@ -120,7 +120,7 @@ impl Operation {
 }
 
 
-fn parse_from_vec(whole: &[String]) -> Result<Operation, String> {
+pub fn parse_from_vec(whole: &[String]) -> Result<Operation, String> {
     use self::Operation::*;
     use filer::FileOperation::{Copy, Move};
 
@@ -349,10 +349,8 @@ fn parse_map(args: &[String]) -> Result<Operation, String> {
             ap.refer(&mut from).add_argument("from", Store, "Target key name").required();
             ap.refer(&mut to).add_argument("to", List, "Command").required();
             parse_args(&mut ap, args)
-        } .and_then(|_| {
-            parse_from_vec(&to).map(|op| {
-                Operation::Map(MappingTarget::Key(from), Box::new(op))
-            })
+        } .map(|_| {
+            Operation::Map(MappingTarget::Key(from), to)
         })
     }
 
@@ -367,10 +365,8 @@ fn parse_map(args: &[String]) -> Result<Operation, String> {
             ap.refer(&mut area).add_option(&["--area", "-a"], StoreOption, "Area");
             ap.refer(&mut to).add_argument("to", List, "Command").required();
             parse_args(&mut ap, args)
-        } .and_then(|_| {
-            parse_from_vec(&to).map(|op| {
-                Operation::Map(MappingTarget::Mouse(from, area), Box::new(op))
-            })
+        } .map(|_| {
+            Operation::Map(MappingTarget::Mouse(from, area), to)
         })
     }
 

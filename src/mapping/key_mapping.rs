@@ -1,11 +1,11 @@
 
 use std::collections::HashMap;
 
-use operation::Operation;
+use operation::{self, Operation};
 
 
 pub struct KeyMapping {
-    table: HashMap<String, Operation>
+    table: HashMap<String, Vec<String>>
 }
 
 
@@ -14,11 +14,13 @@ impl KeyMapping {
         KeyMapping { table: HashMap::new() }
     }
 
-    pub fn register(&mut self, key: String, operation: Operation) {
-        self.table.insert(key, operation);
+    pub fn register(&mut self, key: String, operation: &Vec<String>) {
+        self.table.insert(key, operation.clone());
     }
 
-    pub fn matched(&self, key: &str) -> Option<Operation> {
-        self.table.get(key).cloned()
+    pub fn matched(&self, key: &str) -> Option<Result<Operation, String>> {
+        self.table.get(key).cloned().map(|op| {
+            operation::parse_from_vec(&op)
+        })
     }
 }

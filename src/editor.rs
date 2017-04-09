@@ -24,7 +24,7 @@ pub fn start_edit(tx: &Sender<Operation>, editor_command: Option<String>, config
         for source in config_sources {
             let lines = config_lines(&source);
             for line in lines {
-                temp_file.write_all(format!("{}\n", line).as_bytes()).unwrap();
+                temp_file.write_all(format!("# {}\n", line).as_bytes()).unwrap();
             }
         }
     }

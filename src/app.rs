@@ -22,7 +22,7 @@ use config;
 use constant;
 use controller;
 use editor;
-use entry::{Entry, EntryContent, EntryContainer, EntryContainerOptions, Meta};
+use entry::{Entry, EntryContent, EntryContainer, EntryContainerOptions, MetaSlice, new_meta};
 use events;
 use filer;
 use fragile_input::new_fragile_input;
@@ -122,7 +122,7 @@ impl App {
         app.update_label_visibility();
 
         for file in &initial.files {
-           app.on_push(file.clone(), &vec![]);
+           app.on_push(file.clone(), &[]);
         }
 
         {
@@ -437,9 +437,9 @@ impl App {
         }
     }
 
-    fn on_push(&mut self, path: String, meta: &Meta) {
+    fn on_push(&mut self, path: String, meta: &MetaSlice) {
         if path.starts_with("http://") || path.starts_with("https://") {
-            self.tx.send(Operation::PushURL(path, o!(meta))).unwrap();
+            self.tx.send(Operation::PushURL(path, new_meta(meta))).unwrap();
             return;
         }
 
@@ -453,7 +453,7 @@ impl App {
             }
         }
 
-        self.operate(&Operation::PushPath(Path::new(&path).to_path_buf(), o!(meta)));
+        self.operate(&Operation::PushPath(Path::new(&path).to_path_buf(), new_meta(meta)));
     }
 
     fn on_push_archive_entry(&mut self, updated: &mut Updated, archive_path: &PathBuf, entry: &ArchiveEntry) {
@@ -461,17 +461,17 @@ impl App {
         updated.label = true;
     }
 
-    fn on_push_http_cache(&mut self, updated: &mut Updated, file: &PathBuf, url: &str, meta: &Meta) {
+    fn on_push_http_cache(&mut self, updated: &mut Updated, file: &PathBuf, url: &str, meta: &MetaSlice) {
         updated.pointer = self.entries.push_http_cache(&mut self.pointer, file, url, meta);
         updated.label = true;
     }
 
-    fn on_push_path(&mut self, updated: &mut Updated, file: PathBuf, meta: &Meta) {
+    fn on_push_path(&mut self, updated: &mut Updated, file: PathBuf, meta: &MetaSlice) {
         updated.pointer = self.entries.push_path(&mut self.pointer, &file, meta);
         updated.label = true;
     }
 
-    fn on_push_url(&mut self, url: String, meta: &Meta) {
+    fn on_push_url(&mut self, url: String, meta: &MetaSlice) {
         self.http_cache.fetch(url, meta);
     }
 

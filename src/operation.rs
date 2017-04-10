@@ -10,7 +10,7 @@ use shellexpand;
 
 use archive::ArchiveEntry;
 use config::ConfigSource;
-use entry::{Meta, MetaEntry};
+use entry::{Meta, MetaEntry, new_meta, new_meta_from_vec};
 use filer;
 use gui::ColorTarget;
 use mapping::{self, InputType, mouse_mapping};
@@ -98,7 +98,7 @@ impl Operation {
     pub fn from_str_force(s: &str) -> Operation {
         use std::str::FromStr;
 
-        Operation::from_str(s).unwrap_or_else(|_| Operation::Push(expand(s), vec![]))
+        Operation::from_str(s).unwrap_or_else(|_| Operation::Push(expand(s), new_meta(&[])))
     }
 
     fn user(args: Vec<String>) -> Operation {
@@ -453,7 +453,7 @@ where T: FnOnce(String, Meta) -> Operation {
 
         fn from_str(src: &str) -> Result<MetaEntry, String> {
             Ok({
-                if let Some(sep) = src.find("=") {
+                if let Some(sep) = src.find('=') {
                     let (key, value) = src.split_at(sep);
                     MetaEntry { key: o!(key), value: o!(value) }
                 } else {
@@ -463,7 +463,7 @@ where T: FnOnce(String, Meta) -> Operation {
         }
     }
 
-    let mut meta: Meta = vec![];
+    let mut meta: Vec<MetaEntry> = vec![];
     let mut path: String = o!("");
 
     {
@@ -472,7 +472,7 @@ where T: FnOnce(String, Meta) -> Operation {
         ap.refer(&mut path).add_argument("Path", Store, "Path to resource").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        op(path, meta)
+        op(path, new_meta_from_vec(meta))
     })
 }
 

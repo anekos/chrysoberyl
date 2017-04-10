@@ -12,7 +12,7 @@ use hyper_native_tls::NativeTlsClient;
 use url::Url;
 
 use app_path;
-use entry::Meta;
+use entry::{Meta, MetaSlice, new_meta};
 use operation::Operation;
 use sorting_buffer::SortingBuffer;
 
@@ -28,13 +28,14 @@ pub struct HttpCache {
 struct Request {
     serial: usize,
     url: String,
-    cache_filepath: PathBuf
+    cache_filepath: PathBuf,
+    meta: Meta
 }
 
 
 #[derive(Clone)]
 enum Getter {
-    Queue(String, PathBuf),
+    Queue(String, PathBuf, Meta),
     Done(usize, Request),
     Fail(usize, String, Request)
 }
@@ -46,13 +47,13 @@ impl HttpCache {
         HttpCache { app_tx: app_tx, main_tx: main_tx }
     }
 
-    pub fn fetch(&mut self, url: String, meta: &Meta) {
+    pub fn fetch(&mut self, url: String, meta: &MetaSlice) {
         let filepath = generate_temporary_filename(&url);
 
         if filepath.exists() {
-            self.app_tx.send(Operation::PushHttpCache(filepath, url, o!(meta))).unwrap();
+            self.app_tx.send(Operation::PushHttpCache(filepath, url, new_meta(meta))).unwrap();
         } else {
-            self.main_tx.send(Getter::Queue(url, filepath)).unwrap();
+            self.main_tx.send(Getter::Queue(url, filepath, new_meta(meta))).unwrap();
         }
     }
 }
@@ -77,7 +78,7 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
 
         while let Ok(it) = main_rx.recv() {
             match it {
-                Queue(url, cache_filepath) => {
+                Queue(url, cache_filepath, meta) => {
                     let mut min_index = 0;
                     let mut min_stack = <usize>::max_value();
                     for (index, stack) in stacks.iter().enumerate() {
@@ -91,7 +92,7 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
 
                     stacks[min_index] += 1;
 
-                    let request = Request { serial: serial, url: url.clone(), cache_filepath: cache_filepath };
+                    let request = Request { serial: serial, url: url.clone(), cache_filepath: cache_filepath, meta: meta };
                     serial += 1;
 
                     threads[min_index].send(request).unwrap();
@@ -105,8 +106,7 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
                     buffer.push(request.serial, request);
 
                     while let Some(request) = buffer.pull() {
-                        // FIXME
-                        app_tx.send(Operation::PushHttpCache(request.cache_filepath, request.url, vec![])).unwrap();
+                        app_tx.send(Operation::PushHttpCache(request.cache_filepath, request.url, request.meta)).unwrap();
                     }
 
                     puts!("event" => "HTTP", "state" => "done", "thread_id" => s!(index), "queue" => s!(queued), "buffer" => s!(buffer.len()));

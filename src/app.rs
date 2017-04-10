@@ -22,7 +22,7 @@ use config;
 use constant;
 use controller;
 use editor;
-use entry::{Entry, EntryContainer, EntryContainerOptions};
+use entry::{Entry, EntryContent, EntryContainer, EntryContainerOptions};
 use events;
 use filer;
 use fragile_input::new_fragile_input;
@@ -411,10 +411,10 @@ impl App {
     }
 
     fn on_operate_file(&mut self, file_operation: &filer::FileOperation) {
-        use entry::Entry::*;
+        use entry::EntryContent::*;
 
         if let Some((entry, _)) = self.entries.current(&self.pointer) {
-            let result = match entry {
+            let result = match entry.content {
                 File(ref path) | Http(ref path, _) => file_operation.execute(path),
                 Archive(_ , _) => Err(o!("copy/move does not support archive files."))
             };
@@ -553,7 +553,7 @@ impl App {
     /* Private methods */
 
     fn current_info(&self) -> Vec<(String, String)> {
-        use entry::Entry::*;
+        use entry::EntryContent::*;
         use std::fmt::Display;
 
         fn push<V: Display>(pairs: &mut Vec<(String, String)>, key: &str, value: &V) {
@@ -563,7 +563,7 @@ impl App {
         let mut pairs: Vec<(String, String)> = vec![];
 
         if let Some((entry, index)) = self.entries.current(&self.pointer) {
-            match entry {
+            match entry.content {
                 File(ref path) => {
                     push(&mut pairs, "file", &path_to_str(path));
                 }
@@ -584,10 +584,12 @@ impl App {
     }
 
     fn get_meta(&self, entry: &Entry) -> Result<GenericMetadata, immeta::Error> {
-        match *entry {
-            Entry::File(ref path) | Entry::Http(ref path, _) =>
+        use self::EntryContent::*;
+
+        match (*entry).content {
+            File(ref path) | Http(ref path, _) =>
                 immeta::load_from_file(&path),
-            Entry::Archive(_, ref entry) =>  {
+            Archive(_, ref entry) =>  {
                 immeta::load_from_buf(&entry.content)
             }
         }
@@ -648,12 +650,12 @@ impl App {
     }
 
     fn current_env(&self) -> HashMap<&str, String> {
-        use entry::Entry::*;
+        use entry::EntryContent::*;
 
         let mut envs: HashMap<&str, String> = HashMap::new();
 
         if let Some((entry, index)) = self.entries.current(&self.pointer) {
-            match entry {
+            match entry.content {
                 File(ref path) => {
                     envs.insert("file", o!(path_to_str(path)));
                 }

@@ -6,7 +6,7 @@ use gtk;
 use css_color_parser::Color;
 
 use color::gdk_rgba;
-use entry::Entry;
+use entry::{Entry, EntryContent};
 use utils::path_to_str;
 
 
@@ -63,11 +63,12 @@ impl Error {
 
 pub fn get_pixbuf(entry: &Entry, width: i32, height: i32) -> Result<Pixbuf, Error> {
     use gdk_pixbuf::InterpType;
+    use self::EntryContent::*;
 
-    match *entry {
-        Entry::File(ref path) | Entry::Http(ref path, _) =>
+    match (*entry).content {
+        File(ref path) | Http(ref path, _) =>
             Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
-        Entry::Archive(_, ref entry) => {
+        Archive(_, ref entry) => {
             let loader = PixbufLoader::new();
             loader.loader_write(&*entry.content.as_slice()).map(|_| {
                 loader.close().unwrap();
@@ -83,10 +84,12 @@ pub fn get_pixbuf(entry: &Entry, width: i32, height: i32) -> Result<Pixbuf, Erro
 
 
 pub fn get_pixbuf_animation(entry: &Entry) -> Result<PixbufAnimation, Error> {
-    match *entry {
-        Entry::File(ref path) | Entry::Http(ref path, _) =>
+    use self::EntryContent::*;
+
+    match (*entry).content {
+        File(ref path) | Http(ref path, _) =>
             PixbufAnimation::new_from_file(path_to_str(path)),
-        Entry::Archive(_, ref entry) => {
+        Archive(_, ref entry) => {
             let loader = PixbufLoader::new();
             loader.loader_write(&*entry.content.as_slice()).map(|_| {
                 loader.close().unwrap();

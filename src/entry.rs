@@ -31,12 +31,17 @@ pub struct EntryContainerOptions {
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
-pub enum Entry {
+pub struct Entry {
+    pub content: EntryContent
+}
+
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
+pub enum EntryContent {
     File(PathBuf),
     Http(PathBuf, String),
     Archive(Rc<PathBuf>, ArchiveEntry)
 }
-
 
 impl EntryContainer {
     pub fn new(options: EntryContainerOptions) -> EntryContainer {
@@ -79,8 +84,8 @@ impl EntryContainer {
 
     pub fn current_for_file(&self, pointer: &IndexPointer) -> Option<(PathBuf, usize, Entry)> {
         self.current(pointer).and_then(|(entry, index)| {
-            match entry {
-                Entry::File(ref path) => Some((path.clone(), index, entry.clone())),
+            match entry.content {
+                EntryContent::File(ref path) => Some((path.clone(), index, entry.clone())),
                 _ => None
             }
         })
@@ -95,7 +100,9 @@ impl EntryContainer {
             if let Some((file, index, current_entry)) = self.current_for_file(pointer) {
                 let dir = n_parents(file.clone(), n);
                 expand(&dir.to_path_buf(), recursive).ok().and_then(|middle| {
-                    let mut middle: Vec<Rc<Entry>> = middle.into_iter().map(Entry::File).filter(|entry| {
+                    let mut middle: Vec<Rc<Entry>> = middle.into_iter().map(|it| {
+                        Entry { content: EntryContent::File(it) }
+                    }).filter(|entry| {
                         current_entry == *entry || (!self.is_duplicated(entry) && self.is_valid_image(entry))
                     }).map(Rc::new).collect();
 
@@ -114,7 +121,9 @@ impl EntryContainer {
                 let dir = n_parents(dir, n - 1);
                 expand(&dir.to_path_buf(), recursive).ok().map(|files| {
                     let mut result = self.files.clone();
-                    let mut tail: Vec<Rc<Entry>> = files.into_iter().map(Entry::File).filter(|entry| {
+                    let mut tail: Vec<Rc<Entry>> = files.into_iter().map(|it| {
+                        Entry { content: EntryContent::File(it) }
+                    }).filter(|entry| {
                         !self.is_duplicated(entry) && self.is_valid_image(entry)
                     }).map(Rc::new).collect();
                     tail.sort();
@@ -202,16 +211,30 @@ impl EntryContainer {
 
     pub fn push_http_cache(&mut self, pointer: &mut IndexPointer, file: &PathBuf, url: &str) -> bool {
         let path = file.canonicalize().expect("canonicalize");
-        self.push_entry(pointer, Entry::Http(path, url.to_owned()))
+        self.push_entry(
+            pointer,
+            Entry {
+                content: EntryContent::Http(path, url.to_owned())
+            })
     }
 
     pub fn push_archive_entry(&mut self, pointer: &mut IndexPointer, archive_path: &PathBuf, entry: &ArchiveEntry) -> bool {
-        self.push_entry(pointer, Entry::Archive(Rc::new(archive_path.clone()), entry.clone()))
+        self.push_entry(
+            pointer,
+            Entry {
+                content: EntryContent::Archive(
+                             Rc::new(archive_path.clone()),
+                             entry.clone())
+            })
     }
 
     fn push_file(&mut self, pointer: &mut IndexPointer, file: &PathBuf) -> bool {
         let path = file.canonicalize().expect("canonicalize");
-        self.push_entry(pointer, Entry::File(path))
+        self.push_entry(
+            pointer,
+            Entry {
+                content: EntryContent::File(path)
+            })
     }
 
     fn push_directory(&mut self, pointer: &mut IndexPointer, dir: &PathBuf) -> bool {
@@ -232,9 +255,9 @@ impl EntryContainer {
     }
 
     fn is_valid_image(&self, entry: &Entry) -> bool {
-        use self::Entry::*;
+        use self::EntryContent::*;
 
-        match *entry {
+        match (*entry).content {
             File(ref path) | Http(ref path, _) => self.is_valid_image_file(path),
             Archive(_, _) => true // FIXME ??
         }
@@ -301,9 +324,9 @@ impl EntryContainerOptions {
 
 impl Entry {
     pub fn display_path(&self) -> String {
-        use self::Entry::*;
+        use self::EntryContent::*;
 
-        match *self {
+        match (*self).content {
             File(ref path) => path_to_str(path).to_owned(),
             Http(_, ref url) => url.clone(),
             Archive(ref archive_path, ref entry) => format!("{}@{}", entry.name, path_to_str(&*archive_path))

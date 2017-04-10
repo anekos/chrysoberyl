@@ -1,15 +1,16 @@
 
+use std::io::sink;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use std::io::sink;
 
-use argparse::{ArgumentParser, Store, StoreConst, StoreTrue, StoreOption, List, PushConst};
+use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreOption, List, PushConst};
 use cmdline_parser::Parser;
 use css_color_parser::Color as CssColor;
 use shellexpand;
 
 use archive::ArchiveEntry;
 use config::ConfigSource;
+use entry::{Meta, MetaEntry, new_meta, new_meta_from_vec};
 use filer;
 use gui::ColorTarget;
 use mapping::{self, InputType, mouse_mapping};
@@ -41,11 +42,11 @@ pub enum Operation {
     OperateFile(filer::FileOperation),
     Previous(Option<usize>),
     PrintEntries,
-    Push(String),
+    Push(String, Meta),
     PushArchiveEntry(PathBuf, ArchiveEntry),
-    PushHttpCache(PathBuf, String),
-    PushPath(PathBuf),
-    PushURL(String),
+    PushHttpCache(PathBuf, String, Meta),
+    PushPath(PathBuf, Meta),
+    PushURL(String, Meta),
     Quit,
     Random,
     Refresh,
@@ -97,7 +98,7 @@ impl Operation {
     pub fn from_str_force(s: &str) -> Operation {
         use std::str::FromStr;
 
-        Operation::from_str(s).unwrap_or_else(|_| Operation::Push(expand(s)))
+        Operation::from_str(s).unwrap_or_else(|_| Operation::Push(expand(s), new_meta(&[])))
     }
 
     fn user(args: Vec<String>) -> Operation {
@@ -153,9 +154,9 @@ pub fn parse_from_vec(whole: &[String]) -> Result<Operation, String> {
             "@move"                      => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Move(path, if_exist))),
             "@next" | "@n"               => parse_command_usize1(whole, Next),
             "@prev" | "@p" | "@previous" => parse_command_usize1(whole, Previous),
-            "@push"                      => parse_command1(whole, |it| Push(expand(&it))),
-            "@pushpath"                  => parse_command1(whole, |it| PushPath(expand_to_pathbuf(&it))),
-            "@pushurl"                   => parse_command1(whole, PushURL),
+            "@push"                      => parse_push(whole, |it, meta| Push(expand(&it), meta)),
+            "@pushpath"                  => parse_push(whole, |it, meta| PushPath(expand_to_pathbuf(&it), meta)),
+            "@pushurl"                   => parse_push(whole, PushURL),
             "@quit"                      => Ok(Quit),
             "@random" | "@rand"          => Ok(Random),
             "@refresh" | "@r"            => Ok(Refresh),
@@ -442,6 +443,36 @@ fn parse_option_updater(args: &[String], modifier: StateUpdater) -> Result<Opera
             "center" | "center-alignment" => Ok(UpdateOption(CenterAlignment, modifier)),
             _  => Err(format!("Unknown option: {}", name))
         }
+    })
+}
+
+fn parse_push<T>(args: &[String], op: T) -> Result<Operation, String>
+where T: FnOnce(String, Meta) -> Operation {
+    impl FromStr for MetaEntry {
+        type Err = String;
+
+        fn from_str(src: &str) -> Result<MetaEntry, String> {
+            Ok({
+                if let Some(sep) = src.find('=') {
+                    let (key, value) = src.split_at(sep);
+                    MetaEntry { key: o!(key), value: o!(value[1..]) }
+                } else {
+                    MetaEntry::new_without_value(o!(src))
+                }
+            })
+        }
+    }
+
+    let mut meta: Vec<MetaEntry> = vec![];
+    let mut path: String = o!("");
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut meta).add_option(&["--meta", "-m"], Collect, "Meta data");
+        ap.refer(&mut path).add_argument("Path", Store, "Path to resource").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        op(path, new_meta_from_vec(meta))
     })
 }
 

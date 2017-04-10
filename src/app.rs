@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::spawn;
-use std::collections::{HashMap,HashSet};
+use std::collections::HashSet;
 
 use css_color_parser::Color;
 use encoding::types::EncodingRef;
@@ -22,7 +22,7 @@ use config;
 use constant;
 use controller;
 use editor;
-use entry::{Entry, EntryContainer, EntryContainerOptions};
+use entry::{Entry, EntryContent, EntryContainer, EntryContainerOptions, MetaSlice, new_meta};
 use events;
 use filer;
 use fragile_input::new_fragile_input;
@@ -122,7 +122,7 @@ impl App {
         app.update_label_visibility();
 
         for file in &initial.files {
-           app.on_push(file.clone());
+           app.on_push(file.clone(), &[]);
         }
 
         {
@@ -207,16 +207,16 @@ impl App {
                     self.on_previous(&mut updated, count),
                 PrintEntries =>
                     self.on_print_entries(),
-                Push(ref path) =>
-                    self.on_push(path.clone()),
+                Push(ref path, ref meta) =>
+                    self.on_push(path.clone(), meta),
                 PushArchiveEntry(ref archive_path, ref entry) =>
                     self.on_push_archive_entry(&mut updated, archive_path, entry),
-                PushHttpCache(ref file, ref url) =>
-                    self.on_push_http_cache(&mut updated, file, url),
-                PushPath(ref file) =>
-                    self.on_push_path(&mut updated, file.clone()),
-                PushURL(ref url) =>
-                    self.on_push_url(url.clone()),
+                PushHttpCache(ref file, ref url, ref meta) =>
+                    self.on_push_http_cache(&mut updated, file, url, meta),
+                PushPath(ref file, ref meta) =>
+                    self.on_push_path(&mut updated, file.clone(), meta),
+                PushURL(ref url, ref meta) =>
+                    self.on_push_url(url.clone(), meta),
                 Quit =>
                     termination::execute(),
                 Random =>
@@ -411,10 +411,10 @@ impl App {
     }
 
     fn on_operate_file(&mut self, file_operation: &filer::FileOperation) {
-        use entry::Entry::*;
+        use entry::EntryContent::*;
 
         if let Some((entry, _)) = self.entries.current(&self.pointer) {
-            let result = match entry {
+            let result = match entry.content {
                 File(ref path) | Http(ref path, _) => file_operation.execute(path),
                 Archive(_ , _) => Err(o!("copy/move does not support archive files."))
             };
@@ -437,9 +437,9 @@ impl App {
         }
     }
 
-    fn on_push(&mut self, path: String) {
+    fn on_push(&mut self, path: String, meta: &MetaSlice) {
         if path.starts_with("http://") || path.starts_with("https://") {
-            self.tx.send(Operation::PushURL(path)).unwrap();
+            self.tx.send(Operation::PushURL(path, new_meta(meta))).unwrap();
             return;
         }
 
@@ -453,7 +453,7 @@ impl App {
             }
         }
 
-        self.operate(&Operation::PushPath(Path::new(&path).to_path_buf()));
+        self.operate(&Operation::PushPath(Path::new(&path).to_path_buf(), new_meta(meta)));
     }
 
     fn on_push_archive_entry(&mut self, updated: &mut Updated, archive_path: &PathBuf, entry: &ArchiveEntry) {
@@ -461,18 +461,18 @@ impl App {
         updated.label = true;
     }
 
-    fn on_push_http_cache(&mut self, updated: &mut Updated, file: &PathBuf, url: &str) {
-        updated.pointer = self.entries.push_http_cache(&mut self.pointer, file, url);
+    fn on_push_http_cache(&mut self, updated: &mut Updated, file: &PathBuf, url: &str, meta: &MetaSlice) {
+        updated.pointer = self.entries.push_http_cache(&mut self.pointer, file, url, meta);
         updated.label = true;
     }
 
-    fn on_push_path(&mut self, updated: &mut Updated, file: PathBuf) {
-        updated.pointer = self.entries.push_path(&mut self.pointer, &file);
+    fn on_push_path(&mut self, updated: &mut Updated, file: PathBuf, meta: &MetaSlice) {
+        updated.pointer = self.entries.push_path(&mut self.pointer, &file, meta);
         updated.label = true;
     }
 
-    fn on_push_url(&mut self, url: String) {
-        self.http_cache.fetch(url);
+    fn on_push_url(&mut self, url: String, meta: &MetaSlice) {
+        self.http_cache.fetch(url, meta);
     }
 
     fn on_random(&mut self, updated: &mut Updated, len: usize) {
@@ -552,42 +552,13 @@ impl App {
 
     /* Private methods */
 
-    fn current_info(&self) -> Vec<(String, String)> {
-        use entry::Entry::*;
-        use std::fmt::Display;
-
-        fn push<V: Display>(pairs: &mut Vec<(String, String)>, key: &str, value: &V) {
-            pairs.push((o!(key), s!(value)));
-        }
-
-        let mut pairs: Vec<(String, String)> = vec![];
-
-        if let Some((entry, index)) = self.entries.current(&self.pointer) {
-            match entry {
-                File(ref path) => {
-                    push(&mut pairs, "file", &path_to_str(path));
-                }
-                Http(ref path, ref url) => {
-                    push(&mut pairs, "file", &path_to_str(path));
-                    push(&mut pairs, "url", url);
-                }
-                Archive(ref archive_file, ref entry) => {
-                    push(&mut pairs, "file", &entry.name);
-                    push(&mut pairs, "archive_file", &path_to_str(archive_file));
-                }
-            }
-            push(&mut pairs, "index", &(index + 1));
-            push(&mut pairs, "count", &self.entries.len());
-        }
-
-        pairs
-    }
-
     fn get_meta(&self, entry: &Entry) -> Result<GenericMetadata, immeta::Error> {
-        match *entry {
-            Entry::File(ref path) | Entry::Http(ref path, _) =>
+        use self::EntryContent::*;
+
+        match (*entry).content {
+            File(ref path) | Http(ref path, _) =>
                 immeta::load_from_file(&path),
-            Entry::Archive(_, ref entry) =>  {
+            Archive(_, ref entry) =>  {
                 immeta::load_from_buf(&entry.content)
             }
         }
@@ -595,7 +566,7 @@ impl App {
 
     fn puts_event_with_current(&self, event: &str, data: Option<&[(String, String)]>) {
         let mut pairs = vec![(o!("event"), o!(event))];
-        pairs.extend_from_slice(self.current_info().as_slice());
+        pairs.extend_from_slice(self.current_env().as_slice());
         if let Some(data) = data {
             pairs.extend_from_slice(data);
         }
@@ -638,8 +609,8 @@ impl App {
     fn update_env(&mut self) {
         let mut new_keys = HashSet::<String>::new();
         for (name, value) in self.current_env() {
-            new_keys.insert(o!(name));
-            env::set_var(constant::env_name(name), value);
+            env::set_var(constant::env_name(&name), value);
+            new_keys.insert(name);
         }
         for name in self.current_env_keys.difference(&new_keys) {
             env::remove_var(name);
@@ -647,27 +618,30 @@ impl App {
         self.current_env_keys = new_keys;
     }
 
-    fn current_env(&self) -> HashMap<&str, String> {
-        use entry::Entry::*;
+    fn current_env(&self) -> Vec<(String, String)> {
+        use entry::EntryContent::*;
 
-        let mut envs: HashMap<&str, String> = HashMap::new();
+        let mut envs: Vec<(String, String)> = vec![];
 
         if let Some((entry, index)) = self.entries.current(&self.pointer) {
-            match entry {
+            for entry in entry.meta.iter() {
+                envs.push((format!("meta_{}", entry.key), entry.value.clone()));
+            }
+            match entry.content {
                 File(ref path) => {
-                    envs.insert("file", o!(path_to_str(path)));
+                    envs.push((o!("file"), o!(path_to_str(path))));
                 }
                 Http(ref path, ref url) => {
-                    envs.insert("file", o!(path_to_str(path)));
-                    envs.insert("url", o!(url));
+                    envs.push((o!("file"), o!(path_to_str(path))));
+                    envs.push((o!("url"), o!(url)));
                 }
                 Archive(ref archive_file, ref entry) => {
-                    envs.insert("file", entry.name.clone());
-                    envs.insert("archive_file", o!(path_to_str(archive_file)));
+                    envs.push((o!("file"), entry.name.clone()));
+                    envs.push((o!("archive_file"), o!(path_to_str(archive_file))));
                 }
             }
-            envs.insert("index", s!(index + 1));
-            envs.insert("count", s!(self.entries.len()));
+            envs.push((o!("index"), s!(index + 1)));
+            envs.push((o!("count"), s!(self.entries.len())));
         }
 
         envs

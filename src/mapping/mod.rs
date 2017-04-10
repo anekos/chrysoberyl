@@ -35,11 +35,11 @@ impl Mapping {
         }
     }
 
-    pub fn register_key(&mut self, key: &str, operation: &Vec<String>) {
+    pub fn register_key(&mut self, key: &str, operation: &[String]) {
         self.key_mapping.register(key.to_owned(), operation);
     }
 
-    pub fn register_mouse(&mut self, button: u32, area: Option<mouse_mapping::Area>, operation: &Vec<String>) {
+    pub fn register_mouse(&mut self, button: u32, area: Option<mouse_mapping::Area>, operation: &[String]) {
         self.mouse_mapping.register(button, area, operation);
     }
 

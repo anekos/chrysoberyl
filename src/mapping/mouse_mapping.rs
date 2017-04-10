@@ -29,8 +29,8 @@ impl MouseMapping {
         MouseMapping { table: HashMap::new() }
     }
 
-    pub fn register(&mut self, button: u32, area: Option<Area>, operation: &Vec<String>) {
-        let entry = WithArea { operation: operation.clone(), area: area.clone() };
+    pub fn register(&mut self, button: u32, area: Option<Area>, operation: &[String]) {
+        let entry = WithArea { operation: operation.to_vec(), area: area.clone() };
         if area.is_some() {
             if let Some(mut entries) = self.table.get_mut(&button) {
                 entries.retain(|it| it.area != area);

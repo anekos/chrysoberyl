@@ -10,16 +10,16 @@ use termination;
 
 
 
-pub fn call(async: bool, command_line: &Vec<String>, tx: Option<Sender<Operation>>) {
+pub fn call(async: bool, command_line: &[String], tx: Option<Sender<Operation>>) {
     if async {
-        let command_line = command_line.clone();
+        let command_line = command_line.to_vec();
         spawn(move || run(tx, &command_line));
     } else {
         run(tx, command_line);
     }
 }
 
-fn run(tx: Option<Sender<Operation>>, command_line: &Vec<String>) {
+fn run(tx: Option<Sender<Operation>>, command_line: &[String]) {
     let mut command = Command::new("setsid");
     command
         .args(command_line);
@@ -55,7 +55,7 @@ fn process_stdout(tx: Option<Sender<Operation>>, mut child: Child) -> bool {
     true
 }
 
-fn join(xs: &Vec<String>) -> String {
+fn join(xs: &[String]) -> String {
     let mut result = o!("");
     for x in xs {
         write!(result, "{},", x).unwrap();

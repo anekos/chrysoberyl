@@ -385,7 +385,7 @@ impl App {
         config::load_config(&self.tx, config_source);
     }
 
-    fn on_map(&mut self, target: &MappingTarget, operation: &Vec<String>) {
+    fn on_map(&mut self, target: &MappingTarget, operation: &[String]) {
         use self::MappingTarget::*;
 
         // FIXME

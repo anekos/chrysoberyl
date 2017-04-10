@@ -14,8 +14,8 @@ impl KeyMapping {
         KeyMapping { table: HashMap::new() }
     }
 
-    pub fn register(&mut self, key: String, operation: &Vec<String>) {
-        self.table.insert(key, operation.clone());
+    pub fn register(&mut self, key: String, operation: &[String]) {
+        self.table.insert(key, operation.to_vec());
     }
 
     pub fn matched(&self, key: &str) -> Option<Result<Operation, String>> {

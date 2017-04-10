@@ -22,7 +22,7 @@ use config;
 use constant;
 use controller;
 use editor;
-use entry::{Entry, EntryContent, EntryContainer, EntryContainerOptions};
+use entry::{Entry, EntryContent, EntryContainer, EntryContainerOptions, Meta};
 use events;
 use filer;
 use fragile_input::new_fragile_input;
@@ -122,7 +122,7 @@ impl App {
         app.update_label_visibility();
 
         for file in &initial.files {
-           app.on_push(file.clone());
+           app.on_push(file.clone(), &vec![]);
         }
 
         {
@@ -207,16 +207,16 @@ impl App {
                     self.on_previous(&mut updated, count),
                 PrintEntries =>
                     self.on_print_entries(),
-                Push(ref path) =>
-                    self.on_push(path.clone()),
+                Push(ref path, ref meta) =>
+                    self.on_push(path.clone(), meta),
                 PushArchiveEntry(ref archive_path, ref entry) =>
                     self.on_push_archive_entry(&mut updated, archive_path, entry),
-                PushHttpCache(ref file, ref url) =>
-                    self.on_push_http_cache(&mut updated, file, url),
-                PushPath(ref file) =>
-                    self.on_push_path(&mut updated, file.clone()),
-                PushURL(ref url) =>
-                    self.on_push_url(url.clone()),
+                PushHttpCache(ref file, ref url, ref meta) =>
+                    self.on_push_http_cache(&mut updated, file, url, meta),
+                PushPath(ref file, ref meta) =>
+                    self.on_push_path(&mut updated, file.clone(), meta),
+                PushURL(ref url, ref meta) =>
+                    self.on_push_url(url.clone(), meta),
                 Quit =>
                     termination::execute(),
                 Random =>
@@ -437,9 +437,9 @@ impl App {
         }
     }
 
-    fn on_push(&mut self, path: String) {
+    fn on_push(&mut self, path: String, meta: &Meta) {
         if path.starts_with("http://") || path.starts_with("https://") {
-            self.tx.send(Operation::PushURL(path)).unwrap();
+            self.tx.send(Operation::PushURL(path, o!(meta))).unwrap();
             return;
         }
 
@@ -453,7 +453,7 @@ impl App {
             }
         }
 
-        self.operate(&Operation::PushPath(Path::new(&path).to_path_buf()));
+        self.operate(&Operation::PushPath(Path::new(&path).to_path_buf(), o!(meta)));
     }
 
     fn on_push_archive_entry(&mut self, updated: &mut Updated, archive_path: &PathBuf, entry: &ArchiveEntry) {
@@ -461,18 +461,18 @@ impl App {
         updated.label = true;
     }
 
-    fn on_push_http_cache(&mut self, updated: &mut Updated, file: &PathBuf, url: &str) {
-        updated.pointer = self.entries.push_http_cache(&mut self.pointer, file, url);
+    fn on_push_http_cache(&mut self, updated: &mut Updated, file: &PathBuf, url: &str, meta: &Meta) {
+        updated.pointer = self.entries.push_http_cache(&mut self.pointer, file, url, meta);
         updated.label = true;
     }
 
-    fn on_push_path(&mut self, updated: &mut Updated, file: PathBuf) {
-        updated.pointer = self.entries.push_path(&mut self.pointer, &file);
+    fn on_push_path(&mut self, updated: &mut Updated, file: PathBuf, meta: &Meta) {
+        updated.pointer = self.entries.push_path(&mut self.pointer, &file, meta);
         updated.label = true;
     }
 
-    fn on_push_url(&mut self, url: String) {
-        self.http_cache.fetch(url);
+    fn on_push_url(&mut self, url: String, meta: &Meta) {
+        self.http_cache.fetch(url, meta);
     }
 
     fn on_random(&mut self, updated: &mut Updated, len: usize) {

@@ -12,6 +12,7 @@ use hyper_native_tls::NativeTlsClient;
 use url::Url;
 
 use app_path;
+use entry::Meta;
 use operation::Operation;
 use sorting_buffer::SortingBuffer;
 
@@ -45,11 +46,11 @@ impl HttpCache {
         HttpCache { app_tx: app_tx, main_tx: main_tx }
     }
 
-    pub fn fetch(&mut self, url: String) {
+    pub fn fetch(&mut self, url: String, meta: &Meta) {
         let filepath = generate_temporary_filename(&url);
 
         if filepath.exists() {
-            self.app_tx.send(Operation::PushHttpCache(filepath, url)).unwrap();
+            self.app_tx.send(Operation::PushHttpCache(filepath, url, o!(meta))).unwrap();
         } else {
             self.main_tx.send(Getter::Queue(url, filepath)).unwrap();
         }
@@ -104,7 +105,8 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
                     buffer.push(request.serial, request);
 
                     while let Some(request) = buffer.pull() {
-                        app_tx.send(Operation::PushHttpCache(request.cache_filepath, request.url)).unwrap();
+                        // FIXME
+                        app_tx.send(Operation::PushHttpCache(request.cache_filepath, request.url, vec![])).unwrap();
                     }
 
                     puts!("event" => "HTTP", "state" => "done", "thread_id" => s!(index), "queue" => s!(queued), "buffer" => s!(buffer.len()));

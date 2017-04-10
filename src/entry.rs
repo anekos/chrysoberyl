@@ -36,9 +36,8 @@ pub struct EntryContainerOptions {
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Entry {
     pub content: EntryContent,
-    pub meta: HashMap<String, String>
+    pub meta: Meta
 }
-
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
 pub enum EntryContent {
@@ -47,11 +46,23 @@ pub enum EntryContent {
     Archive(Rc<PathBuf>, ArchiveEntry)
 }
 
+pub type Meta = Vec<MetaEntry>;
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct MetaEntry {
+    pub key: String,
+    pub value: String
+}
+
 
 
 impl Entry {
-    pub fn new(content: EntryContent) -> Entry {
-        Entry { content: content, meta: HashMap::new() }
+    pub fn new(content: EntryContent, meta: Meta) -> Entry {
+        Entry { content: content, meta: meta }
+    }
+
+    pub fn new_without_meta(content: EntryContent) -> Entry {
+        Entry { content: content, meta: vec![] }
     }
 }
 
@@ -132,7 +143,7 @@ impl EntryContainer {
                 let dir = n_parents(file.clone(), n);
                 expand(&dir.to_path_buf(), recursive).ok().and_then(|middle| {
                     let mut middle: Vec<Rc<Entry>> = middle.into_iter().map(|it| {
-                        Entry::new(EntryContent::File(it))
+                        Entry::new(EntryContent::File(it), vec![])
                     }).filter(|entry| {
                         current_entry == *entry || (!self.is_duplicated(entry) && self.is_valid_image(entry))
                     }).map(Rc::new).collect();
@@ -153,7 +164,7 @@ impl EntryContainer {
                 expand(&dir.to_path_buf(), recursive).ok().map(|files| {
                     let mut result = self.files.clone();
                     let mut tail: Vec<Rc<Entry>> = files.into_iter().map(|it| {
-                        Entry::new(EntryContent::File(it))
+                        Entry::new(EntryContent::File(it), vec![])
                     }).filter(|entry| {
                         !self.is_duplicated(entry) && self.is_valid_image(entry)
                     }).map(Rc::new).collect();
@@ -229,46 +240,46 @@ impl EntryContainer {
         }
     }
 
-    pub fn push_path(&mut self, pointer: &mut IndexPointer, file: &PathBuf) -> bool {
+    pub fn push_path(&mut self, pointer: &mut IndexPointer, file: &PathBuf, meta: &Meta) -> bool {
         if file.is_dir() {
-            self.push_directory(pointer, file)
+            self.push_directory(pointer, file, meta)
         } else if file.is_file() {
-            self.push_file(pointer, file)
+            self.push_file(pointer, file, meta)
         } else {
             puts_error!("at" => "push", "reason" => "Invalid path", "for" => path_to_str(file));
             false
         }
     }
 
-    pub fn push_http_cache(&mut self, pointer: &mut IndexPointer, file: &PathBuf, url: &str) -> bool {
+    pub fn push_http_cache(&mut self, pointer: &mut IndexPointer, file: &PathBuf, url: &str, meta: &Meta) -> bool {
         let path = file.canonicalize().expect("canonicalize");
         self.push_entry(
             pointer,
-            Entry::new(EntryContent::Http(path, url.to_owned())))
+            Entry::new(EntryContent::Http(path, url.to_owned()), o!(meta)))
     }
 
     pub fn push_archive_entry(&mut self, pointer: &mut IndexPointer, archive_path: &PathBuf, entry: &ArchiveEntry) -> bool {
         self.push_entry(
             pointer,
-            Entry::new(
+            Entry::new_without_meta(
                 EntryContent::Archive(
                     Rc::new(archive_path.clone()),
                     entry.clone())))
     }
 
-    fn push_file(&mut self, pointer: &mut IndexPointer, file: &PathBuf) -> bool {
+    fn push_file(&mut self, pointer: &mut IndexPointer, file: &PathBuf, meta: &Meta) -> bool {
         let path = file.canonicalize().expect("canonicalize");
         self.push_entry(
             pointer,
-            Entry::new(EntryContent::File(path)))
+            Entry::new(EntryContent::File(path), o!(meta)))
     }
 
-    fn push_directory(&mut self, pointer: &mut IndexPointer, dir: &PathBuf) -> bool {
+    fn push_directory(&mut self, pointer: &mut IndexPointer, dir: &PathBuf, meta: &Meta) -> bool {
         let mut changed = false;
 
         through!([expanded = expand(dir, <u8>::max_value())] {
             for file in expanded {
-                changed |= self.push_file(pointer, &file);
+                changed |= self.push_file(pointer, &file, meta);
             }
         });
 
@@ -357,6 +368,13 @@ impl Entry {
             Http(_, ref url) => url.clone(),
             Archive(ref archive_path, ref entry) => format!("{}@{}", entry.name, path_to_str(&*archive_path))
         }
+    }
+}
+
+
+impl MetaEntry {
+    pub fn new_without_value(key: String) -> MetaEntry {
+        MetaEntry { key: key, value: o!("true") }
     }
 }
 

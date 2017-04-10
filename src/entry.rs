@@ -151,7 +151,7 @@ impl EntryContainer {
                 let dir = n_parents(file.clone(), n);
                 expand(&dir.to_path_buf(), recursive).ok().and_then(|middle| {
                     let mut middle: Vec<Rc<Entry>> = middle.into_iter().map(|it| {
-                        Entry::new(EntryContent::File(it), new_meta(&[]))
+                        Entry::new(EntryContent::File(it), current_entry.meta.clone())
                     }).filter(|entry| {
                         current_entry == *entry || (!self.is_duplicated(entry) && self.is_valid_image(entry))
                     }).map(Rc::new).collect();

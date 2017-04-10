@@ -455,7 +455,7 @@ where T: FnOnce(String, Meta) -> Operation {
             Ok({
                 if let Some(sep) = src.find('=') {
                     let (key, value) = src.split_at(sep);
-                    MetaEntry { key: o!(key), value: o!(value) }
+                    MetaEntry { key: o!(key), value: o!(value[1..]) }
                 } else {
                     MetaEntry::new_without_value(o!(src))
                 }

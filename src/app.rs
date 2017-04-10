@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::spawn;
-use std::collections::{HashMap,HashSet};
+use std::collections::HashSet;
 
 use css_color_parser::Color;
 use encoding::types::EncodingRef;
@@ -552,37 +552,6 @@ impl App {
 
     /* Private methods */
 
-    fn current_info(&self) -> Vec<(String, String)> {
-        use entry::EntryContent::*;
-        use std::fmt::Display;
-
-        fn push<V: Display>(pairs: &mut Vec<(String, String)>, key: &str, value: &V) {
-            pairs.push((o!(key), s!(value)));
-        }
-
-        let mut pairs: Vec<(String, String)> = vec![];
-
-        if let Some((entry, index)) = self.entries.current(&self.pointer) {
-            match entry.content {
-                File(ref path) => {
-                    push(&mut pairs, "file", &path_to_str(path));
-                }
-                Http(ref path, ref url) => {
-                    push(&mut pairs, "file", &path_to_str(path));
-                    push(&mut pairs, "url", url);
-                }
-                Archive(ref archive_file, ref entry) => {
-                    push(&mut pairs, "file", &entry.name);
-                    push(&mut pairs, "archive_file", &path_to_str(archive_file));
-                }
-            }
-            push(&mut pairs, "index", &(index + 1));
-            push(&mut pairs, "count", &self.entries.len());
-        }
-
-        pairs
-    }
-
     fn get_meta(&self, entry: &Entry) -> Result<GenericMetadata, immeta::Error> {
         use self::EntryContent::*;
 
@@ -597,7 +566,7 @@ impl App {
 
     fn puts_event_with_current(&self, event: &str, data: Option<&[(String, String)]>) {
         let mut pairs = vec![(o!("event"), o!(event))];
-        pairs.extend_from_slice(self.current_info().as_slice());
+        pairs.extend_from_slice(self.current_env().as_slice());
         if let Some(data) = data {
             pairs.extend_from_slice(data);
         }
@@ -640,8 +609,8 @@ impl App {
     fn update_env(&mut self) {
         let mut new_keys = HashSet::<String>::new();
         for (name, value) in self.current_env() {
-            new_keys.insert(o!(name));
-            env::set_var(constant::env_name(name), value);
+            env::set_var(constant::env_name(&name), value);
+            new_keys.insert(name);
         }
         for name in self.current_env_keys.difference(&new_keys) {
             env::remove_var(name);
@@ -649,27 +618,30 @@ impl App {
         self.current_env_keys = new_keys;
     }
 
-    fn current_env(&self) -> HashMap<&str, String> {
+    fn current_env(&self) -> Vec<(String, String)> {
         use entry::EntryContent::*;
 
-        let mut envs: HashMap<&str, String> = HashMap::new();
+        let mut envs: Vec<(String, String)> = vec![];
 
         if let Some((entry, index)) = self.entries.current(&self.pointer) {
+            for entry in entry.meta.iter() {
+                envs.push((format!("meta_{}", entry.key), entry.value.clone()));
+            }
             match entry.content {
                 File(ref path) => {
-                    envs.insert("file", o!(path_to_str(path)));
+                    envs.push((o!("file"), o!(path_to_str(path))));
                 }
                 Http(ref path, ref url) => {
-                    envs.insert("file", o!(path_to_str(path)));
-                    envs.insert("url", o!(url));
+                    envs.push((o!("file"), o!(path_to_str(path))));
+                    envs.push((o!("url"), o!(url)));
                 }
                 Archive(ref archive_file, ref entry) => {
-                    envs.insert("file", entry.name.clone());
-                    envs.insert("archive_file", o!(path_to_str(archive_file)));
+                    envs.push((o!("file"), entry.name.clone()));
+                    envs.push((o!("archive_file"), o!(path_to_str(archive_file))));
                 }
             }
-            envs.insert("index", s!(index + 1));
-            envs.insert("count", s!(self.entries.len()));
+            envs.push((o!("index"), s!(index + 1)));
+            envs.push((o!("count"), s!(self.entries.len())));
         }
 
         envs

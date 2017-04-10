@@ -1,9 +1,12 @@
 
+use std::cmp::{PartialOrd, Ord, Ordering};
 use std::collections::HashMap;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::io;
 use std::path::PathBuf;
 use std::rc::Rc;
+
 
 use immeta;
 use rand::{thread_rng, Rng, ThreadRng};
@@ -30,9 +33,10 @@ pub struct EntryContainerOptions {
     pub ratio: Option<f32>, // width / height
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Entry {
-    pub content: EntryContent
+    pub content: EntryContent,
+    pub meta: HashMap<String, String>
 }
 
 
@@ -42,6 +46,33 @@ pub enum EntryContent {
     Http(PathBuf, String),
     Archive(Rc<PathBuf>, ArchiveEntry)
 }
+
+
+
+impl Entry {
+    pub fn new(content: EntryContent) -> Entry {
+        Entry { content: content, meta: HashMap::new() }
+    }
+}
+
+impl Ord for Entry {
+    fn cmp(&self, other: &Entry) -> Ordering {
+        self.content.cmp(&other.content)
+    }
+}
+
+impl PartialOrd for Entry {
+    fn partial_cmp(&self, other: &Entry) -> Option<Ordering> {
+        self.content.partial_cmp(&other.content)
+    }
+}
+
+impl Hash for Entry {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.content.hash(state);
+    }
+}
+
 
 impl EntryContainer {
     pub fn new(options: EntryContainerOptions) -> EntryContainer {
@@ -101,7 +132,7 @@ impl EntryContainer {
                 let dir = n_parents(file.clone(), n);
                 expand(&dir.to_path_buf(), recursive).ok().and_then(|middle| {
                     let mut middle: Vec<Rc<Entry>> = middle.into_iter().map(|it| {
-                        Entry { content: EntryContent::File(it) }
+                        Entry::new(EntryContent::File(it))
                     }).filter(|entry| {
                         current_entry == *entry || (!self.is_duplicated(entry) && self.is_valid_image(entry))
                     }).map(Rc::new).collect();
@@ -122,7 +153,7 @@ impl EntryContainer {
                 expand(&dir.to_path_buf(), recursive).ok().map(|files| {
                     let mut result = self.files.clone();
                     let mut tail: Vec<Rc<Entry>> = files.into_iter().map(|it| {
-                        Entry { content: EntryContent::File(it) }
+                        Entry::new(EntryContent::File(it))
                     }).filter(|entry| {
                         !self.is_duplicated(entry) && self.is_valid_image(entry)
                     }).map(Rc::new).collect();
@@ -213,28 +244,23 @@ impl EntryContainer {
         let path = file.canonicalize().expect("canonicalize");
         self.push_entry(
             pointer,
-            Entry {
-                content: EntryContent::Http(path, url.to_owned())
-            })
+            Entry::new(EntryContent::Http(path, url.to_owned())))
     }
 
     pub fn push_archive_entry(&mut self, pointer: &mut IndexPointer, archive_path: &PathBuf, entry: &ArchiveEntry) -> bool {
         self.push_entry(
             pointer,
-            Entry {
-                content: EntryContent::Archive(
-                             Rc::new(archive_path.clone()),
-                             entry.clone())
-            })
+            Entry::new(
+                EntryContent::Archive(
+                    Rc::new(archive_path.clone()),
+                    entry.clone())))
     }
 
     fn push_file(&mut self, pointer: &mut IndexPointer, file: &PathBuf) -> bool {
         let path = file.canonicalize().expect("canonicalize");
         self.push_entry(
             pointer,
-            Entry {
-                content: EntryContent::File(path)
-            })
+            Entry::new(EntryContent::File(path)))
     }
 
     fn push_directory(&mut self, pointer: &mut IndexPointer, dir: &PathBuf) -> bool {

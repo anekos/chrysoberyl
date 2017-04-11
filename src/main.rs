@@ -26,8 +26,8 @@ extern crate shell_escape;
 extern crate shellexpand;
 extern crate url;
 
+#[macro_use] mod macro_utils;
 #[macro_use] mod output;
-#[macro_use] mod utils;
 mod app;
 mod app_path;
 mod archive;
@@ -53,6 +53,7 @@ mod shell;
 mod sorting_buffer;
 mod state;
 mod termination;
+mod utils;
 mod validation;
 
 

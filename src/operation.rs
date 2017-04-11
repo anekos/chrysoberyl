@@ -532,6 +532,7 @@ fn parse_args(parser: &mut ArgumentParser, args: &[String]) -> Result<(), String
 fn test_parse() {
     use self::Operation::*;
     use mapping::mouse_mapping::Area;
+    use std::sync::Arc;
 
     fn p(s: &str) -> Operation {
         Operation::from_str_force(s)
@@ -546,7 +547,7 @@ fn test_parse() {
     assert_eq!(p("@entries"), PrintEntries);
     assert_eq!(p("@refresh"), Refresh);
     assert_eq!(p("@sort"), Sort);
-    assert_eq!(p("@editor"), Editor);
+    assert_eq!(p("@editor"), Editor(None, vec![]));
 
     // Move
     assert_eq!(p("@First"), First(None));
@@ -561,17 +562,17 @@ fn test_parse() {
     assert_eq!(p("@Last 5"), Last(Some(5)));
 
     // @push*
-    assert_eq!(p("@push http://example.com/moge.jpg"), Push("http://example.com/moge.jpg".to_owned()));
-    assert_eq!(p("@pushpath /hoge/moge.jpg"), PushPath(pathbuf("/hoge/moge.jpg")));
-    assert_eq!(p("@pushurl http://example.com/moge.jpg"), PushURL("http://example.com/moge.jpg".to_owned()));
+    assert_eq!(p("@push http://example.com/moge.jpg"), Push(o!("http://example.com/moge.jpg"), Arc::new(vec![])));
+    assert_eq!(p("@pushpath /hoge/moge.jpg"), PushPath(pathbuf("/hoge/moge.jpg"), Arc::new(vec![])));
+    assert_eq!(p("@pushurl http://example.com/moge.jpg"), PushURL(o!("http://example.com/moge.jpg"), Arc::new(vec![])));
 
     // @map
-    assert_eq!(q("@map key k @first"), Ok(Map(MappingTarget::Key(s!("k")), Box::new(First(None)))));
-    assert_eq!(p("@map k k @next"), Map(MappingTarget::Key(s!("k")), Box::new(Next(None))));
-    assert_eq!(p("@map key k @next"), Map(MappingTarget::Key(s!("k")), Box::new(Next(None))));
-    assert_eq!(q("@map mouse 6 @last"), Ok(Map(MappingTarget::Mouse(6, None), Box::new(Last(None)))));
-    assert_eq!(p("@map m 6 @last"), Map(MappingTarget::Mouse(6, None), Box::new(Last(None))));
-    assert_eq!(p("@map m --area 0.1x0.2-0.3x0.4 6 @last"), Map(MappingTarget::Mouse(6, Some(Area::new(0.1, 0.2, 0.3, 0.4))), Box::new(Last(None))));
+    assert_eq!(q("@map key k @first"), Ok(Map(MappingTarget::Key(s!("k")), vec![o!("@first")])));
+    assert_eq!(p("@map k k @next"), Map(MappingTarget::Key(s!("k")), vec![o!("@next")]));
+    assert_eq!(p("@map key k @next"), Map(MappingTarget::Key(s!("k")), vec![o!("@next")]));
+    assert_eq!(q("@map mouse 6 @last"), Ok(Map(MappingTarget::Mouse(6, None), vec![o!("@last")])));
+    assert_eq!(p("@map m 6 @last"), Map(MappingTarget::Mouse(6, None), vec![o!("@last")]));
+    assert_eq!(p("@map m --area 0.1x0.2-0.3x0.4 6 @last"), Map(MappingTarget::Mouse(6, Some(Area::new(0.1, 0.2, 0.3, 0.4))), vec![o!("@last")]));
 
     // Expand
     assert_eq!(p("@expand /foo/bar.txt"), Expand(false, Some(pathbuf("/foo/bar.txt"))));
@@ -591,28 +592,23 @@ fn test_parse() {
     assert_eq!(p("@multi / @first / @next"), Multi(vec![First(None), Next(None)]));
 
     // Shell
-    assert_eq!(p("@shell ls -l -a"), Shell(false, false, s!("ls"), vec![s!("-l"), s!("-a")]));
-    assert_eq!(p("@shell --async ls -l -a"), Shell(true, false, s!("ls"), vec![s!("-l"), s!("-a")]));
-    assert_eq!(p("@shell --async --operation ls -l -a"), Shell(true, true, s!("ls"), vec![s!("-l"), s!("-a")]));
+    assert_eq!(p("@shell ls -l -a"), Shell(false, false, vec![o!("ls"), o!("-l"), o!("-a")]));
+    assert_eq!(p("@shell --async ls -l -a"), Shell(true, false, vec![o!("ls"), o!("-l"), o!("-a")]));
+    assert_eq!(p("@shell --async --operation ls -l -a"), Shell(true, true, vec![o!("ls"), o!("-l"), o!("-a")]));
 
     // Invalid command
-    assert_eq!(p("Meow Meow"), Push("Meow Meow".to_owned()));
-    assert_eq!(p("expand /foo/bar.txt"), Push("expand /foo/bar.txt".to_owned()));
+    assert_eq!(p("Meow Meow"), Push(o!("Meow Meow"), Arc::new(vec![])));
+    assert_eq!(p("expand /foo/bar.txt"), Push(o!("expand /foo/bar.txt"), Arc::new(vec![])));
 
     // Shell quotes
     assert_eq!(
         p(r#"@Push "http://example.com/sample.png""#),
-        Push("http://example.com/sample.png".to_owned()));
+        Push(o!("http://example.com/sample.png"), Arc::new(vec![])));
 
     // Shell quotes
     assert_eq!(
         p(r#"@Push 'http://example.com/sample.png'"#),
-        Push("http://example.com/sample.png".to_owned()));
-
-    // Ignore leftover arguments
-    assert_eq!(
-        p(r#"@Push "http://example.com/sample.png" CAT IS PRETTY"#),
-        Push("http://example.com/sample.png".to_owned()));
+        Push(o!("http://example.com/sample.png"), Arc::new(vec![])));
 
     // Ignore case
     assert_eq!(p("@ShuFFle"), Shuffle(false));

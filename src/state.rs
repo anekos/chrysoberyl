@@ -4,6 +4,7 @@
 pub struct States {
     pub status_bar: bool,
     pub reverse: bool,
+    pub fit: bool,
     pub view: ViewState
 }
 
@@ -18,6 +19,7 @@ pub enum StateName {
     StatusBar,
     Reverse,
     CenterAlignment,
+    Fit,
 }
 
 
@@ -26,6 +28,7 @@ impl States {
         States {
             status_bar: false,
             reverse: false,
+            fit: true,
             view: ViewState {
                 cols: 1,
                 rows: 1,

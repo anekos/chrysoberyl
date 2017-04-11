@@ -302,6 +302,7 @@ impl App {
                             parameter.y.unwrap_or_else(|| my - y1));
                         self.cherenkoved.cherenkov(
                             &entry, cw, ch,
+                            self.states.fit,
                             &Che {
                                 center: center,
                                 n_spokes: parameter.n_spokes,
@@ -504,6 +505,7 @@ impl App {
                 StatusBar => &mut self.states.status_bar,
                 Reverse => &mut self.states.reverse,
                 CenterAlignment => &mut self.states.view.center_alignment,
+                Fit => &mut self.states.fit,
             };
 
             match *modifier {
@@ -586,7 +588,7 @@ impl App {
             }
         }
 
-        match self.cherenkoved.get_pixbuf(&entry, width, height) {
+        match self.cherenkoved.get_pixbuf(&entry, width, height, self.states.fit) {
             Ok(buf) => {
                 image.set_from_pixbuf(Some(&buf));
             },

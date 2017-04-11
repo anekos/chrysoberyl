@@ -1,8 +1,11 @@
 
+use std::fmt::Display;
+use std::fs::File;
+use std::io::Read;
+
 use cairo::{Context, ImageSurface, Format};
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
 use gtk::Image;
-use gtk;
 use css_color_parser::Color;
 
 use color::gdk_rgba;
@@ -17,13 +20,13 @@ const PADDING: f64 = 5.0;
 
 
 pub struct Error {
-    pub error: gtk::Error,
+    pub error: String,
 }
 
 
 impl Error {
-    pub fn new(error: gtk::Error) -> Error {
-        Error { error: error }
+    pub fn new<T: Display>(error: T) -> Error {
+        Error { error: s!(error) }
     }
 
     pub fn show(&self, image: &Image, width: i32, height: i32, fg: &Color, bg: &Color) {
@@ -61,25 +64,15 @@ impl Error {
 }
 
 
-pub fn get_pixbuf(entry: &Entry, width: i32, height: i32) -> Result<Pixbuf, Error> {
-    use gdk_pixbuf::InterpType;
+pub fn get_pixbuf(entry: &Entry, width: i32, height: i32, fit: bool) -> Result<Pixbuf, Error> {
     use self::EntryContent::*;
 
     match (*entry).content {
         File(ref path) | Http(ref path, _) =>
-            Pixbuf::new_from_file_at_scale(path_to_str(path), width, height, true),
-        Archive(_, ref entry) => {
-            let loader = PixbufLoader::new();
-            loader.loader_write(&*entry.content.as_slice()).map(|_| {
-                loader.close().unwrap();
-                let source = loader.get_pixbuf().unwrap();
-                let (scale, out_width, out_height) = calculate_scale(&source, width, height);
-                let scaled = unsafe { Pixbuf::new(0, false, 8, out_width, out_height).unwrap() };
-                source.scale(&scaled, 0, 0, out_width, out_height, 0.0, 0.0, scale, scale, InterpType::Bilinear);
-                scaled
-            })
-        }
-    } .map_err(Error::new)
+            make_scaled_from_file(path_to_str(path), width, height, fit),
+        Archive(_, ref entry) =>
+            make_scaled(&*entry.content.as_slice(), width, height, fit),
+    }
 }
 
 
@@ -99,8 +92,13 @@ pub fn get_pixbuf_animation(entry: &Entry) -> Result<PixbufAnimation, Error> {
     } .map_err(Error::new)
 }
 
-fn calculate_scale(pixbuf: &Pixbuf, max_width: i32, max_height: i32) -> (f64, i32, i32) {
+fn calculate_scale(pixbuf: &Pixbuf, max_width: i32, max_height: i32, fit: bool) -> (f64, i32, i32) {
     let (in_width, in_height) = (pixbuf.get_width(), pixbuf.get_height());
+
+    if !fit && in_width <= max_width && in_height <= max_height {
+        return (1.0, in_width, in_height)
+    }
+
     let mut scale = max_width as f64 / in_width as f64;
     let mut out_height = (in_height as f64 * scale) as i32;
     if out_height > max_height {
@@ -108,4 +106,33 @@ fn calculate_scale(pixbuf: &Pixbuf, max_width: i32, max_height: i32) -> (f64, i3
         out_height = (in_height as f64 * scale) as i32;
     }
     (scale, (in_width as f64 * scale) as i32, out_height)
+}
+
+fn make_scaled(buffer: &[u8], max_width: i32, max_height: i32, fit: bool) -> Result<Pixbuf, Error> {
+    use gdk_pixbuf::InterpType;
+
+    let loader = PixbufLoader::new();
+    loader.loader_write(buffer).map_err(Error::new).and_then(|_| {
+        if loader.close().is_err() {
+            return Err(Error::new("Invalid image data"))
+        }
+        if let Some(source) = loader.get_pixbuf() {
+            let (scale, out_width, out_height) = calculate_scale(&source, max_width, max_height, fit);
+            let scaled = unsafe { Pixbuf::new(0, false, 8, out_width, out_height).unwrap() };
+            source.scale(&scaled, 0, 0, out_width, out_height, 0.0, 0.0, scale, scale, InterpType::Bilinear);
+            Ok(scaled)
+        } else {
+            Err(Error::new("Invalid image"))
+        }
+    })
+}
+
+fn make_scaled_from_file(path: &str, max_width: i32, max_height: i32, fit: bool) -> Result<Pixbuf, Error> {
+    File::open(path).map_err(Error::new).and_then(|mut file| {
+        let mut buffer: Vec<u8> = vec![];
+        file.read_to_end(&mut buffer).map_err(Error::new).and_then(|size| {
+            println!("path: {}, size: {}", path, size);
+            make_scaled(buffer.as_slice(), max_width, max_height, fit)
+        })
+    })
 }

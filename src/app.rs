@@ -252,13 +252,7 @@ impl App {
         }
 
         if updated.image || updated.label {
-            if let Some((entry, index)) = self.entries.current(&self.pointer) {
-                let len = self.entries.len();
-                let path = entry.display_path();
-                self.update_label(&format!("[{}/{}] {}", index + 1, len, path));
-            } else {
-                self.update_label(constant::DEFAULT_INFORMATION);
-            }
+            self.update_label();
             self.update_env();
         }
     }
@@ -657,10 +651,22 @@ impl App {
         envs
     }
 
-    fn update_label(&self, text: &str) {
-        self.gui.window.set_title(text);
+    fn update_label(&self) {
+        let text =
+            if let Some((entry, index)) = self.entries.current(&self.pointer) {
+                let len = self.entries.len();
+                let path = entry.display_path();
+                let mut signs = o!("");
+                if self.states.fit { signs.push('F'); }
+                if self.states.reverse { signs.push('R'); }
+                format!("[{}/{}] {} {{{}}}", index + 1, len, path, signs)
+            } else {
+                o!(constant::DEFAULT_INFORMATION)
+            };
+
+        self.gui.window.set_title(&text);
         if self.states.status_bar {
-            self.gui.label.set_text(text);
+            self.gui.label.set_text(&text);
         }
     }
 

@@ -223,6 +223,8 @@ impl App {
                     self.on_random(&mut updated, len),
                 Refresh =>
                     updated.pointer = true,
+                Save(ref path) =>
+                    self.on_save(path),
                 Shell(async, read_operations, ref command_line) =>
                     shell::call(async, command_line, option!(read_operations, self.tx.clone())),
                 Shuffle(fix_current) =>
@@ -480,6 +482,12 @@ impl App {
         if len > 0 {
             self.pointer.current = Some(Range::new(0, len).ind_sample(&mut self.rng));
             updated.image = true;
+        }
+    }
+
+    fn on_save(&self, path: &PathBuf) {
+        if let Err(error) = self.gui.save(path) {
+            puts_error!("at" => "save", "reason" => error)
         }
     }
 

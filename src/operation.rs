@@ -50,6 +50,7 @@ pub enum Operation {
     Quit,
     Random,
     Refresh,
+    Save(PathBuf),
     Shell(bool, bool, Vec<String>), /* async, operation, command_line */
     Shuffle(bool), /* Fix current */
     Sort,
@@ -160,6 +161,7 @@ pub fn parse_from_vec(whole: &[String]) -> Result<Operation, String> {
             "@quit"                      => Ok(Quit),
             "@random" | "@rand"          => Ok(Random),
             "@refresh" | "@r"            => Ok(Refresh),
+            "@save"                      => parse_command1(whole, |it| Save(expand_to_pathbuf(&it))),
             "@shell"                     => parse_shell(whole),
             "@shuffle"                   => Ok(Shuffle(false)),
             "@sort"                      => Ok(Sort),

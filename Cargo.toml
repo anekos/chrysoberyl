@@ -6,7 +6,6 @@ authors = ["anekos <anekos@snca.net>"]
 [dependencies]
 app_dirs = "*"
 argparse = "*"
-cairo-rs = "*"
 closet = "*"
 cmdline-parser = "*"
 css-color-parser = "*"
@@ -32,6 +31,10 @@ url = "*"
 [dependencies.gtk]
 version = "0.1"
 features = ["v3_22"]
+
+[dependencies.cairo-rs]
+version = "*"
+features = ["png"]
 
 [dependencies.ctrlc]
 version = "*"

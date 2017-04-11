@@ -65,21 +65,21 @@ impl Cherenkoved {
         Cherenkoved { cache: HashMap::new() }
     }
 
-    pub fn get_pixbuf(&self, entry: &Entry, width: i32, height: i32) -> Result<Pixbuf, image_buffer::Error> {
+    pub fn get_pixbuf(&self, entry: &Entry, width: i32, height: i32, prefer_original: bool) -> Result<Pixbuf, image_buffer::Error> {
         if let Some(cache) = self.cache.get(entry) {
             if cache.width == width && cache.height == height {
                 return Ok(cache.buffer.clone())
             }
         }
-        image_buffer::get_pixbuf(entry, width, height)
+        image_buffer::get_pixbuf(entry, width, height, prefer_original)
     }
 
     pub fn remove(&mut self, entry: &Entry) {
         self.cache.remove(entry).is_none();
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, width: i32, height: i32, che: &Che) {
-        if let Ok(pixbuf) = self.get_pixbuf(entry, width, height) {
+    pub fn cherenkov(&mut self, entry: &Entry, width: i32, height: i32, prefer_original: bool, che: &Che) {
+        if let Ok(pixbuf) = self.get_pixbuf(entry, width, height, prefer_original) {
             self.cache.insert(
                 entry.clone(),
                 CacheEntry {

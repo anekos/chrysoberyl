@@ -441,6 +441,7 @@ fn parse_option_updater(args: &[String], modifier: StateUpdater) -> Result<Opera
             "status-bar" | "status" => Ok(UpdateOption(StatusBar, modifier)),
             "reverse" | "rev" => Ok(UpdateOption(Reverse, modifier)),
             "center" | "center-alignment" => Ok(UpdateOption(CenterAlignment, modifier)),
+            "fit" => Ok(UpdateOption(Fit, modifier)),
             _  => Err(format!("Unknown option: {}", name))
         }
     })
@@ -583,6 +584,7 @@ fn test_parse() {
     assert_eq!(p("@toggle status-bar"), UpdateOption(StateName::StatusBar, StateUpdater::Toggle));
     assert_eq!(p("@enable center"), UpdateOption(StateName::CenterAlignment, StateUpdater::Enable));
     assert_eq!(p("@disable center-alignment"), UpdateOption(StateName::CenterAlignment, StateUpdater::Disable));
+    assert_eq!(p("@disable fit"), UpdateOption(StateName::Fit, StateUpdater::Disable));
 
     // Multi
     assert_eq!(p("; @first ; @next"), Multi(vec![First(None), Next(None)]));

@@ -30,7 +30,7 @@ impl Error {
     }
 
     pub fn show(&self, image: &Image, width: i32, height: i32, fg: &Color, bg: &Color) {
-        let text = s!(self.error);
+        let text = &self.error;
 
         let surface = ImageSurface::create(Format::ARgb32, width, height);
 
@@ -39,7 +39,7 @@ impl Error {
         let context = Context::new(&surface);
 
         context.set_font_size(FONT_SIZE);
-        let extents = context.text_extents(&text);
+        let extents = context.text_extents(text);
 
         let (x, y) = (width / 2.0 - extents.width / 2.0, height / 2.0 - extents.height / 2.0);
 
@@ -55,7 +55,7 @@ impl Error {
         context.move_to(x, y);
         let fg = gdk_rgba(fg);
         context.set_source_rgba(fg.red, fg.green, fg.blue, fg.alpha);
-        context.show_text(&text);
+        context.show_text(text);
 
         image.set_from_surface(&surface);
 

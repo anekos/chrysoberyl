@@ -50,6 +50,7 @@ pub enum Operation {
     Quit,
     Random,
     Refresh,
+    Save(PathBuf, Option<usize>),
     Shell(bool, bool, Vec<String>), /* async, operation, command_line */
     Shuffle(bool), /* Fix current */
     Sort,
@@ -160,6 +161,7 @@ pub fn parse_from_vec(whole: &[String]) -> Result<Operation, String> {
             "@quit"                      => Ok(Quit),
             "@random" | "@rand"          => Ok(Random),
             "@refresh" | "@r"            => Ok(Refresh),
+            "@save"                      => parse_save(whole),
             "@shell"                     => parse_shell(whole),
             "@shuffle"                   => Ok(Shuffle(false)),
             "@sort"                      => Ok(Sort),
@@ -474,6 +476,20 @@ where T: FnOnce(String, Meta) -> Operation {
         parse_args(&mut ap, args)
     } .map(|_| {
         op(path, new_meta_from_vec(meta))
+    })
+}
+
+fn parse_save(args: &[String]) -> Result<Operation, String> {
+    let mut index = None;
+    let mut path = o!("");
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut index).add_option(&["--index", "-i"], StoreOption, "Index (1 origin)");
+        ap.refer(&mut path).add_argument("path", Store, "Save to").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Save(expand_to_pathbuf(&path), index)
     })
 }
 

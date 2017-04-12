@@ -1,6 +1,9 @@
 
+use std::fs::File;
+use std::path::Path;
 use std::str::FromStr;
 
+use cairo::{Context, ImageSurface, Format};
 use css_color_parser::Color;
 use gtk::prelude::*;
 use gtk::{self, Window, Image, Label, Orientation};
@@ -195,6 +198,12 @@ impl Gui {
         self.image_outer.remove(&self.bottom_spacer);
         self.image_inners.clear();
     }
+
+    pub fn save<T: AsRef<Path>>(&self, path: &T, index: usize) -> Result<(), String> {
+        self.images(false).nth(index).ok_or_else(|| o!("Out of index")).and_then(|image| {
+            save_image(image, path)
+        })
+    }
 }
 
 impl<'a> Iterator for ImageIterator<'a> {
@@ -248,4 +257,20 @@ impl Colors {
             error_background: "red".parse().unwrap(),
         }
     }
+}
+
+
+fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), String> {
+    use gdk::prelude::ContextExt;
+
+    image.get_pixbuf().ok_or_else(|| o!("No pixbuf")).and_then(|pixbuf| {
+        let (width, height) = (pixbuf.get_width(), pixbuf.get_height());
+        let surface = ImageSurface::create(Format::ARgb32, width, height);
+        let context = Context::new(&surface);
+        context.set_source_pixbuf(&pixbuf, 0.0, 0.0);
+        context.paint();
+        File::create(path).map_err(|it| s!(it)).and_then(|file| {
+            surface.write_to_png(file).map_err(|_| o!("IO Error"))
+        })
+    })
 }

@@ -223,8 +223,8 @@ impl App {
                     self.on_random(&mut updated, len),
                 Refresh =>
                     updated.pointer = true,
-                Save(ref path) =>
-                    self.on_save(path),
+                Save(ref path, ref index) =>
+                    self.on_save(path, index),
                 Shell(async, read_operations, ref command_line) =>
                     shell::call(async, command_line, option!(read_operations, self.tx.clone())),
                 Shuffle(fix_current) =>
@@ -485,8 +485,8 @@ impl App {
         }
     }
 
-    fn on_save(&mut self, path: &PathBuf) {
-        let count = self.pointer.counted();
+    fn on_save(&mut self, path: &PathBuf, index: &Option<usize>) {
+        let count = index.unwrap_or_else(|| self.pointer.counted()) - 1;
         if let Err(error) = self.gui.save(path, count) {
             puts_error!("at" => "save", "reason" => error)
         }

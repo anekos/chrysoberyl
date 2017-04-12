@@ -199,8 +199,8 @@ impl Gui {
         self.image_inners.clear();
     }
 
-    pub fn save<T: AsRef<Path>>(&self, path: &T) -> Result<(), String> {
-        self.images(false).nth(0).ok_or_else(|| o!("Out of index")).and_then(|image| {
+    pub fn save<T: AsRef<Path>>(&self, path: &T, index: usize) -> Result<(), String> {
+        self.images(false).nth(index).ok_or_else(|| o!("Out of index")).and_then(|image| {
             save_image(image, path)
         })
     }

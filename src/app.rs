@@ -485,8 +485,9 @@ impl App {
         }
     }
 
-    fn on_save(&self, path: &PathBuf) {
-        if let Err(error) = self.gui.save(path) {
+    fn on_save(&mut self, path: &PathBuf) {
+        let count = self.pointer.counted();
+        if let Err(error) = self.gui.save(path, count) {
             puts_error!("at" => "save", "reason" => error)
         }
     }

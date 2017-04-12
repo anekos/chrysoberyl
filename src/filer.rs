@@ -1,6 +1,7 @@
 
 use std::ffi::OsStr;
-use std::fs;
+use std::fs::{self, File};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use utils::{s, mangle};
@@ -35,6 +36,20 @@ impl FileOperation {
             Move(ref destination, ref if_exist) => {
                 destination_path(source, destination, if_exist).and_then(|dest| {
                     fs::rename(source, dest).map_err(|it| s(&it)).map(mangle)
+                })
+            }
+        }
+    }
+
+    pub fn execute_with_buffer(&self, source: &[u8], source_name: &PathBuf) -> Result<(), String> {
+        use self::FileOperation::*;
+
+        match *self {
+            Copy(ref destination, ref if_exist) | Move(ref destination, ref if_exist) => {
+                destination_path(source_name, destination, if_exist).and_then(|dest| {
+                    File::create(dest).map_err(|it| s(&it)).and_then(|mut file| {
+                        file.write_all(source).map_err(|it| s(&it))
+                    })
                 })
             }
         }

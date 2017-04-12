@@ -419,7 +419,7 @@ impl App {
         if let Some((entry, _)) = self.entries.current(&self.pointer) {
             let result = match entry.content {
                 File(ref path) | Http(ref path, _) => file_operation.execute(path),
-                Archive(_ , _) => Err(o!("copy/move does not support archive files."))
+                Archive(ref path , ref entry) => file_operation.execute_with_buffer(&entry.content.clone(), path)
             };
             let text = format!("{:?}", file_operation);
             match result {

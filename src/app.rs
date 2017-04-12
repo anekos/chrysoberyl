@@ -257,7 +257,6 @@ impl App {
                 let path = entry.display_path();
                 self.update_label(&format!("[{}/{}] {}", index + 1, len, path));
             } else {
-                self.gui.window.set_title(constant::DEFAULT_TITLE);
                 self.update_label(constant::DEFAULT_INFORMATION);
             }
             self.update_env();

@@ -65,8 +65,10 @@ impl Gui {
         let window = gtk::Window::new(gtk::WindowType::Toplevel);
 
         window.set_title(constant::DEFAULT_TITLE);
+        window.set_role(constant::WINDOW_ROLE);
         window.set_border_width(0);
         window.set_position(gtk::WindowPosition::Center);
+        window.set_wmclass(constant::WINDOW_CLASS, constant::WINDOW_CLASS);
 
         let vbox = gtk::Box::new(Orientation::Vertical, 0);
         let image_outer = gtk::Box::new(Orientation::Vertical, 0);

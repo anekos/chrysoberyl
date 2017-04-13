@@ -75,7 +75,7 @@ pub fn get_pixbuf(entry: &Entry, width: i32, height: i32, fit: bool) -> Result<P
         Archive(_, ref entry) =>
             make_scaled(&*entry.content.as_slice(), width, height, fit),
         Pdf(_, ref document, index) =>
-            make_scaled_from_pdf(document, index, width, height, fit)
+            make_scaled_from_pdf(document, index, width, height)
     }
 }
 
@@ -141,19 +141,27 @@ fn make_scaled_from_file(path: &str, max_width: i32, max_height: i32, fit: bool)
     })
 }
 
-fn make_scaled_from_pdf(document: &Rc<PopplerDocument>, index: usize, max_width: i32, max_height: i32, fit: bool) -> Result<Pixbuf, Error> {
-    let mut surface = ImageSurface::create(Format::ARgb32, max_width, max_height);
+fn make_scaled_from_pdf(document: &Rc<PopplerDocument>, index: usize, max_width: i32, max_height: i32) -> Result<Pixbuf, Error> {
+    let page = document.nth_page(index);
+    let (page_width, page_height) = page.get_size();
+
+    let scale = {
+        let (scale_width, scale_height) = (max_width as f64 / page_width, max_height as f64 / page_height);
+        if (max_width as f64) < page_width * scale_height {
+            scale_width
+        } else {
+            scale_height
+        }
+    };
+
+    let mut surface = ImageSurface::create(Format::ARgb32, (page_width * scale) as i32, (page_height * scale) as i32);
 
     {
         let context = Context::new(&surface);
+        context.scale(scale, scale);
         context.set_source_rgb(1.0, 1.0, 1.0);
         context.paint();
-        context.save();
-        {
-            let page = document.nth_page(index);
-            page.render(&context);
-        }
-        context.restore();
+        page.render(&context);
     }
 
     let (width, height, stride) = (surface.get_width(), surface.get_height(), surface.get_stride());

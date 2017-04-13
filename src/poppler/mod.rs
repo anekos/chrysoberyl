@@ -8,7 +8,7 @@ use std::mem::transmute;
 
 use cairo;
 use glib::translate::ToGlibPtr;
-use libc::c_int;
+use libc::{c_int, c_double};
 use self::gobject_sys::GObject;
 
 mod sys;
@@ -55,6 +55,12 @@ impl PopplerPage {
     pub fn render(&self, context: &cairo::Context) {
         let context = context.as_ref().to_glib_none().0;
         unsafe { sys::poppler_page_render(self.0, context) };
+    }
+
+    pub fn get_size(&self) -> (f64, f64) {
+        let (mut width, mut height): (c_double, c_double) = (0.0, 0.0);
+        unsafe { sys::poppler_page_get_size(self.0, &mut width, &mut height) };
+        (width as f64, height as f64)
     }
 }
 

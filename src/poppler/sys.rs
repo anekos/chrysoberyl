@@ -23,6 +23,7 @@ extern "C" {
     pub fn poppler_document_get_page(doc: *const document_t, index: c_int) -> *mut page_t;
 
     pub fn poppler_page_render(page: *const page_t, cairo: *mut cairo_t);
+    pub fn poppler_page_get_size(page: *const page_t, width: *mut c_double, height: *mut c_double);
 }
 
 

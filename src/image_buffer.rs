@@ -131,7 +131,6 @@ fn make_scaled_from_file(path: &str, max_width: i32, max_height: i32, fit: bool)
     File::open(path).map_err(Error::new).and_then(|mut file| {
         let mut buffer: Vec<u8> = vec![];
         file.read_to_end(&mut buffer).map_err(Error::new).and_then(|size| {
-            println!("path: {}, size: {}", path, size);
             make_scaled(buffer.as_slice(), max_width, max_height, fit)
         })
     })

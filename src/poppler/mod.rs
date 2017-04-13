@@ -1,4 +1,5 @@
 
+extern crate glib;
 extern crate gobject_sys;
 
 use std::ptr::{null, null_mut};
@@ -9,7 +10,6 @@ use std::mem::transmute;
 use cairo;
 use glib::translate::ToGlibPtr;
 use libc::{c_int, c_double};
-use self::gobject_sys::GObject;
 
 mod sys;
 
@@ -45,7 +45,7 @@ impl PopplerDocument {
 impl Drop for PopplerDocument {
     fn drop(&mut self) {
         unsafe {
-            let ptr = transmute::<*mut sys::document_t, *mut GObject>(self.0);
+            let ptr = transmute::<*mut sys::document_t, *mut gobject_sys::GObject>(self.0);
             gobject_sys::g_object_unref(ptr);
         }
     }
@@ -67,7 +67,7 @@ impl PopplerPage {
 impl Drop for PopplerPage {
     fn drop(&mut self) {
         unsafe {
-            let ptr = transmute::<*mut sys::page_t, *mut GObject>(self.0);
+            let ptr = transmute::<*mut sys::page_t, *mut gobject_sys::GObject>(self.0);
             gobject_sys::g_object_unref(ptr);
         }
     }

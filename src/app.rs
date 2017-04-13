@@ -447,6 +447,8 @@ impl App {
                 match &*ext.to_str().unwrap().to_lowercase() {
                     "zip" | "rar" | "tar.gz" | "lzh" | "lha" =>
                         return archive::fetch_entries(&path, &self.encodings, self.tx.clone()),
+                    "pdf" =>
+                        return self.tx.send(Operation::PushPdf(path.clone(), new_meta(meta))).unwrap(),
                     _ => ()
                 }
             }

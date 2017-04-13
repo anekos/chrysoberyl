@@ -278,14 +278,14 @@ impl EntryContainer {
     }
 
     pub fn push_pdf(&mut self, pointer: &mut IndexPointer, pdf_path: &PathBuf, document: PopplerDocument, meta: &MetaSlice) -> bool {
-        self.push_entry(
-            pointer,
-            Entry::new(
-                EntryContent::Pdf(
-                    Rc::new(pdf_path.clone()),
-                    Rc::new(document),
-                    0),
-                new_meta(meta)))
+        let n_pages = document.n_pages();
+        let mut result = false;
+        let document = Rc::new(document);
+        for index in 0 .. n_pages {
+            let content = EntryContent::Pdf(Rc::new(pdf_path.clone()), document.clone(), index);
+            result = self.push_entry(pointer, Entry::new(content, new_meta(meta)));
+        }
+        result
     }
 
     fn push_file(&mut self, pointer: &mut IndexPointer, file: &PathBuf, meta: &MetaSlice) -> bool {

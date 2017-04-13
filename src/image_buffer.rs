@@ -2,6 +2,7 @@
 use std::fmt::Display;
 use std::fs::File;
 use std::io::Read;
+use std::rc::Rc;
 
 use cairo::{Context, ImageSurface, Format};
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
@@ -10,6 +11,7 @@ use css_color_parser::Color;
 
 use color::gdk_rgba;
 use entry::{Entry, EntryContent};
+use poppler::PopplerDocument;
 use utils::path_to_str;
 
 
@@ -72,7 +74,8 @@ pub fn get_pixbuf(entry: &Entry, width: i32, height: i32, fit: bool) -> Result<P
             make_scaled_from_file(path_to_str(path), width, height, fit),
         Archive(_, ref entry) =>
             make_scaled(&*entry.content.as_slice(), width, height, fit),
-        _ => not_implemented!(),
+        Pdf(_, ref document, index) =>
+            make_scaled_from_pdf(document, index, width, height, fit)
     }
 }
 
@@ -137,3 +140,26 @@ fn make_scaled_from_file(path: &str, max_width: i32, max_height: i32, fit: bool)
         })
     })
 }
+
+fn make_scaled_from_pdf(document: &Rc<PopplerDocument>, index: usize, max_width: i32, max_height: i32, fit: bool) -> Result<Pixbuf, Error> {
+    let mut surface = ImageSurface::create(Format::ARgb32, max_width, max_height);
+
+    {
+        let context = Context::new(&surface);
+        context.set_source_rgb(1.0, 1.0, 1.0);
+        context.paint();
+        context.save();
+        {
+            let page = document.nth_page(index);
+            page.render(&context);
+        }
+        context.restore();
+    }
+
+    let (width, height, stride) = (surface.get_width(), surface.get_height(), surface.get_stride());
+
+    let data: Vec<u8> = (*surface.get_data().unwrap()).to_vec();
+
+    Ok(Pixbuf::new_from_vec(data, 0, true, 8, width, height, stride))
+}
+

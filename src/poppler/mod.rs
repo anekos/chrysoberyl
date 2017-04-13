@@ -7,8 +7,9 @@ use std::path::Path;
 use std::mem::transmute;
 
 use cairo;
-use self::gobject_sys::GObject;
 use glib::translate::ToGlibPtr;
+use libc::c_int;
+use self::gobject_sys::GObject;
 
 mod sys;
 
@@ -34,6 +35,11 @@ impl PopplerDocument {
             sys::poppler_document_get_n_pages(self.0) as usize
         }
     }
+
+    pub fn nth_page(&self, index: usize) -> PopplerPage {
+        let page = unsafe { sys::poppler_document_get_page(self.0, index as c_int) };
+        PopplerPage(page)
+    }
 }
 
 impl Drop for PopplerDocument {
@@ -46,7 +52,7 @@ impl Drop for PopplerDocument {
 }
 
 impl PopplerPage {
-    pub fn render(&self, context: &mut cairo::Context) {
+    pub fn render(&self, context: &cairo::Context) {
         let context = context.as_ref().to_glib_none().0;
         unsafe { sys::poppler_page_render(self.0, context) };
     }

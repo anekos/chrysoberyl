@@ -215,6 +215,8 @@ impl App {
                     self.on_push_http_cache(&mut updated, file, url, meta),
                 PushPath(ref file, ref meta) =>
                     self.on_push_path(&mut updated, file.clone(), meta),
+                PushPdf(ref file, ref meta) =>
+                    self.on_push_pdf(&mut updated, file.clone(), meta),
                 PushURL(ref url, ref meta) =>
                     self.on_push_url(url.clone(), meta),
                 Quit =>
@@ -412,7 +414,8 @@ impl App {
         if let Some((entry, _)) = self.entries.current(&self.pointer) {
             let result = match entry.content {
                 File(ref path) | Http(ref path, _) => file_operation.execute(path),
-                Archive(ref path , ref entry) => file_operation.execute_with_buffer(&entry.content.clone(), path)
+                Archive(ref path , ref entry) => file_operation.execute_with_buffer(&entry.content.clone(), path),
+                _ => not_implemented!(),
             };
             let text = format!("{:?}", file_operation);
             match result {
@@ -444,6 +447,8 @@ impl App {
                 match &*ext.to_str().unwrap().to_lowercase() {
                     "zip" | "rar" | "tar.gz" | "lzh" | "lha" =>
                         return archive::fetch_entries(&path, &self.encodings, self.tx.clone()),
+                    "pdf" =>
+                        return self.tx.send(Operation::PushPdf(path.clone(), new_meta(meta))).unwrap(),
                     _ => ()
                 }
             }
@@ -464,6 +469,13 @@ impl App {
 
     fn on_push_path(&mut self, updated: &mut Updated, file: PathBuf, meta: &MetaSlice) {
         updated.pointer = self.entries.push_path(&mut self.pointer, &file, meta);
+        updated.label = true;
+    }
+
+    fn on_push_pdf(&mut self, updated: &mut Updated, file: PathBuf, meta: &MetaSlice) {
+        use poppler::PopplerDocument;
+        let doc = PopplerDocument::new_from_file(&file);
+        updated.pointer = self.entries.push_pdf(&mut self.pointer, &file, doc, meta);
         updated.label = true;
     }
 
@@ -556,15 +568,16 @@ impl App {
 
     /* Private methods */
 
-    fn get_meta(&self, entry: &Entry) -> Result<GenericMetadata, immeta::Error> {
+    fn get_meta(&self, entry: &Entry) -> Option<Result<GenericMetadata, immeta::Error>> {
         use self::EntryContent::*;
 
         match (*entry).content {
             File(ref path) | Http(ref path, _) =>
-                immeta::load_from_file(&path),
-            Archive(_, ref entry) =>  {
-                immeta::load_from_buf(&entry.content)
-            }
+                Some(immeta::load_from_file(&path)),
+            Archive(_, ref entry) =>
+                Some(immeta::load_from_buf(&entry.content)),
+            Pdf(_, _, _) =>
+                None
         }
     }
 
@@ -578,14 +591,16 @@ impl App {
     }
 
     fn show_image1(&self, entry: Entry, image: &Image, width: i32, height: i32) {
-        if let Ok(img) = self.get_meta(&entry) {
-            if let Ok(gif) = img.into::<Gif>() {
-                if gif.is_animated() {
-                    match image_buffer::get_pixbuf_animation(&entry) {
-                        Ok(buf) => image.set_from_animation(&buf),
-                        Err(error) => error.show(image, width, height, &self.gui.colors.error, &self.gui.colors.error_background)
+        if let Some(img) = self.get_meta(&entry) {
+            if let Ok(img) = img {
+                if let Ok(gif) = img.into::<Gif>() {
+                    if gif.is_animated() {
+                        match image_buffer::get_pixbuf_animation(&entry) {
+                            Ok(buf) => image.set_from_animation(&buf),
+                            Err(error) => error.show(image, width, height, &self.gui.colors.error, &self.gui.colors.error_background)
+                        }
+                        return
                     }
-                    return
                 }
             }
         }
@@ -642,6 +657,10 @@ impl App {
                 Archive(ref archive_file, ref entry) => {
                     envs.push((o!("file"), entry.name.clone()));
                     envs.push((o!("archive_file"), o!(path_to_str(archive_file))));
+                },
+                Pdf(ref pdf_file, _, index) => {
+                    envs.push((o!("file"), o!(path_to_str(pdf_file))));
+                    envs.push((o!("pdf_page"), s!(index)));
                 }
             }
             envs.push((o!("index"), s!(index + 1)));

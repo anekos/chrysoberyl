@@ -2,10 +2,12 @@
 name = "chrysoberyl"
 version = "0.1.0"
 authors = ["anekos <anekos@snca.net>"]
+build = "build.rs"
 
 [dependencies]
 app_dirs = "*"
 argparse = "*"
+cairo-sys-rs = "*"
 closet = "*"
 cmdline-parser = "*"
 css-color-parser = "*"
@@ -13,6 +15,9 @@ encoding = "*"
 env_logger = "*"
 gdk = "*"
 gdk-pixbuf = "*"
+glib = "*"
+glib-sys = "*"
+gobject-sys = "*"
 hyper = "*"
 hyper-native-tls = "*"
 immeta = "*"
@@ -39,3 +44,6 @@ features = ["png"]
 [dependencies.ctrlc]
 version = "*"
 features = ["termination"]
+
+[build-dependencies]
+pkg-config = "*"

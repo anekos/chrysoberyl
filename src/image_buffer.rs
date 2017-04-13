@@ -118,7 +118,7 @@ fn make_scaled(buffer: &[u8], max_width: i32, max_height: i32, fit: bool) -> Res
         }
         if let Some(source) = loader.get_pixbuf() {
             let (scale, out_width, out_height) = calculate_scale(&source, max_width, max_height, fit);
-            let scaled = unsafe { Pixbuf::new(0, false, 8, out_width, out_height).unwrap() };
+            let scaled = unsafe { Pixbuf::new(0, true, 8, out_width, out_height).unwrap() };
             source.scale(&scaled, 0, 0, out_width, out_height, 0.0, 0.0, scale, scale, InterpType::Bilinear);
             Ok(scaled)
         } else {

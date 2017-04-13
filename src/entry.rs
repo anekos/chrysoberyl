@@ -16,6 +16,7 @@ use archive::ArchiveEntry;
 use index_pointer::IndexPointer;
 use utils::path_to_str;
 use validation::is_valid_image_filename;
+use poppler::PopplerDocument;
 
 
 
@@ -44,7 +45,8 @@ pub struct Entry {
 pub enum EntryContent {
     File(PathBuf),
     Http(PathBuf, String),
-    Archive(Rc<PathBuf>, ArchiveEntry)
+    Archive(Rc<PathBuf>, ArchiveEntry),
+    Pdf(Rc<PathBuf>, Rc<PopplerDocument>, usize)
 }
 
 pub type Meta = Arc<Vec<MetaEntry>>;
@@ -275,6 +277,17 @@ impl EntryContainer {
                     entry.clone())))
     }
 
+    pub fn push_pdf(&mut self, pointer: &mut IndexPointer, pdf_path: &PathBuf, document: PopplerDocument, meta: &MetaSlice) -> bool {
+        self.push_entry(
+            pointer,
+            Entry::new(
+                EntryContent::Pdf(
+                    Rc::new(pdf_path.clone()),
+                    Rc::new(document),
+                    0),
+                new_meta(meta)))
+    }
+
     fn push_file(&mut self, pointer: &mut IndexPointer, file: &PathBuf, meta: &MetaSlice) -> bool {
         let path = file.canonicalize().expect("canonicalize");
         self.push_entry(
@@ -304,7 +317,8 @@ impl EntryContainer {
 
         match (*entry).content {
             File(ref path) | Http(ref path, _) => self.is_valid_image_file(path),
-            Archive(_, _) => true // FIXME ??
+            Archive(_, _) => true, // FIXME ??
+            Pdf(_, _, _) => true,
         }
     }
 
@@ -374,7 +388,8 @@ impl Entry {
         match (*self).content {
             File(ref path) => path_to_str(path).to_owned(),
             Http(_, ref url) => url.clone(),
-            Archive(ref archive_path, ref entry) => format!("{}@{}", entry.name, path_to_str(&*archive_path))
+            Archive(ref archive_path, ref entry) => format!("{}@{}", entry.name, path_to_str(&*archive_path)),
+            Pdf(ref pdf_path, _, ref index) => format!("{}@{}", index, path_to_str(&*pdf_path)),
         }
     }
 }

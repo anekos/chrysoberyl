@@ -72,6 +72,7 @@ pub fn get_pixbuf(entry: &Entry, width: i32, height: i32, fit: bool) -> Result<P
             make_scaled_from_file(path_to_str(path), width, height, fit),
         Archive(_, ref entry) =>
             make_scaled(&*entry.content.as_slice(), width, height, fit),
+        _ => not_implemented!(),
     }
 }
 
@@ -89,6 +90,7 @@ pub fn get_pixbuf_animation(entry: &Entry) -> Result<PixbufAnimation, Error> {
                 loader.get_animation().unwrap()
             })
         }
+        _ => not_implemented!(),
     } .map_err(Error::new)
 }
 

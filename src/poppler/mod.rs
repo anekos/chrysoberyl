@@ -14,6 +14,7 @@ mod sys;
 
 
 
+#[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
 pub struct PopplerDocument(*mut sys::document_t);
 pub struct PopplerPage(*mut sys::page_t);
 
@@ -26,6 +27,12 @@ impl PopplerDocument {
         let filepath = CString::new(filepath).unwrap();
         let raw = unsafe { sys::poppler_document_new_from_file(filepath.as_ptr(), null(), null_mut()) };
         PopplerDocument(raw)
+    }
+
+    pub fn n_pages(&self) -> usize {
+        unsafe {
+            sys::poppler_document_get_n_pages(self.0) as usize
+        }
     }
 }
 

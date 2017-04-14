@@ -135,7 +135,7 @@ fn make_scaled(buffer: &[u8], max_width: i32, max_height: i32, fit: bool) -> Res
 fn make_scaled_from_file(path: &str, max_width: i32, max_height: i32, fit: bool) -> Result<Pixbuf, Error> {
     File::open(path).map_err(Error::new).and_then(|mut file| {
         let mut buffer: Vec<u8> = vec![];
-        file.read_to_end(&mut buffer).map_err(Error::new).and_then(|size| {
+        file.read_to_end(&mut buffer).map_err(Error::new).and_then(|_| {
             make_scaled(buffer.as_slice(), max_width, max_height, fit)
         })
     })

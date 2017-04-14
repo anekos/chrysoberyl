@@ -36,6 +36,7 @@ pub static DEFAULT_CONFIG: &'static str = "
 @map key c @toggle center
 @map key X @clear
 @map key f @toggle fit
+@map key Escape @count
 
 @map mouse 1 @next
 @map mouse 2 @cherenkov --radius 0.02 --color purple --spokes 50

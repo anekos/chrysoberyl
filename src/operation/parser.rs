@@ -25,15 +25,19 @@ where T: FnOnce(String) -> Operation {
     }
 }
 
-pub fn parse_command_usize1<T>(args: &[String], op: T) -> Result<Operation, String>
-where T: FnOnce(Option<usize>) -> Operation {
-    use utils::s;
+pub fn parse_move<T>(args: &[String], op: T) -> Result<Operation, String>
+where T: FnOnce(Option<usize>, bool) -> Operation {
+    let mut ignore_views = false;
+    let mut count = None;
 
-    if let Some(arg) = args.get(1) {
-        arg.parse().map(|it| op(Some(it))).map_err(|it| s(&it))
-    } else {
-        Ok(op(None))
-    }
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut ignore_views).add_option(&["--ignore-views", "-i"], StoreTrue, "Ignore the number of views");
+        ap.refer(&mut count).add_argument("count", StoreOption, "Count");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        op(count, ignore_views)
+    })
 }
 
 pub fn parse_cherenkov(args: &[String]) -> Result<Operation, String> {

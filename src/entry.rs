@@ -193,7 +193,7 @@ impl EntryContainer {
             if let Some(file) = file {
                 self.set_current(pointer, file);
             } else  {
-                pointer.first(1);
+                pointer.first(1, false);
             }
         }
     }
@@ -213,7 +213,7 @@ impl EntryContainer {
                 return
             }
         }
-        pointer.first(1);
+        pointer.first(1, false);
     }
 
     pub fn sort(&mut self, pointer: &mut IndexPointer) {
@@ -244,7 +244,7 @@ impl EntryContainer {
         if self.is_valid_image(&entry) && !self.is_duplicated(&entry) {
             self.file_indices.insert(entry.clone(), self.files.len());
             self.files.push(entry);
-            self.files.len() == 1 && pointer.first(1)
+            self.files.len() == 1 && pointer.first(1, false)
         } else {
             false
         }
@@ -304,7 +304,7 @@ impl EntryContainer {
             }
         });
 
-        pointer.first(1);
+        pointer.first(1, false);
         changed
     }
 

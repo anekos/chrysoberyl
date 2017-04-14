@@ -181,14 +181,14 @@ impl App {
                    self.on_editor(editor_command.clone(), config_sources.to_owned()),
                 Expand(recursive, ref base) =>
                     self.on_expand(&mut updated, recursive, base),
-                First(count) =>
-                    updated.pointer = self.pointer.with_count(count).first(len),
+                First(count, ignore_views) =>
+                    updated.pointer = self.pointer.with_count(count).first(len, !ignore_views),
                 Fragile(ref path) =>
                     self.on_fragile(path),
                 Input(ref input) =>
                     self.on_input(input),
-                Last(count) =>
-                    updated.pointer = self.pointer.with_count(count).last(len),
+                Last(count, ignore_views) =>
+                    updated.pointer = self.pointer.with_count(count).last(len, !ignore_views),
                 LazyDraw(serial) =>
                     self.on_lazy_draw(&mut updated, serial),
                 LoadConfig(ref config_source) =>
@@ -197,14 +197,14 @@ impl App {
                     self.on_map(target, mapped_operation),
                 Multi(ref ops) =>
                     self.on_multi(ops),
-                Next(count) =>
-                    self.on_next(&mut updated, count, len),
+                Next(count, ignore_views) =>
+                    updated.pointer = self.pointer.with_count(count).next(len, !ignore_views),
                 Nop =>
                     (),
                 OperateFile(ref file_operation) =>
                     self.on_operate_file(file_operation),
-                Previous(count) =>
-                    self.on_previous(&mut updated, count),
+                Previous(count, ignore_views) =>
+                    updated.pointer = self.pointer.with_count(count).previous(!ignore_views),
                 PrintEntries =>
                     self.on_print_entries(),
                 Push(ref path, ref meta) =>
@@ -404,10 +404,6 @@ impl App {
         }
     }
 
-    fn on_next(&mut self, updated: &mut Updated, count: Option<usize>, len: usize) {
-        updated.pointer = self.pointer.with_count(count).next(len);
-    }
-
     fn on_operate_file(&mut self, file_operation: &filer::FileOperation) {
         use entry::EntryContent::*;
 
@@ -423,10 +419,6 @@ impl App {
                 Err(err) => puts_event!("operate_file", "status" => "fail", "reason" => err, "operation" => text),
             }
         }
-    }
-
-    fn on_previous(&mut self, updated: &mut Updated,  count: Option<usize>) {
-        updated.pointer = self.pointer.with_count(count).previous();
     }
 
     fn on_print_entries(&self) {
@@ -551,7 +543,7 @@ impl App {
         }
         updated.image = true;
         self.reset_view();
-        self.pointer.multiply(self.gui.len());
+        self.pointer.set_multiplier(self.gui.len());
     }
 
     fn on_views_fellow(&mut self, updated: &mut Updated, for_rows: bool) {
@@ -563,7 +555,7 @@ impl App {
         };
         updated.image = true;
         self.reset_view();
-        self.pointer.multiply(self.gui.len());
+        self.pointer.set_multiplier(self.gui.len());
     }
 
     /* Private methods */

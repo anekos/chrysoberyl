@@ -30,7 +30,7 @@ impl IndexPointer {
         self
     }
 
-    pub fn multiply(&mut self, x: usize) {
+    pub fn set_multiplier(&mut self, x: usize) {
         if x == 0 {
             panic!("Invalid multiplier: {}", x);
         }
@@ -45,26 +45,28 @@ impl IndexPointer {
         }
     }
 
-    pub fn first(&mut self, container_size: usize) -> bool {
+    pub fn first(&mut self, container_size: usize, multiply: bool) -> bool {
         if container_size < 1 {
             return false
         }
 
-        let delta = self.counted();
-        let result = if delta <= container_size {
-            delta - 1
+        let counted = self.counted();
+        let delta = self.fix(counted - 1, multiply);
+        let result = if delta < container_size {
+            delta
         } else {
             container_size - 1
         };
         self.update(result)
     }
 
-    pub fn last(&mut self, container_size: usize) -> bool {
+    pub fn last(&mut self, container_size: usize, multiply: bool) -> bool {
         if container_size < 1 {
             return false
         }
 
-        let delta = self.counted();
+        let counted = self.counted();
+        let delta = self.fix(counted, multiply);
         let result = if delta <= container_size {
             container_size - delta
         } else {
@@ -73,13 +75,14 @@ impl IndexPointer {
         self.update(result)
     }
 
-    pub fn next(&mut self, container_size: usize) -> bool {
+    pub fn next(&mut self, container_size: usize, multiply: bool) -> bool {
         if container_size < self.multiplier {
             return false
         }
 
         if let Some(current) = self.current {
-            let mut result = current + self.counted() * self.multiplier;
+            let counted = self.counted();
+            let mut result = current + self.fix(counted, multiply);
             if container_size <= result {
                 result = container_size - 1
             }
@@ -89,9 +92,10 @@ impl IndexPointer {
         }
     }
 
-    pub fn previous(&mut self) -> bool {
+    pub fn previous(&mut self, multiply: bool) -> bool {
         if let Some(current) = self.current {
-            let delta = self.counted() * self.multiplier;
+            let counted = self.counted();
+            let delta = self.fix(counted, multiply);
 
             let result = if delta <= current {
                 current - delta
@@ -108,6 +112,14 @@ impl IndexPointer {
         let result = self.count.unwrap_or(1);
         self.count = None;
         result
+    }
+
+    pub fn fix(&self, x: usize, multiply: bool) -> usize {
+        if multiply {
+            x * self.multiplier
+        } else {
+            x
+        }
     }
 
     fn update(&mut self, new_index: usize) -> bool {

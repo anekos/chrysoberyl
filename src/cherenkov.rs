@@ -97,7 +97,7 @@ fn cherenkov_pixbuf(pixbuf: Pixbuf, che: &Che) -> Pixbuf {
         let (width, height) = (pixbuf.get_width(), pixbuf.get_height());
         let rowstride = pixbuf.get_rowstride();
         let channels = pixbuf.get_n_channels();
-        if channels == 3 {
+        if channels == 4 {
             let pixels: &mut [u8] = unsafe { pixbuf.get_pixels() };
             nova(che, pixels, rowstride, width, height);
         }
@@ -236,7 +236,7 @@ fn nova(che: &Che, pixels: &mut [u8], rowstride: i32, width: i32, height: i32) {
             let w = 1.0 / (l + 0.001) * 0.9;
             let nova_alpha = clamp(w, 0.0, 1.0);
             let compl_ratio = 1.0 - nova_alpha;
-            let ptr = (y * rowstride + x * 3) as usize;
+            let ptr = (y * rowstride + x * 4 /* RGB+ALPHA */) as usize;
 
             for ci in 0..3 {
                 let in_color = pixels[ptr + ci] as f64 / 255.0;

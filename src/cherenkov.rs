@@ -75,7 +75,7 @@ impl Cherenkoved {
     }
 
     pub fn remove(&mut self, entry: &Entry) {
-        self.cache.remove(entry).is_none();
+        self.cache.remove(entry);
     }
 
     pub fn cherenkov(&mut self, entry: &Entry, width: i32, height: i32, prefer_original: bool, che: &Che) {

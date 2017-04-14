@@ -142,32 +142,6 @@ fn make_scaled_from_file(path: &str, max_width: i32, max_height: i32, fit: bool)
 }
 
 fn make_scaled_from_pdf(document: &Rc<PopplerDocument>, index: usize, max_width: i32, max_height: i32) -> Result<Pixbuf, Error> {
-    let page = document.nth_page(index);
-    let (page_width, page_height) = page.get_size();
-
-    let scale = {
-        let (scale_width, scale_height) = (max_width as f64 / page_width, max_height as f64 / page_height);
-        if (max_width as f64) < page_width * scale_height {
-            scale_width
-        } else {
-            scale_height
-        }
-    };
-
-    let mut surface = ImageSurface::create(Format::ARgb32, (page_width * scale) as i32, (page_height * scale) as i32);
-
-    {
-        let context = Context::new(&surface);
-        context.scale(scale, scale);
-        context.set_source_rgb(1.0, 1.0, 1.0);
-        context.paint();
-        page.render(&context);
-    }
-
-    let (width, height, stride) = (surface.get_width(), surface.get_height(), surface.get_stride());
-
-    let data: Vec<u8> = (*surface.get_data().unwrap()).to_vec();
-
-    Ok(Pixbuf::new_from_vec(data, 0, true, 8, width, height, stride))
+    Ok(document.nth_page(index).get_pixbuf(max_width, max_height))
 }
 

@@ -1,4 +1,5 @@
 
+extern crate gdk_sys;
 extern crate glib;
 extern crate gobject_sys;
 
@@ -7,7 +8,10 @@ use std::ffi::CString;
 use std::path::Path;
 use std::mem::transmute;
 
+use cairo::{Context, ImageSurface, Format};
 use cairo;
+use gdk_pixbuf::Pixbuf;
+use glib::translate::*;
 use glib::translate::ToGlibPtr;
 use libc::{c_int, c_double};
 
@@ -61,6 +65,36 @@ impl PopplerPage {
         let (mut width, mut height): (c_double, c_double) = (0.0, 0.0);
         unsafe { sys::poppler_page_get_size(self.0, &mut width, &mut height) };
         (width as f64, height as f64)
+    }
+
+    pub fn get_pixbuf(&self, max_width: i32, max_height: i32) -> Pixbuf {
+        let (page_width, page_height) = self.get_size();
+
+        let scale = {
+            let (scale_width, scale_height) = (max_width as f64 / page_width, max_height as f64 / page_height);
+            if (max_width as f64) < page_width * scale_height {
+                scale_width
+            } else {
+                scale_height
+            }
+        };
+
+        let surface = ImageSurface::create(Format::ARgb32, (page_width * scale) as i32, (page_height * scale) as i32);
+
+        {
+            let context = Context::new(&surface);
+            context.scale(scale, scale);
+            context.set_source_rgb(1.0, 1.0, 1.0);
+            context.paint();
+            self.render(&context);
+        }
+
+        let (width, height) = (surface.get_width(), surface.get_height());
+
+        unsafe {
+            let surface = surface.as_ref().to_glib_none().0;
+            from_glib_full(gdk_sys::gdk_pixbuf_get_from_surface(surface, 0, 0, width, height))
+        }
     }
 }
 

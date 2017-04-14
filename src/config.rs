@@ -19,6 +19,10 @@ pub static DEFAULT_CONFIG: &'static str = "
 @map key j @next
 @map key k @previous
 @map key l @last
+@map key H @first --ignore-views
+@map key J @next --ignore-views
+@map key K @previous --ignore-views
+@map key L @last --ignore-views
 @map key q @quit
 @map key z @shuffle
 @map key e @expand

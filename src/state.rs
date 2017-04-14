@@ -1,11 +1,16 @@
 
+use std::str::FromStr;
+use std::default::Default;
+
+use gdk_pixbuf::InterpType;
 
 
 pub struct States {
     pub status_bar: bool,
     pub reverse: bool,
     pub fit: bool,
-    pub view: ViewState
+    pub view: ViewState,
+    pub scaling: ScalingMethod,
 }
 
 pub struct ViewState {
@@ -22,6 +27,9 @@ pub enum StateName {
     Fit,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct ScalingMethod(pub InterpType);
+
 
 impl States {
     pub fn new() -> States {
@@ -33,7 +41,29 @@ impl States {
                 cols: 1,
                 rows: 1,
                 center_alignment: false,
-            }
+            },
+            scaling: ScalingMethod(InterpType::Bilinear)
         }
+    }
+}
+
+
+impl FromStr for ScalingMethod {
+    type Err = String;
+
+    fn from_str(src: &str) -> Result<ScalingMethod, String> {
+        match src {
+            "n" | "nearest" => Ok(InterpType::Nearest),
+            "t" | "tiles" => Ok(InterpType::Tiles),
+            "b" | "bilinear" => Ok(InterpType::Bilinear),
+            "h" | "hyper" => Ok(InterpType::Hyper),
+            _ => Err(format!("Invalid scaling method name: {}", src))
+        } .map(ScalingMethod)
+    }
+}
+
+impl Default for ScalingMethod {
+    fn default() -> ScalingMethod {
+        ScalingMethod(InterpType::Bilinear)
     }
 }

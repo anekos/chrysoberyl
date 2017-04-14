@@ -17,6 +17,7 @@ mod parser;
 mod utils;
 
 use self::utils::*;
+use state::ScalingMethod;
 
 
 
@@ -54,6 +55,7 @@ pub enum Operation {
     Random,
     Refresh,
     Save(PathBuf, Option<usize>),
+    ChangeScalingMethod(ScalingMethod),
     Shell(bool, bool, Vec<String>), /* async, operation, command_line */
     Shuffle(bool), /* Fix current */
     Sort,
@@ -167,6 +169,7 @@ pub fn parse_from_vec(whole: &[String]) -> Result<Operation, String> {
             "@random" | "@rand"          => Ok(Random),
             "@refresh" | "@r"            => Ok(Refresh),
             "@save"                      => parse_save(whole),
+            "@scaling"                   => parse_scaling(whole),
             "@shell"                     => parse_shell(whole),
             "@shuffle"                   => Ok(Shuffle(false)),
             "@sort"                      => Ok(Sort),

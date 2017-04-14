@@ -34,6 +34,7 @@ use mapping::{Mapping, Input};
 use operation::{self, Operation, StateUpdater, OperationContext, MappingTarget};
 use output;
 use shell;
+use state::ScalingMethod;
 use state::{States, StateName};
 use termination;
 use utils::path_to_str;
@@ -163,6 +164,8 @@ impl App {
 
         {
             match *operation {
+                ChangeScalingMethod(ref scaling_method) =>
+                    self.on_change_scaling_method(&mut updated, scaling_method),
                 Cherenkov(ref parameter) =>
                     self.on_cherenkov(&mut updated, parameter, context),
                 CherenkovClear =>
@@ -265,6 +268,11 @@ impl App {
 
     /* Operation event */
 
+    fn on_change_scaling_method(&mut self, updated: &mut Updated, method: &ScalingMethod) {
+        self.states.scaling = method.clone();
+        updated.image = true;
+    }
+
     fn on_cherenkov(&mut self, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<&OperationContext>) {
         use cherenkov::Che;
         use gtk::WidgetExt;
@@ -306,7 +314,8 @@ impl App {
                                 radius: parameter.radius,
                                 random_hue: parameter.random_hue,
                                 color: parameter.color,
-                            });
+                            },
+                            &self.states.scaling);
                         updated.image = true;
                     }
                 }
@@ -597,10 +606,8 @@ impl App {
             }
         }
 
-        match self.cherenkoved.get_pixbuf(&entry, width, height, self.states.fit) {
-            Ok(buf) => {
-                image.set_from_pixbuf(Some(&buf));
-            },
+        match self.cherenkoved.get_pixbuf(&entry, width, height, self.states.fit, &self.states.scaling) {
+            Ok(buf) => image.set_from_pixbuf(Some(&buf)),
             Err(error) => error.show(image, width, height, &self.gui.colors.error, &self.gui.colors.error_background)
         }
     }

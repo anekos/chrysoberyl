@@ -331,6 +331,18 @@ pub fn parse_save(args: &[String]) -> Result<Operation, String> {
     })
 }
 
+pub fn parse_scaling(args: &[String]) -> Result<Operation, String> {
+    let mut scaling_method = ScalingMethod::default();
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut scaling_method).add_argument("method-name", Store, "Scaling method (nearest/tiles/bilinear/hyper)").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::ChangeScalingMethod(scaling_method)
+    })
+}
+
 pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
     let mut async = false;
     let mut read_operations = false;

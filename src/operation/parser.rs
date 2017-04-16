@@ -344,13 +344,15 @@ pub fn parse_scaling(args: &[String]) -> Result<Operation, String> {
 }
 
 pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
-    let mut async = false;
+    let mut async = true;
     let mut read_operations = false;
     let mut command_line: Vec<String> = vec![];
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut async).add_option(&["--async", "-a"], StoreTrue, "Async");
+        ap.refer(&mut async)
+            .add_option(&["--async", "-a"], StoreTrue, "Async (Non-blocking)")
+            .add_option(&["--sync", "-s"], StoreFalse, "Sync (Blocking)");
         ap.refer(&mut read_operations).add_option(&["--operation", "-o"], StoreTrue, "Read operations form stdout");
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)

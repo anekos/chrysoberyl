@@ -17,9 +17,9 @@ use operation::*;
 
 
 pub fn parse_command1<T>(args: &[String], op: T) -> Result<Operation, String>
-where T: FnOnce(String) -> Operation {
+where T: FnOnce(String) -> Result<Operation, String> {
     if let Some(arg) = args.get(1) {
-        Ok(op(arg.to_owned()))
+        op(arg.to_owned())
     } else {
         Err("Not enough argument".to_owned())
     }
@@ -88,8 +88,8 @@ pub fn parse_copy_or_move(args: &[String]) -> Result<(PathBuf, filer::IfExist), 
             .add_option(&["--new", "--new-file-name", "-n"], StoreConst(filer::IfExist::NewFileName), "Generate new file name if file exists (default)");
         ap.refer(&mut destination).add_argument("destination", Store, "Destination directory").required();
         parse_args(&mut ap, args)
-    } .map(|_| {
-        (expand_to_pathbuf(&destination).to_owned(), if_exist)
+    } .and_then(|_| {
+        expand_to_pathbuf(&destination).map(|it| (it.to_owned(), if_exist))
     })
 }
 
@@ -288,7 +288,7 @@ pub fn parse_option_updater(args: &[String], modifier: StateUpdater) -> Result<O
 }
 
 pub fn parse_push<T>(args: &[String], op: T) -> Result<Operation, String>
-where T: FnOnce(String, Meta) -> Operation {
+where T: FnOnce(String, Meta) -> Result<Operation, String> {
     impl FromStr for MetaEntry {
         type Err = String;
 
@@ -312,7 +312,7 @@ where T: FnOnce(String, Meta) -> Operation {
         ap.refer(&mut meta).add_option(&["--meta", "-m"], Collect, "Meta data");
         ap.refer(&mut path).add_argument("Path", Store, "Path to resource").required();
         parse_args(&mut ap, args)
-    } .map(|_| {
+    } .and_then(|_| {
         op(path, new_meta_from_vec(meta))
     })
 }
@@ -326,8 +326,8 @@ pub fn parse_save(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut index).add_option(&["--index", "-i"], StoreOption, "Index (1 origin)");
         ap.refer(&mut path).add_argument("path", Store, "Save to").required();
         parse_args(&mut ap, args)
-    } .map(|_| {
-        Operation::Save(expand_to_pathbuf(&path), index)
+    } .and_then(|_| {
+        expand_to_pathbuf(&path).map(|it| Operation::Save(it, index))
     })
 }
 
@@ -354,9 +354,15 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut read_operations).add_option(&["--operation", "-o"], StoreTrue, "Read operations form stdout");
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
-    } .map(|_| {
-        let command_line = command_line.iter().map(|it| expand(it)).collect();
-        Operation::Shell(async, read_operations, command_line)
+    } .and_then(|_| {
+        let mut cl: Vec<String> = vec![];
+        for it in command_line {
+            match expand(&it) {
+                Ok(it) => cl.push(it),
+                Err(err) => return Err(err)
+            }
+        }
+        Ok(Operation::Shell(async, read_operations, cl))
     })
 }
 

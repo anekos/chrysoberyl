@@ -104,7 +104,7 @@ impl Operation {
     pub fn from_str_force(s: &str) -> Operation {
         use std::str::FromStr;
 
-        Operation::from_str(s).unwrap_or_else(|_| Operation::Push(expand(s), new_meta(&[])))
+        Operation::from_str(s).unwrap_or_else(|_| Operation::Push(expand(s).unwrap_or(s.to_owned()), new_meta(&[])))
     }
 
     fn user(args: Vec<String>) -> Operation {
@@ -152,7 +152,7 @@ pub fn parse_from_vec(whole: &[String]) -> Result<Operation, String> {
             "@entries"                   => Ok(PrintEntries),
             "@expand"                    => parse_expand(whole),
             "@first" | "@f"              => parse_move(whole, First),
-            "@fragile"                   => parse_command1(whole, |it| Fragile(expand_to_pathbuf(&it))),
+            "@fragile"                   => parse_command1(whole, |it| expand_to_pathbuf(&it).map(Fragile)),
             "@input"                     => parse_input(whole),
             "@last" | "@l"               => parse_move(whole, Last),
             "@load"                      => parse_load(whole),
@@ -161,10 +161,10 @@ pub fn parse_from_vec(whole: &[String]) -> Result<Operation, String> {
             "@move"                      => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Move(path, if_exist))),
             "@next" | "@n"               => parse_move(whole, Next),
             "@prev" | "@p" | "@previous" => parse_move(whole, Previous),
-            "@push"                      => parse_push(whole, |it, meta| Push(expand(&it), meta)),
-            "@pushpdf"                   => parse_push(whole, |it, meta| PushPdf(expand_to_pathbuf(&it), meta)),
-            "@pushpath"                  => parse_push(whole, |it, meta| PushPath(expand_to_pathbuf(&it), meta)),
-            "@pushurl"                   => parse_push(whole, PushURL),
+            "@push"                      => parse_push(whole, |it, meta| expand(&it).map(|it| Push(it, meta))),
+            "@pushpdf"                   => parse_push(whole, |it, meta| expand_to_pathbuf(&it).map(|it| PushPdf(it, meta))),
+            "@pushpath"                  => parse_push(whole, |it, meta| expand_to_pathbuf(&it).map(|it| PushPath(it, meta))),
+            "@pushurl"                   => parse_push(whole, |it, meta| Ok(PushURL(it, meta))),
             "@quit"                      => Ok(Quit),
             "@random" | "@rand"          => Ok(Random),
             "@refresh" | "@r"            => Ok(Refresh),

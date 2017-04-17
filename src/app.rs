@@ -265,7 +265,7 @@ impl App {
             self.update_env();
         }
 
-        if self.states.initialized && self.states.auto_paging && len > 0 && Some(len - 1) == self.pointer.current && self.entries.len() != len {
+        if self.states.initialized && self.states.auto_paging && len > 0 && Some(len - self.gui.len()) == self.pointer.current && self.entries.len() != len {
             self.tx.send(Operation::Next(None, false)).unwrap();
         }
     }

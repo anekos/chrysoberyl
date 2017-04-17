@@ -84,7 +84,11 @@ impl IndexPointer {
             let counted = self.counted();
             let mut result = current + self.fix(counted, multiply);
             if container_size <= result {
-                result = container_size - 1
+                result = if multiply { 
+                    let d = current % self.multiplier;
+                    let result = (container_size - d) / self.multiplier * self.multiplier + d;
+                    if container_size <= result { container_size - self.multiplier } else { result }
+                } else { container_size - 1 }
             }
             self.update(result)
         } else {

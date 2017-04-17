@@ -251,6 +251,18 @@ impl App {
             }
         }
 
+
+        if self.states.initialized && self.entries.len() != len {
+            if let Some(current) = self.pointer.current {
+                let gui_len = self.gui.len();
+                if current < len && len < current + gui_len {
+                    updated.image = true;
+                } else if self.states.auto_paging && gui_len <= current && len - gui_len == current  {
+                    self.tx.send(Operation::Next(None, false)).unwrap();
+                }
+            }
+        }
+
         if updated.pointer {
             self.draw_serial += 1;
             self.tx.send(Operation::LazyDraw(self.draw_serial)).unwrap();
@@ -263,10 +275,6 @@ impl App {
         if updated.image || updated.label {
             self.update_label();
             self.update_env();
-        }
-
-        if self.states.initialized && self.states.auto_paging && len > 0 && Some(len - self.gui.len()) == self.pointer.current && self.entries.len() != len {
-            self.tx.send(Operation::Next(None, false)).unwrap();
         }
     }
 

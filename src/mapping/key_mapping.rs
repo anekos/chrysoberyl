@@ -1,7 +1,7 @@
 
 use std::collections::HashMap;
 
-use operation::{self, Operation};
+use operation::Operation;
 
 
 pub struct KeyMapping {
@@ -20,7 +20,7 @@ impl KeyMapping {
 
     pub fn matched(&self, key: &str) -> Option<Result<Operation, String>> {
         self.table.get(key).cloned().map(|op| {
-            operation::parse_from_vec(&op)
+            Operation::parse_from_vec(&op)
         })
     }
 }

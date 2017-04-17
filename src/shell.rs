@@ -44,7 +44,10 @@ fn process_stdout(tx: Option<Sender<Operation>>, mut child: Child) -> bool {
         if let Some(stdout) = child.stdout {
             for line in BufReader::new(stdout).lines() {
                 let line = line.unwrap();
-                tx.send(Operation::from_str_force(&line)).unwrap();
+                match Operation::parse_fuzziness(&line) {
+                    Ok(op) => tx.send(op).unwrap(),
+                    Err(err) => puts_error!("at" => "shell_stdout", "reason" => err, "for" => &line)
+                }
             }
         } else {
             return false

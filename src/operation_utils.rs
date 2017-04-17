@@ -6,9 +6,12 @@ use operation::Operation;
 
 
 
-pub fn read_operations<T: Read>(source: T, tx: &Sender<Operation>) {
+pub fn read_operations<T: Read>(at: &str, source: T, tx: &Sender<Operation>) {
     for line in BufReader::new(source).lines() {
         let line = line.unwrap();
-        tx.send(Operation::from_str_force(&line)).unwrap();
+        match Operation::parse_fuzziness(&line) {
+            Ok(op) => tx.send(op).unwrap(),
+            Err(err) => puts_error!("at" => at, "reason" => err, "for" => &line)
+        }
     }
 }

@@ -257,7 +257,7 @@ pub fn parse_multi_args(xs: &[String], separator: &str) -> Result<Operation, Str
     let mut result: Vec<Operation> = vec![];
 
     for op in ops {
-        match parse_from_vec(&op) {
+        match Operation::parse_from_vec(&op) {
             Ok(op) => result.push(op),
             err => return err
         }

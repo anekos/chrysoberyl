@@ -1,7 +1,7 @@
 
 use std::fs::File;
-use std::sync::mpsc::Sender;
 use std::io::Read;
+use std::sync::mpsc::Sender;
 
 use app_path;
 use operation::Operation;
@@ -49,7 +49,10 @@ pub fn load_config(tx: &Sender<Operation>, config_source: &ConfigSource) {
 
     puts_event!("config_file", "state" => "open");
     for line in lines {
-        tx.send(Operation::from_str_force(&line)).unwrap();
+        match Operation::parse(&line) {
+            Ok(op) => tx.send(op).unwrap(),
+            Err(err) => puts_error!("at" => "load_config", "reason" => s!(err), "for" => &line),
+        }
     }
     puts_event!("config_file", "state" => "close");
 }

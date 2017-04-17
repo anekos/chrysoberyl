@@ -1,4 +1,5 @@
 
+use std::fmt;
 use std::path:: PathBuf;
 use std::str::FromStr;
 
@@ -7,7 +8,7 @@ use css_color_parser::Color as CssColor;
 
 use archive::ArchiveEntry;
 use config::ConfigSource;
-use entry::{Meta, new_meta};
+use entry::Meta;
 use filer;
 use gui::ColorTarget;
 use mapping::{self, mouse_mapping};
@@ -16,6 +17,7 @@ use state::StateName;
 mod parser;
 mod utils;
 
+use entry;
 use self::utils::*;
 use state::ScalingMethod;
 
@@ -91,21 +93,39 @@ pub enum MappingTarget {
     Mouse(u32, Option<mouse_mapping::Area>)
 }
 
+#[derive(Debug, PartialEq)]
+pub enum ParsingError {
+    NotOperation,
+    InvalidOperation(String),
+}
+
+
 
 impl FromStr for Operation {
-    type Err = String;
+    type Err = ParsingError;
 
-    fn from_str(src: &str) -> Result<Operation, String> {
-        parse(src)
+    fn from_str(src: &str) -> Result<Operation, ParsingError> {
+        Operation::parse(src)
     }
 }
 
 
 impl Operation {
-    pub fn from_str_force(s: &str) -> Operation {
-        use std::str::FromStr;
+    pub fn parse_from_vec(whole: &[String]) -> Result<Operation, String> {
+        _parse_from_vec(whole).map_err(|it| s!(it))
+    }
 
-        Operation::from_str(s).unwrap_or_else(|_| Operation::Push(expand(s).unwrap_or(s.to_owned()), new_meta(&[])))
+    pub fn parse(s: &str) -> Result<Operation, ParsingError> {
+        let ps: Vec<String> = Parser::new(s).map(|(_, it)| it).collect();
+        _parse_from_vec(ps.as_slice())
+    }
+
+    pub fn parse_fuzziness(s: &str) -> Result<Operation, String> {
+        match Operation::parse(s) {
+            Err(ParsingError::InvalidOperation(err)) => Err(err),
+            Err(ParsingError::NotOperation) => Ok(Operation::Push(o!(s), entry::new_empty_meta())),
+            Ok(op) => Ok(op)
+        }
     }
 
     fn user(args: Vec<String>) -> Operation {
@@ -128,7 +148,20 @@ impl Operation {
 }
 
 
-pub fn parse_from_vec(whole: &[String]) -> Result<Operation, String> {
+impl fmt::Display for ParsingError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            ParsingError::InvalidOperation(ref err) =>
+                write!(f, "Invalid operation: {}", err),
+            ParsingError::NotOperation =>
+                write!(f, "Not operation")
+        }
+    }
+}
+
+
+
+fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
     use self::Operation::*;
     use filer::FileOperation::{Copy, Move};
     use self::parser::*;
@@ -139,6 +172,10 @@ pub fn parse_from_vec(whole: &[String]) -> Result<Operation, String> {
 
         if name.starts_with('#') {
             return Ok(Nop)
+        }
+
+        if !(name.starts_with(';') || name.starts_with('@')) {
+            return Err(ParsingError::NotOperation)
         }
 
         match name {
@@ -178,17 +215,13 @@ pub fn parse_from_vec(whole: &[String]) -> Result<Operation, String> {
             "@user"                      => Ok(Operation::user(args.to_vec())),
             "@views"                     => parse_views(whole),
             ";"                          => parse_multi_args(args, ";"),
-            _ => Err(format!("Invalid commnad: {}", name))
-        }
+            _ => Err(format!("Unknown operation: {}", name))
+        } .map_err(ParsingError::InvalidOperation)
     } else {
         Ok(Nop)
     }
 }
 
-fn parse(s: &str) -> Result<Operation, String> {
-    let ps: Vec<String> = Parser::new(s).map(|(_, it)| it).collect();
-    parse_from_vec(ps.as_slice())
-}
 
 
 
@@ -199,11 +232,11 @@ fn test_parse() {
     use std::sync::Arc;
 
     fn p(s: &str) -> Operation {
-        Operation::from_str_force(s)
+        Operation::parse_fuzziness(s).unwrap()
     }
 
-    fn q(s: &str) -> Result<Operation, String> {
-        s.parse()
+    fn q(s: &str) -> Result<Operation, ParsingError> {
+        Operation::parse(s)
     }
 
     // Simple

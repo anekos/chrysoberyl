@@ -2,7 +2,7 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use operation::{self, Operation};
+use operation::Operation;
 
 
 
@@ -48,11 +48,11 @@ impl MouseMapping {
             for entry in entries.iter() {
                 if let Some(area) = entry.area.clone() {
                     if area.contains(x, y, width, height) {
-                        found = Some(operation::parse_from_vec(&entry.operation));
+                        found = Some(Operation::parse_from_vec(&entry.operation));
                         break;
                     }
                 } else if found.is_none() {
-                    found = Some(operation::parse_from_vec(&entry.operation));
+                    found = Some(Operation::parse_from_vec(&entry.operation));
                 }
             }
 

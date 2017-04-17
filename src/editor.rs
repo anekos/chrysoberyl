@@ -46,6 +46,9 @@ pub fn start_edit(tx: &Sender<Operation>, editor_command: Option<String>, config
     let file = BufReader::new(File::open(&temp_file.path()).unwrap());
     for line in file.lines() {
         let line = line.unwrap();
-        tx.send(Operation::from_str_force(&line)).unwrap();
+        match Operation::parse_fuzziness(&line) {
+            Ok(op) => tx.send(op).unwrap(),
+            Err(err) => puts_error!("at" => "editor", "reason" => err, "for" => &line)
+        }
     }
 }

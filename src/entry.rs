@@ -398,6 +398,10 @@ pub fn new_meta(meta: &MetaSlice) -> Meta {
     Arc::new(o!(meta))
 }
 
+pub fn new_empty_meta() -> Meta {
+    Arc::new(vec![])
+}
+
 pub fn new_meta_from_vec(meta: Vec<MetaEntry>) -> Meta {
     Arc::new(meta)
 }

@@ -113,7 +113,7 @@ impl App {
         for op in &initial.operations {
             match Operation::from_str(op) {
                 Ok(op) => tx.send(op).unwrap(),
-                Err(err) => puts_error!("at" => "operation", "reason" => err),
+                Err(err) => puts_error!("at" => "operation", "reason" => s!(err)),
             }
         }
 

@@ -23,6 +23,7 @@ use state::ScalingMethod;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Operation {
+    ChangeScalingMethod(ScalingMethod),
     Cherenkov(CherenkovParameter),
     CherenkovClear,
     Clear,
@@ -48,14 +49,13 @@ pub enum Operation {
     Push(String, Meta),
     PushArchiveEntry(PathBuf, ArchiveEntry),
     PushHttpCache(PathBuf, String, Meta),
-    PushPdf(PathBuf, Meta),
     PushPath(PathBuf, Meta),
+    PushPdf(PathBuf, Meta),
     PushURL(String, Meta),
     Quit,
     Random,
     Refresh,
     Save(PathBuf, Option<usize>),
-    ChangeScalingMethod(ScalingMethod),
     Shell(bool, bool, Vec<String>), /* async, operation, command_line */
     Shuffle(bool), /* Fix current */
     Sort,

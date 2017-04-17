@@ -3,7 +3,7 @@ use std::io::sink;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreOption, List, PushConst};
+use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse, StoreOption, List, PushConst};
 use css_color_parser::Color as CssColor;
 
 use config::ConfigSource;

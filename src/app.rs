@@ -147,6 +147,8 @@ impl App {
             tx.send(Operation::Shuffle(fix)).unwrap();
         }
 
+        tx.send(Operation::Initialized).unwrap();
+
         (app, primary_rx, rx)
     }
 
@@ -188,6 +190,8 @@ impl App {
                     updated.pointer = self.pointer.with_count(count).first(len, !ignore_views),
                 Fragile(ref path) =>
                     self.on_fragile(path),
+                Initialized =>
+                    self.states.initialized = true,
                 Input(ref input) =>
                     self.on_input(input),
                 Last(count, ignore_views) =>
@@ -259,6 +263,10 @@ impl App {
         if updated.image || updated.label {
             self.update_label();
             self.update_env();
+        }
+
+        if self.states.initialized && self.states.auto_paging && len > 0 && Some(len - 1) == self.pointer.current && self.entries.len() != len {
+            self.tx.send(Operation::Next(None, false)).unwrap();
         }
     }
 
@@ -521,6 +529,7 @@ impl App {
                 Reverse => &mut self.states.reverse,
                 CenterAlignment => &mut self.states.view.center_alignment,
                 Fit => &mut self.states.fit,
+                AutoPaging => &mut self.states.auto_paging,
             };
 
             match *modifier {

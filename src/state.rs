@@ -6,9 +6,11 @@ use gdk_pixbuf::InterpType;
 
 
 pub struct States {
+    pub initialized: bool,
     pub status_bar: bool,
     pub reverse: bool,
     pub fit: bool,
+    pub auto_paging: bool,
     pub view: ViewState,
     pub scaling: ScalingMethod,
 }
@@ -25,6 +27,7 @@ pub enum StateName {
     Reverse,
     CenterAlignment,
     Fit,
+    AutoPaging,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -34,9 +37,11 @@ pub struct ScalingMethod(pub InterpType);
 impl States {
     pub fn new() -> States {
         States {
+            initialized: false,
             status_bar: false,
             reverse: false,
             fit: true,
+            auto_paging: false,
             view: ViewState {
                 cols: 1,
                 rows: 1,

@@ -278,10 +278,11 @@ pub fn parse_option_updater(args: &[String], modifier: StateUpdater) -> Result<O
         parse_args(&mut ap, args)
     } .and_then(|_| {
         match &*name.to_lowercase() {
-            "status-bar" | "status" => Ok(UpdateOption(StatusBar, modifier)),
-            "reverse" | "rev" => Ok(UpdateOption(Reverse, modifier)),
-            "center" | "center-alignment" => Ok(UpdateOption(CenterAlignment, modifier)),
-            "fit" => Ok(UpdateOption(Fit, modifier)),
+            "status-bar" | "status"                => Ok(UpdateOption(StatusBar, modifier)),
+            "reverse" | "rev"                      => Ok(UpdateOption(Reverse, modifier)),
+            "center" | "center-alignment"          => Ok(UpdateOption(CenterAlignment, modifier)),
+            "fit"                                  => Ok(UpdateOption(Fit, modifier)),
+            "auto-page" | "auto-paging" | "paging" => Ok(UpdateOption(AutoPaging, modifier)),
             _  => Err(format!("Unknown option: {}", name))
         }
     })

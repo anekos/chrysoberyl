@@ -35,6 +35,7 @@ pub enum Operation {
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool),
     Fragile(PathBuf),
+    Initialized,
     Input(mapping::Input),
     Last(Option<usize>, bool),
     LazyDraw(u64), /* serial */

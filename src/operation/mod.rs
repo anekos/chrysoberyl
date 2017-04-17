@@ -258,9 +258,10 @@ fn test_parse() {
     assert_eq!(p("@multi / @first / @next"), Multi(vec![First(None, false), Next(None, false)]));
 
     // Shell
-    assert_eq!(p("@shell ls -l -a"), Shell(false, false, vec![o!("ls"), o!("-l"), o!("-a")]));
+    assert_eq!(p("@shell ls -l -a"), Shell(true, false, vec![o!("ls"), o!("-l"), o!("-a")]));
     assert_eq!(p("@shell --async ls -l -a"), Shell(true, false, vec![o!("ls"), o!("-l"), o!("-a")]));
     assert_eq!(p("@shell --async --operation ls -l -a"), Shell(true, true, vec![o!("ls"), o!("-l"), o!("-a")]));
+    assert_eq!(p("@shell --sync ls -l -a"), Shell(false, false, vec![o!("ls"), o!("-l"), o!("-a")]));
 
     // Invalid command
     assert_eq!(p("Meow Meow"), Push(o!("Meow Meow"), Arc::new(vec![])));

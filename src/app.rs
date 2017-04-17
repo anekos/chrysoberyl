@@ -690,11 +690,25 @@ impl App {
         let text =
             if let Some((entry, index)) = self.entries.current(&self.pointer) {
                 let len = self.entries.len();
-                let path = entry.display_path();
-                let mut signs = o!("");
-                if self.states.fit { signs.push('F'); }
-                if self.states.reverse { signs.push('R'); }
-                format!("[{}/{}] {} {{{}}}", index + 1, len, path, signs)
+                let gui_len = self.gui.len();
+                let (from, to) = (index + 1, min!(index + gui_len, len));
+                let mut text =
+                    if gui_len > 1 {
+                        if self.states.reverse {
+                            format!("[{}←{}/{}]", to, from, len)
+                        } else {
+                            format!("[{}→{}/{}]", from, to, len)
+                        }
+                    } else {
+                        format!("[{}/{}]", from, len)
+                    };
+                text.push(' ');
+                text.push_str(&entry.display_path());
+                text.push_str(" {");
+                if self.states.fit { text.push('F'); }
+                if self.states.auto_paging { text.push('A'); }
+                text.push('}');
+                text
             } else {
                 o!(constant::DEFAULT_INFORMATION)
             };

@@ -15,6 +15,7 @@ pub enum ConfigSource {
 
 
 pub static DEFAULT_CONFIG: &'static str = "
+# move
 @map key h @first
 @map key j @next
 @map key k @previous
@@ -23,19 +24,26 @@ pub static DEFAULT_CONFIG: &'static str = "
 @map key J @next --ignore-views
 @map key K @previous --ignore-views
 @map key L @last --ignore-views
-@map key q @quit
+
+# option
+@map key a @toggle auto-paging
+@map key i @toggle status-bar
+@map key f @toggle fit
+@map key r @toggle reverse
+@map key c @toggle center
+@map key v @views
+@map key V @views --rows
+
+# entries
 @map key z @shuffle
 @map key e @expand
 @map key E @expand --recursive
 @map key R @refresh
-@map key i @toggle status-bar
-@map key v @views
-@map key V @views --rows
-@map key r @toggle reverse
-@map key q @quit
-@map key c @toggle center
 @map key X @clear
-@map key f @toggle fit
+
+# misc
+@map key q @quit
+@map key q @quit
 @map key Escape @count
 
 @map mouse 1 @next

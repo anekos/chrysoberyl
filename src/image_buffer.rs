@@ -12,7 +12,7 @@ use css_color_parser::Color;
 use color::gdk_rgba;
 use entry::{Entry, EntryContent};
 use poppler::PopplerDocument;
-use size::Size;
+use size::{FitTo, Size};
 use state::ScalingMethod;
 use utils::path_to_str;
 
@@ -68,16 +68,16 @@ impl Error {
 }
 
 
-pub fn get_pixbuf(entry: &Entry, cell: &Size, fit: bool, method: &ScalingMethod) -> Result<Pixbuf, Error> {
+pub fn get_pixbuf(entry: &Entry, cell: &Size, fit: &FitTo, scaling: &ScalingMethod) -> Result<Pixbuf, Error> {
     use self::EntryContent::*;
 
     match (*entry).content {
         File(ref path) | Http(ref path, _) =>
-            make_scaled_from_file(path_to_str(path), cell, fit, method),
+            make_scaled_from_file(path_to_str(path), cell, fit, scaling),
         Archive(_, ref entry) =>
-            make_scaled(&*entry.content.as_slice(), cell, fit, method),
+            make_scaled(&*entry.content.as_slice(), cell, fit, scaling),
         Pdf(_, ref document, index) =>
-            make_scaled_from_pdf(document, index, cell)
+            make_scaled_from_pdf(document, index, cell, fit)
     }
 }
 
@@ -99,16 +99,16 @@ pub fn get_pixbuf_animation(entry: &Entry) -> Result<PixbufAnimation, Error> {
     } .map_err(Error::new)
 }
 
-fn make_scaled(buffer: &[u8], cell: &Size, fit: bool, method: &ScalingMethod) -> Result<Pixbuf, Error> {
+fn make_scaled(buffer: &[u8], cell: &Size, fit: &FitTo, scaling: &ScalingMethod) -> Result<Pixbuf, Error> {
     let loader = PixbufLoader::new();
     loader.loader_write(buffer).map_err(Error::new).and_then(|_| {
         if loader.close().is_err() {
             return Err(Error::new("Invalid image data"))
         }
         if let Some(source) = loader.get_pixbuf() {
-            let (scale, fitted) = Size::from_pixbuf(&source).fit(cell); // FIXME fit
+            let (scale, fitted) = Size::from_pixbuf(&source).fit(cell, fit);
             let scaled = unsafe { Pixbuf::new(0, true, 8, fitted.width, fitted.height).unwrap() };
-            source.scale(&scaled, 0, 0, fitted.width, fitted.height, 0.0, 0.0, scale, scale, method.0);
+            source.scale(&scaled, 0, 0, fitted.width, fitted.height, 0.0, 0.0, scale, scale, scaling.0);
             Ok(scaled)
         } else {
             Err(Error::new("Invalid image"))
@@ -116,16 +116,16 @@ fn make_scaled(buffer: &[u8], cell: &Size, fit: bool, method: &ScalingMethod) ->
     })
 }
 
-fn make_scaled_from_file(path: &str, cell: &Size, fit: bool, method: &ScalingMethod) -> Result<Pixbuf, Error> {
+fn make_scaled_from_file(path: &str, cell: &Size, fit: &FitTo, scaling: &ScalingMethod) -> Result<Pixbuf, Error> {
     File::open(path).map_err(Error::new).and_then(|mut file| {
         let mut buffer: Vec<u8> = vec![];
         file.read_to_end(&mut buffer).map_err(Error::new).and_then(|_| {
-            make_scaled(buffer.as_slice(), cell, fit, method)
+            make_scaled(buffer.as_slice(), cell, fit, scaling)
         })
     })
 }
 
-fn make_scaled_from_pdf(document: &Rc<PopplerDocument>, index: usize, cell: &Size) -> Result<Pixbuf, Error> {
-    Ok(document.nth_page(index).get_pixbuf(cell))
+fn make_scaled_from_pdf(document: &Rc<PopplerDocument>, index: usize, cell: &Size, fit: &FitTo) -> Result<Pixbuf, Error> {
+    Ok(document.nth_page(index).get_pixbuf(cell, fit))
 }
 

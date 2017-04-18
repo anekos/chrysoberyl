@@ -34,7 +34,7 @@ use mapping::{Mapping, Input};
 use operation::{self, Operation, StateUpdater, OperationContext, MappingTarget};
 use output;
 use shell;
-use size::Size;
+use size::{FitTo, Size};
 use state::ScalingMethod;
 use state::{States, StateName};
 use termination;
@@ -167,6 +167,8 @@ impl App {
 
         {
             match *operation {
+                ChangeFitTo(ref fit) =>
+                    self.on_change_fit_to(&mut updated, fit),
                 ChangeScalingMethod(ref scaling_method) =>
                     self.on_change_scaling_method(&mut updated, scaling_method),
                 Cherenkov(ref parameter) =>
@@ -288,6 +290,11 @@ impl App {
 
     /* Operation event */
 
+    fn on_change_fit_to(&mut self, updated: &mut Updated, fit: &FitTo) {
+        self.states.fit_to = fit.clone();
+        updated.image = true;
+    }
+
     fn on_change_scaling_method(&mut self, updated: &mut Updated, method: &ScalingMethod) {
         self.states.scaling = method.clone();
         updated.image = true;
@@ -328,7 +335,7 @@ impl App {
                         self.cherenkoved.cherenkov(
                             &entry,
                             &cell,
-                            self.states.fit,
+                            &self.states.fit_to,
                             &Che {
                                 center: center,
                                 n_spokes: parameter.n_spokes,
@@ -541,7 +548,6 @@ impl App {
                 StatusBar => &mut self.states.status_bar,
                 Reverse => &mut self.states.reverse,
                 CenterAlignment => &mut self.states.view.center_alignment,
-                Fit => &mut self.states.fit,
                 AutoPaging => &mut self.states.auto_paging,
             };
 
@@ -628,7 +634,7 @@ impl App {
             }
         }
 
-        match self.cherenkoved.get_pixbuf(&entry, cell, self.states.fit, &self.states.scaling) {
+        match self.cherenkoved.get_pixbuf(&entry, cell, &self.states.fit_to, &self.states.scaling) {
             Ok(buf) => image.set_from_pixbuf(Some(&buf)),
             Err(error) => error.show(image, cell, &self.gui.colors.error, &self.gui.colors.error_background)
         }
@@ -710,7 +716,7 @@ impl App {
                 text.push(' ');
                 text.push_str(&entry.display_path());
                 text.push_str(" {");
-                if self.states.fit { text.push('F'); }
+                if self.states.fit_to != FitTo::Original { text.push('F'); }
                 if self.states.auto_paging { text.push('A'); }
                 text.push('}');
                 text

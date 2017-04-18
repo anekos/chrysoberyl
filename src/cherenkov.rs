@@ -35,7 +35,7 @@ use rand::{self, Rng, ThreadRng};
 use color;
 use entry::Entry;
 use image_buffer;
-use size::Size;
+use size::{FitTo, Size};
 use state::ScalingMethod;
 
 
@@ -66,21 +66,21 @@ impl Cherenkoved {
         Cherenkoved { cache: HashMap::new() }
     }
 
-    pub fn get_pixbuf(&self, entry: &Entry, cell: &Size, prefer_original: bool, method: &ScalingMethod) -> Result<Pixbuf, image_buffer::Error> {
+    pub fn get_pixbuf(&self, entry: &Entry, cell: &Size, fit: &FitTo, scaling: &ScalingMethod) -> Result<Pixbuf, image_buffer::Error> {
         if let Some(cache) = self.cache.get(entry) {
             if cache.size == *cell {
                 return Ok(cache.buffer.clone())
             }
         }
-        image_buffer::get_pixbuf(entry, cell, prefer_original, method)
+        image_buffer::get_pixbuf(entry, cell, fit, scaling)
     }
 
     pub fn remove(&mut self, entry: &Entry) {
         self.cache.remove(entry);
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, cell: &Size, prefer_original: bool, che: &Che, method: &ScalingMethod) {
-        if let Ok(pixbuf) = self.get_pixbuf(entry, cell, prefer_original, method) {
+    pub fn cherenkov(&mut self, entry: &Entry, cell: &Size, fit: &FitTo, che: &Che, scaling: &ScalingMethod) {
+        if let Ok(pixbuf) = self.get_pixbuf(entry, cell, fit, scaling) {
             self.cache.insert(
                 entry.clone(),
                 CacheEntry {

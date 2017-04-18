@@ -1,4 +1,6 @@
 
+use std::str::FromStr;
+
 use gdk_pixbuf::Pixbuf;
 
 
@@ -9,7 +11,8 @@ pub struct Size {
     pub height: i32
 }
 
-pub enum FitMethod {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FitTo {
     Original,
     Width,
     Height,
@@ -40,12 +43,34 @@ impl Size {
         }
     }
 
-    pub fn fit(&self, cell: &Size) -> (f64, Size) {
+    pub fn fit(&self, cell: &Size, to: &FitTo) -> (f64, Size) {
         let mut scale = cell.width as f64 / self.width as f64;
         let result_height = (self.height as f64 * scale) as i32;
         if result_height > cell.height {
             scale = cell.height as f64 / self.height as f64;
         }
-        (scale, self.scaled(scale))
+        if *to == FitTo::Original && 1.0 <= scale {
+            (1.0, self.clone())
+        } else {
+            (scale, self.scaled(scale))
+        }
+    }
+}
+
+
+impl FromStr for FitTo {
+    type Err = String;
+
+    fn from_str(src: &str) -> Result<FitTo, String> {
+        use self::FitTo::*;
+
+        let result = match src {
+            "original" => Original,
+            "cell" => Cell,
+            "width" => Width,
+            "height" => Height,
+            _ => return Err(format!("Invalid target name: {}", src))
+        };
+        Ok(result)
     }
 }

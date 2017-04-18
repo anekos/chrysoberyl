@@ -4,14 +4,16 @@ use std::default::Default;
 
 use gdk_pixbuf::InterpType;
 
+use size::FitTo;
+
 
 pub struct States {
     pub initialized: bool,
     pub status_bar: bool,
     pub reverse: bool,
-    pub fit: bool,
     pub auto_paging: bool,
     pub view: ViewState,
+    pub fit_to: FitTo,
     pub scaling: ScalingMethod,
 }
 
@@ -26,7 +28,6 @@ pub enum StateName {
     StatusBar,
     Reverse,
     CenterAlignment,
-    Fit,
     AutoPaging,
 }
 
@@ -40,7 +41,7 @@ impl States {
             initialized: false,
             status_bar: false,
             reverse: false,
-            fit: true,
+            fit_to: FitTo::Cell,
             auto_paging: false,
             view: ViewState {
                 cols: 1,

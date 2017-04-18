@@ -12,6 +12,7 @@ use entry::Meta;
 use filer;
 use gui::ColorTarget;
 use mapping::{self, mouse_mapping};
+use size::FitTo;
 use state::StateName;
 
 mod parser;
@@ -25,6 +26,7 @@ use state::ScalingMethod;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Operation {
+    ChangeFitTo(FitTo),
     ChangeScalingMethod(ScalingMethod),
     Cherenkov(CherenkovParameter),
     CherenkovClear,
@@ -192,6 +194,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@expand"                    => parse_expand(whole),
             "@first" | "@f"              => parse_move(whole, First),
             "@force-flush"               => Ok(ForceFlush),
+            "@fit"                       => parse_fit(whole),
             "@fragile"                   => parse_command1(whole, |it| expand_to_pathbuf(&it).map(Fragile)),
             "@input"                     => parse_input(whole),
             "@last" | "@l"               => parse_move(whole, Last),

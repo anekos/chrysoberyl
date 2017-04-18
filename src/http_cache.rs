@@ -37,7 +37,8 @@ struct Request {
 enum Getter {
     Queue(String, PathBuf, Meta),
     Done(usize, Request),
-    Fail(usize, String, Request)
+    Fail(usize, String, Request),
+    Flush,
 }
 
 
@@ -55,6 +56,10 @@ impl HttpCache {
         } else {
             self.main_tx.send(Getter::Queue(url, filepath, new_meta(meta))).unwrap();
         }
+    }
+
+    pub fn force_flush(&self) {
+        self.main_tx.send(Getter::Flush).unwrap();
     }
 }
 
@@ -116,6 +121,13 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
                     stacks[index] -= 1;
                     buffer.skip(request.serial);
                     puts_error!("at" => "HTTP/Get", "reason" => err, "url" => o!(request.url), "queue" => s!(queued), "buffer" => s!(buffer.len()));
+                }
+                Flush => {
+                    puts!("event" => "HTTP", "state" => "flush", "queue" => s!(queued), "buffer" => s!(buffer.len()));
+
+                    for request in buffer.force_flush() {
+                        app_tx.send(Operation::PushHttpCache(request.cache_filepath, request.url, request.meta)).unwrap();
+                    }
                 }
             }
         }

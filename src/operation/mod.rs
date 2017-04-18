@@ -36,6 +36,7 @@ pub enum Operation {
     Editor(Option<String>, Vec<ConfigSource>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool),
+    ForceFlush,
     Fragile(PathBuf),
     Initialized,
     Input(mapping::Input),
@@ -190,6 +191,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@entries"                   => Ok(PrintEntries),
             "@expand"                    => parse_expand(whole),
             "@first" | "@f"              => parse_move(whole, First),
+            "@forceflush"                => Ok(ForceFlush),
             "@fragile"                   => parse_command1(whole, |it| expand_to_pathbuf(&it).map(Fragile)),
             "@input"                     => parse_input(whole),
             "@last" | "@l"               => parse_move(whole, Last),

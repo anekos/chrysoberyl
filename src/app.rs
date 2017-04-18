@@ -188,6 +188,8 @@ impl App {
                     self.on_expand(&mut updated, recursive, base),
                 First(count, ignore_views) =>
                     updated.pointer = self.pointer.with_count(count).first(len, !ignore_views),
+                ForceFlush =>
+                    self.http_cache.force_flush(),
                 Fragile(ref path) =>
                     self.on_fragile(path),
                 Initialized =>

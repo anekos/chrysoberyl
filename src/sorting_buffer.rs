@@ -39,6 +39,23 @@ impl<T> SortingBuffer<T> {
         None
     }
 
+    pub fn force_flush(&mut self) -> Vec<T> {
+        let mut result = vec![];
+
+        while !self.buffer.is_empty() {
+
+            if let Some(found) = self.buffer.remove(&self.next_serial) {
+                if let Some(found) = found {
+                    result.push(found);
+                }
+            }
+
+            self.next_serial += 1;
+        }
+
+        result
+    }
+
     pub fn len(&self) -> usize {
         self.buffer.len()
     }

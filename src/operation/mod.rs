@@ -191,7 +191,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@entries"                   => Ok(PrintEntries),
             "@expand"                    => parse_expand(whole),
             "@first" | "@f"              => parse_move(whole, First),
-            "@forceflush"                => Ok(ForceFlush),
+            "@force-flush"               => Ok(ForceFlush),
             "@fragile"                   => parse_command1(whole, |it| expand_to_pathbuf(&it).map(Fragile)),
             "@input"                     => parse_input(whole),
             "@last" | "@l"               => parse_move(whole, Last),

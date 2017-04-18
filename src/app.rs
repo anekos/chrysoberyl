@@ -220,7 +220,7 @@ impl App {
                     self.on_push_archive_entry(&mut updated, archive_path, entry),
                 PushHttpCache(ref file, ref url, ref meta) =>
                     self.on_push_http_cache(&mut updated, file, url, meta),
-                PushPath(ref file, ref meta) =>
+                PushFile(ref file, ref meta) =>
                     self.on_push_path(&mut updated, file.clone(), meta),
                 PushPdf(ref file, ref meta) =>
                     self.on_push_pdf(&mut updated, file.clone(), meta),
@@ -471,7 +471,7 @@ impl App {
             }
         }
 
-        self.operate(&Operation::PushPath(Path::new(&path).to_path_buf(), new_meta(meta)));
+        self.operate(&Operation::PushFile(Path::new(&path).to_path_buf(), new_meta(meta)));
     }
 
     fn on_push_archive_entry(&mut self, updated: &mut Updated, archive_path: &PathBuf, entry: &ArchiveEntry) {

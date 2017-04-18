@@ -52,7 +52,7 @@ pub enum Operation {
     Push(String, Meta),
     PushArchiveEntry(PathBuf, ArchiveEntry),
     PushHttpCache(PathBuf, String, Meta),
-    PushPath(PathBuf, Meta),
+    PushFile(PathBuf, Meta),
     PushPdf(PathBuf, Meta),
     PushURL(String, Meta),
     Quit,
@@ -200,9 +200,9 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@next" | "@n"               => parse_move(whole, Next),
             "@prev" | "@p" | "@previous" => parse_move(whole, Previous),
             "@push"                      => parse_push(whole, |it, meta| expand(&it).map(|it| Push(it, meta))),
-            "@pushpdf"                   => parse_push(whole, |it, meta| expand_to_pathbuf(&it).map(|it| PushPdf(it, meta))),
-            "@pushpath"                  => parse_push(whole, |it, meta| expand_to_pathbuf(&it).map(|it| PushPath(it, meta))),
-            "@pushurl"                   => parse_push(whole, |it, meta| Ok(PushURL(it, meta))),
+            "@push-pdf"                  => parse_push(whole, |it, meta| expand_to_pathbuf(&it).map(|it| PushPdf(it, meta))),
+            "@push-file"                 => parse_push(whole, |it, meta| expand_to_pathbuf(&it).map(|it| PushFile(it, meta))),
+            "@push-url"                  => parse_push(whole, |it, meta| Ok(PushURL(it, meta))),
             "@quit"                      => Ok(Quit),
             "@random" | "@rand"          => Ok(Random),
             "@refresh" | "@r"            => Ok(Refresh),
@@ -262,8 +262,8 @@ fn test_parse() {
 
     // @push*
     assert_eq!(p("@push http://example.com/moge.jpg"), Push(o!("http://example.com/moge.jpg"), Arc::new(vec![])));
-    assert_eq!(p("@pushpath /hoge/moge.jpg"), PushPath(pathbuf("/hoge/moge.jpg"), Arc::new(vec![])));
-    assert_eq!(p("@pushurl http://example.com/moge.jpg"), PushURL(o!("http://example.com/moge.jpg"), Arc::new(vec![])));
+    assert_eq!(p("@push-file /hoge/moge.jpg"), PushFile(pathbuf("/hoge/moge.jpg"), Arc::new(vec![])));
+    assert_eq!(p("@push-url http://example.com/moge.jpg"), PushURL(o!("http://example.com/moge.jpg"), Arc::new(vec![])));
 
     // @map
     assert_eq!(q("@map key k @first"), Ok(Map(MappingTarget::Key(s!("k")), vec![o!("@first")])));

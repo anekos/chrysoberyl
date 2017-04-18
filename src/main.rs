@@ -52,6 +52,7 @@ mod operation;
 mod operation_utils;
 mod poppler;
 mod shell;
+mod size;
 mod sorting_buffer;
 mod state;
 mod termination;

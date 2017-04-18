@@ -34,6 +34,7 @@ use mapping::{Mapping, Input};
 use operation::{self, Operation, StateUpdater, OperationContext, MappingTarget};
 use output;
 use shell;
+use size::Size;
 use state::ScalingMethod;
 use state::{States, StateName};
 use termination;
@@ -307,7 +308,7 @@ impl App {
         }
 
         if let Some(OperationContext::Input(Input::MouseButton((mx, my), _))) = context.cloned() {
-            let (cw, ch) = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
+            let cell = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
 
             for (index, image) in self.gui.images(self.states.reverse).enumerate() {
                 if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
@@ -325,7 +326,8 @@ impl App {
                             parameter.x.unwrap_or_else(|| mx - x1),
                             parameter.y.unwrap_or_else(|| my - y1));
                         self.cherenkoved.cherenkov(
-                            &entry, cw, ch,
+                            &entry,
+                            &cell,
                             self.states.fit,
                             &Che {
                                 center: center,
@@ -611,14 +613,14 @@ impl App {
         output::puts(&pairs);
     }
 
-    fn show_image1(&self, entry: Entry, image: &Image, width: i32, height: i32) {
+    fn show_image1(&self, entry: Entry, image: &Image, cell: &Size) {
         if let Some(img) = self.get_meta(&entry) {
             if let Ok(img) = img {
                 if let Ok(gif) = img.into::<Gif>() {
                     if gif.is_animated() {
                         match image_buffer::get_pixbuf_animation(&entry) {
                             Ok(buf) => image.set_from_animation(&buf),
-                            Err(error) => error.show(image, width, height, &self.gui.colors.error, &self.gui.colors.error_background)
+                            Err(error) => error.show(image, cell, &self.gui.colors.error, &self.gui.colors.error_background)
                         }
                         return
                     }
@@ -626,18 +628,18 @@ impl App {
             }
         }
 
-        match self.cherenkoved.get_pixbuf(&entry, width, height, self.states.fit, &self.states.scaling) {
+        match self.cherenkoved.get_pixbuf(&entry, cell, self.states.fit, &self.states.scaling) {
             Ok(buf) => image.set_from_pixbuf(Some(&buf)),
-            Err(error) => error.show(image, width, height, &self.gui.colors.error, &self.gui.colors.error_background)
+            Err(error) => error.show(image, cell, &self.gui.colors.error, &self.gui.colors.error_background)
         }
     }
 
     fn show_image(&mut self) {
-        let (width, height) = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
+        let cell = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
 
         for (index, image) in self.gui.images(self.states.reverse).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                self.show_image1(entry, image, width, height);
+                self.show_image1(entry, image, &cell);
             } else {
                 image.set_from_pixbuf(None);
             }

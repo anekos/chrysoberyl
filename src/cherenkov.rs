@@ -35,6 +35,7 @@ use rand::{self, Rng, ThreadRng};
 use color;
 use entry::Entry;
 use image_buffer;
+use size::Size;
 use state::ScalingMethod;
 
 
@@ -56,8 +57,7 @@ pub struct Cherenkoved {
 
 pub struct CacheEntry {
     buffer: Pixbuf,
-    width: i32,
-    height: i32,
+    size: Size,
 }
 
 
@@ -66,27 +66,26 @@ impl Cherenkoved {
         Cherenkoved { cache: HashMap::new() }
     }
 
-    pub fn get_pixbuf(&self, entry: &Entry, width: i32, height: i32, prefer_original: bool, method: &ScalingMethod) -> Result<Pixbuf, image_buffer::Error> {
+    pub fn get_pixbuf(&self, entry: &Entry, cell: &Size, prefer_original: bool, method: &ScalingMethod) -> Result<Pixbuf, image_buffer::Error> {
         if let Some(cache) = self.cache.get(entry) {
-            if cache.width == width && cache.height == height {
+            if cache.size == *cell {
                 return Ok(cache.buffer.clone())
             }
         }
-        image_buffer::get_pixbuf(entry, width, height, prefer_original, method)
+        image_buffer::get_pixbuf(entry, cell, prefer_original, method)
     }
 
     pub fn remove(&mut self, entry: &Entry) {
         self.cache.remove(entry);
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, width: i32, height: i32, prefer_original: bool, che: &Che, method: &ScalingMethod) {
-        if let Ok(pixbuf) = self.get_pixbuf(entry, width, height, prefer_original, method) {
+    pub fn cherenkov(&mut self, entry: &Entry, cell: &Size, prefer_original: bool, che: &Che, method: &ScalingMethod) {
+        if let Ok(pixbuf) = self.get_pixbuf(entry, cell, prefer_original, method) {
             self.cache.insert(
                 entry.clone(),
                 CacheEntry {
                     buffer: cherenkov_pixbuf(pixbuf, che),
-                    width: width,
-                    height: height,
+                    size: cell.clone()
                 });
         }
     }

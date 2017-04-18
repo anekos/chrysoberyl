@@ -10,6 +10,7 @@ use gtk::{self, Window, Image, Label, Orientation};
 
 use color::gdk_rgba;
 use constant;
+use size::Size;
 use state::ViewState;
 
 
@@ -115,7 +116,7 @@ impl Gui {
         self.create_images(state);
     }
 
-    pub fn get_cell_size(&self, state: &ViewState, with_label: bool) -> (i32, i32) {
+    pub fn get_cell_size(&self, state: &ViewState, with_label: bool) -> Size {
         let (width, height) = self.window.get_size();
 
         let width = width / state.cols as i32;
@@ -125,7 +126,7 @@ impl Gui {
             height / state.rows as i32
         };
 
-        (width, height)
+        Size::new(width, height)
     }
 
     pub fn update_color(&mut self, target: &ColorTarget, color: &Color) {

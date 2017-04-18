@@ -172,7 +172,14 @@ fn write_to_file(filepath: &PathBuf, mut response: Response) {
 fn generate_temporary_filename(url: &str) -> PathBuf {
     let mut result = app_path::cache_dir("http");
     let url = Url::parse(url).unwrap();
-    result.push(format!("{}{}", url.host().unwrap(), url.path()));
-    create_dir_all(&result.parent().unwrap()).unwrap();
-    result
+    let path = url.path();
+    if path.len() <= 1 { // e.g.  "http://example.com" "http://example.com/"
+        result.push(format!("{}.png", url.host().unwrap()));
+        create_dir_all(&result.parent().unwrap()).unwrap();
+        result
+    } else {
+        result.push(format!("{}{}", url.host().unwrap(), url.path()));
+        create_dir_all(&result.parent().unwrap()).unwrap();
+        result
+    }
 }

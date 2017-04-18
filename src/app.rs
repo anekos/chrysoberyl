@@ -260,7 +260,8 @@ impl App {
                 if current < len && len < current + gui_len {
                     updated.image = true;
                 } else if self.states.auto_paging && gui_len <= current && len - gui_len == current  {
-                    self.tx.send(Operation::Next(None, false)).unwrap();
+                    self.operate(&Operation::Next(None, false));
+                    return
                 }
             }
         }

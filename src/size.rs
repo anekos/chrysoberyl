@@ -44,16 +44,42 @@ impl Size {
     }
 
     pub fn fit(&self, cell: &Size, to: &FitTo) -> (f64, Size) {
+        use self::FitTo::*;
+
+        match *to {
+            Original => self.fit_to_original(cell),
+            Cell => self.fit_to_cell(cell),
+            Width => self.fit_to_width(cell),
+            Height => self.fit_to_height(cell),
+        }
+    }
+
+    fn fit_to_original(&self, cell: &Size) -> (f64, Size) {
+        let (scale, fitted) = self.fit_to_cell(cell);
+        if 1.0 <= scale {
+            (1.0, self.clone())
+        } else {
+            (scale, fitted)
+        }
+    }
+
+    fn fit_to_cell(&self, cell: &Size) -> (f64, Size) {
         let mut scale = cell.width as f64 / self.width as f64;
         let result_height = (self.height as f64 * scale) as i32;
         if result_height > cell.height {
             scale = cell.height as f64 / self.height as f64;
         }
-        if *to == FitTo::Original && 1.0 <= scale {
-            (1.0, self.clone())
-        } else {
-            (scale, self.scaled(scale))
-        }
+        (scale, self.scaled(scale))
+    }
+
+    fn fit_to_width(&self, cell: &Size) -> (f64, Size) {
+        let scale = cell.width as f64 / self.width as f64;
+        (scale, self.scaled(scale))
+    }
+
+    fn fit_to_height(&self, cell: &Size) -> (f64, Size) {
+        let scale = cell.height as f64 / self.height as f64;
+        (scale, self.scaled(scale))
     }
 }
 

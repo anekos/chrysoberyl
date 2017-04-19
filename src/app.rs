@@ -33,7 +33,8 @@ use http_cache::HttpCache;
 use image_buffer;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
-use operation::{self, Operation, StateUpdater, OperationContext, MappingTarget};
+use operation::{self, Operation, OperationContext, MappingTarget};
+use option::{OptionValue, OptionUpdateMethod};
 use output;
 use shell;
 use size::{FitTo, Size};
@@ -266,7 +267,7 @@ impl App {
                 let gui_len = self.gui.len();
                 if current < len && len < current + gui_len {
                     updated.image = true;
-                } else if self.states.auto_paging && gui_len <= len && len - gui_len == current {
+                } else if self.states.auto_paging.is_enabled() && gui_len <= len && len - gui_len == current {
                     self.operate(&Operation::Next(None, false));
                     return
                 }
@@ -319,9 +320,9 @@ impl App {
         }
 
         if let Some(OperationContext::Input(Input::MouseButton((mx, my), _))) = context.cloned() {
-            let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
+            let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar.is_enabled());
 
-            for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
+            for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
                 if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
                     let (x1, y1, w, h) = {
                         let a = cell.image.get_allocation();
@@ -558,24 +559,16 @@ impl App {
         updated.label = true;
     }
 
-    fn on_update_option(&mut self, updated: &mut Updated, name: &StateName, modifier: &StateUpdater) {
+    fn on_update_option(&mut self, updated: &mut Updated, name: &StateName, method: &OptionUpdateMethod) {
         use state::StateName::*;
-        use self::StateUpdater::*;
 
-        {
-            let value: &mut bool = match *name {
-                StatusBar => &mut self.states.status_bar,
-                Reverse => &mut self.states.reverse,
-                CenterAlignment => &mut self.states.view.center_alignment,
-                AutoPaging => &mut self.states.auto_paging,
-            };
-
-            match *modifier {
-                Toggle => *value ^= true,
-                Enable => *value = true,
-                Disable => *value = false,
-            }
-        }
+        match *name {
+            StatusBar => self.states.status_bar.update(method),
+            Reverse => self.states.reverse.update(method),
+            CenterAlignment => self.states.view.center_alignment.update(method),
+            AutoPaging => self.states.auto_paging.update(method),
+            FitTo => self.states.fit_to.update(method),
+        };
 
         match *name {
             StatusBar => self.update_label_visibility(),
@@ -677,13 +670,13 @@ impl App {
     }
 
     fn show_image(&mut self, to_end: bool) {
-        let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
+        let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar.is_enabled());
 
         if self.states.fit_to.is_scrollable() {
             self.gui.reset_scrolls(to_end);
         }
 
-        for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
+        for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
                 self.show_image1(entry, cell, &cell_size);
             } else {
@@ -745,7 +738,7 @@ impl App {
                 let (from, to) = (index + 1, min!(index + gui_len, len));
                 let mut text =
                     if gui_len > 1 {
-                        if self.states.reverse {
+                        if self.states.reverse.is_enabled() {
                             format!("[{}←{}/{}]", to, from, len)
                         } else {
                             format!("[{}→{}/{}]", from, to, len)
@@ -757,7 +750,7 @@ impl App {
                 text.push_str(&entry.display_path());
                 text.push_str(" {");
                 if self.states.fit_to != FitTo::Original { text.push('F'); }
-                if self.states.auto_paging { text.push('A'); }
+                if self.states.auto_paging.is_enabled() { text.push('A'); }
                 text.push('}');
                 text
             } else {
@@ -765,13 +758,13 @@ impl App {
             };
 
         self.gui.window.set_title(&text);
-        if self.states.status_bar {
+        if self.states.status_bar.is_enabled() {
             self.gui.label.set_text(&text);
         }
     }
 
     fn update_label_visibility(&self) {
-        if self.states.status_bar {
+        if self.states.status_bar.is_enabled() {
             self.gui.label.show();
         } else {
             self.gui.label.hide();

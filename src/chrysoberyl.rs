@@ -3,7 +3,7 @@ use std::sync::mpsc::Receiver;
 use std::thread::{sleep};
 use std::time::{Duration, Instant};
 
-use argparse::{ArgumentParser, List, Collect, Store, StoreTrue, StoreOption, Print};
+use argparse::{ArgumentParser, List, Collect, Store, StoreTrue, StoreOption, Print, StoreConst};
 use encoding::EncodingRef;
 use encoding::label::encoding_from_whatwg_label;
 use env_logger;
@@ -15,7 +15,6 @@ use config;
 use entry::EntryContainerOptions;
 use gui::Gui;
 use operation::Operation;
-use state::States;
 
 
 
@@ -65,6 +64,8 @@ pub fn main() {
 
 
 fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operation>) {
+    use state::*;
+
     let mut eco = EntryContainerOptions::new();
     let mut states = States::new();
     let mut encodings: Vec<String> = vec![];
@@ -109,11 +110,11 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
 
             // Options
             ap.refer(&mut states.status_bar)
-                .add_option(&["--status-bar"], StoreTrue, "Show status bar");
+                .add_option(&["--status-bar"], StoreConst(StatusBarValue::Enabled), "Show status bar");
             ap.refer(&mut states.reverse)
-                .add_option(&["--reverse"], StoreTrue, "Reverse in multi view");
+                .add_option(&["--reverse"], StoreConst(ReverseValue::Enabled), "Reverse in multi view");
             ap.refer(&mut states.view.center_alignment)
-                .add_option(&["--center"], StoreTrue, "Center alignment in multi view");
+                .add_option(&["--center"], StoreConst(CenterAlignmentValue::Enabled), "Center alignment in multi view");
 
             // Container
             ap.refer(&mut eco.min_width)

@@ -9,18 +9,18 @@ use css_color_parser::Color as CssColor;
 use archive::ArchiveEntry;
 use config::ConfigSource;
 use entry::Meta;
+use entry;
 use filer;
 use gui::{ColorTarget, Direction};
 use mapping::{self, mouse_mapping};
+use option::OptionUpdateMethod;
+use self::utils::*;
 use size::FitTo;
+use state::ScalingMethod;
 use state::StateName;
 
 mod parser;
 mod utils;
-
-use entry;
-use self::utils::*;
-use state::ScalingMethod;
 
 
 
@@ -66,15 +66,12 @@ pub enum Operation {
     Shell(bool, bool, Vec<String>), /* async, operation, command_line */
     Shuffle(bool), /* Fix current */
     Sort,
-    UpdateOption(StateName, StateUpdater),
+    UpdateOption(StateName, OptionUpdateMethod),
     User(Vec<(String, String)>),
     Views(Option<usize>, Option<usize>),
     ViewsFellow(bool), /* for_rows */
 }
 
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum StateUpdater { Toggle, Enable, Disable }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CherenkovParameter {
@@ -188,9 +185,10 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@color"                     => parse_color(whole),
             "@copy"                      => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Copy(path, if_exist))),
             "@count"                     => parse_count(whole),
-            "@disable"                   => parse_option_updater(whole, StateUpdater::Disable),
+            "@cycle"                     => parse_option_updater(whole, OptionUpdateMethod::Cycle),
+            "@disable"                   => parse_option_updater(whole, OptionUpdateMethod::Disable),
             "@editor"                    => parse_editor(whole),
-            "@enable"                    => parse_option_updater(whole, StateUpdater::Enable),
+            "@enable"                    => parse_option_updater(whole, OptionUpdateMethod::Enable),
             "@entries"                   => Ok(PrintEntries),
             "@expand"                    => parse_expand(whole),
             "@first" | "@f"              => parse_move(whole, First),
@@ -218,7 +216,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@shell"                     => parse_shell(whole),
             "@shuffle"                   => Ok(Shuffle(false)),
             "@sort"                      => Ok(Sort),
-            "@toggle"                    => parse_option_updater(whole, StateUpdater::Toggle),
+            "@toggle"                    => parse_option_updater(whole, OptionUpdateMethod::Toggle),
             "@user"                      => Ok(Operation::user(args.to_vec())),
             "@views"                     => parse_views(whole),
             ";"                          => parse_multi_args(args, ";"),

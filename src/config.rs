@@ -30,7 +30,7 @@ pub static DEFAULT_CONFIG: &'static str = "
 # option
 @map key a @toggle auto-paging
 @map key i @toggle status-bar
-@map key f @toggle fit
+@map key f @cycle fit
 @map key r @toggle reverse
 @map key c @toggle center
 @map key v @views

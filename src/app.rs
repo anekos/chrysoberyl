@@ -259,7 +259,7 @@ impl App {
                 let gui_len = self.gui.len();
                 if current < len && len < current + gui_len {
                     updated.image = true;
-                } else if self.states.auto_paging && len - gui_len == current {
+                } else if self.states.auto_paging && gui_len <= len && len - gui_len == current {
                     self.operate(&Operation::Next(None, false));
                     return
                 }

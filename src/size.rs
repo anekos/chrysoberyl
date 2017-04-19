@@ -43,15 +43,19 @@ impl Size {
         }
     }
 
-    pub fn fit(&self, cell: &Size, to: &FitTo) -> (f64, Size) {
+    /** (scale, fitted_size, delta) **/
+    pub fn fit(&self, cell: &Size, to: &FitTo) -> (f64, Size, Size) {
         use self::FitTo::*;
 
-        match *to {
+        let (scale, fitted) = match *to {
             Original => self.fit_to_original(cell),
             Cell => self.fit_to_cell(cell),
             Width => self.fit_to_width(cell),
             Height => self.fit_to_height(cell),
-        }
+        };
+
+        let delta = Size::new(max!(fitted.width - cell.width, 0), max!(fitted.height - cell.height, 0));
+        (scale, fitted, delta)
     }
 
     fn fit_to_original(&self, cell: &Size) -> (f64, Size) {

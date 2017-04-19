@@ -106,10 +106,10 @@ fn make_scaled(buffer: &[u8], cell: &Size, fit: &FitTo, scaling: &ScalingMethod)
             return Err(Error::new("Invalid image data"))
         }
         if let Some(source) = loader.get_pixbuf() {
-            let (scale, fitted) = Size::from_pixbuf(&source).fit(cell, fit);
+            let (scale, fitted, delta) = Size::from_pixbuf(&source).fit(cell, fit);
+            let (x, y) = delta.floated();
             let scaled = unsafe { Pixbuf::new(0, true, 8, fitted.width, fitted.height).unwrap() };
-            let (x, y) = (fitted.width - cell.width, fitted.height - cell.height);
-            source.scale(&scaled, 0, 0, fitted.width, fitted.height, x as f64, y as f64, scale, scale, scaling.0);
+            source.scale(&scaled, 0, 0, fitted.width, fitted.height, x, y, scale, scale, scaling.0);
             Ok(scaled)
         } else {
             Err(Error::new("Invalid image"))

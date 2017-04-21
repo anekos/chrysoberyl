@@ -1,6 +1,6 @@
 
 use std::fmt::Write;
-use std::io::{BufReader, BufRead};
+use std::io::{BufReader, BufRead, Read};
 use std::process::{Command, Stdio, Child};
 use std::sync::mpsc::Sender;
 use std::thread::spawn;
@@ -25,7 +25,7 @@ fn run(tx: Option<Sender<Operation>>, command_line: &[String]) {
         .args(command_line);
     command
         .stdout(Stdio::piped())
-        .stderr(Stdio::null());
+        .stderr(Stdio::piped());
 
     let child = command.spawn().unwrap();
 
@@ -39,8 +39,10 @@ fn run(tx: Option<Sender<Operation>>, command_line: &[String]) {
     }
 }
 
-fn process_stdout(tx: Option<Sender<Operation>>, mut child: Child) -> bool {
+fn process_stdout(tx: Option<Sender<Operation>>, child: Child) -> bool {
     if let Some(tx) = tx {
+        let stderr = child.stderr;
+        spawn(move || pass("stderr", stderr));
         if let Some(stdout) = child.stdout {
             for line in BufReader::new(stdout).lines() {
                 let line = line.unwrap();
@@ -53,9 +55,20 @@ fn process_stdout(tx: Option<Sender<Operation>>, mut child: Child) -> bool {
             return false
         }
     } else {
-        child.wait().unwrap();
+        let stderr = child.stderr;
+        spawn(move || pass("stderr", stderr));
+        pass("stdout", child.stdout);
     }
     true
+}
+
+fn pass<T: Read + Send>(source: &str, out: Option<T>) {
+    if let Some(out) = out {
+        for line in BufReader::new(out).lines() {
+            let line = line.unwrap();
+            puts_event!(format!("shell_{}", source), "line" => line);
+        }
+    }
 }
 
 fn join(xs: &[String]) -> String {

@@ -623,7 +623,7 @@ impl App {
 
     fn show_image1(&self, entry: Entry, cell: &Cell, cell_size: &Size) {
         let _show = |buf: &Pixbuf| {
-            cell.image.set_from_pixbuf(Some(&buf));
+            cell.image.set_from_pixbuf(Some(buf));
             let (image_width, image_height) = (buf.get_width(), buf.get_height());
             let (ci_width, ci_height) = (min!(image_width, cell_size.width), min!(image_height, cell_size.height));
             match self.states.fit_to {
@@ -666,7 +666,7 @@ impl App {
 
         for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                self.show_image1(entry, &cell, &cell_size);
+                self.show_image1(entry, cell, &cell_size);
             } else {
                 cell.image.set_from_pixbuf(None);
             }

@@ -6,7 +6,7 @@ use std::str::FromStr;
 use cairo::{Context, ImageSurface, Format};
 use css_color_parser::Color;
 use gtk::prelude::*;
-use gtk::{self, Window, Image, Label, Orientation};
+use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow};
 
 use color::gdk_rgba;
 use constant;
@@ -164,9 +164,12 @@ impl Gui {
             }
 
             for _ in 0..state.cols {
+                let scrolled = ScrolledWindow::new(None, None);
                 let image = Image::new_from_pixbuf(None);
+                scrolled.add_with_viewport(&image);
+                scrolled.show();
                 image.show();
-                inner.pack_start(&image, !state.center_alignment, true, 0);
+                inner.pack_start(&scrolled, !state.center_alignment, true, 0);
                 images.push(image);
             }
 

@@ -72,13 +72,11 @@ impl PopplerPage {
     pub fn get_pixbuf(&self, cell: &Size, fit: &FitTo) -> Pixbuf {
         let page = self.get_size();
 
-        let (scale, fitted, delta) = page.fit(cell, fit);
-        let (x, y) = delta.floated();
+        let (scale, fitted, _) = page.fit(cell, fit);
         let surface = ImageSurface::create(Format::ARgb32, fitted.width, fitted.height);
 
         {
             let context = Context::new(&surface);
-            context.translate(x, y);
             context.scale(scale, scale);
             context.set_source_rgb(1.0, 1.0, 1.0);
             context.paint();

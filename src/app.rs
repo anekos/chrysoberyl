@@ -8,6 +8,7 @@ use std::collections::HashSet;
 
 use css_color_parser::Color;
 use encoding::types::EncodingRef;
+use gdk_pixbuf::PixbufAnimationExt;
 use gtk::Image;
 use gtk::prelude::*;
 use immeta::markers::Gif;
@@ -625,7 +626,10 @@ impl App {
                 if let Ok(gif) = img.into::<Gif>() {
                     if gif.is_animated() {
                         match image_buffer::get_pixbuf_animation(&entry) {
-                            Ok(buf) => image.set_from_animation(&buf),
+                            Ok(buf) => {
+                                image.set_size_request(buf.get_width(), buf.get_height());
+                                image.set_from_animation(&buf);
+                            }
                             Err(error) => error.show(image, cell, &self.gui.colors.error, &self.gui.colors.error_background)
                         }
                         return
@@ -635,7 +639,10 @@ impl App {
         }
 
         match self.cherenkoved.get_pixbuf(&entry, cell, &self.states.fit_to, &self.states.scaling) {
-            Ok(buf) => image.set_from_pixbuf(Some(&buf)),
+            Ok(buf) => {
+                image.set_size_request(buf.get_width(), buf.get_height());
+                image.set_from_pixbuf(Some(&buf));
+            }
             Err(error) => error.show(image, cell, &self.gui.colors.error, &self.gui.colors.error_background)
         }
     }

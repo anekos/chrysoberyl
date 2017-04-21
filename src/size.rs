@@ -14,6 +14,7 @@ pub struct Size {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FitTo {
     Original,
+    OriginalOrCell,
     Width,
     Height,
     Cell,
@@ -48,7 +49,8 @@ impl Size {
         use self::FitTo::*;
 
         let (scale, fitted) = match *to {
-            Original => self.fit_to_original(cell),
+            Original => self.fit_to_original(),
+            OriginalOrCell => self.fit_to_original_or_cell(cell),
             Cell => self.fit_to_cell(cell),
             Width => self.fit_to_width(cell),
             Height => self.fit_to_height(cell),
@@ -58,10 +60,14 @@ impl Size {
         (scale, fitted, delta)
     }
 
-    fn fit_to_original(&self, cell: &Size) -> (f64, Size) {
+    fn fit_to_original(&self) -> (f64, Size) {
+        (1.0, self.clone())
+    }
+
+    fn fit_to_original_or_cell(&self, cell: &Size) -> (f64, Size) {
         let (scale, fitted) = self.fit_to_cell(cell);
         if 1.0 <= scale {
-            (1.0, self.clone())
+            self.fit_to_original()
         } else {
             (scale, fitted)
         }
@@ -88,6 +94,12 @@ impl Size {
 }
 
 
+impl FitTo {
+    pub fn is_scrollable(&self) -> bool {
+        *self != FitTo::Cell
+    }
+}
+
 impl FromStr for FitTo {
     type Err = String;
 
@@ -96,6 +108,7 @@ impl FromStr for FitTo {
 
         let result = match src {
             "original" => Original,
+            "original-or-cell" | "cell-or-original" => OriginalOrCell,
             "cell" => Cell,
             "width" => Width,
             "height" => Height,

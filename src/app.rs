@@ -8,7 +8,6 @@ use std::collections::HashSet;
 
 use css_color_parser::Color;
 use encoding::types::EncodingRef;
-use gdk_pixbuf::PixbufAnimationExt;
 use gtk::Image;
 use gtk::prelude::*;
 use immeta::markers::Gif;
@@ -27,6 +26,7 @@ use entry::{Entry, EntryContent, EntryContainer, EntryContainerOptions, MetaSlic
 use events;
 use filer;
 use fragile_input::new_fragile_input;
+use gui::Cell;
 use gui::{Gui, ColorTarget};
 use http_cache::HttpCache;
 use image_buffer;
@@ -316,13 +316,13 @@ impl App {
         }
 
         if let Some(OperationContext::Input(Input::MouseButton((mx, my), _))) = context.cloned() {
-            let cell = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
+            let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
 
-            for (index, image) in self.gui.images(self.states.reverse).enumerate() {
+            for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
                 if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
                     let (x1, y1, w, h) = {
-                        let a = image.get_allocation();
-                        if let Some((iw, ih)) = get_image_size(image) {
+                        let a = cell.image.get_allocation();
+                        if let Some((iw, ih)) = get_image_size(&cell.image) {
                         (a.x + (a.width - iw) / 2, a.y + (a.height - ih) / 2, iw, ih)
                         } else {
                             continue;
@@ -335,7 +335,7 @@ impl App {
                             parameter.y.unwrap_or_else(|| my - y1));
                         self.cherenkoved.cherenkov(
                             &entry,
-                            &cell,
+                            &cell_size,
                             &self.states.fit_to,
                             &Che {
                                 center: center,
@@ -620,17 +620,16 @@ impl App {
         output::puts(&pairs);
     }
 
-    fn show_image1(&self, entry: Entry, image: &Image, cell: &Size) {
+    fn show_image1(&self, entry: Entry, cell: &Cell, cell_size: &Size) {
         if let Some(img) = self.get_meta(&entry) {
             if let Ok(img) = img {
                 if let Ok(gif) = img.into::<Gif>() {
                     if gif.is_animated() {
                         match image_buffer::get_pixbuf_animation(&entry) {
                             Ok(buf) => {
-                                image.set_size_request(buf.get_width(), buf.get_height());
-                                image.set_from_animation(&buf);
+                                cell.image.set_from_animation(&buf);
                             }
-                            Err(error) => error.show(image, cell, &self.gui.colors.error, &self.gui.colors.error_background)
+                            Err(error) => error.show(&cell.image, cell_size, &self.gui.colors.error, &self.gui.colors.error_background)
                         }
                         return
                     }
@@ -638,23 +637,36 @@ impl App {
             }
         }
 
-        match self.cherenkoved.get_pixbuf(&entry, cell, &self.states.fit_to, &self.states.scaling) {
+        match self.cherenkoved.get_pixbuf(&entry, cell_size, &self.states.fit_to, &self.states.scaling) {
             Ok(buf) => {
-                image.set_size_request(buf.get_width(), buf.get_height());
-                image.set_from_pixbuf(Some(&buf));
+                cell.image.set_from_pixbuf(Some(&buf));
+                let (image_width, image_height) = (buf.get_width(), buf.get_height());
+                let (ci_width, ci_height) = (min!(image_width, cell_size.width), min!(image_height, cell_size.height));
+                match self.states.fit_to {
+                    FitTo::Width =>
+                        cell.window.set_size_request(cell_size.width, ci_height),
+                    FitTo::Height =>
+                        cell.window.set_size_request(ci_width, cell_size.height),
+                    FitTo::Cell | FitTo::Original | FitTo::OriginalOrCell =>
+                        cell.window.set_size_request(cell_size.width, cell_size.height),
+                }
             }
-            Err(error) => error.show(image, cell, &self.gui.colors.error, &self.gui.colors.error_background)
+            Err(error) => error.show(&cell.image, cell_size, &self.gui.colors.error, &self.gui.colors.error_background)
         }
     }
 
     fn show_image(&mut self) {
-        let cell = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
+        let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
 
-        for (index, image) in self.gui.images(self.states.reverse).enumerate() {
+        if self.states.fit_to.is_scrollable() {
+            self.gui.reset_scrolls();
+        }
+
+        for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                self.show_image1(entry, image, &cell);
+                self.show_image1(entry, &cell, &cell_size);
             } else {
-                image.set_from_pixbuf(None);
+                cell.image.set_from_pixbuf(None);
             }
         }
     }

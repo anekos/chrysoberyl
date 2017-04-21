@@ -55,14 +55,14 @@ pub static DEFAULT_CONFIG: &'static str = "
 pub fn load_config(tx: &Sender<Operation>, config_source: &ConfigSource) {
     let lines = config_lines(config_source);
 
-    puts_event!("config_file", "state" => "open");
+    puts_event!("input/config/open");
     for line in lines {
         match Operation::parse(&line) {
             Ok(op) => tx.send(op).unwrap(),
-            Err(err) => puts_error!("at" => "load_config", "reason" => s!(err), "for" => &line),
+            Err(err) => puts_error!("at" => "input/config", "reason" => s!(err), "for" => &line),
         }
     }
-    puts_event!("config_file", "state" => "close");
+    puts_event!("input/config/close");
 }
 
 

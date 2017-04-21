@@ -90,7 +90,7 @@ impl App {
         unsafe {
             let pid = s!(libc::getpid());
             env::set_var(&constant::env_name("PID"), &pid);
-            puts_event!("info", "name" => "pid", "value" => pid);
+            puts_event!("info/pid", "value" => pid);
         }
 
         let mut app = App {

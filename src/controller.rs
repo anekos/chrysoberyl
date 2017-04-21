@@ -35,11 +35,11 @@ pub fn register(tx: &Sender<Operation>, controllers: &Controllers) {
 pub fn file_controller(tx: Sender<Operation>, filepath: String) {
     spawn(move || {
         if let Ok(file) = File::open(&filepath) {
-            puts_event!("file_controller", "state" => "open");
+            puts_event!("input/file/open");
             read_operations("file", file, &tx);
-            puts_event!("file_controller", "state" => "close");
+            puts_event!("input/file/close");
         } else {
-            puts_error!("at" => "file_controller", "reason" => "Could not open file", "for" => filepath);
+            puts_error!("at" => "input/file", "reason" => "Could not open file", "for" => filepath);
         }
     });
 }
@@ -50,14 +50,14 @@ fn stdin_controller(tx: Sender<Operation>) {
 
     spawn(move || {
         let stdin = io::stdin();
-        puts_event!("stdin_controller", "state" => "open");
+        puts_event!("input/stdin/open");
         for line in stdin.lock().lines() {
             let line = line.unwrap();
             match Operation::parse_fuzziness(&line) {
                 Ok(op) => tx.send(op).unwrap(),
-                Err(err) => puts_error!("at" => "stdin", "reason" => err, "for" => &line)
+                Err(err) => puts_error!("at" => "input/stdin", "reason" => err, "for" => &line)
             }
         }
-        puts_event!("stdin_controller", "state" => "close");
+        puts_event!("input/stdin/close");
     });
 }

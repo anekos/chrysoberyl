@@ -31,9 +31,9 @@ fn run(tx: Option<Sender<Operation>>, command_line: &[String]) {
 
     termination::register(termination::Process::Kill(child.id()));
 
-    puts_event!("shell", "state" => "open");
+    puts_event!("shell/open");
     if process_stdout(tx, child) {
-        puts_event!("shell", "state" => "close");
+        puts_event!("shell/close");
     } else {
         puts_error!("at" => "shell", "for" => join(command_line));
     }
@@ -46,6 +46,7 @@ fn process_stdout(tx: Option<Sender<Operation>>, child: Child) -> bool {
         if let Some(stdout) = child.stdout {
             for line in BufReader::new(stdout).lines() {
                 let line = line.unwrap();
+                puts_event!("shell/stdout", "line" => line);
                 match Operation::parse_fuzziness(&line) {
                     Ok(op) => tx.send(op).unwrap(),
                     Err(err) => puts_error!("at" => "shell_stdout", "reason" => err, "for" => &line)
@@ -66,7 +67,7 @@ fn pass<T: Read + Send>(source: &str, out: Option<T>) {
     if let Some(out) = out {
         for line in BufReader::new(out).lines() {
             let line = line.unwrap();
-            puts_event!(format!("shell_{}", source), "line" => line);
+            puts_event!(format!("shell/{}", source), "line" => line);
         }
     }
 }

@@ -6,11 +6,11 @@ use std::rc::Rc;
 
 use cairo::{Context, ImageSurface, Format};
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
-use gtk::Image;
 use css_color_parser::Color;
 
 use color::gdk_rgba;
 use entry::{Entry, EntryContent};
+use gtk_utils::new_pixbuf_from_surface;
 use poppler::PopplerDocument;
 use size::{FitTo, Size};
 use state::ScalingMethod;
@@ -33,7 +33,7 @@ impl Error {
         Error { error: s!(error) }
     }
 
-    pub fn show(&self, image: &Image, cell: &Size, fg: &Color, bg: &Color) {
+    pub fn get_pixbuf(&self, cell: &Size, fg: &Color, bg: &Color) -> Pixbuf {
         let text = &self.error;
 
         let surface = ImageSurface::create(Format::ARgb32, cell.width, cell.height);
@@ -61,9 +61,9 @@ impl Error {
         context.set_source_rgba(fg.red, fg.green, fg.blue, fg.alpha);
         context.show_text(text);
 
-        image.set_from_surface(&surface);
-
         puts_error!("at" => "show_image", "reason" => text);
+
+        new_pixbuf_from_surface(&surface)
     }
 }
 

@@ -8,6 +8,7 @@ use std::collections::HashSet;
 
 use css_color_parser::Color;
 use encoding::types::EncodingRef;
+use gdk_pixbuf::Pixbuf;
 use gtk::Image;
 use gtk::prelude::*;
 use immeta::markers::Gif;
@@ -621,15 +622,27 @@ impl App {
     }
 
     fn show_image1(&self, entry: Entry, cell: &Cell, cell_size: &Size) {
+        let _show = |buf: &Pixbuf| {
+            cell.image.set_from_pixbuf(Some(&buf));
+            let (image_width, image_height) = (buf.get_width(), buf.get_height());
+            let (ci_width, ci_height) = (min!(image_width, cell_size.width), min!(image_height, cell_size.height));
+            match self.states.fit_to {
+                FitTo::Width =>
+                    cell.window.set_size_request(cell_size.width, ci_height),
+                FitTo::Height =>
+                    cell.window.set_size_request(ci_width, cell_size.height),
+                    FitTo::Cell | FitTo::Original | FitTo::OriginalOrCell =>
+                        cell.window.set_size_request(cell_size.width, cell_size.height),
+            }
+        };
+
         if let Some(img) = self.get_meta(&entry) {
             if let Ok(img) = img {
                 if let Ok(gif) = img.into::<Gif>() {
                     if gif.is_animated() {
                         match image_buffer::get_pixbuf_animation(&entry) {
-                            Ok(buf) => {
-                                cell.image.set_from_animation(&buf);
-                            }
-                            Err(error) => error.show(&cell.image, cell_size, &self.gui.colors.error, &self.gui.colors.error_background)
+                            Ok(buf) => cell.image.set_from_animation(&buf),
+                            Err(error) => _show(&error.get_pixbuf(cell_size, &self.gui.colors.error, &self.gui.colors.error_background))
                         }
                         return
                     }
@@ -637,22 +650,11 @@ impl App {
             }
         }
 
-        match self.cherenkoved.get_pixbuf(&entry, cell_size, &self.states.fit_to, &self.states.scaling) {
-            Ok(buf) => {
-                cell.image.set_from_pixbuf(Some(&buf));
-                let (image_width, image_height) = (buf.get_width(), buf.get_height());
-                let (ci_width, ci_height) = (min!(image_width, cell_size.width), min!(image_height, cell_size.height));
-                match self.states.fit_to {
-                    FitTo::Width =>
-                        cell.window.set_size_request(cell_size.width, ci_height),
-                    FitTo::Height =>
-                        cell.window.set_size_request(ci_width, cell_size.height),
-                    FitTo::Cell | FitTo::Original | FitTo::OriginalOrCell =>
-                        cell.window.set_size_request(cell_size.width, cell_size.height),
-                }
-            }
-            Err(error) => error.show(&cell.image, cell_size, &self.gui.colors.error, &self.gui.colors.error_background)
-        }
+        _show(&{
+            self.cherenkoved.get_pixbuf(&entry, cell_size, &self.states.fit_to, &self.states.scaling).unwrap_or_else(|error| {
+                error.get_pixbuf(cell_size, &self.gui.colors.error, &self.gui.colors.error_background)
+            })
+        });
     }
 
     fn show_image(&mut self) {

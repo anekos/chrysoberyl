@@ -43,6 +43,7 @@ mod entry;
 mod events;
 mod filer;
 mod fragile_input;
+mod gtk_utils;
 mod gui;
 mod http_cache;
 mod image_buffer;

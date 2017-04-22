@@ -102,7 +102,7 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
 
                     threads[min_index].send(request).unwrap();
 
-                    puts!("event" => "HTTP", "state" => "get", "thread_id" => s!(min_index), "url" => o!(&url), "queue" => s!(queued), "buffer" => s!(buffer.len()));
+                    puts!("event" => "http/get", "thread_id" => s!(min_index), "url" => o!(&url), "queue" => s!(queued), "buffer" => s!(buffer.len()));
                 }
                 Done(index, request) => {
                     queued -= 1;
@@ -114,16 +114,16 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
                         app_tx.send(Operation::PushHttpCache(request.cache_filepath, request.url, request.meta)).unwrap();
                     }
 
-                    puts!("event" => "HTTP", "state" => "done", "thread_id" => s!(index), "queue" => s!(queued), "buffer" => s!(buffer.len()));
+                    puts!("event" => "http/complete", "thread_id" => s!(index), "queue" => s!(queued), "buffer" => s!(buffer.len()));
                 }
                 Fail(index, err, request) => {
                     queued -= 1;
                     stacks[index] -= 1;
                     buffer.skip(request.serial);
-                    puts_error!("at" => "HTTP/Get", "reason" => err, "url" => o!(request.url), "queue" => s!(queued), "buffer" => s!(buffer.len()));
+                    puts_error!("at" => "http/get", "reason" => err, "url" => o!(request.url), "queue" => s!(queued), "buffer" => s!(buffer.len()));
                 }
                 Flush => {
-                    puts!("event" => "HTTP", "state" => "flush", "queue" => s!(queued), "buffer" => s!(buffer.len()));
+                    puts!("event" => "http/flush", "queue" => s!(queued), "buffer" => s!(buffer.len()));
 
                     for request in buffer.force_flush() {
                         app_tx.send(Operation::PushHttpCache(request.cache_filepath, request.url, request.meta)).unwrap();

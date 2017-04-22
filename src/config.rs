@@ -16,10 +16,10 @@ pub enum ConfigSource {
 
 pub static DEFAULT_CONFIG: &'static str = "
 # scroll or move
-@map key h @scroll left  @previous
-@map key j @scroll down  @next
-@map key k @scroll up    @previous
-@map key l @scroll right @next
+@map key h @scroll --size 0.8 left  @previous
+@map key j @scroll --size 0.8 down  @next
+@map key k @scroll --size 0.8 up    @previous
+@map key l @scroll --size 0.8 right @next
 
 # move
 @map key asciicircum @first

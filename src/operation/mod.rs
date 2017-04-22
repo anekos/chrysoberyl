@@ -62,7 +62,7 @@ pub enum Operation {
     Random,
     Refresh,
     Save(PathBuf, Option<usize>),
-    Scroll(Direction, Vec<String>), /* direction, operation */
+    Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     Shell(bool, bool, Vec<String>), /* async, operation, command_line */
     Shuffle(bool), /* Fix current */
     Sort,

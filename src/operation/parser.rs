@@ -359,14 +359,16 @@ pub fn parse_scaling(args: &[String]) -> Result<Operation, String> {
 pub fn parse_scroll(args: &[String]) -> Result<Operation, String> {
     let mut direction = Direction::Up;
     let mut operation = vec![];
+    let mut scroll_size = 1.0;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut direction).add_argument("direction", Store, "left|up|right|down").required();
+        ap.refer(&mut scroll_size).add_option(&["-s", "--size"], Store, "Scroll size (default 1.0) ");
         ap.refer(&mut operation).add_argument("operation", List, "Operation");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Scroll(direction, operation)
+        Operation::Scroll(direction, operation, scroll_size)
     })
 }
 

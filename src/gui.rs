@@ -6,7 +6,7 @@ use std::str::FromStr;
 use cairo::{Context, ImageSurface, Format};
 use css_color_parser::Color;
 use gtk::prelude::*;
-use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment};
+use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow};
 
 use color::gdk_rgba;
 use constant;
@@ -168,10 +168,10 @@ impl Gui {
         }
     }
 
-    pub fn scroll_views(&self, direction: &Direction, count: usize) -> bool {
+    pub fn scroll_views(&self, direction: &Direction, scroll_size: f64, count: usize) -> bool {
         let mut scrolled = false;
         for cell in self.cells(false) {
-            scrolled |= scroll_window(&cell.window, direction, count);
+            scrolled |= scroll_window(&cell.window, direction, scroll_size, count);
         }
         scrolled
     }
@@ -341,13 +341,13 @@ fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), String> {
     })
 }
 
-fn scroll_window(window: &ScrolledWindow, direction: &Direction, count: usize) -> bool {
+fn scroll_window(window: &ScrolledWindow, direction: &Direction, scroll_size_ratio: f64, count: usize) -> bool {
     use self::Direction::*;
 
-    fn scroll<T, U>(window: &ScrolledWindow, direction: &Direction, count: usize, getter: T, setter: U) -> bool
-    where T: FnOnce(&ScrolledWindow) -> Option<Adjustment>, U: FnOnce(&ScrolledWindow, &Adjustment) -> () {
-        if let Some(adj) = getter(window) {
-            let scroll_size = adj.get_page_size() * count as f64;
+    let scroll = |horizontal| -> bool {
+        let adj = if horizontal { window.get_hadjustment() } else { window.get_vadjustment() };
+        if let Some(adj) = adj {
+            let scroll_size = adj.get_page_size() * scroll_size_ratio * count as f64;
             let scroll_size = match *direction {
                 Right | Down => scroll_size,
                 Left | Up => -scroll_size,
@@ -355,7 +355,7 @@ fn scroll_window(window: &ScrolledWindow, direction: &Direction, count: usize) -
             let value = adj.get_value();
             adj.set_value(value + scroll_size);
             if !feq(adj.get_value(), value, 0.0000001) {
-                setter(window, &adj);
+                if horizontal { window.set_hadjustment(&adj) } else { window.set_vadjustment(&adj) }
                 return true
             }
         }
@@ -363,9 +363,7 @@ fn scroll_window(window: &ScrolledWindow, direction: &Direction, count: usize) -
     };
 
     match *direction {
-        Left | Right =>
-            scroll(window, direction, count, ScrolledWindow::get_hadjustment, ScrolledWindow::set_hadjustment),
-        Up | Down =>
-            scroll(window, direction, count, ScrolledWindow::get_vadjustment, ScrolledWindow::set_vadjustment),
+        Left | Right => scroll(true),
+        Up | Down => scroll(false),
     }
 }

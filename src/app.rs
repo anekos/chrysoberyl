@@ -241,8 +241,8 @@ impl App {
                     updated.pointer = true,
                 Save(ref path, ref index) =>
                     self.on_save(path, index),
-                Scroll(ref direction, ref operation) =>
-                    self.on_scroll(direction, operation),
+                Scroll(ref direction, ref operation, scroll_size) =>
+                    self.on_scroll(direction, operation, scroll_size),
                 Shell(async, read_operations, ref command_line) =>
                     shell::call(async, command_line, option!(read_operations, self.tx.clone())),
                 Shuffle(fix_current) =>
@@ -530,8 +530,8 @@ impl App {
         }
     }
 
-    fn on_scroll(&mut self, direction: &Direction, operation: &[String]) {
-        if !self.gui.scroll_views(direction, self.pointer.counted()) && !operation.is_empty() {
+    fn on_scroll(&mut self, direction: &Direction, operation: &[String], scroll_size: f64) {
+        if !self.gui.scroll_views(direction, scroll_size, self.pointer.counted()) && !operation.is_empty() {
             match Operation::parse_from_vec(operation) {
                 Ok(op) => self.operate(&op),
                 Err(err) => puts_error!("at" => "scroll", "reason" => err),

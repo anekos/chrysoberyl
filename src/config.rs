@@ -58,8 +58,12 @@ pub fn load_config(tx: &Sender<Operation>, config_source: &ConfigSource) {
     puts_event!("input/config/open");
     for line in lines {
         match Operation::parse(&line) {
-            Ok(op) => tx.send(op).unwrap(),
-            Err(err) => puts_error!("at" => "input/config", "reason" => s!(err), "for" => &line),
+            Ok(Operation::LoadConfig(ref source)) =>
+                load_config(&tx, source),
+            Ok(op) =>
+                tx.send(op).unwrap(),
+            Err(err) =>
+                puts_error!("at" => "input/config", "reason" => s!(err), "for" => &line),
         }
     }
     puts_event!("input/config/close");

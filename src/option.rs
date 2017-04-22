@@ -62,7 +62,6 @@ pub trait OptionValue : Sized + PartialEq + Clone + FromStr + Debug {
     }
 
     fn toggle(&mut self, series: &[Self]) {
-        println!("toggle: self: {:?}", self);
         let series = Self::or_default(series);
         if series[0] == *self {
             self.enable(series);
@@ -79,7 +78,7 @@ pub trait OptionValue : Sized + PartialEq + Clone + FromStr + Debug {
 
 
 macro_rules! boolean_option {
-    ($name:ident, $default:ident, $enable:expr, $disable:expr) => {
+    ($name:ident, $default:ident, $disable:expr, $enable:expr) => {
 
         #[derive(PartialEq, Eq, Clone, Copy, Debug)]
         pub enum $name {

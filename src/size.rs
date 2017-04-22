@@ -126,4 +126,16 @@ impl option::OptionValue for FitTo {
     fn default_series() -> &'static [FitTo] {
         FIT_TO_DEFAULT
     }
+
+    fn to_char(&self) -> char {
+        use self::FitTo::*;
+
+        match *self {
+            Original => 'O',
+            OriginalOrCell => 'o',
+            Width => 'w',
+            Height => 'h',
+            Cell => 'c',
+        }
+    }
 }

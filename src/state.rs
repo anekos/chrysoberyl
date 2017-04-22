@@ -18,10 +18,10 @@ pub struct States {
     pub scaling: ScalingMethod,
 }
 
-boolean_option!(StatusBarValue, STATUS_BAR_DEFAULT);
-boolean_option!(ReverseValue, REVERSE_DEFAULT);
-boolean_option!(AutoPagingValue, AUTO_PAGING_DEFAULT);
-boolean_option!(CenterAlignmentValue, CENTER_ALIGNMENT_VALUE);
+boolean_option!(StatusBarValue, STATUS_BAR_DEFAULT, 's', 'S');
+boolean_option!(ReverseValue, REVERSE_DEFAULT, 'r', 'R');
+boolean_option!(AutoPagingValue, AUTO_PAGING_DEFAULT, 'a', 'A');
+boolean_option!(CenterAlignmentValue, CENTER_ALIGNMENT_VALUE, 'c', 'C');
 
 pub struct ViewState {
     pub cols: usize,

@@ -16,6 +16,8 @@ pub trait OptionValue : Sized + PartialEq + Clone + FromStr + Debug {
     /* [enabled, disabled, ...other...] */
     fn default_series<'a>() -> &'a [Self];
 
+    fn to_char(&self) -> char;
+
     fn or_default(series: &[Self]) -> &[Self] {
         if series.len() <= 1 {
             Self::default_series()
@@ -77,7 +79,7 @@ pub trait OptionValue : Sized + PartialEq + Clone + FromStr + Debug {
 
 
 macro_rules! boolean_option {
-    ($name:ident, $default:ident) => {
+    ($name:ident, $default:ident, $enable:expr, $disable:expr) => {
 
         #[derive(PartialEq, Eq, Clone, Copy, Debug)]
         pub enum $name {
@@ -90,6 +92,10 @@ macro_rules! boolean_option {
         impl option::OptionValue for $name {
             fn default_series() -> &'static [$name] {
                 $default
+            }
+
+            fn to_char(&self) -> char {
+                if self.is_enabled() { $enable } else { $disable }
             }
         }
 

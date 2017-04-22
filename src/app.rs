@@ -749,8 +749,10 @@ impl App {
                 text.push(' ');
                 text.push_str(&entry.display_path());
                 text.push_str(" {");
-                if self.states.fit_to != FitTo::Original { text.push('F'); }
-                if self.states.auto_paging.is_enabled() { text.push('A'); }
+                text.push(self.states.fit_to.to_char());
+                text.push(self.states.reverse.to_char());
+                text.push(self.states.auto_paging.to_char());
+                text.push(self.states.view.center_alignment.to_char());
                 text.push('}');
                 text
             } else {

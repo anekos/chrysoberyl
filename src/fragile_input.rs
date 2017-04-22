@@ -21,7 +21,11 @@ pub fn new_fragile_input(tx: Sender<Operation>, path: &str) {
     };
 
     if res != 0 {
-        panic!("Could not mkfifo {:?} {}", path, Error::last_os_error().raw_os_error().unwrap());
+        puts_error!(
+            "at" => "fragile_controller",
+            "reason" => format!("Could not mkfifo {:?} {}", path, Error::last_os_error().raw_os_error().unwrap()),
+            "for" => path);
+        return
     }
 
     termination::register(termination::Process::Delete(path.to_owned()));

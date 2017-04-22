@@ -26,3 +26,8 @@ pub fn duration_to_string(t: Duration) -> String {
         format!("{} sec", msec as f64 / 1000.0)
     }
 }
+
+#[inline]
+pub fn feq(x: f64, y: f64, error: f64) -> bool {
+    (x - y).abs() < error
+}

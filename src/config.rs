@@ -61,7 +61,7 @@ pub fn load_config(tx: &Sender<Operation>, config_source: &ConfigSource) {
     for line in lines {
         match Operation::parse(&line) {
             Ok(Operation::LoadConfig(ref source)) =>
-                load_config(&tx, source),
+                load_config(tx, source),
             Ok(op) =>
                 tx.send(op).unwrap(),
             Err(err) =>

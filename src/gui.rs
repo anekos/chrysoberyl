@@ -12,6 +12,7 @@ use color::gdk_rgba;
 use constant;
 use size::Size;
 use state::ViewState;
+use utils::feq;
 
 
 
@@ -353,7 +354,7 @@ fn scroll_window(window: &ScrolledWindow, direction: &Direction, count: usize) -
             };
             let value = adj.get_value();
             adj.set_value(value + scroll_size);
-            if adj.get_value() != value {
+            if !feq(adj.get_value(), value, 0.0000001) {
                 setter(window, &adj);
                 return true
             }

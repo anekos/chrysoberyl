@@ -37,11 +37,13 @@ use entry::Entry;
 use image_buffer;
 use size::{FitTo, Size};
 use state::ScalingMethod;
+use utils::feq;
 
 
 type SliceColor = [f64;3];
 type TupleColor = (f64, f64, f64);
 
+const FERROR: f64 = 0.000001;
 
 pub struct Che {
     pub center: (i32, i32),
@@ -121,11 +123,6 @@ fn range_rand (rng: &mut ThreadRng, from: f64, to: f64) -> f64 {
 
 #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
 fn rgb_to_hsv(rgb: TupleColor) -> TupleColor {
-    #[inline]
-    fn feq(x: f64, y: f64) -> bool {
-        (x - y).abs() < 0.000001
-    }
-
     let (r, g, b) = rgb;
     let max = max!(r, g, b);
     let min = min!(r, g, b);
@@ -133,12 +130,12 @@ fn rgb_to_hsv(rgb: TupleColor) -> TupleColor {
     let mut h = max - min;
 
     if h > 0.0 {
-        if feq(max, r) {
+        if feq(max, r, FERROR) {
             h = (g - b) / h;
             if h < 0.0 {
                 h += 6.0
             }
-        } else if feq(max, g) {
+        } else if feq(max, g, FERROR) {
             h = 2.0 + (b - r) / h
         } else {
             h = 4.0 + (r - g) / h

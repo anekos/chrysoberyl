@@ -15,15 +15,17 @@ pub enum ConfigSource {
 
 
 pub static DEFAULT_CONFIG: &'static str = "
+# scroll or move
+@map key h @scroll left  @previous
+@map key j @scroll down  @next
+@map key k @scroll up    @previous
+@map key l @scroll right @next
+
 # move
-@map key h @first
-@map key j @next
-@map key k @previous
-@map key l @last
-@map key H @first --ignore-views
-@map key J @next --ignore-views
-@map key K @previous --ignore-views
-@map key L @last --ignore-views
+@map key asciicircum @first
+@map key dollar      @last
+@map key g           @first --ignore-views
+@map key G           @last  --ignore-views
 
 # option
 @map key a @toggle auto-paging

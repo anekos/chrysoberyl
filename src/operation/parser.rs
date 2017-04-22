@@ -11,6 +11,7 @@ use entry::{Meta, MetaEntry, new_meta_from_vec};
 use filer;
 use gui::ColorTarget;
 use mapping::{InputType, mouse_mapping};
+use option::OptionUpdateMethod;
 use size::FitTo;
 
 use operation::*;
@@ -279,7 +280,7 @@ pub fn parse_multi_args(xs: &[String], separator: &str) -> Result<Operation, Str
     Ok(Operation::Multi(result))
 }
 
-pub fn parse_option_updater(args: &[String], modifier: StateUpdater) -> Result<Operation, String> {
+pub fn parse_option_updater(args: &[String], method: OptionUpdateMethod) -> Result<Operation, String> {
     use state::StateName::*;
     use self::Operation::UpdateOption;
 
@@ -291,10 +292,11 @@ pub fn parse_option_updater(args: &[String], modifier: StateUpdater) -> Result<O
         parse_args(&mut ap, args)
     } .and_then(|_| {
         match &*name.to_lowercase() {
-            "status-bar" | "status"                => Ok(UpdateOption(StatusBar, modifier)),
-            "reverse" | "rev"                      => Ok(UpdateOption(Reverse, modifier)),
-            "center" | "center-alignment"          => Ok(UpdateOption(CenterAlignment, modifier)),
-            "auto-page" | "auto-paging" | "paging" => Ok(UpdateOption(AutoPaging, modifier)),
+            "status-bar" | "status"                => Ok(UpdateOption(StatusBar, method)),
+            "reverse" | "rev"                      => Ok(UpdateOption(Reverse, method)),
+            "center" | "center-alignment"          => Ok(UpdateOption(CenterAlignment, method)),
+            "auto-page" | "auto-paging" | "paging" => Ok(UpdateOption(AutoPaging, method)),
+            "fit" | "fit-to"                       => Ok(UpdateOption(FitTo, method)),
             _  => Err(format!("Unknown option: {}", name))
         }
     })

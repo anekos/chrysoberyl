@@ -5,22 +5,28 @@ use std::default::Default;
 use gdk_pixbuf::InterpType;
 
 use size::FitTo;
+use option;
 
 
 pub struct States {
     pub initialized: bool,
-    pub status_bar: bool,
-    pub reverse: bool,
-    pub auto_paging: bool,
+    pub status_bar: StatusBarValue,
+    pub reverse: ReverseValue,
+    pub auto_paging: AutoPagingValue,
     pub view: ViewState,
     pub fit_to: FitTo,
     pub scaling: ScalingMethod,
 }
 
+boolean_option!(StatusBarValue, STATUS_BAR_DEFAULT, 's', 'S');
+boolean_option!(ReverseValue, REVERSE_DEFAULT, 'r', 'R');
+boolean_option!(AutoPagingValue, AUTO_PAGING_DEFAULT, 'a', 'A');
+boolean_option!(CenterAlignmentValue, CENTER_ALIGNMENT_VALUE, 'c', 'C');
+
 pub struct ViewState {
     pub cols: usize,
     pub rows: usize,
-    pub center_alignment: bool,
+    pub center_alignment: CenterAlignmentValue,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -29,6 +35,7 @@ pub enum StateName {
     Reverse,
     CenterAlignment,
     AutoPaging,
+    FitTo,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -39,14 +46,14 @@ impl States {
     pub fn new() -> States {
         States {
             initialized: false,
-            status_bar: false,
-            reverse: false,
+            status_bar: StatusBarValue::Enabled,
+            reverse: ReverseValue::Disabled,
+            auto_paging: AutoPagingValue::Disabled,
             fit_to: FitTo::Cell,
-            auto_paging: false,
             view: ViewState {
                 cols: 1,
                 rows: 1,
-                center_alignment: false,
+                center_alignment: CenterAlignmentValue::Disabled,
             },
             scaling: ScalingMethod(InterpType::Bilinear)
         }

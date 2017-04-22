@@ -3,6 +3,8 @@ use std::str::FromStr;
 
 use gdk_pixbuf::Pixbuf;
 
+use option;
+
 
 
 #[derive(Clone, PartialEq, Eq)]
@@ -115,5 +117,25 @@ impl FromStr for FitTo {
             _ => return Err(format!("Invalid target name: {}", src))
         };
         Ok(result)
+    }
+}
+
+const FIT_TO_DEFAULT: &'static [FitTo] = &[FitTo::Original, FitTo::Cell, FitTo::OriginalOrCell, FitTo::Width, FitTo::Height];
+
+impl option::OptionValue for FitTo {
+    fn default_series() -> &'static [FitTo] {
+        FIT_TO_DEFAULT
+    }
+
+    fn to_char(&self) -> char {
+        use self::FitTo::*;
+
+        match *self {
+            Original => 'O',
+            OriginalOrCell => 'o',
+            Width => 'w',
+            Height => 'h',
+            Cell => 'c',
+        }
     }
 }

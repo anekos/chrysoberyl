@@ -28,6 +28,7 @@ extern crate shellexpand;
 extern crate url;
 
 #[macro_use] mod macro_utils;
+#[macro_use] mod option;
 #[macro_use] mod output;
 mod app;
 mod app_path;

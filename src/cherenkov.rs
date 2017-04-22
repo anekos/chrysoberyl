@@ -35,12 +35,15 @@ use rand::{self, Rng, ThreadRng};
 use color;
 use entry::Entry;
 use image_buffer;
+use size::{FitTo, Size};
 use state::ScalingMethod;
+use utils::feq;
 
 
 type SliceColor = [f64;3];
 type TupleColor = (f64, f64, f64);
 
+const FERROR: f64 = 0.000001;
 
 pub struct Che {
     pub center: (i32, i32),
@@ -56,8 +59,7 @@ pub struct Cherenkoved {
 
 pub struct CacheEntry {
     buffer: Pixbuf,
-    width: i32,
-    height: i32,
+    size: Size,
 }
 
 
@@ -66,27 +68,26 @@ impl Cherenkoved {
         Cherenkoved { cache: HashMap::new() }
     }
 
-    pub fn get_pixbuf(&self, entry: &Entry, width: i32, height: i32, prefer_original: bool, method: &ScalingMethod) -> Result<Pixbuf, image_buffer::Error> {
+    pub fn get_pixbuf(&self, entry: &Entry, cell: &Size, fit: &FitTo, scaling: &ScalingMethod) -> Result<Pixbuf, image_buffer::Error> {
         if let Some(cache) = self.cache.get(entry) {
-            if cache.width == width && cache.height == height {
+            if cache.size == *cell {
                 return Ok(cache.buffer.clone())
             }
         }
-        image_buffer::get_pixbuf(entry, width, height, prefer_original, method)
+        image_buffer::get_pixbuf(entry, cell, fit, scaling)
     }
 
     pub fn remove(&mut self, entry: &Entry) {
         self.cache.remove(entry);
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, width: i32, height: i32, prefer_original: bool, che: &Che, method: &ScalingMethod) {
-        if let Ok(pixbuf) = self.get_pixbuf(entry, width, height, prefer_original, method) {
+    pub fn cherenkov(&mut self, entry: &Entry, cell: &Size, fit: &FitTo, che: &Che, scaling: &ScalingMethod) {
+        if let Ok(pixbuf) = self.get_pixbuf(entry, cell, fit, scaling) {
             self.cache.insert(
                 entry.clone(),
                 CacheEntry {
                     buffer: cherenkov_pixbuf(pixbuf, che),
-                    width: width,
-                    height: height,
+                    size: cell.clone()
                 });
         }
     }
@@ -122,11 +123,6 @@ fn range_rand (rng: &mut ThreadRng, from: f64, to: f64) -> f64 {
 
 #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
 fn rgb_to_hsv(rgb: TupleColor) -> TupleColor {
-    #[inline]
-    fn feq(x: f64, y: f64) -> bool {
-        (x - y).abs() < 0.000001
-    }
-
     let (r, g, b) = rgb;
     let max = max!(r, g, b);
     let min = min!(r, g, b);
@@ -134,12 +130,12 @@ fn rgb_to_hsv(rgb: TupleColor) -> TupleColor {
     let mut h = max - min;
 
     if h > 0.0 {
-        if feq(max, r) {
+        if feq(max, r, FERROR) {
             h = (g - b) / h;
             if h < 0.0 {
                 h += 6.0
             }
-        } else if feq(max, g) {
+        } else if feq(max, g, FERROR) {
             h = 2.0 + (b - r) / h
         } else {
             h = 4.0 + (r - g) / h

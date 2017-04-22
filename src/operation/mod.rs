@@ -10,8 +10,9 @@ use archive::ArchiveEntry;
 use config::ConfigSource;
 use entry::Meta;
 use filer;
-use gui::ColorTarget;
+use gui::{ColorTarget, Direction};
 use mapping::{self, mouse_mapping};
+use size::FitTo;
 use state::StateName;
 
 mod parser;
@@ -25,6 +26,7 @@ use state::ScalingMethod;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Operation {
+    ChangeFitTo(FitTo),
     ChangeScalingMethod(ScalingMethod),
     Cherenkov(CherenkovParameter),
     CherenkovClear,
@@ -52,14 +54,15 @@ pub enum Operation {
     PrintEntries,
     Push(String, Meta),
     PushArchiveEntry(PathBuf, ArchiveEntry),
-    PushHttpCache(PathBuf, String, Meta),
     PushFile(PathBuf, Meta),
+    PushHttpCache(PathBuf, String, Meta),
     PushPdf(PathBuf, Meta),
     PushURL(String, Meta),
     Quit,
     Random,
     Refresh,
     Save(PathBuf, Option<usize>),
+    Scroll(Direction, Vec<String>), /* direction, operation */
     Shell(bool, bool, Vec<String>), /* async, operation, command_line */
     Shuffle(bool), /* Fix current */
     Sort,
@@ -192,6 +195,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@expand"                    => parse_expand(whole),
             "@first" | "@f"              => parse_move(whole, First),
             "@force-flush"               => Ok(ForceFlush),
+            "@fit"                       => parse_fit(whole),
             "@fragile"                   => parse_command1(whole, |it| expand_to_pathbuf(&it).map(Fragile)),
             "@input"                     => parse_input(whole),
             "@last" | "@l"               => parse_move(whole, Last),
@@ -210,6 +214,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@refresh" | "@r"            => Ok(Refresh),
             "@save"                      => parse_save(whole),
             "@scaling"                   => parse_scaling(whole),
+            "@scroll"                    => parse_scroll(whole),
             "@shell"                     => parse_shell(whole),
             "@shuffle"                   => Ok(Shuffle(false)),
             "@sort"                      => Ok(Sort),

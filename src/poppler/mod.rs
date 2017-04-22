@@ -15,6 +15,8 @@ use glib::translate::*;
 use glib::translate::ToGlibPtr;
 use libc::{c_int, c_double};
 
+use size::{FitTo, Size};
+
 mod sys;
 
 
@@ -61,25 +63,17 @@ impl PopplerPage {
         unsafe { sys::poppler_page_render(self.0, context) };
     }
 
-    pub fn get_size(&self) -> (f64, f64) {
+    pub fn get_size(&self) -> Size {
         let (mut width, mut height): (c_double, c_double) = (0.0, 0.0);
         unsafe { sys::poppler_page_get_size(self.0, &mut width, &mut height) };
-        (width as f64, height as f64)
+        Size::new(width as i32, height as i32)
     }
 
-    pub fn get_pixbuf(&self, max_width: i32, max_height: i32) -> Pixbuf {
-        let (page_width, page_height) = self.get_size();
+    pub fn get_pixbuf(&self, cell: &Size, fit: &FitTo) -> Pixbuf {
+        let page = self.get_size();
 
-        let scale = {
-            let (scale_width, scale_height) = (max_width as f64 / page_width, max_height as f64 / page_height);
-            if (max_width as f64) < page_width * scale_height {
-                scale_width
-            } else {
-                scale_height
-            }
-        };
-
-        let surface = ImageSurface::create(Format::ARgb32, (page_width * scale) as i32, (page_height * scale) as i32);
+        let (scale, fitted, _) = page.fit(cell, fit);
+        let surface = ImageSurface::create(Format::ARgb32, fitted.width, fitted.height);
 
         {
             let context = Context::new(&surface);

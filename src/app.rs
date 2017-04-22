@@ -8,6 +8,7 @@ use std::collections::HashSet;
 
 use css_color_parser::Color;
 use encoding::types::EncodingRef;
+use gdk_pixbuf::Pixbuf;
 use gtk::Image;
 use gtk::prelude::*;
 use immeta::markers::Gif;
@@ -26,7 +27,8 @@ use entry::{Entry, EntryContent, EntryContainer, EntryContainerOptions, MetaSlic
 use events;
 use filer;
 use fragile_input::new_fragile_input;
-use gui::{Gui, ColorTarget};
+use gui::Cell;
+use gui::{Gui, ColorTarget, Direction};
 use http_cache::HttpCache;
 use image_buffer;
 use index_pointer::IndexPointer;
@@ -34,6 +36,7 @@ use mapping::{Mapping, Input};
 use operation::{self, Operation, StateUpdater, OperationContext, MappingTarget};
 use output;
 use shell;
+use size::{FitTo, Size};
 use state::ScalingMethod;
 use state::{States, StateName};
 use termination;
@@ -166,6 +169,8 @@ impl App {
 
         {
             match *operation {
+                ChangeFitTo(ref fit) =>
+                    self.on_change_fit_to(&mut updated, fit),
                 ChangeScalingMethod(ref scaling_method) =>
                     self.on_change_scaling_method(&mut updated, scaling_method),
                 Cherenkov(ref parameter) =>
@@ -236,6 +241,8 @@ impl App {
                     updated.pointer = true,
                 Save(ref path, ref index) =>
                     self.on_save(path, index),
+                Scroll(ref direction, ref operation) =>
+                    self.on_scroll(direction, operation),
                 Shell(async, read_operations, ref command_line) =>
                     shell::call(async, command_line, option!(read_operations, self.tx.clone())),
                 Shuffle(fix_current) =>
@@ -287,6 +294,11 @@ impl App {
 
     /* Operation event */
 
+    fn on_change_fit_to(&mut self, updated: &mut Updated, fit: &FitTo) {
+        self.states.fit_to = fit.clone();
+        updated.image = true;
+    }
+
     fn on_change_scaling_method(&mut self, updated: &mut Updated, method: &ScalingMethod) {
         self.states.scaling = method.clone();
         updated.image = true;
@@ -307,13 +319,13 @@ impl App {
         }
 
         if let Some(OperationContext::Input(Input::MouseButton((mx, my), _))) = context.cloned() {
-            let (cw, ch) = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
+            let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
 
-            for (index, image) in self.gui.images(self.states.reverse).enumerate() {
+            for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
                 if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
                     let (x1, y1, w, h) = {
-                        let a = image.get_allocation();
-                        if let Some((iw, ih)) = get_image_size(image) {
+                        let a = cell.image.get_allocation();
+                        if let Some((iw, ih)) = get_image_size(&cell.image) {
                         (a.x + (a.width - iw) / 2, a.y + (a.height - ih) / 2, iw, ih)
                         } else {
                             continue;
@@ -325,8 +337,9 @@ impl App {
                             parameter.x.unwrap_or_else(|| mx - x1),
                             parameter.y.unwrap_or_else(|| my - y1));
                         self.cherenkoved.cherenkov(
-                            &entry, cw, ch,
-                            self.states.fit,
+                            &entry,
+                            &cell_size,
+                            &self.states.fit_to,
                             &Che {
                                 center: center,
                                 n_spokes: parameter.n_spokes,
@@ -517,6 +530,15 @@ impl App {
         }
     }
 
+    fn on_scroll(&mut self, direction: &Direction, operation: &[String]) {
+        if !self.gui.scroll_views(direction, self.pointer.counted()) && !operation.is_empty() {
+            match Operation::parse_from_vec(operation) {
+                Ok(op) => self.operate(&op),
+                Err(err) => puts_error!("at" => "scroll", "reason" => err),
+            }
+        }
+    }
+
     fn on_shuffle(&mut self, updated: &mut Updated, fix_current: bool) {
         self.entries.shuffle(&mut self.pointer, fix_current);
         if !fix_current {
@@ -539,7 +561,6 @@ impl App {
                 StatusBar => &mut self.states.status_bar,
                 Reverse => &mut self.states.reverse,
                 CenterAlignment => &mut self.states.view.center_alignment,
-                Fit => &mut self.states.fit,
                 AutoPaging => &mut self.states.auto_paging,
             };
 
@@ -611,14 +632,30 @@ impl App {
         output::puts(&pairs);
     }
 
-    fn show_image1(&self, entry: Entry, image: &Image, width: i32, height: i32) {
+    fn show_image1(&self, entry: Entry, cell: &Cell, cell_size: &Size) {
+        let _show = |buf: &Pixbuf| {
+            cell.image.set_from_pixbuf(Some(buf));
+            let (image_width, image_height) = (buf.get_width(), buf.get_height());
+            let (ci_width, ci_height) = (min!(image_width, cell_size.width), min!(image_height, cell_size.height));
+            match self.states.fit_to {
+                FitTo::Width =>
+                    cell.window.set_size_request(cell_size.width, ci_height),
+                FitTo::Height =>
+                    cell.window.set_size_request(ci_width, cell_size.height),
+                    FitTo::Cell =>
+                        cell.window.set_size_request(ci_width, ci_height),
+                    FitTo::Original | FitTo::OriginalOrCell =>
+                        cell.window.set_size_request(cell_size.width, cell_size.height),
+            }
+        };
+
         if let Some(img) = self.get_meta(&entry) {
             if let Ok(img) = img {
                 if let Ok(gif) = img.into::<Gif>() {
                     if gif.is_animated() {
                         match image_buffer::get_pixbuf_animation(&entry) {
-                            Ok(buf) => image.set_from_animation(&buf),
-                            Err(error) => error.show(image, width, height, &self.gui.colors.error, &self.gui.colors.error_background)
+                            Ok(buf) => cell.image.set_from_animation(&buf),
+                            Err(error) => _show(&error.get_pixbuf(cell_size, &self.gui.colors.error, &self.gui.colors.error_background))
                         }
                         return
                     }
@@ -626,20 +663,25 @@ impl App {
             }
         }
 
-        match self.cherenkoved.get_pixbuf(&entry, width, height, self.states.fit, &self.states.scaling) {
-            Ok(buf) => image.set_from_pixbuf(Some(&buf)),
-            Err(error) => error.show(image, width, height, &self.gui.colors.error, &self.gui.colors.error_background)
-        }
+        _show(&{
+            self.cherenkoved.get_pixbuf(&entry, cell_size, &self.states.fit_to, &self.states.scaling).unwrap_or_else(|error| {
+                error.get_pixbuf(cell_size, &self.gui.colors.error, &self.gui.colors.error_background)
+            })
+        });
     }
 
     fn show_image(&mut self) {
-        let (width, height) = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
+        let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
 
-        for (index, image) in self.gui.images(self.states.reverse).enumerate() {
+        if self.states.fit_to.is_scrollable() {
+            self.gui.reset_scrolls();
+        }
+
+        for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                self.show_image1(entry, image, width, height);
+                self.show_image1(entry, cell, &cell_size);
             } else {
-                image.set_from_pixbuf(None);
+                cell.image.set_from_pixbuf(None);
             }
         }
     }
@@ -708,7 +750,7 @@ impl App {
                 text.push(' ');
                 text.push_str(&entry.display_path());
                 text.push_str(" {");
-                if self.states.fit { text.push('F'); }
+                if self.states.fit_to != FitTo::Original { text.push('F'); }
                 if self.states.auto_paging { text.push('A'); }
                 text.push('}');
                 text

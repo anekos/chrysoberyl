@@ -11,6 +11,7 @@ use entry::{Meta, MetaEntry, new_meta_from_vec};
 use filer;
 use gui::ColorTarget;
 use mapping::{InputType, mouse_mapping};
+use size::FitTo;
 
 use operation::*;
 
@@ -149,6 +150,18 @@ pub fn parse_expand(args: &[String]) -> Result<Operation, String> {
     })
 }
 
+pub fn parse_fit(args: &[String]) -> Result<Operation, String> {
+    let mut to = FitTo::Cell;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut to).add_argument("fit-to", Store, "Fit to cell/width/height/original");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::ChangeFitTo(to)
+    })
+}
+
 pub fn parse_input(args: &[String]) -> Result<Operation, String> {
     let mut input_type = InputType::Key;
     let mut input = "".to_owned();
@@ -281,7 +294,6 @@ pub fn parse_option_updater(args: &[String], modifier: StateUpdater) -> Result<O
             "status-bar" | "status"                => Ok(UpdateOption(StatusBar, modifier)),
             "reverse" | "rev"                      => Ok(UpdateOption(Reverse, modifier)),
             "center" | "center-alignment"          => Ok(UpdateOption(CenterAlignment, modifier)),
-            "fit"                                  => Ok(UpdateOption(Fit, modifier)),
             "auto-page" | "auto-paging" | "paging" => Ok(UpdateOption(AutoPaging, modifier)),
             _  => Err(format!("Unknown option: {}", name))
         }
@@ -341,6 +353,20 @@ pub fn parse_scaling(args: &[String]) -> Result<Operation, String> {
         parse_args(&mut ap, args)
     } .map(|_| {
         Operation::ChangeScalingMethod(scaling_method)
+    })
+}
+
+pub fn parse_scroll(args: &[String]) -> Result<Operation, String> {
+    let mut direction = Direction::Up;
+    let mut operation = vec![];
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut direction).add_argument("direction", Store, "left|up|right|down").required();
+        ap.refer(&mut operation).add_argument("operation", List, "Operation");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Scroll(direction, operation)
     })
 }
 

@@ -6,11 +6,13 @@ use std::str::FromStr;
 use cairo::{Context, ImageSurface, Format};
 use css_color_parser::Color;
 use gtk::prelude::*;
-use gtk::{self, Window, Image, Label, Orientation};
+use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment};
 
 use color::gdk_rgba;
 use constant;
+use size::Size;
 use state::ViewState;
+use utils::feq;
 
 
 
@@ -18,20 +20,26 @@ use state::ViewState;
 pub struct Gui {
     top_spacer: Image,
     bottom_spacer: Image,
-    image_outer: gtk::Box,
-    image_inners: Vec<ImageInner>,
+    cell_outer: gtk::Box,
+    cell_inners: Vec<CellInner>,
     pub colors: Colors,
     pub window: Window,
     pub label: Label,
 }
 
 #[derive(Clone)]
-struct ImageInner {
+struct CellInner {
     container: gtk::Box,
-    images: Vec<Image>,
+    cells: Vec<Cell>,
 }
 
-pub struct ImageIterator<'a> {
+#[derive(Clone)]
+pub struct Cell {
+    pub image: Image,
+    pub window: ScrolledWindow,
+}
+
+pub struct CellIterator<'a> {
     gui: &'a Gui,
     index: usize,
     reverse: bool
@@ -53,6 +61,14 @@ pub enum ColorTarget {
     StatusBarBackground,
     Error,
     ErrorBackground,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Direction {
+    Left,
+    Up,
+    Right,
+    Down
 }
 
 
@@ -87,27 +103,27 @@ impl Gui {
             window: window,
             top_spacer: gtk::Image::new_from_pixbuf(None),
             bottom_spacer: gtk::Image::new_from_pixbuf(None),
-            image_outer: image_outer,
-            image_inners: vec![],
+            cell_outer: image_outer,
+            cell_inners: vec![],
             label: label,
             colors: Colors::default()
         }
     }
 
     fn rows(&self) -> usize {
-        self.image_inners.len()
+        self.cell_inners.len()
     }
 
     fn cols(&self) -> usize {
-        self.image_inners.first().unwrap().images.len()
+        self.cell_inners.first().unwrap().cells.len()
     }
 
     pub fn len(&self) -> usize {
         self.cols() * self.rows()
     }
 
-    pub fn images(&self, reverse: bool) -> ImageIterator {
-        ImageIterator { gui: self, index: 0, reverse: reverse }
+    pub fn cells(&self, reverse: bool) -> CellIterator {
+        CellIterator { gui: self, index: 0, reverse: reverse }
     }
 
     pub fn reset_view(&mut self, state: &ViewState) {
@@ -115,7 +131,16 @@ impl Gui {
         self.create_images(state);
     }
 
-    pub fn get_cell_size(&self, state: &ViewState, with_label: bool) -> (i32, i32) {
+    pub fn reset_scrolls(&self) {
+        for cell in self.cells(false) {
+            if let Some(adj) = cell.window.get_vadjustment() {
+                adj.set_value(0.0);
+                cell.window.set_vadjustment(&adj);
+            }
+        }
+    }
+
+    pub fn get_cell_size(&self, state: &ViewState, with_label: bool) -> Size {
         let (width, height) = self.window.get_size();
 
         let width = width / state.cols as i32;
@@ -125,7 +150,7 @@ impl Gui {
             height / state.rows as i32
         };
 
-        (width, height)
+        Size::new(width, height)
     }
 
     pub fn update_color(&mut self, target: &ColorTarget, color: &Color) {
@@ -143,16 +168,24 @@ impl Gui {
         }
     }
 
+    pub fn scroll_views(&self, direction: &Direction, count: usize) -> bool {
+        let mut scrolled = false;
+        for cell in self.cells(false) {
+            scrolled |= scroll_window(&cell.window, direction, count);
+        }
+        scrolled
+    }
+
     fn create_images(&mut self, state: &ViewState) {
         if state.center_alignment {
-            self.image_outer.pack_start(&self.top_spacer, true, true, 0);
+            self.cell_outer.pack_start(&self.top_spacer, true, true, 0);
             self.top_spacer.show();
         } else {
             self.top_spacer.hide();
         }
 
         for _ in 0..state.rows {
-            let mut images = vec![];
+            let mut cells = vec![];
 
             let inner = gtk::Box::new(Orientation::Horizontal, 0);
 
@@ -163,10 +196,13 @@ impl Gui {
             }
 
             for _ in 0..state.cols {
+                let scrolled = ScrolledWindow::new(None, None);
                 let image = Image::new_from_pixbuf(None);
+                scrolled.add_with_viewport(&image);
+                scrolled.show();
                 image.show();
-                inner.pack_start(&image, !state.center_alignment, true, 0);
-                images.push(image);
+                inner.pack_start(&scrolled, !state.center_alignment, true, 0);
+                cells.push(Cell::new(image, scrolled));
             }
 
             if state.center_alignment {
@@ -175,17 +211,17 @@ impl Gui {
                 right_spacer.show();
             }
 
-            self.image_outer.pack_start(&inner, !state.center_alignment, true, 0);
+            self.cell_outer.pack_start(&inner, !state.center_alignment, true, 0);
             inner.show();
 
-            self.image_inners.push(ImageInner {
+            self.cell_inners.push(CellInner {
                 container: inner,
-                images: images
+                cells: cells
             });
         }
 
         if state.center_alignment {
-            self.image_outer.pack_start(&self.bottom_spacer, true, true, 0);
+            self.cell_outer.pack_start(&self.bottom_spacer, true, true, 0);
             self.bottom_spacer.show();
         } else {
             self.bottom_spacer.hide();
@@ -193,25 +229,31 @@ impl Gui {
     }
 
     fn clear_images(&mut self) {
-        for inner in &self.image_inners {
-            self.image_outer.remove(&inner.container);
+        for inner in &self.cell_inners {
+            self.cell_outer.remove(&inner.container);
         }
-        self.image_outer.remove(&self.top_spacer);
-        self.image_outer.remove(&self.bottom_spacer);
-        self.image_inners.clear();
+        self.cell_outer.remove(&self.top_spacer);
+        self.cell_outer.remove(&self.bottom_spacer);
+        self.cell_inners.clear();
     }
 
     pub fn save<T: AsRef<Path>>(&self, path: &T, index: usize) -> Result<(), String> {
-        self.images(false).nth(index).ok_or_else(|| o!("Out of index")).and_then(|image| {
-            save_image(image, path)
+        self.cells(false).nth(index).ok_or_else(|| o!("Out of index")).and_then(|cell| {
+            save_image(&cell.image, path)
         })
     }
 }
 
-impl<'a> Iterator for ImageIterator<'a> {
-    type Item = &'a Image;
+impl Cell {
+    pub fn new(image: Image, window: ScrolledWindow) -> Cell {
+        Cell { image: image, window: window }
+    }
+}
 
-    fn next(&mut self) -> Option<&'a Image> {
+impl<'a> Iterator for CellIterator<'a> {
+    type Item = &'a Cell;
+
+    fn next(&mut self) -> Option<&'a Cell> {
         let len = self.gui.len();
         let cols = self.gui.cols();
         let mut index = self.index;
@@ -224,8 +266,8 @@ impl<'a> Iterator for ImageIterator<'a> {
         }
         let rows = index / cols;
         let cols = index % cols;
-        let result = self.gui.image_inners.get(rows).and_then(|inner| {
-            inner.images.get(cols)
+        let result = self.gui.cell_inners.get(rows).and_then(|inner| {
+            inner.cells.get(cols)
         });
         self.index += 1;
         result
@@ -262,6 +304,28 @@ impl Colors {
 }
 
 
+impl FromStr for Direction {
+    type Err = String;
+
+    fn from_str(src: &str) -> Result<Direction, String> {
+        use self::Direction::*;
+
+        match src {
+            "left" | "l" =>
+                Ok(Left),
+            "up" | "u" =>
+                Ok(Up),
+            "right" | "r" =>
+                Ok(Right),
+            "down" | "d" =>
+                Ok(Down),
+            _ =>
+                Err(format!("Invalid direction: {}", src))
+        }
+    }
+}
+
+
 fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), String> {
     use gdk::prelude::ContextExt;
 
@@ -275,4 +339,33 @@ fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), String> {
             surface.write_to_png(file).map_err(|_| o!("IO Error"))
         })
     })
+}
+
+fn scroll_window(window: &ScrolledWindow, direction: &Direction, count: usize) -> bool {
+    use self::Direction::*;
+
+    fn scroll<T, U>(window: &ScrolledWindow, direction: &Direction, count: usize, getter: T, setter: U) -> bool
+    where T: FnOnce(&ScrolledWindow) -> Option<Adjustment>, U: FnOnce(&ScrolledWindow, &Adjustment) -> () {
+        if let Some(adj) = getter(window) {
+            let scroll_size = adj.get_page_size() * count as f64;
+            let scroll_size = match *direction {
+                Right | Down => scroll_size,
+                Left | Up => -scroll_size,
+            };
+            let value = adj.get_value();
+            adj.set_value(value + scroll_size);
+            if !feq(adj.get_value(), value, 0.0000001) {
+                setter(window, &adj);
+                return true
+            }
+        }
+        false
+    };
+
+    match *direction {
+        Left | Right =>
+            scroll(window, direction, count, ScrolledWindow::get_hadjustment, ScrolledWindow::set_hadjustment),
+        Up | Down =>
+            scroll(window, direction, count, ScrolledWindow::get_vadjustment, ScrolledWindow::set_vadjustment),
+    }
 }

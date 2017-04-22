@@ -83,11 +83,11 @@ macro_rules! boolean_option {
 
         #[derive(PartialEq, Eq, Clone, Copy, Debug)]
         pub enum $name {
+            Disabled,
             Enabled,
-            Disabled
         }
 
-        const $default: &'static [$name] = &[$name::Enabled, $name::Disabled];
+        const $default: &'static [$name] = &[$name::Disabled, $name::Enabled];
 
         impl option::OptionValue for $name {
             fn default_series() -> &'static [$name] {

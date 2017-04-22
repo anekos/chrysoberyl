@@ -6,7 +6,7 @@ use std::str::FromStr;
 use cairo::{Context, ImageSurface, Format};
 use css_color_parser::Color;
 use gtk::prelude::*;
-use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow};
+use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment};
 
 use color::gdk_rgba;
 use constant;
@@ -60,6 +60,14 @@ pub enum ColorTarget {
     StatusBarBackground,
     Error,
     ErrorBackground,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Direction {
+    Left,
+    Up,
+    Right,
+    Down
 }
 
 
@@ -157,6 +165,14 @@ impl Gui {
             Error => self.colors.error = color.to_owned(),
             ErrorBackground => self.colors.error_background = color.to_owned(),
         }
+    }
+
+    pub fn scroll_views(&self, direction: &Direction, count: usize) -> bool {
+        let mut scrolled = false;
+        for cell in self.cells(false) {
+            scrolled |= scroll_window(&cell.window, direction, count);
+        }
+        scrolled
     }
 
     fn create_images(&mut self, state: &ViewState) {
@@ -287,6 +303,28 @@ impl Colors {
 }
 
 
+impl FromStr for Direction {
+    type Err = String;
+
+    fn from_str(src: &str) -> Result<Direction, String> {
+        use self::Direction::*;
+
+        match src {
+            "left" | "l" =>
+                Ok(Left),
+            "up" | "u" =>
+                Ok(Up),
+            "right" | "r" =>
+                Ok(Right),
+            "down" | "d" =>
+                Ok(Down),
+            _ =>
+                Err(format!("Invalid direction: {}", src))
+        }
+    }
+}
+
+
 fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), String> {
     use gdk::prelude::ContextExt;
 
@@ -300,4 +338,33 @@ fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), String> {
             surface.write_to_png(file).map_err(|_| o!("IO Error"))
         })
     })
+}
+
+fn scroll_window(window: &ScrolledWindow, direction: &Direction, count: usize) -> bool {
+    use self::Direction::*;
+
+    fn scroll<T, U>(window: &ScrolledWindow, direction: &Direction, count: usize, getter: T, setter: U) -> bool
+    where T: FnOnce(&ScrolledWindow) -> Option<Adjustment>, U: FnOnce(&ScrolledWindow, &Adjustment) -> () {
+        if let Some(adj) = getter(window) {
+            let scroll_size = adj.get_page_size() * count as f64;
+            let scroll_size = match *direction {
+                Right | Down => scroll_size,
+                Left | Up => -scroll_size,
+            };
+            let value = adj.get_value();
+            adj.set_value(value + scroll_size);
+            if adj.get_value() != value {
+                setter(window, &adj);
+                return true
+            }
+        }
+        false
+    };
+
+    match *direction {
+        Left | Right =>
+            scroll(window, direction, count, ScrolledWindow::get_hadjustment, ScrolledWindow::set_hadjustment),
+        Up | Down =>
+            scroll(window, direction, count, ScrolledWindow::get_vadjustment, ScrolledWindow::set_vadjustment),
+    }
 }

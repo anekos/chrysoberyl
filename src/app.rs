@@ -28,7 +28,7 @@ use events;
 use filer;
 use fragile_input::new_fragile_input;
 use gui::Cell;
-use gui::{Gui, ColorTarget};
+use gui::{Gui, ColorTarget, Direction};
 use http_cache::HttpCache;
 use image_buffer;
 use index_pointer::IndexPointer;
@@ -241,6 +241,8 @@ impl App {
                     updated.pointer = true,
                 Save(ref path, ref index) =>
                     self.on_save(path, index),
+                Scroll(ref direction, ref operation) =>
+                    self.on_scroll(direction, operation),
                 Shell(async, read_operations, ref command_line) =>
                     shell::call(async, command_line, option!(read_operations, self.tx.clone())),
                 Shuffle(fix_current) =>
@@ -525,6 +527,15 @@ impl App {
         let count = index.unwrap_or_else(|| self.pointer.counted()) - 1;
         if let Err(error) = self.gui.save(path, count) {
             puts_error!("at" => "save", "reason" => error)
+        }
+    }
+
+    fn on_scroll(&mut self, direction: &Direction, operation: &[String]) {
+        if !self.gui.scroll_views(direction, self.pointer.counted()) && operation.len() > 0 {
+            match Operation::parse_from_vec(operation) {
+                Ok(op) => self.operate(&op),
+                Err(err) => puts_error!("at" => "scroll", "reason" => err),
+            }
         }
     }
 

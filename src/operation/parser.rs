@@ -356,6 +356,20 @@ pub fn parse_scaling(args: &[String]) -> Result<Operation, String> {
     })
 }
 
+pub fn parse_scroll(args: &[String]) -> Result<Operation, String> {
+    let mut direction = Direction::Up;
+    let mut operation = vec![];
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut direction).add_argument("direction", Store, "left|up|right|down").required();
+        ap.refer(&mut operation).add_argument("operation", List, "Operation");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Scroll(direction, operation)
+    })
+}
+
 pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
     let mut async = true;
     let mut read_operations = false;

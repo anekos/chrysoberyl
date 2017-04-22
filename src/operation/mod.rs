@@ -10,7 +10,7 @@ use archive::ArchiveEntry;
 use config::ConfigSource;
 use entry::Meta;
 use filer;
-use gui::ColorTarget;
+use gui::{ColorTarget, Direction};
 use mapping::{self, mouse_mapping};
 use size::FitTo;
 use state::StateName;
@@ -54,14 +54,15 @@ pub enum Operation {
     PrintEntries,
     Push(String, Meta),
     PushArchiveEntry(PathBuf, ArchiveEntry),
-    PushHttpCache(PathBuf, String, Meta),
     PushFile(PathBuf, Meta),
+    PushHttpCache(PathBuf, String, Meta),
     PushPdf(PathBuf, Meta),
     PushURL(String, Meta),
     Quit,
     Random,
     Refresh,
     Save(PathBuf, Option<usize>),
+    Scroll(Direction, Vec<String>), /* direction, operation */
     Shell(bool, bool, Vec<String>), /* async, operation, command_line */
     Shuffle(bool), /* Fix current */
     Sort,
@@ -213,6 +214,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@refresh" | "@r"            => Ok(Refresh),
             "@save"                      => parse_save(whole),
             "@scaling"                   => parse_scaling(whole),
+            "@scroll"                    => parse_scroll(whole),
             "@shell"                     => parse_shell(whole),
             "@shuffle"                   => Ok(Shuffle(false)),
             "@sort"                      => Ok(Sort),

@@ -163,6 +163,7 @@ impl App {
         use self::Operation::*;
 
         let mut updated = Updated { pointer: false, label: false, image: false };
+        let mut to_end = false;
         let len = self.entries.len();
 
         debug!("Operate\t{:?}", operation);
@@ -203,8 +204,8 @@ impl App {
                     self.on_input(input),
                 Last(count, ignore_views) =>
                     updated.pointer = self.pointer.with_count(count).last(len, !ignore_views),
-                LazyDraw(serial) =>
-                    self.on_lazy_draw(&mut updated, serial),
+                LazyDraw(serial, new_to_end) =>
+                    self.on_lazy_draw(&mut updated, &mut to_end, serial, new_to_end),
                 LoadConfig(ref config_source) =>
                     self.on_load_config(config_source),
                 Map(ref target, ref mapped_operation) =>
@@ -218,7 +219,7 @@ impl App {
                 OperateFile(ref file_operation) =>
                     self.on_operate_file(file_operation),
                 Previous(count, ignore_views) =>
-                    updated.pointer = self.pointer.with_count(count).previous(!ignore_views),
+                    self.on_previous(&mut updated, &mut to_end, count, ignore_views),
                 PrintEntries =>
                     self.on_print_entries(),
                 Push(ref path, ref meta) =>
@@ -260,7 +261,6 @@ impl App {
             }
         }
 
-
         if self.states.initialized && self.entries.len() != len {
             if let Some(current) = self.pointer.current {
                 let gui_len = self.gui.len();
@@ -275,10 +275,10 @@ impl App {
 
         if updated.pointer {
             self.draw_serial += 1;
-            self.tx.send(Operation::LazyDraw(self.draw_serial)).unwrap();
+            self.tx.send(Operation::LazyDraw(self.draw_serial, to_end)).unwrap();
         }
         if updated.image {
-            time!("show_image" => self.show_image());
+            time!("show_image" => self.show_image(to_end));
             self.puts_event_with_current("show", None);
         }
 
@@ -413,10 +413,11 @@ impl App {
         }
     }
 
-    fn on_lazy_draw(&mut self, updated: &mut Updated, serial: u64) {
+    fn on_lazy_draw(&mut self, updated: &mut Updated, to_end: &mut bool, serial: u64, new_to_end: bool) {
         trace!("draw_serial: {}, serial: {}", self.draw_serial, serial);
         if self.draw_serial == serial {
             updated.image = true;
+            *to_end = new_to_end;
         }
     }
 
@@ -460,6 +461,11 @@ impl App {
                 Err(err) => puts_event!("operate_file", "status" => "fail", "reason" => err, "operation" => text),
             }
         }
+    }
+
+    fn on_previous(&mut self, updated: &mut Updated, to_end: &mut bool, count: Option<usize>, ignore_views: bool) {
+        updated.pointer = self.pointer.with_count(count).previous(!ignore_views);
+        *to_end = count.is_none() && !ignore_views;
     }
 
     fn on_print_entries(&self) {
@@ -670,11 +676,11 @@ impl App {
         });
     }
 
-    fn show_image(&mut self) {
+    fn show_image(&mut self, to_end: bool) {
         let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
 
         if self.states.fit_to.is_scrollable() {
-            self.gui.reset_scrolls();
+            self.gui.reset_scrolls(to_end);
         }
 
         for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {

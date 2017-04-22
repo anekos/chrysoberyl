@@ -131,11 +131,15 @@ impl Gui {
         self.create_images(state);
     }
 
-    pub fn reset_scrolls(&self) {
+    pub fn reset_scrolls(&self, to_end: bool) {
         for cell in self.cells(false) {
             if let Some(adj) = cell.window.get_vadjustment() {
-                adj.set_value(0.0);
+                adj.set_value(if to_end { adj.get_upper() } else { 0.0 });
                 cell.window.set_vadjustment(&adj);
+            }
+            if let Some(adj) = cell.window.get_hadjustment() {
+                adj.set_value(if to_end { adj.get_upper() } else { 0.0 });
+                cell.window.set_hadjustment(&adj);
             }
         }
     }

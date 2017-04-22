@@ -43,7 +43,7 @@ pub enum Operation {
     Initialized,
     Input(mapping::Input),
     Last(Option<usize>, bool),
-    LazyDraw(u64), /* serial */
+    LazyDraw(u64, bool), /* serial, to_end */
     LoadConfig(ConfigSource),
     Map(MappingTarget, Vec<String>),
     Multi(Vec<Operation>),

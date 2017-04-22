@@ -641,10 +641,8 @@ impl App {
                     cell.window.set_size_request(cell_size.width, ci_height),
                 FitTo::Height =>
                     cell.window.set_size_request(ci_width, cell_size.height),
-                    FitTo::Cell =>
-                        cell.window.set_size_request(ci_width, ci_height),
-                    FitTo::Original | FitTo::OriginalOrCell =>
-                        cell.window.set_size_request(cell_size.width, cell_size.height),
+                FitTo::Cell | FitTo::Original | FitTo::OriginalOrCell =>
+                    cell.window.set_size_request(ci_width, ci_height),
             }
         };
 

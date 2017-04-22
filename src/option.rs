@@ -40,7 +40,7 @@ pub trait OptionValue : Sized + PartialEq + Clone + FromStr + Debug {
     fn cycled(&self, series: &[Self]) -> Self {
         let series = Self::or_default(series);
         if let Some(index) = series.iter().position(|it| it == self) {
-            if let Some(result) = series.iter().nth(index + 1) {
+            if let Some(result) = series.get(index + 1) {
                 return result.clone()
             }
         }
@@ -89,7 +89,7 @@ macro_rules! boolean_option {
         const $default: &'static [$name] = &[$name::Disabled, $name::Enabled];
 
         impl option::OptionValue for $name {
-            fn default_series() -> &'static [$name] {
+            fn default_series<'a>() -> &'a [$name] {
                 $default
             }
 

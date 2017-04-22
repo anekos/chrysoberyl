@@ -123,7 +123,7 @@ impl FromStr for FitTo {
 const FIT_TO_DEFAULT: &'static [FitTo] = &[FitTo::Original, FitTo::Cell, FitTo::OriginalOrCell, FitTo::Width, FitTo::Height];
 
 impl option::OptionValue for FitTo {
-    fn default_series() -> &'static [FitTo] {
+    fn default_series<'a>() -> &'a [FitTo] {
         FIT_TO_DEFAULT
     }
 

@@ -6,7 +6,7 @@ use std::str::FromStr;
 use cairo::{Context, ImageSurface, Format};
 use css_color_parser::Color;
 use gtk::prelude::*;
-use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow};
+use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment};
 
 use color::gdk_rgba;
 use constant;
@@ -252,6 +252,21 @@ impl Gui {
 impl Cell {
     pub fn new(image: Image, window: ScrolledWindow) -> Cell {
         Cell { image: image, window: window }
+    }
+
+    /** return (x, y, w, h) **/
+    pub fn get_top_left(&self) -> (i32, i32, i32, i32) {
+        fn extract(adj: Adjustment) -> (f64, f64) {
+            (adj.get_value(), adj.get_upper())
+        }
+
+        let w = self.window.get_allocation();
+        let (sx, sw) = self.window.get_hadjustment().map(extract).unwrap();
+        let (sy, sh) = self.window.get_vadjustment().map(extract).unwrap();
+        (w.x - sx as i32,
+         w.y - sy as i32,
+         sw as i32,
+         sh as i32)
     }
 }
 

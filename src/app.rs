@@ -306,7 +306,6 @@ impl App {
 
     fn on_cherenkov(&mut self, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<&OperationContext>) {
         use cherenkov::Che;
-        use gtk::WidgetExt;
         use gdk_pixbuf::PixbufAnimationExt;
 
         fn get_image_size(image: &Image) -> Option<(i32, i32)> {
@@ -324,9 +323,9 @@ impl App {
             for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
                 if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
                     let (x1, y1, w, h) = {
-                        let a = cell.image.get_allocation();
+                        let (cx, cy, cw, ch) = cell.get_top_left();
                         if let Some((iw, ih)) = get_image_size(&cell.image) {
-                        (a.x + (a.width - iw) / 2, a.y + (a.height - ih) / 2, iw, ih)
+                            (cx + (cw - iw) / 2, cy + (ch - ih) / 2, iw, ih)
                         } else {
                             continue;
                         }

@@ -156,6 +156,8 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
 
     config::load_config(&app.tx, &config::ConfigSource::User);
 
+    app.tx.send(Operation::Initialized).unwrap();
+
     (app, primary_rx, rx)
 }
 

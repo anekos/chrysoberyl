@@ -151,8 +151,6 @@ impl App {
             tx.send(Operation::Shuffle(fix)).unwrap();
         }
 
-        tx.send(Operation::Initialized).unwrap();
-
         (app, primary_rx, rx)
     }
 
@@ -200,7 +198,7 @@ impl App {
                 Fragile(ref path) =>
                     self.on_fragile(path),
                 Initialized =>
-                    self.states.initialized = true,
+                    self.on_initialized(),
                 Input(ref input) =>
                     self.on_input(input),
                 Last(count, ignore_views) =>
@@ -278,7 +276,8 @@ impl App {
             self.draw_serial += 1;
             self.tx.send(Operation::LazyDraw(self.draw_serial, to_end)).unwrap();
         }
-        if updated.image {
+
+        if updated.image && self.states.initialized {
             time!("show_image" => self.show_image(to_end));
             self.puts_event_with_current("show", None);
         }
@@ -396,6 +395,11 @@ impl App {
 
     fn on_fragile(&mut self, path: &PathBuf) {
         new_fragile_input(self.tx.clone(), path_to_str(path));
+    }
+
+    fn on_initialized(&mut self) {
+        self.states.initialized = true;
+        puts_event!("initialized");
     }
 
     fn on_input(&mut self, input: &Input) {

@@ -635,27 +635,13 @@ impl App {
     }
 
     fn show_image1(&self, entry: Entry, cell: &Cell, cell_size: &Size) {
-        let _show = |buf: &Pixbuf| {
-            cell.image.set_from_pixbuf(Some(buf));
-            let (image_width, image_height) = (buf.get_width(), buf.get_height());
-            let (ci_width, ci_height) = (min!(image_width, cell_size.width), min!(image_height, cell_size.height));
-            match self.states.fit_to {
-                FitTo::Width =>
-                    cell.window.set_size_request(cell_size.width, ci_height),
-                FitTo::Height =>
-                    cell.window.set_size_request(ci_width, cell_size.height),
-                FitTo::Cell | FitTo::Original | FitTo::OriginalOrCell =>
-                    cell.window.set_size_request(ci_width, ci_height),
-            }
-        };
-
         if let Some(img) = self.get_meta(&entry) {
             if let Ok(img) = img {
                 if let Ok(gif) = img.into::<Gif>() {
                     if gif.is_animated() {
                         match image_buffer::get_pixbuf_animation(&entry) {
-                            Ok(buf) => cell.image.set_from_animation(&buf),
-                            Err(error) => _show(&error.get_pixbuf(cell_size, &self.gui.colors.error, &self.gui.colors.error_background))
+                            Ok(buf) => cell.draw_animation(&buf),
+                            Err(error) => cell.draw(&error.get_pixbuf(cell_size, &self.gui.colors.error, &self.gui.colors.error_background), &cell_size, &self.states.fit_to)
                         }
                         return
                     }
@@ -663,11 +649,10 @@ impl App {
             }
         }
 
-        _show(&{
-            self.cherenkoved.get_pixbuf(&entry, cell_size, &self.states.fit_to, &self.states.scaling).unwrap_or_else(|error| {
-                error.get_pixbuf(cell_size, &self.gui.colors.error, &self.gui.colors.error_background)
-            })
+        let pixbuf = self.cherenkoved.get_pixbuf(&entry, cell_size, &self.states.fit_to, &self.states.scaling).unwrap_or_else(|error| {
+            error.get_pixbuf(cell_size, &self.gui.colors.error, &self.gui.colors.error_background)
         });
+        cell.draw(&pixbuf, &cell_size, &self.states.fit_to);
     }
 
     fn show_image(&mut self, to_end: bool) {

@@ -5,13 +5,14 @@ use std::str::FromStr;
 
 use cairo::{Context, ImageSurface, Format};
 use css_color_parser::Color;
+use gdk_pixbuf::{Pixbuf, PixbufAnimation};
 use gtk::prelude::*;
 use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment};
 
 use color::gdk_rgba;
 use constant;
 use option::OptionValue;
-use size::Size;
+use size::{FitTo, Size};
 use state::ViewState;
 use utils::feq;
 
@@ -252,6 +253,24 @@ impl Gui {
 impl Cell {
     pub fn new(image: Image, window: ScrolledWindow) -> Cell {
         Cell { image: image, window: window }
+    }
+
+    pub fn draw(&self, pixbuf: &Pixbuf, cell_size: &Size, fit_to: &FitTo) {
+        self.image.set_from_pixbuf(Some(pixbuf));
+        let (image_width, image_height) = (pixbuf.get_width(), pixbuf.get_height());
+        let (ci_width, ci_height) = (min!(image_width, cell_size.width), min!(image_height, cell_size.height));
+        match *fit_to {
+            FitTo::Width =>
+                self.window.set_size_request(cell_size.width, ci_height),
+            FitTo::Height =>
+                self.window.set_size_request(ci_width, cell_size.height),
+            FitTo::Cell | FitTo::Original | FitTo::OriginalOrCell =>
+                self.window.set_size_request(ci_width, ci_height),
+        }
+    }
+
+    pub fn draw_animation(&self, pixbuf: &PixbufAnimation) {
+        self.image.set_from_animation(pixbuf);
     }
 
     /** return (x, y, w, h) **/

@@ -8,7 +8,7 @@ use std::collections::HashSet;
 
 use css_color_parser::Color;
 use encoding::types::EncodingRef;
-use gdk_pixbuf::Pixbuf;
+use gdk_pixbuf::{Pixbuf, PixbufAnimation};
 use gtk::Image;
 use gtk::prelude::*;
 use immeta::markers::Gif;
@@ -27,7 +27,6 @@ use entry::{Entry, EntryContent, EntryContainer, EntryContainerOptions, MetaSlic
 use events;
 use filer;
 use fragile_input::new_fragile_input;
-use gui::Cell;
 use gui::{Gui, ColorTarget, Direction};
 use http_cache::HttpCache;
 use image_buffer;
@@ -634,25 +633,18 @@ impl App {
         output::puts(&pairs);
     }
 
-    fn show_image1(&self, entry: Entry, cell: &Cell, cell_size: &Size) {
+    fn get_animation(&self, entry: &Entry, cell_size: &Size) -> Result<Result<PixbufAnimation, Pixbuf>, image_buffer::Error> {
         if let Some(img) = self.get_meta(&entry) {
             if let Ok(img) = img {
                 if let Ok(gif) = img.into::<Gif>() {
                     if gif.is_animated() {
-                        match image_buffer::get_pixbuf_animation(&entry) {
-                            Ok(buf) => cell.draw_animation(&buf),
-                            Err(error) => cell.draw(&error.get_pixbuf(cell_size, &self.gui.colors.error, &self.gui.colors.error_background), &cell_size, &self.states.fit_to)
-                        }
-                        return
+                        return image_buffer::get_pixbuf_animation(&entry).map(Ok)
                     }
                 }
             }
         }
 
-        let pixbuf = self.cherenkoved.get_pixbuf(&entry, cell_size, &self.states.fit_to, &self.states.scaling).unwrap_or_else(|error| {
-            error.get_pixbuf(cell_size, &self.gui.colors.error, &self.gui.colors.error_background)
-        });
-        cell.draw(&pixbuf, &cell_size, &self.states.fit_to);
+        self.cherenkoved.get_pixbuf(&entry, &cell_size, &self.states.fit_to, &self.states.scaling).map(Err)
     }
 
     fn show_image(&mut self, to_end: bool) {
@@ -664,7 +656,17 @@ impl App {
 
         for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                self.show_image1(entry, cell, &cell_size);
+                match self.get_animation(&entry, &cell_size) {
+                    Ok(pixbuf) => match pixbuf {
+                        Ok(animation) => cell.draw_animation(&animation),
+                        Err(pixbuf) => cell.draw(&pixbuf, &cell_size, &self.states.fit_to),
+                    },
+                    Err(error) =>
+                        cell.draw(
+                            &error.get_pixbuf(&cell_size, &self.gui.colors.error, &self.gui.colors.error_background),
+                            &cell_size,
+                            &self.states.fit_to),
+                }
             } else {
                 cell.image.set_from_pixbuf(None);
             }

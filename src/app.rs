@@ -710,7 +710,9 @@ impl App {
                     envs.push((o!("pdf_page"), s!(index)));
                 }
             }
-            envs.push((o!("index"), s!(index + 1)));
+            let last_page = min!(index + self.gui.len(), self.entries.len());
+            envs.push((o!("page"), s!(index + 1)));
+            envs.push((o!("last_page"), s!(last_page)));
             envs.push((o!("count"), s!(self.entries.len())));
         }
 

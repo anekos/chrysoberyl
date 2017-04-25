@@ -100,6 +100,13 @@ impl Cherenkoved {
     }
 
     pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, fit_to: &FitTo, che: &Che, scaling: &ScalingMethod) {
+        if let Some(mut cache_entry) = self.cache.get_mut(entry) {
+            let buffer = cache_entry.buffer.clone();
+            cache_entry.modifiers.push(che.clone());
+            cache_entry.buffer = cherenkov_pixbuf(buffer, che);
+            return;
+        }
+
         if let Ok(pixbuf) = self.get_pixbuf(entry, cell_size, fit_to, scaling) {
             self.cache.insert(
                 entry.clone(),

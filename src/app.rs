@@ -8,7 +8,7 @@ use std::collections::HashSet;
 
 use css_color_parser::Color;
 use encoding::types::EncodingRef;
-use gdk_pixbuf::Pixbuf;
+use gdk_pixbuf::PixbufAnimation;
 use gtk::Image;
 use gtk::prelude::*;
 use immeta::markers::Gif;
@@ -27,7 +27,6 @@ use entry::{Entry, EntryContent, EntryContainer, EntryContainerOptions, MetaSlic
 use events;
 use filer;
 use fragile_input::new_fragile_input;
-use gui::Cell;
 use gui::{Gui, ColorTarget, Direction};
 use http_cache::HttpCache;
 use image_buffer;
@@ -37,7 +36,7 @@ use operation::{self, Operation, OperationContext, MappingTarget};
 use option::{OptionValue, OptionUpdateMethod};
 use output;
 use shell;
-use size::{FitTo, Size};
+use size::FitTo;
 use state::ScalingMethod;
 use state::{States, StateName};
 use termination;
@@ -333,8 +332,8 @@ impl App {
                     let (x2, y2) = (x1 + w, y1 + h);
                     if x1 <= mx && mx <= x2 && y1 <= my && my <= y2 {
                         let center = (
-                            parameter.x.unwrap_or_else(|| mx - x1),
-                            parameter.y.unwrap_or_else(|| my - y1));
+                            parameter.x.unwrap_or_else(|| mx - x1) as f64 / w as f64,
+                            parameter.y.unwrap_or_else(|| my - y1) as f64 / h as f64);
                         self.cherenkoved.cherenkov(
                             &entry,
                             &cell_size,
@@ -634,40 +633,17 @@ impl App {
         output::puts(&pairs);
     }
 
-    fn show_image1(&self, entry: Entry, cell: &Cell, cell_size: &Size) {
-        let _show = |buf: &Pixbuf| {
-            cell.image.set_from_pixbuf(Some(buf));
-            let (image_width, image_height) = (buf.get_width(), buf.get_height());
-            let (ci_width, ci_height) = (min!(image_width, cell_size.width), min!(image_height, cell_size.height));
-            match self.states.fit_to {
-                FitTo::Width =>
-                    cell.window.set_size_request(cell_size.width, ci_height),
-                FitTo::Height =>
-                    cell.window.set_size_request(ci_width, cell_size.height),
-                FitTo::Cell | FitTo::Original | FitTo::OriginalOrCell =>
-                    cell.window.set_size_request(ci_width, ci_height),
-            }
-        };
-
-        if let Some(img) = self.get_meta(&entry) {
+    fn get_animation(&self, entry: &Entry) -> Option<Result<PixbufAnimation, image_buffer::Error>> {
+        self.get_meta(&entry).and_then(|img| {
             if let Ok(img) = img {
                 if let Ok(gif) = img.into::<Gif>() {
                     if gif.is_animated() {
-                        match image_buffer::get_pixbuf_animation(&entry) {
-                            Ok(buf) => cell.image.set_from_animation(&buf),
-                            Err(error) => _show(&error.get_pixbuf(cell_size, &self.gui.colors.error, &self.gui.colors.error_background))
-                        }
-                        return
+                        return Some(image_buffer::get_pixbuf_animation(&entry));
                     }
                 }
             }
-        }
-
-        _show(&{
-            self.cherenkoved.get_pixbuf(&entry, cell_size, &self.states.fit_to, &self.states.scaling).unwrap_or_else(|error| {
-                error.get_pixbuf(cell_size, &self.gui.colors.error, &self.gui.colors.error_background)
-            })
-        });
+            None
+        })
     }
 
     fn show_image(&mut self, to_end: bool) {
@@ -679,7 +655,17 @@ impl App {
 
         for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                self.show_image1(entry, cell, &cell_size);
+                match self.get_animation(&entry) {
+                    Some(pixbuf) => match pixbuf {
+                        Ok(animation) => cell.draw_animation(&animation),
+                        Err(error) => cell.draw_error(&error, &cell_size, &self.states.fit_to, &self.gui.colors)
+                    },
+                    None =>
+                        match self.cherenkoved.get_pixbuf(&entry, &cell_size, &self.states.fit_to, &self.states.scaling) {
+                            Ok(pixbuf) => cell.draw(&pixbuf, &cell_size, &self.states.fit_to),
+                            Err(error) => cell.draw_error(&error, &cell_size, &self.states.fit_to, &self.gui.colors)
+                        }
+                }
             } else {
                 cell.image.set_from_pixbuf(None);
             }

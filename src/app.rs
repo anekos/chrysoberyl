@@ -634,11 +634,11 @@ impl App {
     }
 
     fn get_animation(&self, entry: &Entry) -> Option<Result<PixbufAnimation, image_buffer::Error>> {
-        self.get_meta(&entry).and_then(|img| {
+        self.get_meta(entry).and_then(|img| {
             if let Ok(img) = img {
                 if let Ok(gif) = img.into::<Gif>() {
                     if gif.is_animated() {
-                        return Some(image_buffer::get_pixbuf_animation(&entry));
+                        return Some(image_buffer::get_pixbuf_animation(entry));
                     }
                 }
             }

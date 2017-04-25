@@ -276,20 +276,20 @@ impl Cell {
 
     pub fn draw_error(&self, error: &image_buffer::Error, cell_size: &Size, fit_to: &FitTo, colors: &Colors) {
         self.draw(
-            &error.get_pixbuf(&cell_size, &colors.error, &colors.error_background),
-            &cell_size,
-            &fit_to);
+            &error.get_pixbuf(cell_size, &colors.error, &colors.error_background),
+            cell_size,
+            fit_to);
     }
 
     /** return (x, y, w, h) **/
     pub fn get_top_left(&self) -> (i32, i32, i32, i32) {
-        fn extract(adj: Adjustment) -> (f64, f64) {
+        fn extract(adj: &Adjustment) -> (f64, f64) {
             (adj.get_value(), adj.get_upper())
         }
 
         let w = self.window.get_allocation();
-        let (sx, sw) = self.window.get_hadjustment().map(extract).unwrap();
-        let (sy, sh) = self.window.get_vadjustment().map(extract).unwrap();
+        let (sx, sw) = self.window.get_hadjustment().as_ref().map(extract).unwrap();
+        let (sy, sh) = self.window.get_vadjustment().as_ref().map(extract).unwrap();
         (w.x - sx as i32,
          w.y - sy as i32,
          sw as i32,

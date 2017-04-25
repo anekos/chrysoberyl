@@ -332,8 +332,8 @@ impl App {
                     let (x2, y2) = (x1 + w, y1 + h);
                     if x1 <= mx && mx <= x2 && y1 <= my && my <= y2 {
                         let center = (
-                            parameter.x.unwrap_or_else(|| mx - x1),
-                            parameter.y.unwrap_or_else(|| my - y1));
+                            parameter.x.unwrap_or_else(|| mx - x1) as f64 / w as f64,
+                            parameter.y.unwrap_or_else(|| my - y1) as f64 / h as f64);
                         self.cherenkoved.cherenkov(
                             &entry,
                             &cell_size,

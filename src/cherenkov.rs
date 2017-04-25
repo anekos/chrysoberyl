@@ -48,7 +48,7 @@ const FERROR: f64 = 0.000001;
 
 #[derive(Debug, Clone)]
 pub struct Che {
-    pub center: (i32, i32),
+    pub center: (f64, f64),
     pub n_spokes: usize,
     pub random_hue: f64,
     pub radius: f64,
@@ -227,6 +227,7 @@ fn clamp<T: PartialOrd>(v: T, from: T, to: T) -> T {
 #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
 fn nova(che: &Che, pixels: &mut [u8], rowstride: i32, width: i32, height: i32) {
     let (cx, cy) = che.center;
+    let (cx, cy) = ((width as f64 * cx) as i32, (height as f64 * cy) as i32);
     let radius = clamp(((width * width + height * height) as f64).sqrt() * che.radius, 0.00000001, 100.0);
 
     let (spokes, spoke_colors) = {

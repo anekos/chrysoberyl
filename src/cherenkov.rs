@@ -45,6 +45,8 @@ type TupleColor = (f64, f64, f64);
 
 const FERROR: f64 = 0.000001;
 
+
+#[derive(Debug, Clone)]
 pub struct Che {
     pub center: (i32, i32),
     pub n_spokes: usize,
@@ -59,7 +61,9 @@ pub struct Cherenkoved {
 
 pub struct CacheEntry {
     buffer: Pixbuf,
-    size: Size,
+    cell_size: Size,
+    fit_to: FitTo,
+    modifiers: Vec<Che>
 }
 
 
@@ -68,28 +72,60 @@ impl Cherenkoved {
         Cherenkoved { cache: HashMap::new() }
     }
 
-    pub fn get_pixbuf(&self, entry: &Entry, cell: &Size, fit: &FitTo, scaling: &ScalingMethod) -> Result<Pixbuf, image_buffer::Error> {
-        if let Some(cache) = self.cache.get(entry) {
-            if cache.size == *cell {
-                return Ok(cache.buffer.clone())
+    pub fn get_pixbuf(&mut self, entry: &Entry, cell_size: &Size, fit_to: &FitTo, scaling: &ScalingMethod) -> Result<Pixbuf, image_buffer::Error> {
+        let new_entry = match self.cache.get(entry) {
+            None =>
+                return image_buffer::get_pixbuf(entry, cell_size, fit_to, scaling),
+            Some(cache_entry) => {
+                if cache_entry.is_valid(cell_size, fit_to) {
+                    return Ok(cache_entry.buffer.clone())
+                }
+                let modifiers = cache_entry.modifiers.clone();
+                match self.re_cherenkov(entry, cell_size, fit_to, scaling, &modifiers) {
+                    Ok(pixbuf) =>
+                        CacheEntry {buffer: pixbuf, cell_size: cell_size.clone(), fit_to: fit_to.clone(), modifiers: modifiers},
+                    Err(error) =>
+                        return Err(error)
+                }
             }
-        }
-        image_buffer::get_pixbuf(entry, cell, fit, scaling)
+        };
+
+        let result = new_entry.buffer.clone();
+        self.cache.insert(entry.clone(), new_entry);
+        Ok(result)
     }
 
     pub fn remove(&mut self, entry: &Entry) {
         self.cache.remove(entry);
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, cell: &Size, fit: &FitTo, che: &Che, scaling: &ScalingMethod) {
-        if let Ok(pixbuf) = self.get_pixbuf(entry, cell, fit, scaling) {
+    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, fit_to: &FitTo, che: &Che, scaling: &ScalingMethod) {
+        if let Ok(pixbuf) = self.get_pixbuf(entry, cell_size, fit_to, scaling) {
             self.cache.insert(
                 entry.clone(),
                 CacheEntry {
                     buffer: cherenkov_pixbuf(pixbuf, che),
-                    size: cell.clone()
+                    cell_size: cell_size.clone(),
+                    fit_to: fit_to.clone(),
+                    modifiers: vec![],
                 });
         }
+    }
+
+    fn re_cherenkov(&self, entry: &Entry, cell_size: &Size, fit_to: &FitTo, scaling: &ScalingMethod, modifiers: &[Che]) -> Result<Pixbuf, image_buffer::Error> {
+        image_buffer::get_pixbuf(entry, cell_size, fit_to, scaling).map(|mut pixbuf| {
+            for che in modifiers {
+                pixbuf = cherenkov_pixbuf(pixbuf, che);
+            }
+            pixbuf
+        })
+    }
+}
+
+
+impl CacheEntry {
+    pub fn is_valid(&self, cell_size: &Size, fit_to: &FitTo) -> bool {
+        self.cell_size == *cell_size && self.fit_to == *fit_to
     }
 }
 

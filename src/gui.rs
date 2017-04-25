@@ -11,6 +11,7 @@ use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment};
 
 use color::gdk_rgba;
 use constant;
+use image_buffer;
 use option::OptionValue;
 use size::{FitTo, Size};
 use state::ViewState;
@@ -271,6 +272,13 @@ impl Cell {
 
     pub fn draw_animation(&self, pixbuf: &PixbufAnimation) {
         self.image.set_from_animation(pixbuf);
+    }
+
+    pub fn draw_error(&self, error: &image_buffer::Error, cell_size: &Size, fit_to: &FitTo, colors: &Colors) {
+        self.draw(
+            &error.get_pixbuf(&cell_size, &colors.error, &colors.error_background),
+            &cell_size,
+            &fit_to);
     }
 
     /** return (x, y, w, h) **/

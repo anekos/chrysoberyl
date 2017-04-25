@@ -8,7 +8,7 @@ use std::collections::HashSet;
 
 use css_color_parser::Color;
 use encoding::types::EncodingRef;
-use gdk_pixbuf::{Pixbuf, PixbufAnimation};
+use gdk_pixbuf::PixbufAnimation;
 use gtk::Image;
 use gtk::prelude::*;
 use immeta::markers::Gif;
@@ -36,7 +36,7 @@ use operation::{self, Operation, OperationContext, MappingTarget};
 use option::{OptionValue, OptionUpdateMethod};
 use output;
 use shell;
-use size::{FitTo, Size};
+use size::FitTo;
 use state::ScalingMethod;
 use state::{States, StateName};
 use termination;
@@ -633,18 +633,17 @@ impl App {
         output::puts(&pairs);
     }
 
-    fn get_animation(&self, entry: &Entry, cell_size: &Size) -> Result<Result<PixbufAnimation, Pixbuf>, image_buffer::Error> {
-        if let Some(img) = self.get_meta(&entry) {
+    fn get_animation(&self, entry: &Entry) -> Option<Result<PixbufAnimation, image_buffer::Error>> {
+        self.get_meta(&entry).and_then(|img| {
             if let Ok(img) = img {
                 if let Ok(gif) = img.into::<Gif>() {
                     if gif.is_animated() {
-                        return image_buffer::get_pixbuf_animation(&entry).map(Ok)
+                        return Some(image_buffer::get_pixbuf_animation(&entry));
                     }
                 }
             }
-        }
-
-        self.cherenkoved.get_pixbuf(&entry, &cell_size, &self.states.fit_to, &self.states.scaling).map(Err)
+            None
+        })
     }
 
     fn show_image(&mut self, to_end: bool) {
@@ -656,16 +655,16 @@ impl App {
 
         for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                match self.get_animation(&entry, &cell_size) {
-                    Ok(pixbuf) => match pixbuf {
+                match self.get_animation(&entry) {
+                    Some(pixbuf) => match pixbuf {
                         Ok(animation) => cell.draw_animation(&animation),
-                        Err(pixbuf) => cell.draw(&pixbuf, &cell_size, &self.states.fit_to),
+                        Err(error) => cell.draw_error(&error, &cell_size, &self.states.fit_to, &self.gui.colors)
                     },
-                    Err(error) =>
-                        cell.draw(
-                            &error.get_pixbuf(&cell_size, &self.gui.colors.error, &self.gui.colors.error_background),
-                            &cell_size,
-                            &self.states.fit_to),
+                    None =>
+                        match self.cherenkoved.get_pixbuf(&entry, &cell_size, &self.states.fit_to, &self.states.scaling) {
+                            Ok(pixbuf) => cell.draw(&pixbuf, &cell_size, &self.states.fit_to),
+                            Err(error) => cell.draw_error(&error, &cell_size, &self.states.fit_to, &self.gui.colors)
+                        }
                 }
             } else {
                 cell.image.set_from_pixbuf(None);

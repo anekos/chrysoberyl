@@ -4,12 +4,11 @@ use std::path::Path;
 use std::str::FromStr;
 
 use cairo::{Context, ImageSurface, Format};
-use css_color_parser::Color;
 use gdk_pixbuf::{Pixbuf, PixbufAnimation};
 use gtk::prelude::*;
 use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment};
 
-use color::gdk_rgba;
+use color::Color;
 use constant;
 use image_buffer;
 use option::OptionValue;
@@ -165,11 +164,11 @@ impl Gui {
 
         match *target {
             WindowBackground =>
-                self.window.override_background_color(self.window.get_state_flags(), &gdk_rgba(color)),
+                self.window.override_background_color(self.window.get_state_flags(), &color.gdk_rgba()),
             StatusBar =>
-                self.label.override_color(self.label.get_state_flags(), &gdk_rgba(color)),
+                self.label.override_color(self.label.get_state_flags(), &color.gdk_rgba()),
             StatusBarBackground =>
-                self.label.override_background_color(self.label.get_state_flags(), &gdk_rgba(color)),
+                self.label.override_background_color(self.label.get_state_flags(), &color.gdk_rgba()),
             Error => self.colors.error = color.to_owned(),
             ErrorBackground => self.colors.error_background = color.to_owned(),
         }

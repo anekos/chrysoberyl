@@ -6,9 +6,8 @@ use std::rc::Rc;
 
 use cairo::{Context, ImageSurface, Format};
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
-use css_color_parser::Color;
 
-use color::gdk_rgba;
+use color::Color;
 use entry::{Entry, EntryContent};
 use gtk_utils::new_pixbuf_from_surface;
 use poppler::PopplerDocument;
@@ -47,7 +46,7 @@ impl Error {
 
         let (x, y) = (width / 2.0 - extents.width / 2.0, height / 2.0 - extents.height / 2.0);
 
-        let bg = gdk_rgba(bg);
+        let bg = bg.gdk_rgba();
         context.set_source_rgba(bg.red, bg.green, bg.blue, bg.alpha);
         context.rectangle(
             x - PADDING,
@@ -57,7 +56,7 @@ impl Error {
         context.fill();
 
         context.move_to(x, y);
-        let fg = gdk_rgba(fg);
+        let fg = fg.gdk_rgba();
         context.set_source_rgba(fg.red, fg.green, fg.blue, fg.alpha);
         context.show_text(text);
 

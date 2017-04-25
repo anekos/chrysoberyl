@@ -4,8 +4,8 @@ use std::path:: PathBuf;
 use std::str::FromStr;
 
 use cmdline_parser::Parser;
-use css_color_parser::Color as CssColor;
 
+use color::Color;
 use archive::ArchiveEntry;
 use config::ConfigSource;
 use entry::Meta;
@@ -31,7 +31,7 @@ pub enum Operation {
     Cherenkov(CherenkovParameter),
     CherenkovClear,
     Clear,
-    Color(ColorTarget, CssColor),
+    Color(ColorTarget, Color),
     Context(OperationContext, Box<Operation>),
     Count(Option<usize>),
     CountDigit(u8),
@@ -80,7 +80,7 @@ pub struct CherenkovParameter {
     pub n_spokes: usize,
     pub x: Option<i32>,
     pub y: Option<i32>,
-    pub color: CssColor,
+    pub color: Color,
 }
 
 #[derive(Clone, Debug, PartialEq)]

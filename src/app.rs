@@ -6,7 +6,6 @@ use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::spawn;
 use std::collections::HashSet;
 
-use css_color_parser::Color;
 use encoding::types::EncodingRef;
 use gdk_pixbuf::PixbufAnimation;
 use gtk::Image;
@@ -19,6 +18,7 @@ use rand::{self, ThreadRng};
 
 use archive::{self, ArchiveEntry};
 use cherenkov::Cherenkoved;
+use color::Color;
 use config;
 use constant;
 use controller;

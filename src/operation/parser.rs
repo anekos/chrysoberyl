@@ -4,8 +4,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse, StoreOption, List, PushConst};
-use css_color_parser::Color as CssColor;
 
+use color::Color;
 use config::ConfigSource;
 use entry::{Meta, MetaEntry, new_meta_from_vec};
 use filer;
@@ -48,7 +48,7 @@ pub fn parse_cherenkov(args: &[String]) -> Result<Operation, String> {
     let mut n_spokes = 50;
     let mut x = None;
     let mut y = None;
-    let mut color: CssColor = "blue".parse().unwrap();
+    let mut color: Color = "random".parse().unwrap();
     let mut clear = false;
 
     {
@@ -97,7 +97,7 @@ pub fn parse_copy_or_move(args: &[String]) -> Result<(PathBuf, filer::IfExist), 
 
 pub fn parse_color(args: &[String]) -> Result<Operation, String> {
     let mut target: ColorTarget = ColorTarget::WindowBackground;
-    let mut color: CssColor = "white".parse().unwrap();
+    let mut color: Color = "white".parse().unwrap();
 
     {
         let mut ap = ArgumentParser::new();

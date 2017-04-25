@@ -27,12 +27,11 @@
 use std::collections::HashMap;
 use std::f64::consts::PI;
 
-use css_color_parser::Color;
 use gdk_pixbuf::Pixbuf;
 use rand::distributions::{IndependentSample, Range};
 use rand::{self, Rng, ThreadRng};
 
-use color;
+use color::Color;
 use entry::Entry;
 use image_buffer;
 use size::{FitTo, Size};
@@ -241,7 +240,7 @@ fn nova(che: &Che, pixels: &mut [u8], rowstride: i32, width: i32, height: i32) {
         let mut rng = rand::thread_rng();
         let mut spokes = vec![];
         let mut spoke_colors: Vec<SliceColor> = vec![];
-        let (mut h, s, v) = rgb_to_hsv(color::tupled(&che.color));
+        let (mut h, s, v) = rgb_to_hsv(che.color.tupled3());
 
         for _ in 0 .. che.n_spokes {
             spokes.push(gauss(&mut rng));

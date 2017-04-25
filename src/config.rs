@@ -49,7 +49,7 @@ pub static DEFAULT_CONFIG: &'static str = "
 @map key Escape @count
 
 @map mouse 1 @scroll --size 0.8 down  @next
-@map mouse 2 @cherenkov --radius 0.02 --color purple --spokes 50
+@map mouse 2 @cherenkov --radius 0.02 --color random --spokes 50
 @map mouse 3 @scroll --size 0.8 up    @previous
 ";
 

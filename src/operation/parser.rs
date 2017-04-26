@@ -407,13 +407,16 @@ pub fn parse_show(args: &[String]) -> Result<Operation, String> {
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut key.path).add_argument("path", Store, "File path / URL");
-        ap.refer(&mut key.index).add_argument("index", StoreOption, "Page");
+        ap.refer(&mut key.index).add_argument("page", StoreOption, "Page");
         parse_args(&mut ap, args)
-    } .map(|_| {
+    } .and_then(|_| {
         if let Some(mut index) = key.index.as_mut() {
-            *index += 1;
+            if *index == 0 {
+                return Err(o!("Page is 1 origin"))
+            }
+            *index -= 1;
         }
-        Operation::Show(key)
+        Ok(Operation::Show(key))
     })
 }
 

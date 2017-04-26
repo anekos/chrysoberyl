@@ -26,14 +26,26 @@ pub trait OptionValue : Sized + PartialEq + Clone + FromStr + Debug {
         }
     }
 
-    fn update(&mut self, method: &OptionUpdateMethod) {
+    fn update_with_series_reader(&mut self, method: &OptionUpdateMethod, series: &[String]) -> Result<(), <Self as FromStr>::Err> {
+        let mut _series: Vec<Self> = vec![];
+        for it in series {
+            match it.parse() {
+                Ok(it) => _series.push(it),
+                Err(error) => return Err(error)
+            }
+        }
+
+        Ok(self.update(method, &_series))
+    }
+
+    fn update(&mut self, method: &OptionUpdateMethod, series: &[Self]) {
         use self::OptionUpdateMethod::*;
 
         match *method {
-            Enable => self.enable(Self::default_series()),
-            Disable => self.disable(Self::default_series()),
-            Toggle => self.toggle(Self::default_series()),
-            Cycle => self.cycle(Self::default_series()),
+            Enable => self.enable(Self::or_default(series)),
+            Disable => self.disable(Self::or_default(series)),
+            Toggle => self.toggle(Self::or_default(series)),
+            Cycle => self.cycle(Self::or_default(series)),
         }
     }
 

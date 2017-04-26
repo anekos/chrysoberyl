@@ -285,18 +285,20 @@ pub fn parse_option_updater(args: &[String], method: OptionUpdateMethod) -> Resu
     use self::Operation::UpdateOption;
 
     let mut name = "".to_owned();
+    let mut series: Vec<String> = vec![];
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut name).add_argument("option_name", Store, "Option name").required();
+        ap.refer(&mut series).add_argument("series", Collect, "Target value series (disable enable ....)");
         parse_args(&mut ap, args)
     } .and_then(|_| {
         match &*name.to_lowercase() {
-            "status-bar" | "status"                => Ok(UpdateOption(StatusBar, method)),
-            "reverse" | "rev"                      => Ok(UpdateOption(Reverse, method)),
-            "center" | "center-alignment"          => Ok(UpdateOption(CenterAlignment, method)),
-            "auto-page" | "auto-paging" | "paging" => Ok(UpdateOption(AutoPaging, method)),
-            "fit" | "fit-to"                       => Ok(UpdateOption(FitTo, method)),
+            "status-bar" | "status"                => Ok(UpdateOption(StatusBar, method, series)),
+            "reverse" | "rev"                      => Ok(UpdateOption(Reverse, method, series)),
+            "center" | "center-alignment"          => Ok(UpdateOption(CenterAlignment, method, series)),
+            "auto-page" | "auto-paging" | "paging" => Ok(UpdateOption(AutoPaging, method, series)),
+            "fit" | "fit-to"                       => Ok(UpdateOption(FitTo, method, series)),
             _  => Err(format!("Unknown option: {}", name))
         }
     })

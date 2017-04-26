@@ -66,7 +66,7 @@ pub enum Operation {
     Shell(bool, bool, Vec<String>), /* async, operation, command_line */
     Shuffle(bool), /* Fix current */
     Sort,
-    UpdateOption(StateName, OptionUpdateMethod),
+    UpdateOption(StateName, OptionUpdateMethod, Vec<String>),
     User(Vec<(String, String)>),
     Views(Option<usize>, Option<usize>),
     ViewsFellow(bool), /* for_rows */
@@ -285,11 +285,11 @@ fn test_parse() {
     assert_eq!(p("@expand --recursive"), Expand(true, None));
 
     // Option
-    assert_eq!(p("@toggle status"), UpdateOption(StateName::StatusBar, StateUpdater::Toggle));
-    assert_eq!(p("@toggle status-bar"), UpdateOption(StateName::StatusBar, StateUpdater::Toggle));
-    assert_eq!(p("@enable center"), UpdateOption(StateName::CenterAlignment, StateUpdater::Enable));
-    assert_eq!(p("@disable center-alignment"), UpdateOption(StateName::CenterAlignment, StateUpdater::Disable));
-    assert_eq!(p("@disable fit"), UpdateOption(StateName::Fit, StateUpdater::Disable));
+    assert_eq!(p("@toggle status"), UpdateOption(StateName::StatusBar, StateUpdater::Toggle, vec!()));
+    assert_eq!(p("@toggle status-bar"), UpdateOption(StateName::StatusBar, StateUpdater::Toggle, vec!()));
+    assert_eq!(p("@enable center"), UpdateOption(StateName::CenterAlignment, StateUpdater::Enable, vec!()));
+    assert_eq!(p("@disable center-alignment"), UpdateOption(StateName::CenterAlignment, StateUpdater::Disable, vec!()));
+    assert_eq!(p("@disable fit"), UpdateOption(StateName::Fit, StateUpdater::Disable, vec!()));
 
     // Multi
     assert_eq!(p("; @first ; @next"), Multi(vec![First(None, false), Next(None, false)]));

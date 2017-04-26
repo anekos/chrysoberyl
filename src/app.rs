@@ -248,8 +248,8 @@ impl App {
                     self.on_shuffle(&mut updated, fix_current),
                 Sort =>
                     self.on_sort(&mut updated),
-                UpdateOption(ref name, ref modifier) =>
-                    self.on_update_option(&mut updated, name, modifier),
+                UpdateOption(ref name, ref modifier, ref series) =>
+                    self.on_update_option(&mut updated, name, modifier, series),
                 User(ref data) =>
                     self.on_user(data),
                 Views(cols, rows) =>
@@ -561,16 +561,20 @@ impl App {
         updated.label = true;
     }
 
-    fn on_update_option(&mut self, updated: &mut Updated, name: &StateName, method: &OptionUpdateMethod) {
+    fn on_update_option(&mut self, updated: &mut Updated, name: &StateName, method: &OptionUpdateMethod, series: &[String]) {
         use state::StateName::*;
 
-        match *name {
-            StatusBar => self.states.status_bar.update(method),
-            Reverse => self.states.reverse.update(method),
-            CenterAlignment => self.states.view.center_alignment.update(method),
-            AutoPaging => self.states.auto_paging.update(method),
-            FitTo => self.states.fit_to.update(method),
+        let result = match *name {
+            StatusBar => self.states.status_bar.update_with_series_reader(method, series),
+            Reverse => self.states.reverse.update_with_series_reader(method, series),
+            CenterAlignment => self.states.view.center_alignment.update_with_series_reader(method, series),
+            AutoPaging => self.states.auto_paging.update_with_series_reader(method, series),
+            FitTo => self.states.fit_to.update_with_series_reader(method, series),
         };
+
+        if let Err(err) = result {
+            puts_error!("at" => "on_update", "reason" => err);
+        }
 
         match *name {
             StatusBar => self.update_label_visibility(),

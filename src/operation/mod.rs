@@ -285,11 +285,11 @@ fn test_parse() {
     assert_eq!(p("@expand --recursive"), Expand(true, None));
 
     // Option
-    assert_eq!(p("@toggle status"), UpdateOption(StateName::StatusBar, StateUpdater::Toggle, vec!()));
-    assert_eq!(p("@toggle status-bar"), UpdateOption(StateName::StatusBar, StateUpdater::Toggle, vec!()));
-    assert_eq!(p("@enable center"), UpdateOption(StateName::CenterAlignment, StateUpdater::Enable, vec!()));
-    assert_eq!(p("@disable center-alignment"), UpdateOption(StateName::CenterAlignment, StateUpdater::Disable, vec!()));
-    assert_eq!(p("@disable fit"), UpdateOption(StateName::Fit, StateUpdater::Disable, vec!()));
+    assert_eq!(p("@toggle status"), UpdateOption(StateName::StatusBar, OptionUpdateMethod::Toggle, vec!()));
+    assert_eq!(p("@toggle status-bar"), UpdateOption(StateName::StatusBar, OptionUpdateMethod::Toggle, vec!()));
+    assert_eq!(p("@enable center"), UpdateOption(StateName::CenterAlignment, OptionUpdateMethod::Enable, vec!()));
+    assert_eq!(p("@disable center-alignment"), UpdateOption(StateName::CenterAlignment, OptionUpdateMethod::Disable, vec!()));
+    assert_eq!(p("@disable fit"), UpdateOption(StateName::FitTo, OptionUpdateMethod::Disable, vec!()));
 
     // Multi
     assert_eq!(p("; @first ; @next"), Multi(vec![First(None, false), Next(None, false)]));

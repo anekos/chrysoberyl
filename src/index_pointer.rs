@@ -118,7 +118,7 @@ impl IndexPointer {
         result
     }
 
-    pub fn fix(&self, x: usize, multiply: bool) -> usize {
+    fn fix(&self, x: usize, multiply: bool) -> usize {
         if multiply {
             x * self.multiplier
         } else {

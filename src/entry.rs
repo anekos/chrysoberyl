@@ -58,9 +58,11 @@ pub struct MetaEntry {
     pub value: String
 }
 
-pub enum SearchKey {
-    Path(String),
-    WithIndex(String, usize),
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SearchKey {
+    pub path: String,
+    pub index: Option<usize>
+
 }
 
 
@@ -293,7 +295,7 @@ impl EntryContainer {
         result
     }
 
-    pub fn search(&self, key: SearchKey) -> Option<usize> {
+    pub fn search(&self, key: &SearchKey) -> Option<usize> {
         self.files.iter().position(|it| key.matches(it))
     }
 
@@ -426,9 +428,10 @@ impl MetaEntry {
 
 impl SearchKey {
     pub fn matches(&self, entry: &Entry) -> bool {
-        match *self {
-            SearchKey::Path(ref path) => Self::matches_with_path(&entry.content, path),
-            SearchKey::WithIndex(ref path, index) => Self::matches_with_path_and_index(&entry.content, path, index),
+        if let Some(index) = self.index {
+            Self::matches_with_path_and_index(&entry.content, &self.path, index)
+        } else {
+            Self::matches_with_path(&entry.content, &self.path)
         }
     }
 

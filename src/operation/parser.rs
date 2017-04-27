@@ -7,7 +7,7 @@ use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse
 
 use color::Color;
 use config::ConfigSource;
-use entry::{Meta, MetaEntry, new_meta_from_vec};
+use entry::{Meta, MetaEntry, new_meta_from_vec, SearchKey};
 use filer;
 use gui::ColorTarget;
 use mapping::{InputType, mouse_mapping};
@@ -398,6 +398,25 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
             }
         }
         Ok(Operation::Shell(async, read_operations, cl))
+    })
+}
+
+pub fn parse_show(args: &[String]) -> Result<Operation, String> {
+    let mut key = SearchKey { path: o!(""), index: None };
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut key.path).add_argument("path", Store, "File path / URL");
+        ap.refer(&mut key.index).add_argument("page", StoreOption, "Page");
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        if let Some(mut index) = key.index.as_mut() {
+            if *index == 0 {
+                return Err(o!("Page is 1 origin"))
+            }
+            *index -= 1;
+        }
+        Ok(Operation::Show(key))
     })
 }
 

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::io;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -56,6 +56,13 @@ pub type MetaSlice = [MetaEntry];
 pub struct MetaEntry {
     pub key: String,
     pub value: String
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SearchKey {
+    pub path: String,
+    pub index: Option<usize>
+
 }
 
 
@@ -288,6 +295,10 @@ impl EntryContainer {
         result
     }
 
+    pub fn search(&self, key: &SearchKey) -> Option<usize> {
+        self.files.iter().position(|it| key.matches(it))
+    }
+
     fn push_file(&mut self, pointer: &mut IndexPointer, file: &PathBuf, meta: &MetaSlice) -> bool {
         let path = file.canonicalize().expect("canonicalize");
         self.push_entry(
@@ -411,6 +422,45 @@ pub fn new_meta_from_vec(meta: Vec<MetaEntry>) -> Meta {
 impl MetaEntry {
     pub fn new_without_value(key: String) -> MetaEntry {
         MetaEntry { key: key, value: o!("true") }
+    }
+}
+
+
+impl SearchKey {
+    pub fn matches(&self, entry: &Entry) -> bool {
+        if let Some(index) = self.index {
+            Self::matches_with_path_and_index(&entry.content, &self.path, index)
+        } else {
+            Self::matches_with_path(&entry.content, &self.path)
+        }
+    }
+
+    fn matches_with_path(entry: &EntryContent, key: &str) -> bool {
+        use self::EntryContent::*;
+
+        match *entry {
+            Http(_, ref url) =>
+                url == key,
+            File(ref path) =>
+                Path::new(key) == path,
+            Archive(ref path, _) | Pdf(ref path, _, _) =>
+                Path::new(key) == **path,
+        }
+    }
+
+    fn matches_with_path_and_index(entry: &EntryContent, key_path: &str, key_index: usize) -> bool {
+        use self::EntryContent::*;
+
+        match *entry {
+            Http(_, ref url) =>
+                url == key_path,
+            File(ref path) =>
+                Path::new(key_path) == path,
+            Archive(ref path, ref entry) =>
+                Path::new(key_path) == **path && key_index == entry.index,
+            Pdf(ref path, _, index) =>
+                Path::new(key_path) == **path && key_index == index,
+        }
     }
 }
 

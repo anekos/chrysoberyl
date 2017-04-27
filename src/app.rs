@@ -23,7 +23,7 @@ use config;
 use constant;
 use controller;
 use editor;
-use entry::{Entry, EntryContent, EntryContainer, EntryContainerOptions, MetaSlice, new_meta};
+use entry::{Entry, EntryContent, EntryContainer, EntryContainerOptions, MetaSlice, new_meta, SearchKey};
 use events;
 use filer;
 use fragile_input::new_fragile_input;
@@ -244,6 +244,8 @@ impl App {
                     self.on_scroll(direction, operation, scroll_size),
                 Shell(async, read_operations, ref command_line) =>
                     shell::call(async, command_line, option!(read_operations, self.tx.clone())),
+                Show(ref key) =>
+                    self.on_show(&mut updated, key),
                 Shuffle(fix_current) =>
                     self.on_shuffle(&mut updated, fix_current),
                 Sort =>
@@ -502,16 +504,19 @@ impl App {
     fn on_push_archive_entry(&mut self, updated: &mut Updated, archive_path: &PathBuf, entry: &ArchiveEntry) {
         updated.pointer = self.entries.push_archive_entry(&mut self.pointer, archive_path, entry);
         updated.label = true;
+        self.do_show(updated);
     }
 
     fn on_push_http_cache(&mut self, updated: &mut Updated, file: &PathBuf, url: &str, meta: &MetaSlice) {
         updated.pointer = self.entries.push_http_cache(&mut self.pointer, file, url, meta);
         updated.label = true;
+        self.do_show(updated);
     }
 
     fn on_push_path(&mut self, updated: &mut Updated, file: PathBuf, meta: &MetaSlice) {
         updated.pointer = self.entries.push_path(&mut self.pointer, &file, meta);
         updated.label = true;
+        self.do_show(updated);
     }
 
     fn on_push_pdf(&mut self, updated: &mut Updated, file: PathBuf, meta: &MetaSlice) {
@@ -519,6 +524,7 @@ impl App {
         let doc = PopplerDocument::new_from_file(&file);
         updated.pointer = self.entries.push_pdf(&mut self.pointer, &file, doc, meta);
         updated.label = true;
+        self.do_show(updated);
     }
 
     fn on_push_url(&mut self, url: String, meta: &MetaSlice) {
@@ -545,6 +551,16 @@ impl App {
                 Ok(op) => self.operate(&op),
                 Err(err) => puts_error!("at" => "scroll", "reason" => err),
             }
+        }
+    }
+
+    fn on_show(&mut self, updated: &mut Updated, key: &SearchKey) {
+        let index = self.entries.search(key);
+        if let Some(index) = index {
+            self.pointer.current = Some(index);
+            updated.pointer = true;
+        } else {
+            self.states.show = Some(key.clone());
         }
     }
 
@@ -614,6 +630,15 @@ impl App {
     }
 
     /* Private methods */
+
+    fn do_show(&mut self, updated: &mut Updated) {
+        let index = self.states.show.as_ref().and_then(|key| self.entries.search(key));
+        if let Some(index) = index {
+            self.pointer.current = Some(index);
+            updated.pointer = true;
+            self.states.show = None;
+        }
+    }
 
     fn get_meta(&self, entry: &Entry) -> Option<Result<GenericMetadata, immeta::Error>> {
         use self::EntryContent::*;

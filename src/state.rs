@@ -4,8 +4,9 @@ use std::default::Default;
 
 use gdk_pixbuf::InterpType;
 
-use size::FitTo;
+use entry::SearchKey;
 use option;
+use size::FitTo;
 
 
 pub struct States {
@@ -16,6 +17,7 @@ pub struct States {
     pub view: ViewState,
     pub fit_to: FitTo,
     pub scaling: ScalingMethod,
+    pub show: Option<SearchKey>
 }
 
 boolean_option!(StatusBarValue, STATUS_BAR_DEFAULT, 's', 'S');
@@ -55,7 +57,8 @@ impl States {
                 rows: 1,
                 center_alignment: CenterAlignmentValue::Disabled,
             },
-            scaling: ScalingMethod(InterpType::Bilinear)
+            scaling: ScalingMethod(InterpType::Bilinear),
+            show: None
         }
     }
 }

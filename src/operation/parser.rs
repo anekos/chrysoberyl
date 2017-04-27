@@ -392,7 +392,7 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
     } .and_then(|_| {
         let mut cl: Vec<String> = vec![];
         for it in command_line {
-            cl.push(it);
+            cl.push(expand(&it));
         }
         Ok(Operation::Shell(async, read_operations, cl))
     })

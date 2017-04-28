@@ -235,9 +235,10 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
 
 #[cfg(test)]#[test]
 fn test_parse() {
+    use std::sync::Arc;
+    use std::path::Path;
     use self::Operation::*;
     use mapping::mouse_mapping::Area;
-    use std::sync::Arc;
 
     fn p(s: &str) -> Operation {
         Operation::parse_fuzziness(s).unwrap()
@@ -245,6 +246,10 @@ fn test_parse() {
 
     fn q(s: &str) -> Result<Operation, ParsingError> {
         Operation::parse(s)
+    }
+
+    fn pathbuf(s: &str) -> PathBuf {
+        Path::new(s).to_path_buf()
     }
 
     // Simple

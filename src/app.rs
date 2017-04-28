@@ -36,8 +36,9 @@ use operation::{self, Operation, OperationContext, MappingTarget};
 use option::{OptionValue, OptionUpdateMethod};
 use output;
 use shell;
+use shellexpand_wrapper as sh;
 use size::FitTo;
-use state::ScalingMethod;
+use state::{ScalingMethod, STATUS_FORMAT_DEFAULT};
 use state::{States, StateName};
 use termination;
 use utils::path_to_str;
@@ -240,6 +241,8 @@ impl App {
                     updated.pointer = true,
                 Save(ref path, ref index) =>
                     self.on_save(path, index),
+                SetStatusFormat(ref format) =>
+                    self.on_set_status_format(&mut updated, format),
                 Scroll(ref direction, ref operation, scroll_size) =>
                     self.on_scroll(direction, operation, scroll_size),
                 Shell(async, read_operations, ref command_line) =>
@@ -284,8 +287,8 @@ impl App {
         }
 
         if updated.image || updated.label {
-            self.update_label();
             self.update_env();
+            self.update_label();
         }
     }
 
@@ -545,6 +548,11 @@ impl App {
         }
     }
 
+    fn on_set_status_format(&mut self, updated: &mut Updated, format: &Option<String>) {
+        self.states.status_format = format.clone().unwrap_or_else(|| o!(STATUS_FORMAT_DEFAULT));
+        updated.label = true;
+    }
+
     fn on_scroll(&mut self, direction: &Direction, operation: &[String], scroll_size: f64) {
         if !self.gui.scroll_views(direction, scroll_size, self.pointer.counted()) && !operation.is_empty() {
             match Operation::parse_from_vec(operation) {
@@ -655,7 +663,7 @@ impl App {
 
     fn puts_event_with_current(&self, event: &str, data: Option<&[(String, String)]>) {
         let mut pairs = vec![(o!("event"), o!(event))];
-        pairs.extend_from_slice(self.current_env().as_slice());
+        pairs.extend_from_slice(self.current_env(false).as_slice());
         if let Some(data) = data {
             pairs.extend_from_slice(data);
         }
@@ -703,7 +711,7 @@ impl App {
 
     fn update_env(&mut self) {
         let mut new_keys = HashSet::<String>::new();
-        for (name, value) in self.current_env() {
+        for (name, value) in self.current_env(true) {
             env::set_var(constant::env_name(&name), value);
             new_keys.insert(name);
         }
@@ -713,36 +721,70 @@ impl App {
         self.current_env_keys = new_keys;
     }
 
-    fn current_env(&self) -> Vec<(String, String)> {
+    fn current_env(&self, include_heplers: bool) -> Vec<(String, String)> {
         use entry::EntryContent::*;
 
         let mut envs: Vec<(String, String)> = vec![];
+        let len = self.entries.len();
+        let gui_len = self.gui.len();
 
         if let Some((entry, index)) = self.entries.current(&self.pointer) {
             for entry in entry.meta.iter() {
                 envs.push((format!("meta_{}", entry.key), entry.value.clone()));
             }
+
+            // Path means local file path, url, or pdf file path
             match entry.content {
                 File(ref path) => {
                     envs.push((o!("file"), o!(path_to_str(path))));
+                    envs.push((o!("path"), o!(path_to_str(path))));
                 }
                 Http(ref path, ref url) => {
                     envs.push((o!("file"), o!(path_to_str(path))));
                     envs.push((o!("url"), o!(url)));
+                    envs.push((o!("path"), o!(url)));
                 }
                 Archive(ref archive_file, ref entry) => {
                     envs.push((o!("file"), entry.name.clone()));
                     envs.push((o!("archive_file"), o!(path_to_str(archive_file))));
+                    envs.push((o!("path"), entry.name.clone()));
                 },
                 Pdf(ref pdf_file, _, index) => {
                     envs.push((o!("file"), o!(path_to_str(pdf_file))));
                     envs.push((o!("pdf_page"), s!(index)));
+                    envs.push((o!("path"), o!(path_to_str(pdf_file))));
                 }
             }
-            let last_page = min!(index + self.gui.len(), self.entries.len());
+
+            let last_page = min!(index + gui_len, len);
             envs.push((o!("page"), s!(index + 1)));
             envs.push((o!("last_page"), s!(last_page)));
             envs.push((o!("count"), s!(self.entries.len())));
+
+            if include_heplers {
+                envs.push((o!("paging"), {
+                    let (from, to) = (index + 1, min!(index + gui_len, len));
+                    if gui_len > 1 {
+                        if self.states.reverse.is_enabled() {
+                            format!("{}←{}", to, from)
+                        } else {
+                            format!("{}→{}", from, to)
+                        }
+                    } else {
+                        format!("{}", from)
+                    }
+                }));
+
+                envs.push((o!("flags"), {
+                    let mut text = o!("");
+                    text.push(self.states.fit_to.to_char());
+                    text.push(self.states.reverse.to_char());
+                    text.push(self.states.auto_paging.to_char());
+                    text.push(self.states.view.center_alignment.to_char());
+                    text
+                }));
+            }
+
         }
 
         envs
@@ -750,29 +792,8 @@ impl App {
 
     fn update_label(&self) {
         let text =
-            if let Some((entry, index)) = self.entries.current(&self.pointer) {
-                let len = self.entries.len();
-                let gui_len = self.gui.len();
-                let (from, to) = (index + 1, min!(index + gui_len, len));
-                let mut text =
-                    if gui_len > 1 {
-                        if self.states.reverse.is_enabled() {
-                            format!("[{}←{}/{}]", to, from, len)
-                        } else {
-                            format!("[{}→{}/{}]", from, to, len)
-                        }
-                    } else {
-                        format!("[{}/{}]", from, len)
-                    };
-                text.push(' ');
-                text.push_str(&entry.display_path());
-                text.push_str(" {");
-                text.push(self.states.fit_to.to_char());
-                text.push(self.states.reverse.to_char());
-                text.push(self.states.auto_paging.to_char());
-                text.push(self.states.view.center_alignment.to_char());
-                text.push('}');
-                text
+            if self.entries.current(&self.pointer).is_some() {
+                sh::expand(&self.states.status_format)
             } else {
                 o!(constant::DEFAULT_INFORMATION)
             };

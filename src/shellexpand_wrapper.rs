@@ -6,10 +6,6 @@ use shellexpand;
 
 
 
-pub fn pathbuf(s: &str) -> PathBuf {
-    Path::new(s).to_path_buf()
-}
-
 pub fn expand(s: &str) -> String {
     shellexpand::full_with_context_no_errors(&s, home_dir, context).into_owned()
 }

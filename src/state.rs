@@ -17,7 +17,8 @@ pub struct States {
     pub view: ViewState,
     pub fit_to: FitTo,
     pub scaling: ScalingMethod,
-    pub show: Option<SearchKey>
+    pub show: Option<SearchKey>,
+    pub status_format: String,
 }
 
 boolean_option!(StatusBarValue, STATUS_BAR_DEFAULT, 's', 'S');
@@ -44,6 +45,9 @@ pub enum StateName {
 pub struct ScalingMethod(pub InterpType);
 
 
+pub const STATUS_FORMAT_DEFAULT: &'static str = "[$CHRYSOBERYL_PAGING/$CHRYSOBERYL_COUNT] $CHRYSOBERYL_PATH {$CHRYSOBERYL_FLAGS}";
+
+
 impl States {
     pub fn new() -> States {
         States {
@@ -52,12 +56,13 @@ impl States {
             reverse: ReverseValue::Disabled,
             auto_paging: AutoPagingValue::Disabled,
             fit_to: FitTo::Cell,
+            status_format: o!(STATUS_FORMAT_DEFAULT),
             view: ViewState {
                 cols: 1,
                 rows: 1,
                 center_alignment: CenterAlignmentValue::Disabled,
             },
-            scaling: ScalingMethod(InterpType::Bilinear),
+            scaling: ScalingMethod::default(),
             show: None
         }
     }

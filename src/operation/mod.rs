@@ -61,6 +61,7 @@ pub enum Operation {
     Random,
     Refresh,
     Save(PathBuf, Option<usize>),
+    SetStatusFormat(Option<String>),
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     Shell(bool, bool, Vec<String>), /* async, operation, command_line */
     Show(entry::SearchKey),
@@ -217,6 +218,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@show"                      => parse_show(whole),
             "@shuffle"                   => Ok(Shuffle(false)),
             "@sort"                      => Ok(Sort),
+            "@status"                    => parse_status(whole),
             "@toggle"                    => parse_option_updater(whole, OptionUpdateMethod::Toggle),
             "@user"                      => Ok(Operation::user(args.to_vec())),
             "@views"                     => parse_views(whole),

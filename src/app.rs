@@ -38,7 +38,7 @@ use output;
 use shell;
 use shellexpand_wrapper as sh;
 use size::FitTo;
-use state::ScalingMethod;
+use state::{ScalingMethod, STATUS_FORMAT_DEFAULT};
 use state::{States, StateName};
 use termination;
 use utils::path_to_str;
@@ -241,6 +241,8 @@ impl App {
                     updated.pointer = true,
                 Save(ref path, ref index) =>
                     self.on_save(path, index),
+                SetStatusFormat(ref format) =>
+                    self.on_set_status_format(&mut updated, format),
                 Scroll(ref direction, ref operation, scroll_size) =>
                     self.on_scroll(direction, operation, scroll_size),
                 Shell(async, read_operations, ref command_line) =>
@@ -546,6 +548,11 @@ impl App {
         }
     }
 
+    fn on_set_status_format(&mut self, updated: &mut Updated, format: &Option<String>) {
+        self.states.status_format = format.clone().unwrap_or_else(|| o!(STATUS_FORMAT_DEFAULT));
+        updated.label = true;
+    }
+
     fn on_scroll(&mut self, direction: &Direction, operation: &[String], scroll_size: f64) {
         if !self.gui.scroll_views(direction, scroll_size, self.pointer.counted()) && !operation.is_empty() {
             match Operation::parse_from_vec(operation) {
@@ -786,7 +793,7 @@ impl App {
     fn update_label(&self) {
         let text =
             if self.entries.current(&self.pointer).is_some() {
-                sh::expand("[$CHRYSOBERYL_PAGING/$CHRYSOBERYL_COUNT] $CHRYSOBERYL_PATH {$CHRYSOBERYL_FLAGS}")
+                sh::expand(&self.states.status_format)
             } else {
                 o!(constant::DEFAULT_INFORMATION)
             };

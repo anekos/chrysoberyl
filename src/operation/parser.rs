@@ -418,6 +418,10 @@ pub fn parse_show(args: &[String]) -> Result<Operation, String> {
     })
 }
 
+pub fn parse_status(args: &[String]) -> Result<Operation, String> {
+    Ok(Operation::SetStatusFormat(args.get(1).cloned()))
+}
+
 pub fn parse_views(args: &[String]) -> Result<Operation, String> {
     let mut for_rows = false;
     let mut rows = None;

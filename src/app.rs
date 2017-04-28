@@ -737,22 +737,22 @@ impl App {
             match entry.content {
                 File(ref path) => {
                     envs.push((o!("file"), o!(path_to_str(path))));
-                    envs.push((o!("path"), o!(path_to_str(path))));
+                    if include_helpers { envs.push((o!("path"), o!(path_to_str(path)))); }
                 }
                 Http(ref path, ref url) => {
                     envs.push((o!("file"), o!(path_to_str(path))));
                     envs.push((o!("url"), o!(url)));
-                    envs.push((o!("path"), o!(url)));
+                    if include_helpers { envs.push((o!("path"), o!(url))); }
                 }
                 Archive(ref archive_file, ref entry) => {
                     envs.push((o!("file"), entry.name.clone()));
                     envs.push((o!("archive_file"), o!(path_to_str(archive_file))));
-                    envs.push((o!("path"), entry.name.clone()));
+                    if include_helpers { envs.push((o!("path"), entry.name.clone())); }
                 },
                 Pdf(ref pdf_file, _, index) => {
                     envs.push((o!("file"), o!(path_to_str(pdf_file))));
                     envs.push((o!("pdf_page"), s!(index)));
-                    envs.push((o!("path"), o!(path_to_str(pdf_file))));
+                    if include_helpers { envs.push((o!("path"), o!(path_to_str(pdf_file)))); }
                 }
             }
 

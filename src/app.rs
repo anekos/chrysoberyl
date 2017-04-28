@@ -721,7 +721,7 @@ impl App {
         self.current_env_keys = new_keys;
     }
 
-    fn current_env(&self, include_heplers: bool) -> Vec<(String, String)> {
+    fn current_env(&self, include_helpers: bool) -> Vec<(String, String)> {
         use entry::EntryContent::*;
 
         let mut envs: Vec<(String, String)> = vec![];
@@ -761,7 +761,7 @@ impl App {
             envs.push((o!("last_page"), s!(last_page)));
             envs.push((o!("count"), s!(self.entries.len())));
 
-            if include_heplers {
+            if include_helpers {
                 envs.push((o!("paging"), {
                     let (from, to) = (index + 1, min!(index + gui_len, len));
                     if gui_len > 1 {

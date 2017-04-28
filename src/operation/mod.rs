@@ -207,7 +207,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@push"                      => parse_push(whole, |it, meta| Push(sh::expand(&it), meta)),
             "@push-pdf"                  => parse_push(whole, |it, meta| PushPdf(sh::expand_to_pathbuf(&it), meta)),
             "@push-file"                 => parse_push(whole, |it, meta| PushFile(sh::expand_to_pathbuf(&it), meta)),
-            "@push-url"                  => parse_push(whole, |it, meta| PushURL(it, meta)),
+            "@push-url"                  => parse_push(whole, PushURL),
             "@quit"                      => Ok(Quit),
             "@random" | "@rand"          => Ok(Random),
             "@refresh" | "@r"            => Ok(Refresh),

@@ -1,6 +1,6 @@
 
 use std::io::sink;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse, StoreOption, List, PushConst};
@@ -12,6 +12,7 @@ use filer;
 use gui::ColorTarget;
 use mapping::{InputType, mouse_mapping};
 use option::OptionUpdateMethod;
+use shellexpand_wrapper as sh;
 use size::FitTo;
 
 use operation::*;
@@ -91,7 +92,7 @@ pub fn parse_copy_or_move(args: &[String]) -> Result<(PathBuf, filer::IfExist), 
         ap.refer(&mut destination).add_argument("destination", Store, "Destination directory").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        (o!(expand_to_pathbuf(&destination)), if_exist)
+        (o!(sh::expand_to_pathbuf(&destination)), if_exist)
     })
 }
 
@@ -147,7 +148,7 @@ pub fn parse_expand(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut base).add_argument("base-path", StoreOption, "Base path");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Expand(recursive, base.map(|it| pathbuf(&it)))
+        Operation::Expand(recursive, base.map(|it| Path::new(&it).to_path_buf()))
     })
 }
 
@@ -344,7 +345,7 @@ pub fn parse_save(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut path).add_argument("path", Store, "Save to").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Save(expand_to_pathbuf(&path), index)
+        Operation::Save(sh::expand_to_pathbuf(&path), index)
     })
 }
 
@@ -392,7 +393,7 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
     } .and_then(|_| {
         let mut cl: Vec<String> = vec![];
         for it in command_line {
-            cl.push(expand(&it));
+            cl.push(sh::expand(&it));
         }
         Ok(Operation::Shell(async, read_operations, cl))
     })

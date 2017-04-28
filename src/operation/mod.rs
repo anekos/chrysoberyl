@@ -1,12 +1,12 @@
 
 use std::fmt;
-use std::path:: PathBuf;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 use cmdline_parser::Parser;
 
-use color::Color;
 use archive::ArchiveEntry;
+use color::Color;
 use config::ConfigSource;
 use entry::Meta;
 use entry;
@@ -14,13 +14,12 @@ use filer;
 use gui::{ColorTarget, Direction};
 use mapping::{self, mouse_mapping};
 use option::OptionUpdateMethod;
-use self::utils::*;
+use shellexpand_wrapper as sh;
 use size::FitTo;
 use state::ScalingMethod;
 use state::StateName;
 
 mod parser;
-mod utils;
 
 
 
@@ -195,7 +194,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@first" | "@f"              => parse_move(whole, First),
             "@force-flush"               => Ok(ForceFlush),
             "@fit"                       => parse_fit(whole),
-            "@fragile"                   => parse_command1(whole, |it| Fragile(expand_to_pathbuf(&it))),
+            "@fragile"                   => parse_command1(whole, |it| Fragile(sh::expand_to_pathbuf(&it))),
             "@input"                     => parse_input(whole),
             "@last" | "@l"               => parse_move(whole, Last),
             "@load"                      => parse_load(whole),
@@ -204,9 +203,9 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@move"                      => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Move(path, if_exist))),
             "@next" | "@n"               => parse_move(whole, Next),
             "@prev" | "@p" | "@previous" => parse_move(whole, Previous),
-            "@push"                      => parse_push(whole, |it, meta| Push(expand(&it), meta)),
-            "@push-pdf"                  => parse_push(whole, |it, meta| PushPdf(expand_to_pathbuf(&it), meta)),
-            "@push-file"                 => parse_push(whole, |it, meta| PushFile(expand_to_pathbuf(&it), meta)),
+            "@push"                      => parse_push(whole, |it, meta| Push(sh::expand(&it), meta)),
+            "@push-pdf"                  => parse_push(whole, |it, meta| PushPdf(sh::expand_to_pathbuf(&it), meta)),
+            "@push-file"                 => parse_push(whole, |it, meta| PushFile(sh::expand_to_pathbuf(&it), meta)),
             "@push-url"                  => parse_push(whole, |it, meta| PushURL(it, meta)),
             "@quit"                      => Ok(Quit),
             "@random" | "@rand"          => Ok(Random),

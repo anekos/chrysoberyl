@@ -4,7 +4,7 @@ use std::path::Path;
 use std::str::FromStr;
 
 use cairo::{Context, ImageSurface, Format};
-use gdk_pixbuf::{Pixbuf, PixbufAnimation};
+use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufAnimationExt};
 use gtk::prelude::*;
 use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment};
 
@@ -271,6 +271,8 @@ impl Cell {
 
     pub fn draw_animation(&self, pixbuf: &PixbufAnimation) {
         self.image.set_from_animation(pixbuf);
+        let (w, h) = (pixbuf.get_width(), pixbuf.get_height());
+        self.window.set_size_request(w, h);
     }
 
     pub fn draw_error(&self, error: &image_buffer::Error, cell_size: &Size, fit_to: &FitTo, colors: &Colors) {

@@ -431,10 +431,7 @@ impl App {
     fn on_map(&mut self, target: &MappingTarget, operation: &[String]) {
         use self::MappingTarget::*;
 
-        // FIXME
-        puts_event!("map",
-                    "target" => format!("{:?}", target),
-                    "operation" => format!("{:?}", operation));
+        // puts_event!("map", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
         match *target {
             Key(ref key) =>
                 self.mapping.register_key(key, operation),

@@ -349,6 +349,20 @@ pub fn parse_save(args: &[String]) -> Result<Operation, String> {
     })
 }
 
+pub fn parse_set_env(args: &[String]) -> Result<Operation, String> {
+    let mut name = o!("");
+    let mut value: Option<String> = None;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut name).add_argument("env-name", Store, "Env name").required();
+        ap.refer(&mut value).add_argument("env-value", StoreOption, "Value");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::SetEnv(name, value.map(|it| sh::expand(&it)))
+    })
+}
+
 pub fn parse_scaling(args: &[String]) -> Result<Operation, String> {
     let mut scaling_method = ScalingMethod::default();
 

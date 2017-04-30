@@ -241,6 +241,8 @@ impl App {
                     updated.pointer = true,
                 Save(ref path, ref index) =>
                     self.on_save(path, index),
+                SetEnv(ref name, ref value) =>
+                    self.on_set_env(name, value),
                 SetStatusFormat(ref format) =>
                     self.on_set_status_format(&mut updated, format),
                 Scroll(ref direction, ref operation, scroll_size) =>
@@ -545,6 +547,14 @@ impl App {
         let count = index.unwrap_or_else(|| self.pointer.counted()) - 1;
         if let Err(error) = self.gui.save(path, count) {
             puts_error!("at" => "save", "reason" => error)
+        }
+    }
+
+    fn on_set_env(&mut self, name: &str, value: &Option<String>) {
+        if let Some(ref value) = *value {
+            env::set_var(name, value);
+        } else {
+            env::remove_var(name);
         }
     }
 

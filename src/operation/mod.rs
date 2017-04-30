@@ -61,6 +61,7 @@ pub enum Operation {
     Random,
     Refresh,
     Save(PathBuf, Option<usize>),
+    SetEnv(String, Option<String>),
     SetStatusFormat(Option<String>),
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     Shell(bool, bool, Vec<String>), /* async, operation, command_line */
@@ -212,6 +213,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@random" | "@rand"          => Ok(Random),
             "@refresh" | "@r"            => Ok(Refresh),
             "@save"                      => parse_save(whole),
+            "@set-env"                   => parse_set_env(whole),
             "@scaling"                   => parse_scaling(whole),
             "@scroll"                    => parse_scroll(whole),
             "@shell"                     => parse_shell(whole),

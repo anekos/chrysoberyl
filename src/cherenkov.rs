@@ -33,7 +33,7 @@ use rand::{self, Rng, ThreadRng};
 
 use color::Color;
 use entry::Entry;
-use image_buffer;
+use image_buffer::{self, ImageData, ImageBuffer};
 use size::{FitTo, Size};
 use state::ScalingMethod;
 use utils::feq;
@@ -59,7 +59,7 @@ pub struct Cherenkoved {
 }
 
 pub struct CacheEntry {
-    buffer: Pixbuf,
+    image: ImageData,
     cell_size: Size,
     fit_to: FitTo,
     modifiers: Vec<Che>
@@ -71,25 +71,25 @@ impl Cherenkoved {
         Cherenkoved { cache: HashMap::new() }
     }
 
-    pub fn get_pixbuf(&mut self, entry: &Entry, cell_size: &Size, fit_to: &FitTo, scaling: &ScalingMethod) -> Result<Pixbuf, image_buffer::Error> {
+    pub fn get_image_data(&mut self, entry: &Entry, cell_size: &Size, fit_to: &FitTo, scaling: &ScalingMethod) -> Result<ImageData, image_buffer::Error> {
         let new_entry = match self.cache.get(entry) {
             None =>
-                return image_buffer::get_pixbuf(entry, cell_size, fit_to, scaling),
+                return image_buffer::get_image_data(entry, cell_size, fit_to, scaling),
             Some(cache_entry) => {
                 if cache_entry.is_valid(cell_size, fit_to) {
-                    return Ok(cache_entry.buffer.clone())
+                    return Ok(cache_entry.image.clone())
                 }
                 let modifiers = cache_entry.modifiers.clone();
                 match self.re_cherenkov(entry, cell_size, fit_to, scaling, &modifiers) {
-                    Ok(pixbuf) =>
-                        CacheEntry {buffer: pixbuf, cell_size: cell_size.clone(), fit_to: fit_to.clone(), modifiers: modifiers},
+                    Ok(image) =>
+                        CacheEntry {image: image, cell_size: cell_size.clone(), fit_to: fit_to.clone(), modifiers: modifiers},
                     Err(error) =>
                         return Err(error)
                 }
             }
         };
 
-        let result = new_entry.buffer.clone();
+        let result = new_entry.image.clone();
         self.cache.insert(entry.clone(), new_entry);
         Ok(result)
     }
@@ -100,30 +100,42 @@ impl Cherenkoved {
 
     pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, fit_to: &FitTo, che: &Che, scaling: &ScalingMethod) {
         if let Some(mut cache_entry) = self.cache.get_mut(entry) {
-            let buffer = cache_entry.buffer.clone();
-            cache_entry.modifiers.push(che.clone());
-            cache_entry.buffer = cherenkov_pixbuf(buffer, che);
+            if let ImageBuffer::Static(ref mut pixbuf) = cache_entry.image.buffer {
+                cache_entry.modifiers.push(che.clone());
+                *pixbuf = cherenkov_pixbuf(pixbuf.clone(), che);
+            }
             return;
         }
 
-        if let Ok(pixbuf) = self.get_pixbuf(entry, cell_size, fit_to, scaling) {
-            self.cache.insert(
-                entry.clone(),
-                CacheEntry {
-                    buffer: cherenkov_pixbuf(pixbuf, che),
-                    cell_size: cell_size.clone(),
-                    fit_to: fit_to.clone(),
-                    modifiers: vec![],
-                });
+        if let Ok(image) = self.get_image_data(entry, cell_size, fit_to, scaling) {
+            if let ImageBuffer::Static(pixbuf) = image.buffer {
+                self.cache.insert(
+                    entry.clone(),
+                    CacheEntry {
+                        image: ImageData {
+                            buffer: ImageBuffer::Static(cherenkov_pixbuf(pixbuf, che)),
+                            size: image.size
+                        },
+                        cell_size: cell_size.clone(),
+                        fit_to: fit_to.clone(),
+                        modifiers: vec![],
+                    });
+            }
         }
     }
 
-    fn re_cherenkov(&self, entry: &Entry, cell_size: &Size, fit_to: &FitTo, scaling: &ScalingMethod, modifiers: &[Che]) -> Result<Pixbuf, image_buffer::Error> {
-        image_buffer::get_pixbuf(entry, cell_size, fit_to, scaling).map(|mut pixbuf| {
-            for che in modifiers {
-                pixbuf = cherenkov_pixbuf(pixbuf, che);
+    fn re_cherenkov(&self, entry: &Entry, cell_size: &Size, fit_to: &FitTo, scaling: &ScalingMethod, modifiers: &[Che]) -> Result<ImageData, image_buffer::Error> {
+        image_buffer::get_image_data(entry, cell_size, fit_to, scaling).map(|mut image| {
+            match image.buffer {
+                ImageBuffer::Static(mut pixbuf) => {
+                    for che in modifiers {
+                        pixbuf = cherenkov_pixbuf(pixbuf, che);
+                    }
+                    image.buffer = ImageBuffer::Static(pixbuf);
+                }
+                _ => {}
             }
-            pixbuf
+            image
         })
     }
 }

@@ -1,7 +1,7 @@
 
 use std::str::FromStr;
 
-use gdk_pixbuf::Pixbuf;
+use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufAnimationExt};
 
 use option;
 
@@ -29,6 +29,13 @@ impl Size {
     }
 
     pub fn from_pixbuf(pixbuf: &Pixbuf) -> Size {
+        Size {
+            width: pixbuf.get_width(),
+            height: pixbuf.get_height(),
+        }
+    }
+
+    pub fn from_pixbuf_animation(pixbuf: &PixbufAnimation) -> Size {
         Size {
             width: pixbuf.get_width(),
             height: pixbuf.get_height(),

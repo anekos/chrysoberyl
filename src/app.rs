@@ -7,11 +7,8 @@ use std::thread::spawn;
 use std::collections::HashSet;
 
 use encoding::types::EncodingRef;
-use gdk_pixbuf::PixbufAnimation;
 use gtk::Image;
 use gtk::prelude::*;
-use immeta::markers::Gif;
-use immeta::{self, GenericMetadata};
 use libc;
 use rand::distributions::{IndependentSample, Range};
 use rand::{self, ThreadRng};
@@ -23,13 +20,12 @@ use config;
 use constant;
 use controller;
 use editor;
-use entry::{Entry, EntryContent, EntryContainer, EntryContainerOptions, MetaSlice, new_meta, SearchKey};
+use entry::{EntryContainer, EntryContainerOptions, MetaSlice, new_meta, SearchKey};
 use events;
 use filer;
 use fragile_input::new_fragile_input;
 use gui::{Gui, ColorTarget, Direction};
 use http_cache::HttpCache;
-use image_buffer;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
 use operation::{self, Operation, OperationContext, MappingTarget};
@@ -37,7 +33,7 @@ use option::{OptionValue, OptionUpdateMethod};
 use output;
 use shell;
 use shellexpand_wrapper as sh;
-use size::FitTo;
+use size::{Size, FitTo};
 use state::{ScalingMethod, STATUS_FORMAT_DEFAULT};
 use state::{States, StateName};
 use termination;
@@ -284,12 +280,11 @@ impl App {
         }
 
         if updated.image && self.states.initialized {
-            time!("show_image" => self.show_image(to_end));
-            self.puts_event_with_current("show", None);
+            let image_size = time!("show_image" => self.show_image(to_end));
+            self.on_image_updated(image_size);
         }
 
         if updated.image || updated.label {
-            self.update_env();
             self.update_label();
         }
     }
@@ -417,9 +412,7 @@ impl App {
                     puts_error!("at" => "input", "reason" => err)
             }
         } else {
-            self.puts_event_with_current(
-                input.type_name(),
-                Some(&[(o!("name"), o!(input.text()))]));
+            puts_event!("input", "type" => input.type_name(), "name" => input.text());
         }
     }
 
@@ -620,7 +613,9 @@ impl App {
     }
 
     fn on_user(&self, data: &[(String, String)]) {
-        self.puts_event_with_current("user", Some(data));
+        let mut pairs = vec![(o!("event"), o!("user"))];
+        pairs.extend_from_slice(data);
+        output::puts(&pairs);
     }
 
     fn on_views(&mut self, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>) {
@@ -658,42 +653,8 @@ impl App {
         }
     }
 
-    fn get_meta(&self, entry: &Entry) -> Option<Result<GenericMetadata, immeta::Error>> {
-        use self::EntryContent::*;
-
-        match (*entry).content {
-            File(ref path) | Http(ref path, _) =>
-                Some(immeta::load_from_file(&path)),
-            Archive(_, ref entry) =>
-                Some(immeta::load_from_buf(&entry.content)),
-            Pdf(_, _, _) =>
-                None
-        }
-    }
-
-    fn puts_event_with_current(&self, event: &str, data: Option<&[(String, String)]>) {
-        let mut pairs = vec![(o!("event"), o!(event))];
-        pairs.extend_from_slice(self.current_env(false).as_slice());
-        if let Some(data) = data {
-            pairs.extend_from_slice(data);
-        }
-        output::puts(&pairs);
-    }
-
-    fn get_animation(&self, entry: &Entry) -> Option<Result<PixbufAnimation, image_buffer::Error>> {
-        self.get_meta(entry).and_then(|img| {
-            if let Ok(img) = img {
-                if let Ok(gif) = img.into::<Gif>() {
-                    if gif.is_animated() {
-                        return Some(image_buffer::get_pixbuf_animation(entry));
-                    }
-                }
-            }
-            None
-        })
-    }
-
-    fn show_image(&mut self, to_end: bool) {
+    fn show_image(&mut self, to_end: bool) -> Option<Size> {
+        let mut image_size = None;
         let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar.is_enabled());
 
         if self.states.fit_to.is_scrollable() {
@@ -702,28 +663,27 @@ impl App {
 
         for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                match self.get_animation(&entry) {
-                    Some(pixbuf) => match pixbuf {
-                        Ok(animation) => cell.draw_animation(&animation),
-                        Err(error) => cell.draw_error(&error, &cell_size, &self.states.fit_to, &self.gui.colors)
-                    },
-                    None =>
-                        match self.cherenkoved.get_pixbuf(&entry, &cell_size, &self.states.fit_to, &self.states.scaling) {
-                            Ok(pixbuf) => cell.draw(&pixbuf, &cell_size, &self.states.fit_to),
-                            Err(error) => cell.draw_error(&error, &cell_size, &self.states.fit_to, &self.gui.colors)
-                        }
+                match self.cherenkoved.get_image_data(&entry, &cell_size, &self.states.fit_to, &self.states.scaling) {
+                    Ok(image) => {
+                        cell.draw(&image, &cell_size, &self.states.fit_to);
+                        image_size = Some(image.size);
+                    }
+                    Err(error) =>
+                        cell.draw_error(&error, &cell_size, &self.states.fit_to, &self.gui.colors)
                 }
             } else {
                 cell.image.set_from_pixbuf(None);
             }
         }
+
+        image_size
     }
 
-    fn update_env(&mut self) {
+    fn update_env(&mut self, envs: &[(String, String)]) {
         let mut new_keys = HashSet::<String>::new();
-        for (name, value) in self.current_env(true) {
+        for &(ref name, ref value) in envs {
             env::set_var(constant::env_name(&name), value);
-            new_keys.insert(name);
+            new_keys.insert(o!(name));
         }
         for name in self.current_env_keys.difference(&new_keys) {
             env::remove_var(name);
@@ -731,10 +691,11 @@ impl App {
         self.current_env_keys = new_keys;
     }
 
-    fn current_env(&self, include_helpers: bool) -> Vec<(String, String)> {
+    fn on_image_updated(&mut self, image_size: Option<Size>) {
         use entry::EntryContent::*;
 
         let mut envs: Vec<(String, String)> = vec![];
+        let mut envs_sub: Vec<(String, String)> = vec![];
         let len = self.entries.len();
         let gui_len = self.gui.len();
 
@@ -747,22 +708,22 @@ impl App {
             match entry.content {
                 File(ref path) => {
                     envs.push((o!("file"), o!(path_to_str(path))));
-                    if include_helpers { envs.push((o!("path"), o!(path_to_str(path)))); }
+                    envs_sub.push((o!("path"), o!(path_to_str(path))));
                 }
                 Http(ref path, ref url) => {
                     envs.push((o!("file"), o!(path_to_str(path))));
                     envs.push((o!("url"), o!(url)));
-                    if include_helpers { envs.push((o!("path"), o!(url))); }
+                    envs_sub.push((o!("path"), o!(url)))
                 }
                 Archive(ref archive_file, ref entry) => {
                     envs.push((o!("file"), entry.name.clone()));
                     envs.push((o!("archive_file"), o!(path_to_str(archive_file))));
-                    if include_helpers { envs.push((o!("path"), entry.name.clone())); }
+                    envs_sub.push((o!("path"), entry.name.clone()));
                 },
                 Pdf(ref pdf_file, _, index) => {
                     envs.push((o!("file"), o!(path_to_str(pdf_file))));
                     envs.push((o!("pdf_page"), s!(index)));
-                    if include_helpers { envs.push((o!("path"), o!(path_to_str(pdf_file)))); }
+                    envs_sub.push((o!("path"), o!(path_to_str(pdf_file))));
                 }
             }
 
@@ -771,33 +732,37 @@ impl App {
             envs.push((o!("last_page"), s!(last_page)));
             envs.push((o!("count"), s!(self.entries.len())));
 
-            if include_helpers {
-                envs.push((o!("paging"), {
-                    let (from, to) = (index + 1, min!(index + gui_len, len));
-                    if gui_len > 1 {
-                        if self.states.reverse.is_enabled() {
-                            format!("{}←{}", to, from)
-                        } else {
-                            format!("{}→{}", from, to)
-                        }
-                    } else {
-                        format!("{}", from)
-                    }
-                }));
-
-                envs.push((o!("flags"), {
-                    let mut text = o!("");
-                    text.push(self.states.fit_to.to_char());
-                    text.push(self.states.reverse.to_char());
-                    text.push(self.states.auto_paging.to_char());
-                    text.push(self.states.view.center_alignment.to_char());
-                    text
-                }));
+            if let Some(image_size) = image_size {
+                envs.push((o!("width"), s!(image_size.width)));
+                envs.push((o!("height"), s!(image_size.height)));
             }
 
+            envs_sub.push((o!("paging"), {
+                let (from, to) = (index + 1, min!(index + gui_len, len));
+                if gui_len > 1 {
+                    if self.states.reverse.is_enabled() {
+                        format!("{}←{}", to, from)
+                    } else {
+                        format!("{}→{}", from, to)
+                    }
+                } else {
+                    format!("{}", from)
+                }
+            }));
+
+            envs_sub.push((o!("flags"), {
+                let mut text = o!("");
+                text.push(self.states.fit_to.to_char());
+                text.push(self.states.reverse.to_char());
+                text.push(self.states.auto_paging.to_char());
+                text.push(self.states.view.center_alignment.to_char());
+                text
+            }));
         }
 
-        envs
+        puts_show_event(&envs);
+        envs.extend_from_slice(&envs_sub);
+        self.update_env(&envs);
     }
 
     fn update_label(&self) {
@@ -838,3 +803,11 @@ impl Initial {
         }
     }
 }
+
+
+fn puts_show_event(envs: &[(String, String)]) {
+    let mut pairs = vec![(o!("event"), o!("show"))];
+    pairs.extend_from_slice(envs);
+    output::puts(&pairs);
+}
+

@@ -10,7 +10,7 @@ use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment};
 
 use color::Color;
 use constant;
-use image_buffer;
+use image_buffer::{self, ImageBuffer, ImageData};
 use option::OptionValue;
 use size::{FitTo, Size};
 use state::ViewState;
@@ -255,7 +255,17 @@ impl Cell {
         Cell { image: image, window: window }
     }
 
-    pub fn draw(&self, pixbuf: &Pixbuf, cell_size: &Size, fit_to: &FitTo) {
+    pub fn draw(&self, image: &ImageData, cell_size: &Size, fit_to: &FitTo) {
+        match image.buffer {
+            ImageBuffer::Static(ref pixbuf) =>
+                self.draw_pixbuf(pixbuf, cell_size, fit_to),
+            ImageBuffer::Animation(ref pixbuf) =>
+                self.draw_pixbuf_animation(pixbuf),
+
+        }
+    }
+
+    fn draw_pixbuf(&self, pixbuf: &Pixbuf, cell_size: &Size, fit_to: &FitTo) {
         self.image.set_from_pixbuf(Some(pixbuf));
         let (image_width, image_height) = (pixbuf.get_width(), pixbuf.get_height());
         let (ci_width, ci_height) = (min!(image_width, cell_size.width), min!(image_height, cell_size.height));
@@ -269,14 +279,14 @@ impl Cell {
         }
     }
 
-    pub fn draw_animation(&self, pixbuf: &PixbufAnimation) {
+    fn draw_pixbuf_animation(&self, pixbuf: &PixbufAnimation) {
         self.image.set_from_animation(pixbuf);
         let (w, h) = (pixbuf.get_width(), pixbuf.get_height());
         self.window.set_size_request(w, h);
     }
 
     pub fn draw_error(&self, error: &image_buffer::Error, cell_size: &Size, fit_to: &FitTo, colors: &Colors) {
-        self.draw(
+        self.draw_pixbuf(
             &error.get_pixbuf(cell_size, &colors.error, &colors.error_background),
             cell_size,
             fit_to);

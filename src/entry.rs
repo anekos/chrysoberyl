@@ -335,11 +335,7 @@ impl EntryContainer {
     fn is_valid_image_file(&self, path: &PathBuf) -> bool {
         let opt = &self.options;
 
-        if !is_valid_image_filename(path) {
-            return false;
-        }
-
-        if !opt.needs_image_info() {
+        if !opt.needs_image_info() && is_valid_image_filename(path){
             return true;
         }
 

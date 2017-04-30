@@ -328,7 +328,7 @@ impl EntryContainer {
 
         match (*entry).content {
             File(ref path) | Http(ref path, _) => self.is_valid_image_file(path),
-            Archive(_, _) | Pdf(_, _, _)=> true, // FIXME archive
+            Archive(_, _) | Pdf(_, _, _) => true, // FIXME archive
         }
     }
 

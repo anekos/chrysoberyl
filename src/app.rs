@@ -763,6 +763,8 @@ impl App {
     }
 
     fn update_label(&self) {
+        env::set_var(constant::env_name("count"), s!(self.entries.len()));
+
         let text =
             if self.entries.current(&self.pointer).is_some() {
                 sh::expand(&self.states.status_format)

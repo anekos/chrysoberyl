@@ -1,4 +1,5 @@
 
+use std::collections::VecDeque;
 use std::fs::{File, create_dir_all};
 use std::io::{BufWriter, Write, Read};
 use std::path::PathBuf;
@@ -17,11 +18,12 @@ use operation::Operation;
 use sorting_buffer::SortingBuffer;
 
 
+type TID = usize;
 
 #[derive(Clone)]
 pub struct HttpCache {
     app_tx: Sender<Operation>,
-    main_tx: Sender<Getter>
+    main_tx: Sender<Getter>,
 }
 
 #[derive(Clone)]
@@ -44,7 +46,7 @@ enum Getter {
 
 impl HttpCache {
     pub fn new(max_threads: u8, app_tx: Sender<Operation>) -> HttpCache {
-        let main_tx = getter_main(max_threads, app_tx.clone());
+        let main_tx = main(max_threads, app_tx.clone());
         HttpCache { app_tx: app_tx, main_tx: main_tx }
     }
 
@@ -64,79 +66,60 @@ impl HttpCache {
 }
 
 
-fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
+fn main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
     let (main_tx, main_rx) = channel();
-
-    fn stacks_to_string(stacks: &[usize]) -> String {
-        let mut result = o!("");
-        for (index, stack) in stacks.iter().enumerate() {
-            if index > 0 { result.push(','); }
-            result.push_str(&s!(stack));
-        }
-        result
-    }
 
     spawn(clone_army!([main_tx] move || {
         use self::Getter::*;
 
-        let mut stacks: Vec<usize> = vec![];
-        let mut threads: Vec<Sender<Request>> = vec![];
         let mut serial: usize = 0;
-        let mut queued: usize = 0;
         let mut buffer: SortingBuffer<Request> = SortingBuffer::new(serial);
+        let mut threads: Vec<Sender<Request>> = vec![];
+        let mut waiting: Vec<TID> = vec![];
+        let mut queued = VecDeque::<Request>::new();
 
-        for index in 0..max_threads as usize {
-            stacks.push(0);
-            threads.push(getter_thread(index, main_tx.clone()));
+        for thread_id in 0..max_threads as usize {
+            threads.push(processor(thread_id, main_tx.clone()));
+            waiting.push(thread_id);
         }
 
         while let Ok(it) = main_rx.recv() {
             match it {
                 Queue(url, cache_filepath, meta) => {
-                    let mut min_index = 0;
-                    let mut min_stack = <usize>::max_value();
-                    for (index, stack) in stacks.iter().enumerate() {
-                        if *stack < min_stack {
-                            min_index = index;
-                            min_stack = *stack;
-                        }
-                    }
-
-                    queued += 1;
-
-                    stacks[min_index] += 1;
-
                     let request = Request { serial: serial, url: url.clone(), cache_filepath: cache_filepath, meta: meta };
                     serial += 1;
+                    if let Some(worker) = waiting.pop() {
+                        threads[worker].send(request).unwrap();
+                    } else {
+                        queued.push_back(request);
+                        puts!("event" => "http/queue", "url" => o!(&url), "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
+                    }
 
-                    threads[min_index].send(request).unwrap();
-
-                    puts!("event" => "http/get", "thread_id" => s!(min_index), "url" => o!(&url), "queue" => s!(queued), "buffer" => s!(buffer.len()));
                 }
-                Done(index, request) => {
-                    queued -= 1;
-                    stacks[index] -= 1;
-
+                Done(thread_id, request) => {
                     buffer.push(request.serial, request);
-
                     while let Some(request) = buffer.pull() {
                         app_tx.send(Operation::PushHttpCache(request.cache_filepath, request.url, request.meta)).unwrap();
                     }
+                    puts!("event" => "http/complete", "thread_id" => s!(thread_id), "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
 
-                    puts!("event" => "http/complete", "thread_id" => s!(index), "queue" => s!(queued), "buffer" => s!(buffer.len()), "stacks" => stacks_to_string(&stacks));
+                    if let Some(next) = queued.pop_front() {
+                        threads[thread_id].send(next).unwrap();
+                    } else {
+                        waiting.push(thread_id);
+                    }
                 }
-                Fail(index, err, request) => {
-                    queued -= 1;
-                    stacks[index] -= 1;
+                Fail(thread_id, err, request) => {
+                    waiting.push(thread_id);
                     buffer.skip(request.serial);
-                    puts_error!("at" => "http/get", "reason" => err, "url" => o!(request.url), "queue" => s!(queued), "buffer" => s!(buffer.len()), "stacks" => stacks_to_string(&stacks));
+                    puts_error!("at" => "http/get", "reason" => err, "url" => o!(request.url), "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
                 }
                 Flush => {
-                    puts!("event" => "http/flush", "queue" => s!(queued), "buffer" => s!(buffer.len()), "stacks" => stacks_to_string(&stacks));
-
+                    puts!("event" => "http/flush/start", "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
                     for request in buffer.force_flush() {
                         app_tx.send(Operation::PushHttpCache(request.cache_filepath, request.url, request.meta)).unwrap();
                     }
+                    puts!("event" => "http/flush/done", "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
                 }
             }
         }
@@ -145,7 +128,7 @@ fn getter_main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
     main_tx
 }
 
-fn getter_thread(id: usize, main_tx: Sender<Getter>) -> Sender<Request> {
+fn processor(thread_id: usize, main_tx: Sender<Getter>) -> Sender<Request> {
     let (getter_tx, getter_rx) = channel();
 
     let ssl = NativeTlsClient::new().unwrap();
@@ -156,13 +139,15 @@ fn getter_thread(id: usize, main_tx: Sender<Getter>) -> Sender<Request> {
         while let Ok(request) = getter_rx.recv() {
             let request: Request = request;
 
+            puts!("event" => "http/get", "thread_id" => s!(thread_id), "url" => o!(&request.url));
+
             match client.get(&request.url).send() {
                 Ok(response) => {
                     write_to_file(&request.cache_filepath, response);
-                    main_tx.send(Getter::Done(id, request)).unwrap();
+                    main_tx.send(Getter::Done(thread_id, request)).unwrap();
                 }
                 Err(err) => {
-                    main_tx.send(Getter::Fail(id, format!("{}", err), request)).unwrap();
+                    main_tx.send(Getter::Fail(thread_id, format!("{}", err), request)).unwrap();
                 }
             }
         }

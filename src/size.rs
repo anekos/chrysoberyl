@@ -10,7 +10,15 @@ use option;
 #[derive(Clone, PartialEq, Eq)]
 pub struct Size {
     pub width: i32,
-    pub height: i32
+    pub height: i32,
+}
+
+#[derive(Clone)]
+pub struct Region<T> {
+    pub left: T,
+    pub top: T,
+    pub right: T,
+    pub bottom: T,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,20 +61,43 @@ impl Size {
         }
     }
 
-    /** (scale, fitted_size, delta) **/
-    pub fn fit(&self, cell: &Size, to: &FitTo) -> (f64, Size, Size) {
+    pub fn clipped(&self, region: Region<f64>) -> (Size, Region<i32>) {
+        let (w, h) = self.floated();
+        let clipped_size = Size::new(
+            (w * (region.right - region.left)) as i32,
+            (h * (region.bottom - region.top)) as i32);
+        let clipped_region = Region::new(
+            (w * region.left) as i32,
+            (h * region.top) as i32,
+            (w * region.right) as i32,
+            (h * region.bottom) as i32);
+        (clipped_size, clipped_region)
+    }
+
+    /** returns (scale, fitted_size, delta) **/
+    pub fn fit(&self, cell_size: &Size, fit_to: &FitTo) -> (f64, Size) {
         use self::FitTo::*;
 
-        let (scale, fitted) = match *to {
+        let (scale, fitted) = match *fit_to {
             Original => self.fit_to_original(),
-            OriginalOrCell => self.fit_to_original_or_cell(cell),
-            Cell => self.fit_to_cell(cell),
-            Width => self.fit_to_width(cell),
-            Height => self.fit_to_height(cell),
+            OriginalOrCell => self.fit_to_original_or_cell(cell_size),
+            Cell => self.fit_to_cell(cell_size),
+            Width => self.fit_to_width(cell_size),
+            Height => self.fit_to_height(cell_size),
         };
 
-        let delta = Size::new(max!(fitted.width - cell.width, 0), max!(fitted.height - cell.height, 0));
-        (scale, fitted, delta)
+        (scale, fitted)
+    }
+
+    pub fn fit_with_clipping(&self, cell_size: &Size, fit_to: &FitTo, clip: Option<Region<f64>>) -> (f64, Size, Option<Region<i32>>) {
+        if let Some(clip) = clip {
+            let (clipped_size, clipped_region) = self.clipped(clip);
+            let (scale, fitted) = clipped_size.fit(cell_size, fit_to);
+            (scale, fitted, Some(clipped_region))
+        } else {
+            let (scale, size) = self.fit(cell_size, fit_to);
+            (scale, size, None)
+        }
     }
 
     fn fit_to_original(&self) -> (f64, Size) {
@@ -99,6 +130,13 @@ impl Size {
     fn fit_to_height(&self, cell: &Size) -> (f64, Size) {
         let scale = cell.height as f64 / self.height as f64;
         (scale, self.scaled(scale))
+    }
+}
+
+
+impl<T> Region<T> {
+    pub fn new(left: T, top: T, right: T, bottom: T) -> Region<T> {
+        Region { left: left, top: top, right: right, bottom: bottom }
     }
 }
 

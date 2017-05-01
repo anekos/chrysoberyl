@@ -144,7 +144,7 @@ fn make_scaled(buffer: &[u8], cell: &Size, fit: &FitTo, scaling: &ScalingMethod)
         }
         if let Some(source) = loader.get_pixbuf() {
             let original = Size::from_pixbuf(&source);
-            let (scale, fitted, _) = original.fit(cell, fit);
+            let (scale, fitted) = original.fit(cell, fit);
             let scaled = unsafe { Pixbuf::new(0, true, 8, fitted.width, fitted.height).unwrap() };
             source.scale(&scaled, 0, 0, fitted.width, fitted.height, 0.0, 0.0, scale, scale, scaling.0);
             Ok(ImageData { size: original, buffer: ImageBuffer::Static(scaled) })

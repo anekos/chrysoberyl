@@ -15,7 +15,7 @@ use glib::translate::*;
 use glib::translate::ToGlibPtr;
 use libc::{c_int, c_double};
 
-use size::{FitTo, Size};
+use size::{FitTo, Size, Region};
 
 mod sys;
 
@@ -72,13 +72,19 @@ impl PopplerPage {
     pub fn get_pixbuf(&self, cell: &Size, fit: &FitTo) -> Pixbuf {
         let page = self.get_size();
 
-        let (scale, fitted, _) = page.fit(cell, fit);
+        let clip = Region::new(0.1, 0.1, 0.9, 0.9);
+        let (scale, fitted, clipped_region) = page.fit_with_clipping(cell, fit, Some(clip));
         let surface = ImageSurface::create(Format::ARgb32, fitted.width, fitted.height);
 
         {
             let context = Context::new(&surface);
             context.scale(scale, scale);
             context.set_source_rgb(1.0, 1.0, 1.0);
+            if let Some(r) = clipped_region {
+                context.translate(-r.left as f64, -r.top as f64);
+                context.rectangle(r.left as f64, r.top as f64, r.right as f64, r.bottom as f64);
+                context.clip();
+            }
             context.paint();
             self.render(&context);
         }

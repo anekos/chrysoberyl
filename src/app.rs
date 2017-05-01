@@ -295,13 +295,13 @@ impl App {
 
     /* Operation event */
 
-    fn on_change_fit_to(&mut self, updated: &mut Updated, fit: &FitTo) {
-        self.states.fit_to = fit.clone();
+    fn on_change_fit_to(&mut self, updated: &mut Updated, fit_to: &FitTo) {
+        self.states.drawing.fit_to = fit_to.clone();
         updated.image = true;
     }
 
     fn on_change_scaling_method(&mut self, updated: &mut Updated, method: &ScalingMethod) {
-        self.states.scaling = method.clone();
+        self.states.drawing.scaling = method.clone();
         updated.image = true;
     }
 
@@ -339,7 +339,6 @@ impl App {
                         self.cherenkoved.cherenkov(
                             &entry,
                             &cell_size,
-                            &self.states.fit_to,
                             &Che {
                                 center: center,
                                 n_spokes: parameter.n_spokes,
@@ -347,7 +346,7 @@ impl App {
                                 random_hue: parameter.random_hue,
                                 color: parameter.color,
                             },
-                            &self.states.scaling);
+                            &self.states.drawing);
                         updated.image = true;
                     }
                 }
@@ -593,7 +592,7 @@ impl App {
             Reverse => self.states.reverse.update_with_series_reader(method, series),
             CenterAlignment => self.states.view.center_alignment.update_with_series_reader(method, series),
             AutoPaging => self.states.auto_paging.update_with_series_reader(method, series),
-            FitTo => self.states.fit_to.update_with_series_reader(method, series),
+            FitTo => self.states.drawing.fit_to.update_with_series_reader(method, series),
         };
 
         if let Err(err) = result {
@@ -654,19 +653,19 @@ impl App {
         let mut image_size = None;
         let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar.is_enabled());
 
-        if self.states.fit_to.is_scrollable() {
+        if self.states.drawing.fit_to.is_scrollable() {
             self.gui.reset_scrolls(to_end);
         }
 
         for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                match self.cherenkoved.get_image_data(&entry, &cell_size, &self.states.fit_to, &self.states.scaling) {
+                match self.cherenkoved.get_image_data(&entry, &cell_size, &self.states.drawing) {
                     Ok(image) => {
-                        cell.draw(&image, &cell_size, &self.states.fit_to);
+                        cell.draw(&image, &cell_size, &self.states.drawing.fit_to);
                         image_size = Some(image.size);
                     }
                     Err(error) =>
-                        cell.draw_error(&error, &cell_size, &self.states.fit_to, &self.gui.colors)
+                        cell.draw_error(&error, &cell_size, &self.states.drawing.fit_to, &self.gui.colors)
                 }
             } else {
                 cell.image.set_from_pixbuf(None);
@@ -749,7 +748,7 @@ impl App {
 
             envs_sub.push((o!("flags"), {
                 let mut text = o!("");
-                text.push(self.states.fit_to.to_char());
+                text.push(self.states.drawing.fit_to.to_char());
                 text.push(self.states.reverse.to_char());
                 text.push(self.states.auto_paging.to_char());
                 text.push(self.states.view.center_alignment.to_char());

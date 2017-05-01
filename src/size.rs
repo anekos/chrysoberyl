@@ -4,6 +4,8 @@ use std::str::FromStr;
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufAnimationExt};
 
 use option;
+use state::DrawingOption;
+use utils::feq;
 
 
 
@@ -13,12 +15,12 @@ pub struct Size {
     pub height: i32,
 }
 
-#[derive(Clone)]
-pub struct Region<T> {
-    pub left: T,
-    pub top: T,
-    pub right: T,
-    pub bottom: T,
+#[derive(Clone, Debug)]
+pub struct Region {
+    pub left: f64,
+    pub top: f64,
+    pub right: f64,
+    pub bottom: f64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,6 +31,9 @@ pub enum FitTo {
     Height,
     Cell,
 }
+
+
+const FERROR: f64 = 0.000001;
 
 
 impl Size {
@@ -61,16 +66,16 @@ impl Size {
         }
     }
 
-    pub fn clipped(&self, region: Region<f64>) -> (Size, Region<i32>) {
+    pub fn clipped(&self, region: &Region) -> (Size, Region) {
         let (w, h) = self.floated();
         let clipped_size = Size::new(
             (w * (region.right - region.left)) as i32,
             (h * (region.bottom - region.top)) as i32);
         let clipped_region = Region::new(
-            (w * region.left) as i32,
-            (h * region.top) as i32,
-            (w * region.right) as i32,
-            (h * region.bottom) as i32);
+            w * region.left,
+            h * region.top,
+            w * region.right,
+            h * region.bottom);
         (clipped_size, clipped_region)
     }
 
@@ -89,13 +94,13 @@ impl Size {
         (scale, fitted)
     }
 
-    pub fn fit_with_clipping(&self, cell_size: &Size, fit_to: &FitTo, clip: Option<Region<f64>>) -> (f64, Size, Option<Region<i32>>) {
-        if let Some(clip) = clip {
+    pub fn fit_with_clipping(&self, cell_size: &Size, drawing: &DrawingOption) -> (f64, Size, Option<Region>) {
+        if let Some(ref clip) = drawing.clipping {
             let (clipped_size, clipped_region) = self.clipped(clip);
-            let (scale, fitted) = clipped_size.fit(cell_size, fit_to);
+            let (scale, fitted) = clipped_size.fit(cell_size, &drawing.fit_to);
             (scale, fitted, Some(clipped_region))
         } else {
-            let (scale, size) = self.fit(cell_size, fit_to);
+            let (scale, size) = self.fit(cell_size, &drawing.fit_to);
             (scale, size, None)
         }
     }
@@ -134,9 +139,15 @@ impl Size {
 }
 
 
-impl<T> Region<T> {
-    pub fn new(left: T, top: T, right: T, bottom: T) -> Region<T> {
+impl Region {
+    pub fn new(left: f64, top: f64, right: f64, bottom: f64) -> Region {
         Region { left: left, top: top, right: right, bottom: bottom }
+    }
+}
+
+impl PartialEq for Region {
+    fn eq(&self, other: &Region) -> bool {
+        feq(self.left, other.left, FERROR) && feq(self.top, other.top, FERROR) && feq(self.right, other.right, FERROR) && feq(self.bottom, other.bottom, FERROR)
     }
 }
 

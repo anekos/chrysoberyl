@@ -7,7 +7,6 @@ use std::thread::spawn;
 use std::collections::HashSet;
 
 use encoding::types::EncodingRef;
-use gtk::Image;
 use gtk::prelude::*;
 use libc;
 use rand::distributions::{IndependentSample, Range};
@@ -33,9 +32,8 @@ use option::{OptionValue, OptionUpdateMethod};
 use output;
 use shell;
 use shellexpand_wrapper as sh;
-use size::{Size, FitTo};
-use state::{ScalingMethod, STATUS_FORMAT_DEFAULT};
-use state::{States, StateName};
+use size::{Size, FitTo, Region};
+use state::{ScalingMethod, STATUS_FORMAT_DEFAULT, States, StateName};
 use termination;
 use utils::path_to_str;
 
@@ -175,6 +173,8 @@ impl App {
                     self.on_cherenkov_clear(&mut updated),
                 Clear =>
                     self.on_clear(&mut updated),
+                Clip(ref region) =>
+                    self.on_clip(&mut updated, region),
                 Color(ref target, ref color) =>
                     self.on_color(&mut updated, target, color),
                 Context(ref context, ref op) =>
@@ -251,6 +251,8 @@ impl App {
                     self.on_shuffle(&mut updated, fix_current),
                 Sort =>
                     self.on_sort(&mut updated),
+                Unclip => 
+                    self.on_unclip(&mut updated),
                 UpdateOption(ref name, ref modifier, ref series) =>
                     self.on_update_option(&mut updated, name, modifier, series),
                 User(ref data) =>
@@ -307,16 +309,6 @@ impl App {
 
     fn on_cherenkov(&mut self, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<&OperationContext>) {
         use cherenkov::Che;
-        use gdk_pixbuf::PixbufAnimationExt;
-
-        fn get_image_size(image: &Image) -> Option<(i32, i32)> {
-            image.get_pixbuf()
-                .map(|it| (it.get_width(), it.get_height()))
-                .or_else(|| {
-                    image.get_animation()
-                        .map(|it| (it.get_width(), it.get_height()))
-                })
-        }
 
         if let Some(OperationContext::Input(Input::MouseButton((mx, my), _))) = context.cloned() {
             let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar.is_enabled());
@@ -325,7 +317,7 @@ impl App {
                 if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
                     let (x1, y1, w, h) = {
                         let (cx, cy, cw, ch) = cell.get_top_left();
-                        if let Some((iw, ih)) = get_image_size(&cell.image) {
+                        if let Some((iw, ih)) = cell.get_image_size() {
                             (cx + (cw - iw) / 2, cy + (ch - ih) / 2, iw, ih)
                         } else {
                             continue;
@@ -364,6 +356,32 @@ impl App {
     fn on_clear(&mut self, updated: &mut Updated) {
         self.entries.clear(&mut self.pointer);
         updated.image = true;
+    }
+
+    fn on_clip(&mut self, updated: &mut Updated, region: &Region) {
+        let (mx, my) = (region.left as i32, region.top as i32);
+        for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
+            if self.entries.current_with(&self.pointer, index).is_some() {
+                let (x1, y1, w, h) = {
+                    let (cx, cy, cw, ch) = cell.get_top_left();
+                    if let Some((iw, ih)) = cell.get_image_size() {
+                        (cx + (cw - iw) / 2, cy + (ch - ih) / 2, iw, ih)
+                    } else {
+                        continue;
+                    }
+                };
+                let (x2, y2) = (x1 + w, y1 + h);
+                if x1 <= mx && mx <= x2 && y1 <= my && my <= y2 {
+                    let (w, h) = (w as f64, h as f64);
+                    self.states.drawing.clipping = Some(Region::new(
+                        (mx - x1) as f64 / w,
+                        (my - y1) as f64 / h,
+                        (region.right - x1 as f64) / w,
+                        (region.bottom - y1 as f64) / h));
+                    updated.image = true;
+                }
+            }
+        }
     }
 
     fn on_color(&mut self, updated: &mut Updated, target: &ColorTarget, color: &Color) {
@@ -582,6 +600,11 @@ impl App {
     fn on_sort(&mut self, updated: &mut Updated) {
         self.entries.sort(&mut self.pointer);
         updated.label = true;
+    }
+
+    fn on_unclip(&mut self, updated: &mut Updated) {
+        self.states.drawing.clipping = None;
+        updated.image = true;
     }
 
     fn on_update_option(&mut self, updated: &mut Updated, name: &StateName, method: &OptionUpdateMethod, series: &[String]) {

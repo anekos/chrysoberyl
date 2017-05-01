@@ -15,7 +15,7 @@ use gui::{ColorTarget, Direction};
 use mapping::{self, mouse_mapping};
 use option::OptionUpdateMethod;
 use shellexpand_wrapper as sh;
-use size::FitTo;
+use size::{FitTo, Region};
 use state::ScalingMethod;
 use state::StateName;
 
@@ -30,6 +30,7 @@ pub enum Operation {
     Cherenkov(CherenkovParameter),
     CherenkovClear,
     Clear,
+    Clip(Region),
     Color(ColorTarget, Color),
     Context(OperationContext, Box<Operation>),
     Count(Option<usize>),
@@ -70,6 +71,7 @@ pub enum Operation {
     Sort,
     UpdateOption(StateName, OptionUpdateMethod, Vec<String>),
     User(Vec<(String, String)>),
+    Unclip,
     Views(Option<usize>, Option<usize>),
     ViewsFellow(bool), /* for_rows */
 }
@@ -101,7 +103,6 @@ pub enum ParsingError {
     NotOperation,
     InvalidOperation(String),
 }
-
 
 
 impl FromStr for Operation {
@@ -222,6 +223,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@sort"                      => Ok(Sort),
             "@status"                    => parse_status(whole),
             "@toggle"                    => parse_option_updater(whole, OptionUpdateMethod::Toggle),
+            "@unclip"                    => Ok(Unclip),
             "@user"                      => Ok(Operation::user(args.to_vec())),
             "@views"                     => parse_views(whole),
             ";"                          => parse_multi_args(args, ";"),

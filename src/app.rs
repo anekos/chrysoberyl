@@ -285,7 +285,7 @@ impl App {
         }
 
         if updated.image || updated.label {
-            self.update_label();
+            self.update_label(updated.image);
         }
     }
 
@@ -762,7 +762,7 @@ impl App {
         self.update_env(&envs);
     }
 
-    fn update_label(&self) {
+    fn update_label(&self, update_title: bool) {
         env::set_var(constant::env_name("count"), s!(self.entries.len()));
 
         let text =
@@ -772,7 +772,9 @@ impl App {
                 o!(constant::DEFAULT_INFORMATION)
             };
 
-        self.gui.window.set_title(&text);
+        if update_title {
+            self.gui.window.set_title(&text);
+        }
         if self.states.status_bar.is_enabled() {
             self.gui.label.set_text(&text);
         }

@@ -6,7 +6,7 @@ pub struct IndexPointer {
     multiplier: usize,
 }
 
-struct Save {
+pub struct Save {
     count: Option<usize>
 }
 
@@ -16,12 +16,10 @@ impl IndexPointer {
         IndexPointer { current: None, count: None, multiplier: 1 }
     }
 
-    #[allow(private_in_public)]
     pub fn save(&self) -> Save {
         Save { count: self.count }
     }
 
-    #[allow(private_in_public)]
     pub fn restore(&mut self, save: &Save) {
         self.count = save.count;
     }

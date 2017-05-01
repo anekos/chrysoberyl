@@ -554,9 +554,13 @@ impl App {
     }
 
     fn on_scroll(&mut self, direction: &Direction, operation: &[String], scroll_size: f64) {
+        let save = self.pointer.save();
         if !self.gui.scroll_views(direction, scroll_size, self.pointer.counted()) && !operation.is_empty() {
             match Operation::parse_from_vec(operation) {
-                Ok(op) => self.operate(&op),
+                Ok(op) => {
+                    self.pointer.restore(&save);
+                    self.operate(&op);
+                },
                 Err(err) => puts_error!("at" => "scroll", "reason" => err),
             }
         }

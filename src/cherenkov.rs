@@ -126,14 +126,11 @@ impl Cherenkoved {
 
     fn re_cherenkov(&self, entry: &Entry, cell_size: &Size, drawing: &DrawingOption, modifiers: &[Che]) -> Result<ImageData, image_buffer::Error> {
         image_buffer::get_image_data(entry, cell_size, drawing).map(|mut image| {
-            match image.buffer {
-                ImageBuffer::Static(mut pixbuf) => {
-                    for che in modifiers {
-                        pixbuf = cherenkov_pixbuf(pixbuf, che);
-                    }
-                    image.buffer = ImageBuffer::Static(pixbuf);
+            if let ImageBuffer::Static(mut pixbuf) = image.buffer {
+                for che in modifiers {
+                    pixbuf = cherenkov_pixbuf(pixbuf, che);
                 }
-                _ => {}
+                image.buffer = ImageBuffer::Static(pixbuf);
             }
             image
         })

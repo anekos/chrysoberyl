@@ -360,7 +360,7 @@ impl App {
 
     fn on_clip(&mut self, updated: &mut Updated, region: &Region) {
         let (mx, my) = (region.left as i32, region.top as i32);
-        let current = self.states.drawing.clipping.clone().unwrap_or(Region::default());
+        let current = self.states.drawing.clipping.unwrap_or_default();
         for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
             if self.entries.current_with(&self.pointer, index).is_some() {
                 let (x1, y1, w, h) = {
@@ -707,7 +707,7 @@ impl App {
     fn update_env(&mut self, envs: &[(String, String)]) {
         let mut new_keys = HashSet::<String>::new();
         for &(ref name, ref value) in envs {
-            env::set_var(constant::env_name(&name), value);
+            env::set_var(constant::env_name(name), value);
             new_keys.insert(o!(name));
         }
         for name in self.current_env_keys.difference(&new_keys) {

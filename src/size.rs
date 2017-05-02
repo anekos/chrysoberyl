@@ -1,4 +1,5 @@
 
+use std::ops::Add;
 use std::str::FromStr;
 
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufAnimationExt};
@@ -15,7 +16,7 @@ pub struct Size {
     pub height: i32,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 pub struct Region {
     pub left: f64,
     pub top: f64,
@@ -141,7 +142,39 @@ impl Size {
 
 impl Region {
     pub fn new(left: f64, top: f64, right: f64, bottom: f64) -> Region {
-        Region { left: left, top: top, right: right, bottom: bottom }
+        Region {
+            left: min!(left, right),
+            top: min!(top, bottom),
+            right: max!(left, right),
+            bottom: max!(top, bottom),
+        }
+    }
+
+    pub fn width(&self) -> f64 {
+        self.right - self.left
+    }
+
+    pub fn height(&self) -> f64 {
+        self.bottom - self.top
+    }
+}
+
+impl Add for Region {
+    type Output = Region;
+
+    fn add(self, inner: Region) -> Region {
+        Region::new(
+            self.left + inner.left * self.width(),
+            self.top + inner.top * self.height(),
+            self.left + inner.right * self.width(),
+            self.top + inner.bottom * self.height())
+    }
+}
+
+
+impl Default for Region {
+    fn default() -> Self {
+        Region::new(0.0, 0.0, 1.0, 1.0)
     }
 }
 

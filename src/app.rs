@@ -360,6 +360,7 @@ impl App {
 
     fn on_clip(&mut self, updated: &mut Updated, region: &Region) {
         let (mx, my) = (region.left as i32, region.top as i32);
+        let current = self.states.drawing.clipping.clone().unwrap_or(Region::default());
         for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
             if self.entries.current_with(&self.pointer, index).is_some() {
                 let (x1, y1, w, h) = {
@@ -373,11 +374,12 @@ impl App {
                 let (x2, y2) = (x1 + w, y1 + h);
                 if x1 <= mx && mx <= x2 && y1 <= my && my <= y2 {
                     let (w, h) = (w as f64, h as f64);
-                    self.states.drawing.clipping = Some(Region::new(
+                    let inner = Region::new(
                         (mx - x1) as f64 / w,
                         (my - y1) as f64 / h,
                         (region.right - x1 as f64) / w,
-                        (region.bottom - y1 as f64) / h));
+                        (region.bottom - y1 as f64) / h);
+                    self.states.drawing.clipping = Some(current + inner);
                     updated.image = true;
                 }
             }

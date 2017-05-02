@@ -35,6 +35,7 @@ pub enum Operation {
     Context(OperationContext, Box<Operation>),
     Count(Option<usize>),
     CountDigit(u8),
+    Draw,
     Editor(Option<String>, Vec<ConfigSource>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool),
@@ -190,6 +191,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@count"                     => parse_count(whole),
             "@cycle"                     => parse_option_updater(whole, OptionUpdateMethod::Cycle),
             "@disable"                   => parse_option_updater(whole, OptionUpdateMethod::Disable),
+            "@draw"                      => Ok(Draw),
             "@editor"                    => parse_editor(whole),
             "@enable"                    => parse_option_updater(whole, OptionUpdateMethod::Enable),
             "@entries"                   => Ok(PrintEntries),

@@ -181,6 +181,8 @@ impl App {
                     self.pointer.set_count(count),
                 CountDigit(digit) =>
                     self.pointer.push_count_digit(digit),
+                Draw =>
+                    updated.image = true,
                 Editor(ref editor_command, ref config_sources) =>
                    self.on_editor(editor_command.clone(), config_sources.to_owned()),
                 Expand(recursive, ref base) =>
@@ -232,7 +234,7 @@ impl App {
                 Random =>
                     self.on_random(&mut updated, len),
                 Refresh =>
-                    updated.image = true,
+                    updated.pointer = true,
                 Save(ref path, ref index) =>
                     self.on_save(path, index),
                 SetEnv(ref name, ref value) =>

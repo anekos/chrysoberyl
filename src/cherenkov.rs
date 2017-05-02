@@ -34,8 +34,8 @@ use rand::{self, Rng, ThreadRng};
 use color::Color;
 use entry::Entry;
 use image_buffer::{self, ImageData, ImageBuffer};
-use size::{FitTo, Size};
-use state::ScalingMethod;
+use size::Size;
+use state::DrawingOption;
 use utils::feq;
 
 
@@ -61,7 +61,7 @@ pub struct Cherenkoved {
 pub struct CacheEntry {
     image: ImageData,
     cell_size: Size,
-    fit_to: FitTo,
+    drawing: DrawingOption,
     modifiers: Vec<Che>
 }
 
@@ -71,18 +71,18 @@ impl Cherenkoved {
         Cherenkoved { cache: HashMap::new() }
     }
 
-    pub fn get_image_data(&mut self, entry: &Entry, cell_size: &Size, fit_to: &FitTo, scaling: &ScalingMethod) -> Result<ImageData, image_buffer::Error> {
+    pub fn get_image_data(&mut self, entry: &Entry, cell_size: &Size, drawing: &DrawingOption) -> Result<ImageData, image_buffer::Error> {
         let new_entry = match self.cache.get(entry) {
             None =>
-                return image_buffer::get_image_data(entry, cell_size, fit_to, scaling),
+                return image_buffer::get_image_data(entry, cell_size, drawing),
             Some(cache_entry) => {
-                if cache_entry.is_valid(cell_size, fit_to) {
+                if cache_entry.is_valid(cell_size, drawing) {
                     return Ok(cache_entry.image.clone())
                 }
                 let modifiers = cache_entry.modifiers.clone();
-                match self.re_cherenkov(entry, cell_size, fit_to, scaling, &modifiers) {
+                match self.re_cherenkov(entry, cell_size, drawing, &modifiers) {
                     Ok(image) =>
-                        CacheEntry {image: image, cell_size: cell_size.clone(), fit_to: fit_to.clone(), modifiers: modifiers},
+                        CacheEntry {image: image, cell_size: cell_size.clone(), drawing: drawing.clone(), modifiers: modifiers},
                     Err(error) =>
                         return Err(error)
                 }
@@ -98,7 +98,7 @@ impl Cherenkoved {
         self.cache.remove(entry);
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, fit_to: &FitTo, che: &Che, scaling: &ScalingMethod) {
+    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, che: &Che, drawing: &DrawingOption) {
         if let Some(mut cache_entry) = self.cache.get_mut(entry) {
             if let ImageBuffer::Static(ref mut pixbuf) = cache_entry.image.buffer {
                 cache_entry.modifiers.push(che.clone());
@@ -107,7 +107,7 @@ impl Cherenkoved {
             return;
         }
 
-        if let Ok(image) = self.get_image_data(entry, cell_size, fit_to, scaling) {
+        if let Ok(image) = self.get_image_data(entry, cell_size, drawing) {
             if let ImageBuffer::Static(pixbuf) = image.buffer {
                 self.cache.insert(
                     entry.clone(),
@@ -117,15 +117,15 @@ impl Cherenkoved {
                             size: image.size
                         },
                         cell_size: cell_size.clone(),
-                        fit_to: fit_to.clone(),
+                        drawing: drawing.clone(),
                         modifiers: vec![],
                     });
             }
         }
     }
 
-    fn re_cherenkov(&self, entry: &Entry, cell_size: &Size, fit_to: &FitTo, scaling: &ScalingMethod, modifiers: &[Che]) -> Result<ImageData, image_buffer::Error> {
-        image_buffer::get_image_data(entry, cell_size, fit_to, scaling).map(|mut image| {
+    fn re_cherenkov(&self, entry: &Entry, cell_size: &Size, drawing: &DrawingOption, modifiers: &[Che]) -> Result<ImageData, image_buffer::Error> {
+        image_buffer::get_image_data(entry, cell_size, drawing).map(|mut image| {
             match image.buffer {
                 ImageBuffer::Static(mut pixbuf) => {
                     for che in modifiers {
@@ -142,8 +142,8 @@ impl Cherenkoved {
 
 
 impl CacheEntry {
-    pub fn is_valid(&self, cell_size: &Size, fit_to: &FitTo) -> bool {
-        self.cell_size == *cell_size && self.fit_to == *fit_to
+    pub fn is_valid(&self, cell_size: &Size, drawing: &DrawingOption) -> bool {
+        self.cell_size == *cell_size && self.drawing.fit_to == drawing.fit_to && self.drawing.clipping == drawing.clipping
     }
 }
 

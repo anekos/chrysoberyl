@@ -306,6 +306,15 @@ impl Cell {
          sw as i32,
          sh as i32)
     }
+
+    pub fn get_image_size(&self) -> Option<(i32, i32)> {
+        self.image.get_pixbuf()
+            .map(|it| (it.get_width(), it.get_height()))
+            .or_else(|| {
+                self.image.get_animation()
+                    .map(|it| (it.get_width(), it.get_height()))
+            })
+    }
 }
 
 impl<'a> Iterator for CellIterator<'a> {

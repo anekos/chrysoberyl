@@ -6,7 +6,7 @@ use gdk_pixbuf::InterpType;
 
 use entry::SearchKey;
 use option;
-use size::FitTo;
+use size::{FitTo, Region};
 
 
 pub struct States {
@@ -15,10 +15,9 @@ pub struct States {
     pub reverse: ReverseValue,
     pub auto_paging: AutoPagingValue,
     pub view: ViewState,
-    pub fit_to: FitTo,
-    pub scaling: ScalingMethod,
     pub show: Option<SearchKey>,
     pub status_format: String,
+    pub drawing: DrawingOption,
 }
 
 boolean_option!(StatusBarValue, STATUS_BAR_DEFAULT, 's', 'S');
@@ -41,8 +40,15 @@ pub enum StateName {
     FitTo,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ScalingMethod(pub InterpType);
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct DrawingOption {
+    pub fit_to: FitTo,
+    pub scaling: ScalingMethod,
+    pub clipping: Option<Region>,
+}
 
 
 pub const STATUS_FORMAT_DEFAULT: &'static str = "[$CHRYSOBERYL_PAGING/$CHRYSOBERYL_COUNT] $CHRYSOBERYL_PATH {$CHRYSOBERYL_FLAGS}";
@@ -55,15 +61,18 @@ impl States {
             status_bar: StatusBarValue::Enabled,
             reverse: ReverseValue::Disabled,
             auto_paging: AutoPagingValue::Disabled,
-            fit_to: FitTo::Cell,
             status_format: o!(STATUS_FORMAT_DEFAULT),
             view: ViewState {
                 cols: 1,
                 rows: 1,
                 center_alignment: CenterAlignmentValue::Disabled,
             },
-            scaling: ScalingMethod::default(),
-            show: None
+            show: None,
+            drawing: DrawingOption {
+                fit_to: FitTo::Cell,
+                scaling: ScalingMethod::default(),
+                clipping: None,
+            }
         }
     }
 }

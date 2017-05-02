@@ -13,8 +13,8 @@ use color::Color;
 use entry::{Entry, EntryContent};
 use gtk_utils::new_pixbuf_from_surface;
 use poppler::PopplerDocument;
-use size::{FitTo, Size};
-use state::ScalingMethod;
+use size::Size;
+use state::{DrawingOption};
 use utils::path_to_str;
 
 
@@ -82,7 +82,7 @@ impl Error {
 }
 
 
-pub fn get_image_data(entry: &Entry, cell: &Size, fit: &FitTo, scaling: &ScalingMethod) -> Result<ImageData, Error> {
+pub fn get_image_data(entry: &Entry, cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
     if let Some(img) = get_meta(entry) {
         if let Ok(img) = img {
             if let Ok(gif) = img.into::<Gif>() {
@@ -92,20 +92,20 @@ pub fn get_image_data(entry: &Entry, cell: &Size, fit: &FitTo, scaling: &Scaling
             }
         }
     }
-    get_pixbuf(entry, cell, fit, scaling)
+    get_pixbuf(entry, cell, drawing)
 }
 
 
-fn get_pixbuf(entry: &Entry, cell: &Size, fit: &FitTo, scaling: &ScalingMethod) -> Result<ImageData, Error> {
+fn get_pixbuf(entry: &Entry, cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
     use self::EntryContent::*;
 
     match (*entry).content {
         File(ref path) | Http(ref path, _) =>
-            make_scaled_from_file(path_to_str(path), cell, fit, scaling),
+            make_scaled_from_file(path_to_str(path), cell, drawing),
         Archive(_, ref entry) =>
-            make_scaled(&*entry.content.as_slice(), cell, fit, scaling),
+            make_scaled(&*entry.content.as_slice(), cell, drawing),
         Pdf(_, ref document, index) =>
-            make_scaled_from_pdf(document, index, cell, fit)
+            make_scaled_from_pdf(document, index, cell, drawing)
     }
 }
 
@@ -136,7 +136,7 @@ fn get_pixbuf_animation(entry: &Entry) -> Result<ImageData, Error> {
     } .map_err(Error::new)
 }
 
-fn make_scaled(buffer: &[u8], cell: &Size, fit: &FitTo, scaling: &ScalingMethod) -> Result<ImageData, Error> {
+fn make_scaled(buffer: &[u8], cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
     let loader = PixbufLoader::new();
     loader.loader_write(buffer).map_err(Error::new).and_then(|_| {
         if loader.close().is_err() {
@@ -144,9 +144,9 @@ fn make_scaled(buffer: &[u8], cell: &Size, fit: &FitTo, scaling: &ScalingMethod)
         }
         if let Some(source) = loader.get_pixbuf() {
             let original = Size::from_pixbuf(&source);
-            let (scale, fitted, _) = original.fit(cell, fit);
+            let (scale, fitted) = original.fit(cell, &drawing.fit_to);
             let scaled = unsafe { Pixbuf::new(0, true, 8, fitted.width, fitted.height).unwrap() };
-            source.scale(&scaled, 0, 0, fitted.width, fitted.height, 0.0, 0.0, scale, scale, scaling.0);
+            source.scale(&scaled, 0, 0, fitted.width, fitted.height, 0.0, 0.0, scale, scale, drawing.scaling.0);
             Ok(ImageData { size: original, buffer: ImageBuffer::Static(scaled) })
         } else {
             Err(Error::new("Invalid image"))
@@ -154,17 +154,17 @@ fn make_scaled(buffer: &[u8], cell: &Size, fit: &FitTo, scaling: &ScalingMethod)
     })
 }
 
-fn make_scaled_from_file(path: &str, cell: &Size, fit: &FitTo, scaling: &ScalingMethod) -> Result<ImageData, Error> {
+fn make_scaled_from_file(path: &str, cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
     File::open(path).map_err(Error::new).and_then(|mut file| {
         let mut buffer: Vec<u8> = vec![];
         file.read_to_end(&mut buffer).map_err(Error::new).and_then(|_| {
-            make_scaled(buffer.as_slice(), cell, fit, scaling)
+            make_scaled(buffer.as_slice(), cell, drawing)
         })
     })
 }
 
-fn make_scaled_from_pdf(document: &Rc<PopplerDocument>, index: usize, cell: &Size, fit: &FitTo) -> Result<ImageData, Error> {
-    let pixbuf = document.nth_page(index).get_pixbuf(cell, fit);
+fn make_scaled_from_pdf(document: &Rc<PopplerDocument>, index: usize, cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
+    let pixbuf = document.nth_page(index).get_pixbuf(cell, drawing);
     let size = Size::from_pixbuf(&pixbuf);
     let buffer = ImageBuffer::Static(pixbuf);
     Ok(ImageData { buffer: buffer, size: size })

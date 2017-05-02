@@ -159,8 +159,6 @@ impl App {
         let mut to_end = false;
         let len = self.entries.len();
 
-        debug!("Operate\t{:?}", operation);
-
         {
             match *operation {
                 ChangeFitTo(ref fit) =>

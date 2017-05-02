@@ -232,7 +232,7 @@ impl App {
                 Random =>
                     self.on_random(&mut updated, len),
                 Refresh =>
-                    updated.pointer = true,
+                    updated.image = true,
                 Save(ref path, ref index) =>
                     self.on_save(path, index),
                 SetEnv(ref name, ref value) =>

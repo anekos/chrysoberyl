@@ -46,8 +46,8 @@ pub struct Entry {
 pub enum EntryContent {
     File(PathBuf),
     Http(PathBuf, String),
-    Archive(Rc<PathBuf>, ArchiveEntry),
-    Pdf(Rc<PathBuf>, Rc<PopplerDocument>, usize)
+    Archive(Arc<PathBuf>, ArchiveEntry),
+    Pdf(Arc<PathBuf>, Arc<PopplerDocument>, usize)
 }
 
 pub type Meta = Arc<Vec<MetaEntry>>;
@@ -298,16 +298,16 @@ impl EntryContainer {
             pointer,
             Entry::new_without_meta(
                 EntryContent::Archive(
-                    Rc::new(archive_path.clone()),
+                    Arc::new(archive_path.clone()),
                     entry.clone())))
     }
 
     pub fn push_pdf(&mut self, pointer: &mut IndexPointer, pdf_path: &PathBuf, document: PopplerDocument, meta: &MetaSlice) -> bool {
         let n_pages = document.n_pages();
         let mut result = false;
-        let document = Rc::new(document);
+        let document = Arc::new(document);
         for index in 0 .. n_pages {
-            let content = EntryContent::Pdf(Rc::new(pdf_path.clone()), document.clone(), index);
+            let content = EntryContent::Pdf(Arc::new(pdf_path.clone()), document.clone(), index);
             result = self.push_entry(pointer, Entry::new(content, new_meta(meta)));
         }
         result

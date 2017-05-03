@@ -1,7 +1,7 @@
 
 use std::fs::File;
 use std::io::Read;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
 use immeta::markers::Gif;
@@ -114,7 +114,7 @@ fn make_scaled_from_file(path: &str, cell: &Size, drawing: &DrawingOption) -> Re
     })
 }
 
-fn make_scaled_from_pdf(document: &Rc<PopplerDocument>, index: usize, cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
+fn make_scaled_from_pdf(document: &Arc<PopplerDocument>, index: usize, cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
     let pixbuf = document.nth_page(index).get_pixbuf(cell, drawing);
     let size = Size::from_pixbuf(&pixbuf);
     let buffer = ImageBuffer::Static(pixbuf);

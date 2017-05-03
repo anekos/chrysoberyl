@@ -37,6 +37,7 @@ pub struct EntryContainerOptions {
 
 #[derive(Debug, Eq, Clone)]
 pub struct Entry {
+    pub key: Key,
     pub content: EntryContent,
     pub meta: Meta
 }
@@ -62,42 +63,59 @@ pub struct MetaEntry {
 pub struct SearchKey {
     pub path: String,
     pub index: Option<usize>
-
 }
 
+pub type Key = (char, String, usize);
 
 
 impl Entry {
     pub fn new(content: EntryContent, meta: Meta) -> Entry {
-        Entry { content: content, meta: meta }
+        Entry { key: content.key(), content: content, meta: meta }
     }
 
     pub fn new_without_meta(content: EntryContent) -> Entry {
-        Entry { content: content, meta: new_meta(&[]) }
+        Entry { key: content.key(), content: content, meta: new_meta(&[]) }
     }
 }
 
 impl Ord for Entry {
     fn cmp(&self, other: &Entry) -> Ordering {
-        self.content.cmp(&other.content)
+        self.key.cmp(&other.key)
     }
 }
 
 impl PartialEq for Entry {
     fn eq(&self, other: &Entry) -> bool {
-        self.content.eq(&other.content)
+        self.key.eq(&other.key)
     }
 }
 
 impl PartialOrd for Entry {
     fn partial_cmp(&self, other: &Entry) -> Option<Ordering> {
-        self.content.partial_cmp(&other.content)
+        self.key.partial_cmp(&other.key)
     }
 }
 
 impl Hash for Entry {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.content.hash(state);
+        self.key.hash(state);
+    }
+}
+
+impl EntryContent {
+    fn key(&self) -> Key {
+        use self::EntryContent::*;
+
+        match *self {
+            File(ref path) =>
+                ('f', path_to_str(path).to_owned(), 1),
+            Http(_, ref url) =>
+                ('h', url.clone(), 1),
+            Archive(ref path, ref entry) =>
+                ('a', path_to_str(path).to_owned(), entry.index),
+            Pdf(ref path, _, index) =>
+                ('p', path_to_str(path).to_owned(), index),
+        }
     }
 }
 

@@ -10,6 +10,7 @@ use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment};
 
 use color::Color;
 use constant;
+use gtk_utils::new_pixbuf_from_surface;
 use image_buffer::{self, ImageBuffer, ImageData};
 use option::OptionValue;
 use size::{FitTo, Size};
@@ -72,6 +73,10 @@ pub enum Direction {
     Right,
     Down
 }
+
+
+const FONT_SIZE: f64 = 12.0;
+const PADDING: f64 = 5.0;
 
 
 impl Gui {
@@ -265,6 +270,37 @@ impl Cell {
         }
     }
 
+    pub fn draw_text(&self, text: &str, cell_size: &Size, fg: &Color, bg: &Color) {
+        let surface = ImageSurface::create(Format::ARgb32, cell_size.width, cell_size.height);
+
+        let (width, height) = cell_size.floated();
+
+        let context = Context::new(&surface);
+
+        context.set_font_size(FONT_SIZE);
+        let extents = context.text_extents(text);
+
+        let (x, y) = (width / 2.0 - extents.width / 2.0, height / 2.0 - extents.height / 2.0);
+
+        let bg = bg.gdk_rgba();
+        context.set_source_rgba(bg.red, bg.green, bg.blue, bg.alpha);
+        context.rectangle(
+            x - PADDING,
+            y - extents.height - PADDING,
+            extents.width + PADDING * 2.0,
+            extents.height + PADDING * 2.0);
+        context.fill();
+
+        context.move_to(x, y);
+        let fg = fg.gdk_rgba();
+        context.set_source_rgba(fg.red, fg.green, fg.blue, fg.alpha);
+        context.show_text(text);
+
+        // puts_error!("at" => "show_image", "reason" => text);
+
+        self.draw_pixbuf(&new_pixbuf_from_surface(&surface), cell_size, &FitTo::Original)
+    }
+
     fn draw_pixbuf(&self, pixbuf: &Pixbuf, cell_size: &Size, fit_to: &FitTo) {
         self.image.set_from_pixbuf(Some(pixbuf));
         let (image_width, image_height) = (pixbuf.get_width(), pixbuf.get_height());
@@ -283,13 +319,6 @@ impl Cell {
         self.image.set_from_animation(pixbuf);
         let (w, h) = (pixbuf.get_width(), pixbuf.get_height());
         self.window.set_size_request(w, h);
-    }
-
-    pub fn draw_error(&self, error: &image_buffer::Error, cell_size: &Size, fit_to: &FitTo, colors: &Colors) {
-        self.draw_pixbuf(
-            &error.get_pixbuf(cell_size, &colors.error, &colors.error_background),
-            cell_size,
-            fit_to);
     }
 
     /** return (x, y, w, h) **/

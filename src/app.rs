@@ -694,7 +694,7 @@ impl App {
                         image_size = Some(image.size);
                     }
                     Err(error) =>
-                        cell.draw_error(&error, &cell_size, &self.states.drawing.fit_to, &self.gui.colors)
+                        cell.draw_text(&error, &cell_size, &self.gui.colors.error, &self.gui.colors.error_background)
                 }
             } else {
                 cell.image.set_from_pixbuf(None);

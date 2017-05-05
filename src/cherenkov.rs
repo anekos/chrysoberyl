@@ -71,7 +71,7 @@ impl Cherenkoved {
         Cherenkoved { cache: HashMap::new() }
     }
 
-    pub fn get_image_data(&mut self, entry: &Entry, cell_size: &Size, drawing: &DrawingOption) -> Result<ImageData, image_buffer::Error> {
+    pub fn get_image_data(&mut self, entry: &Entry, cell_size: &Size, drawing: &DrawingOption) -> Result<ImageData, String> {
         let new_entry = match self.cache.get(entry) {
             None =>
                 return image_buffer::get_image_data(entry, cell_size, drawing),
@@ -124,7 +124,7 @@ impl Cherenkoved {
         }
     }
 
-    fn re_cherenkov(&self, entry: &Entry, cell_size: &Size, drawing: &DrawingOption, modifiers: &[Che]) -> Result<ImageData, image_buffer::Error> {
+    fn re_cherenkov(&self, entry: &Entry, cell_size: &Size, drawing: &DrawingOption, modifiers: &[Che]) -> Result<ImageData, String> {
         image_buffer::get_image_data(entry, cell_size, drawing).map(|mut image| {
             if let ImageBuffer::Static(mut pixbuf) = image.buffer {
                 for che in modifiers {

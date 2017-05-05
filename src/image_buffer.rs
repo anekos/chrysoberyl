@@ -19,10 +19,6 @@ use utils::path_to_str;
 
 
 
-const FONT_SIZE: f64 = 12.0;
-const PADDING: f64 = 5.0;
-
-
 #[derive(Clone)]
 pub struct ImageData {
     pub size: Size,
@@ -37,49 +33,8 @@ pub enum ImageBuffer {
 }
 
 
-pub struct Error {
-    pub error: String,
-}
+type Error = String;
 
-
-impl Error {
-    pub fn new<T: Display>(error: T) -> Error {
-        Error { error: s!(error) }
-    }
-
-    pub fn get_pixbuf(&self, cell: &Size, fg: &Color, bg: &Color) -> Pixbuf {
-        let text = &self.error;
-
-        let surface = ImageSurface::create(Format::ARgb32, cell.width, cell.height);
-
-        let (width, height) = cell.floated();
-
-        let context = Context::new(&surface);
-
-        context.set_font_size(FONT_SIZE);
-        let extents = context.text_extents(text);
-
-        let (x, y) = (width / 2.0 - extents.width / 2.0, height / 2.0 - extents.height / 2.0);
-
-        let bg = bg.gdk_rgba();
-        context.set_source_rgba(bg.red, bg.green, bg.blue, bg.alpha);
-        context.rectangle(
-            x - PADDING,
-            y - extents.height - PADDING,
-            extents.width + PADDING * 2.0,
-            extents.height + PADDING * 2.0);
-        context.fill();
-
-        context.move_to(x, y);
-        let fg = fg.gdk_rgba();
-        context.set_source_rgba(fg.red, fg.green, fg.blue, fg.alpha);
-        context.show_text(text);
-
-        puts_error!("at" => "show_image", "reason" => text);
-
-        new_pixbuf_from_surface(&surface)
-    }
-}
 
 
 pub fn get_image_data(entry: &Entry, cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
@@ -133,14 +88,14 @@ fn get_pixbuf_animation(entry: &Entry) -> Result<ImageData, Error> {
             })
         }
         _ => not_implemented!(),
-    } .map_err(Error::new)
+    } .map_err(|it| s!(it))
 }
 
 fn make_scaled(buffer: &[u8], cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
     let loader = PixbufLoader::new();
-    loader.loader_write(buffer).map_err(Error::new).and_then(|_| {
+    loader.loader_write(buffer).map_err(|it| s!(it)).and_then(|_| {
         if loader.close().is_err() {
-            return Err(Error::new("Invalid image data"))
+            return Err(o!("Invalid image data"))
         }
         if let Some(source) = loader.get_pixbuf() {
             let original = Size::from_pixbuf(&source);
@@ -149,15 +104,15 @@ fn make_scaled(buffer: &[u8], cell: &Size, drawing: &DrawingOption) -> Result<Im
             source.scale(&scaled, 0, 0, fitted.width, fitted.height, 0.0, 0.0, scale, scale, drawing.scaling.0);
             Ok(ImageData { size: original, buffer: ImageBuffer::Static(scaled) })
         } else {
-            Err(Error::new("Invalid image"))
+            Err(o!("Invalid image"))
         }
     })
 }
 
 fn make_scaled_from_file(path: &str, cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
-    File::open(path).map_err(Error::new).and_then(|mut file| {
+    File::open(path).map_err(|it| s!(it)).and_then(|mut file| {
         let mut buffer: Vec<u8> = vec![];
-        file.read_to_end(&mut buffer).map_err(Error::new).and_then(|_| {
+        file.read_to_end(&mut buffer).map_err(|it| s!(it)).and_then(|_| {
             make_scaled(buffer.as_slice(), cell, drawing)
         })
     })

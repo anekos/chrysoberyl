@@ -1,17 +1,13 @@
 
-use std::fmt::Display;
 use std::fs::File;
 use std::io::Read;
 use std::rc::Rc;
 
-use cairo::{Context, ImageSurface, Format};
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
 use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
 
-use color::Color;
 use entry::{Entry, EntryContent};
-use gtk_utils::new_pixbuf_from_surface;
 use poppler::PopplerDocument;
 use size::Size;
 use state::{DrawingOption};

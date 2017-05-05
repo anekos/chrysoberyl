@@ -11,7 +11,7 @@ use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment};
 use color::Color;
 use constant;
 use gtk_utils::new_pixbuf_from_surface;
-use image_buffer::{self, ImageBuffer, ImageData};
+use image_buffer::{ImageBuffer, ImageData};
 use option::OptionValue;
 use size::{FitTo, Size};
 use state::ViewState;

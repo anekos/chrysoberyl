@@ -55,8 +55,8 @@ fn get_pixbuf(entry: &Entry, cell: &Size, drawing: &DrawingOption) -> Result<Ima
             make_scaled_from_file(path_to_str(path), cell, drawing),
         Archive(_, ref entry) =>
             make_scaled(&*entry.content.as_slice(), cell, drawing),
-        Pdf(_, ref document, index) =>
-            make_scaled_from_pdf(document, index, cell, drawing)
+        Pdf(ref path, index) =>
+            make_scaled_from_pdf(path_to_str(path), index, cell, drawing)
     }
 }
 
@@ -114,7 +114,8 @@ fn make_scaled_from_file(path: &str, cell: &Size, drawing: &DrawingOption) -> Re
     })
 }
 
-fn make_scaled_from_pdf(document: &Arc<PopplerDocument>, index: usize, cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
+fn make_scaled_from_pdf(pdf_path: &str, index: usize, cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
+    let document = PopplerDocument::new_from_file(&pdf_path);
     let pixbuf = document.nth_page(index).get_pixbuf(cell, drawing);
     let size = Size::from_pixbuf(&pixbuf);
     let buffer = ImageBuffer::Static(pixbuf);
@@ -129,7 +130,7 @@ fn get_meta(entry: &Entry) -> Option<Result<GenericMetadata, immeta::Error>> {
             Some(immeta::load_from_file(&path)),
         Archive(_, ref entry) =>
             Some(immeta::load_from_buf(&entry.content)),
-        Pdf(_, _, _) =>
+        Pdf(_,  _) =>
             None
     }
 }

@@ -534,9 +534,7 @@ impl App {
     }
 
     fn on_push_pdf(&mut self, updated: &mut Updated, file: PathBuf, meta: &MetaSlice) {
-        use poppler::PopplerDocument;
-        let doc = PopplerDocument::new_from_file(&file);
-        updated.pointer = self.entries.push_pdf(&mut self.pointer, &file, doc, meta);
+        updated.pointer = self.entries.push_pdf(&mut self.pointer, &file, meta);
         updated.label = true;
         self.do_show(updated);
     }
@@ -745,7 +743,7 @@ impl App {
                     envs.push((o!("archive_file"), o!(path_to_str(archive_file))));
                     envs_sub.push((o!("path"), entry.name.clone()));
                 },
-                Pdf(ref pdf_file, _, index) => {
+                Pdf(ref pdf_file, index) => {
                     envs.push((o!("file"), o!(path_to_str(pdf_file))));
                     envs.push((o!("pdf_page"), s!(index)));
                     envs_sub.push((o!("path"), o!(path_to_str(pdf_file))));

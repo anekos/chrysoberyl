@@ -1,7 +1,6 @@
 
 use std::fs::File;
 use std::io::Read;
-use std::sync::Arc;
 
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
 use immeta::markers::Gif;
@@ -32,22 +31,34 @@ pub enum ImageBuffer {
 type Error = String;
 
 
-
-pub fn get_image_data(entry: &Entry, cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
+pub fn is_animation(entry: &Entry) -> bool {
     if let Some(img) = get_meta(entry) {
         if let Ok(img) = img {
             if let Ok(gif) = img.into::<Gif>() {
                 if gif.is_animated() {
-                    return get_pixbuf_animation(entry)
+                    return true
                 }
             }
         }
     }
-    get_pixbuf(entry, cell, drawing)
+    false
+}
+
+pub fn get_image_data(entry: &Entry, cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
+    if is_animation(entry) {
+        get_pixbuf_animation(entry)
+    } else {
+        get_pixbuf(entry, cell, drawing).map(|(pixbuf, size)| {
+            ImageData {
+                size: size,
+                buffer: ImageBuffer::Static(pixbuf),
+            }
+        })
+    }
 }
 
 
-fn get_pixbuf(entry: &Entry, cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
+pub fn get_pixbuf(entry: &Entry, cell: &Size, drawing: &DrawingOption) -> Result<(Pixbuf, Size), Error> {
     use self::EntryContent::*;
 
     match (*entry).content {
@@ -56,12 +67,12 @@ fn get_pixbuf(entry: &Entry, cell: &Size, drawing: &DrawingOption) -> Result<Ima
         Archive(_, ref entry) =>
             make_scaled(&*entry.content.as_slice(), cell, drawing),
         Pdf(ref path, index) =>
-            make_scaled_from_pdf(path_to_str(path), index, cell, drawing)
+            Ok(make_scaled_from_pdf(path_to_str(path), index, cell, drawing))
     }
 }
 
 
-fn get_pixbuf_animation(entry: &Entry) -> Result<ImageData, Error> {
+pub fn get_pixbuf_animation(entry: &Entry) -> Result<ImageData, Error> {
     use self::EntryContent::*;
 
     match (*entry).content {
@@ -87,7 +98,7 @@ fn get_pixbuf_animation(entry: &Entry) -> Result<ImageData, Error> {
     } .map_err(|it| s!(it))
 }
 
-fn make_scaled(buffer: &[u8], cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
+fn make_scaled(buffer: &[u8], cell: &Size, drawing: &DrawingOption) -> Result<(Pixbuf, Size), Error> {
     let loader = PixbufLoader::new();
     loader.loader_write(buffer).map_err(|it| s!(it)).and_then(|_| {
         if loader.close().is_err() {
@@ -98,14 +109,14 @@ fn make_scaled(buffer: &[u8], cell: &Size, drawing: &DrawingOption) -> Result<Im
             let (scale, fitted) = original.fit(cell, &drawing.fit_to);
             let scaled = unsafe { Pixbuf::new(0, true, 8, fitted.width, fitted.height).unwrap() };
             source.scale(&scaled, 0, 0, fitted.width, fitted.height, 0.0, 0.0, scale, scale, drawing.scaling.0);
-            Ok(ImageData { size: original, buffer: ImageBuffer::Static(scaled) })
+            Ok((scaled, original))
         } else {
             Err(o!("Invalid image"))
         }
     })
 }
 
-fn make_scaled_from_file(path: &str, cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
+fn make_scaled_from_file(path: &str, cell: &Size, drawing: &DrawingOption) -> Result<(Pixbuf, Size), Error> {
     File::open(path).map_err(|it| s!(it)).and_then(|mut file| {
         let mut buffer: Vec<u8> = vec![];
         file.read_to_end(&mut buffer).map_err(|it| s!(it)).and_then(|_| {
@@ -114,12 +125,11 @@ fn make_scaled_from_file(path: &str, cell: &Size, drawing: &DrawingOption) -> Re
     })
 }
 
-fn make_scaled_from_pdf(pdf_path: &str, index: usize, cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
+fn make_scaled_from_pdf(pdf_path: &str, index: usize, cell: &Size, drawing: &DrawingOption) -> (Pixbuf, Size) {
     let document = PopplerDocument::new_from_file(&pdf_path);
     let pixbuf = document.nth_page(index).get_pixbuf(cell, drawing);
     let size = Size::from_pixbuf(&pixbuf);
-    let buffer = ImageBuffer::Static(pixbuf);
-    Ok(ImageData { buffer: buffer, size: size })
+    (pixbuf, size)
 }
 
 fn get_meta(entry: &Entry) -> Option<Result<GenericMetadata, immeta::Error>> {

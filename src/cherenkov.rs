@@ -82,7 +82,7 @@ impl Cherenkoved {
                 let modifiers = cache_entry.modifiers.clone();
                 match self.re_cherenkov(entry, cell_size, drawing, &modifiers) {
                     Ok(image) =>
-                        CacheEntry {image: image, cell_size: cell_size.clone(), drawing: drawing.clone(), modifiers: modifiers},
+                        CacheEntry {image: image, cell_size: *cell_size, drawing: drawing.clone(), modifiers: modifiers},
                     Err(error) =>
                         return Err(error)
                 }
@@ -116,7 +116,7 @@ impl Cherenkoved {
                             buffer: ImageBuffer::Static(cherenkov_pixbuf(pixbuf, che)),
                             size: image.size
                         },
-                        cell_size: cell_size.clone(),
+                        cell_size: *cell_size,
                         drawing: drawing.clone(),
                         modifiers: vec![],
                     });

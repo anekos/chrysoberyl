@@ -10,7 +10,7 @@ use utils::feq;
 
 
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Copy)]
 pub struct Size {
     pub width: i32,
     pub height: i32,
@@ -107,7 +107,7 @@ impl Size {
     }
 
     fn fit_to_original(&self) -> (f64, Size) {
-        (1.0, self.clone())
+        (1.0, *self)
     }
 
     fn fit_to_original_or_cell(&self, cell: &Size) -> (f64, Size) {
@@ -158,6 +158,7 @@ impl Region {
         self.bottom - self.top
     }
 }
+
 
 impl Add for Region {
     type Output = Region;

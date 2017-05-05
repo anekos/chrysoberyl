@@ -25,6 +25,7 @@ use filer;
 use fragile_input::new_fragile_input;
 use gui::{Gui, ColorTarget, Direction};
 use http_cache::HttpCache;
+use image_cache::ImageCache;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
 use operation::{self, Operation, OperationContext, MappingTarget};
@@ -50,6 +51,7 @@ pub struct App {
     rng: ThreadRng,
     pointer: IndexPointer,
     current_env_keys: HashSet<String>,
+    pre_fetched: ImageCache,
     pub tx: Sender<Operation>,
     pub states: States
 }
@@ -104,6 +106,7 @@ impl App {
             rng: rand::thread_rng(),
             pointer: IndexPointer::new(),
             current_env_keys: HashSet::new(),
+            pre_fetched: ImageCache::new(),
         };
 
         app.reset_view();
@@ -686,7 +689,13 @@ impl App {
 
         for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                match self.cherenkoved.get_image_data(&entry, &cell_size, &self.states.drawing) {
+                let cached = self.pre_fetched.get(&entry);
+                let image = if let Some(cached) = cached {
+                    cached
+                } else {
+                    self.cherenkoved.get_image_data(&entry, &cell_size, &self.states.drawing)
+                };
+                match image {
                     Ok(image) => {
                         cell.draw(&image, &cell_size, &self.states.drawing.fit_to);
                         image_size = Some(image.size);
@@ -696,6 +705,33 @@ impl App {
                 }
             } else {
                 cell.image.set_from_pixbuf(None);
+            }
+        }
+
+        {
+            use image_buffer::{is_animation, get_pixbuf};
+
+            let len = self.gui.len();
+            let mut entries = vec![];
+
+            for index in 0..len {
+                let index = index + len;
+                if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
+                    entries.push(entry);
+                }
+            }
+
+            for entry in entries {
+                let mut pre_fetched = self.pre_fetched.clone();
+                let drawing = self.states.drawing.clone();
+                spawn(move || {
+                    if is_animation(&entry) {
+                        pre_fetched.push_animation(entry.key);
+                    } else {
+                        let image = get_pixbuf(&entry, &cell_size, &drawing);
+                        pre_fetched.push(entry.key, image);
+                    }
+                });
             }
         }
 

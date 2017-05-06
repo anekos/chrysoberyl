@@ -265,6 +265,8 @@ impl App {
                     self.on_unclip(&mut updated),
                 UpdateOption(ref name, ref modifier, ref series) =>
                     self.on_update_option(&mut updated, name, modifier, series),
+                UpdatePreFetchState(ref state) =>
+                    self.states.pre_fetch = state.clone(),
                 User(ref data) =>
                     self.on_user(data),
                 Views(cols, rows) =>

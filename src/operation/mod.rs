@@ -16,8 +16,7 @@ use mapping::{self, mouse_mapping};
 use option::OptionUpdateMethod;
 use shellexpand_wrapper as sh;
 use size::{FitTo, Region};
-use state::ScalingMethod;
-use state::StateName;
+use state::{ScalingMethod, StateName, PreFetchState};
 
 mod parser;
 
@@ -64,14 +63,15 @@ pub enum Operation {
     Random,
     Refresh,
     Save(PathBuf, Option<usize>),
+    Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     SetEnv(String, Option<String>),
     SetStatusFormat(Option<String>),
-    Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     Shell(bool, bool, Vec<String>), /* async, operation, command_line */
     Show(entry::SearchKey),
     Shuffle(bool), /* Fix current */
     Sort,
     UpdateOption(StateName, OptionUpdateMethod, Vec<String>),
+    UpdatePreFetchState(Option<PreFetchState>),
     User(Vec<(String, String)>),
     Unclip,
     Views(Option<usize>, Option<usize>),
@@ -209,6 +209,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@multi"                     => parse_multi(whole),
             "@move"                      => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Move(path, if_exist))),
             "@next" | "@n"               => parse_move(whole, Next),
+            "@pre-fetch"                 => parse_pre_fetch(whole),
             "@prev" | "@p" | "@previous" => parse_move(whole, Previous),
             "@push"                      => parse_push(whole, |it, meta| Push(sh::expand(&it), meta)),
             "@push-pdf"                  => parse_push(whole, |it, meta| PushPdf(sh::expand_to_pathbuf(&it), meta)),

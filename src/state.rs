@@ -18,7 +18,7 @@ pub struct States {
     pub show: Option<SearchKey>,
     pub status_format: String,
     pub drawing: DrawingOption,
-    pub pre_fetch: Option<PreFetchOption>,
+    pub pre_fetch: Option<PreFetchState>,
 }
 
 boolean_option!(StatusBarValue, STATUS_BAR_DEFAULT, 's', 'S');
@@ -52,7 +52,7 @@ pub struct DrawingOption {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct PreFetchOption {
+pub struct PreFetchState {
     pub page_size: usize,
     pub limit_of_items: usize,
 }
@@ -72,7 +72,7 @@ impl Default for States {
             view: ViewState::default(),
             show: None,
             drawing: DrawingOption::default(),
-            pre_fetch: Some(PreFetchOption::default()),
+            pre_fetch: Some(PreFetchState::default()),
         }
     }
 
@@ -111,9 +111,9 @@ impl Default for ScalingMethod {
 }
 
 
-impl Default for PreFetchOption {
+impl Default for PreFetchState {
     fn default() -> Self {
-        PreFetchOption {
+        PreFetchState {
             page_size: 5,
             limit_of_items: 100,
         }

@@ -61,7 +61,7 @@ fn on_button_release(tx: &Sender<Operation>, button: &EventButton, pressed_at: A
 }
 
 fn on_configure(tx: &Sender<Operation>) -> bool {
-    tx.send(Operation::Refresh).unwrap();
+    tx.send(Operation::WindowResized).unwrap();
     false
 }
 

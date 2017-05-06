@@ -1,6 +1,6 @@
 
 use std::sync::mpsc::Receiver;
-use std::thread::{sleep};
+use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 use argparse::{ArgumentParser, List, Collect, Store, StoreTrue, StoreOption, Print, StoreConst};

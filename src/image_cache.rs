@@ -44,6 +44,11 @@ impl ImageCache {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.cache.clear();
+        // TODO Remove current fetchings
+    }
+
     pub fn fetching(&mut self, key: Key) -> bool {
         trace!("image_cache/fetching: key={:?}", key);
         let &(ref fetching, _) = &*self.fetching;
@@ -81,7 +86,7 @@ impl ImageCache {
             }));
 
         {
-            trace!("image_cache/finished: key={:?}", key);
+            trace!("image_cache/finished/static: key={:?}", key);
             let mut fetching = fetching.lock().unwrap();
             fetching.remove(&key);
             cond.notify_all();
@@ -89,7 +94,14 @@ impl ImageCache {
     }
 
     pub fn push_animation(&mut self, key: Key) {
-        self.cache.push(key, Ok(CacheEntry::Animation))
+        let &(ref fetching, ref cond) = &*self.fetching;
+
+        self.cache.push(key.clone(), Ok(CacheEntry::Animation));
+
+        trace!("image_cache/finished/animation: key={:?}", key);
+        let mut fetching = fetching.lock().unwrap();
+        fetching.remove(&key);
+        cond.notify_all();
     }
 
     pub fn get(&mut self, entry: &Entry) -> Option<Result<ImageData, String>> {

@@ -1,15 +1,17 @@
 
+use std::collections::HashSet;
 use std::env;
+use std::ops::Range;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::mpsc::{channel, Sender, Receiver};
-use std::thread::spawn;
-use std::collections::HashSet;
+use std::thread::{sleep, spawn};
+use std::time::Duration;
 
 use encoding::types::EncodingRef;
 use gtk::prelude::*;
 use libc;
-use rand::distributions::{IndependentSample, Range};
+use rand::distributions::{IndependentSample, Range as RandRange};
 use rand::{self, ThreadRng};
 
 use archive::{self, ArchiveEntry};
@@ -48,6 +50,7 @@ pub struct App {
     encodings: Vec<EncodingRef>,
     gui: Gui,
     draw_serial: u64,
+    pre_fetch_serial: u64,
     rng: ThreadRng,
     pointer: IndexPointer,
     current_env_keys: HashSet<String>,
@@ -103,6 +106,7 @@ impl App {
             encodings: initial.encodings,
             mapping: Mapping::new(),
             draw_serial: 0,
+            pre_fetch_serial: 0,
             rng: rand::thread_rng(),
             pointer: IndexPointer::new(),
             current_env_keys: HashSet::new(),
@@ -216,6 +220,8 @@ impl App {
                     (),
                 OperateFile(ref file_operation) =>
                     self.on_operate_file(file_operation),
+                PreFetch(pre_fetch_serial) =>
+                    self.on_pre_fetch(pre_fetch_serial),
                 Previous(count, ignore_views) =>
                     self.on_previous(&mut updated, &mut to_end, count, ignore_views),
                 PrintEntries =>
@@ -264,6 +270,8 @@ impl App {
                     self.on_views(&mut updated, cols, rows),
                 ViewsFellow(for_rows) =>
                     self.on_views_fellow(&mut updated, for_rows),
+                WindowResized =>
+                    self.on_window_resized(&mut updated),
             }
         }
 
@@ -490,6 +498,15 @@ impl App {
         }
     }
 
+    fn on_pre_fetch(&mut self, serial: u64) {
+        trace!("pre_fetch_serial: {}, serial: {}", self.pre_fetch_serial, serial);
+        if self.pre_fetch_serial == serial {
+            puts_event!("pre_fetch/start");
+            let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar.is_enabled());
+            self.pre_fetch(cell_size, 1..6);
+        }
+    }
+
     fn on_previous(&mut self, updated: &mut Updated, to_end: &mut bool, count: Option<usize>, ignore_views: bool) {
         updated.pointer = self.pointer.with_count(count).previous(!ignore_views);
         *to_end = count.is_none() && !ignore_views;
@@ -553,7 +570,7 @@ impl App {
 
     fn on_random(&mut self, updated: &mut Updated, len: usize) {
         if len > 0 {
-            self.pointer.current = Some(Range::new(0, len).ind_sample(&mut self.rng));
+            self.pointer.current = Some(RandRange::new(0, len).ind_sample(&mut self.rng));
             updated.image = true;
         }
     }
@@ -673,6 +690,13 @@ impl App {
         self.pointer.set_multiplier(self.gui.len());
     }
 
+    fn on_window_resized(&mut self, updated: &mut Updated) {
+        updated.image = true;
+        self.pre_fetched.clear();
+        // Ignore followed PreFetch
+        self.pre_fetch_serial += 1;
+    }
+
     /* Private methods */
 
     fn do_show(&mut self, updated: &mut Updated) {
@@ -684,16 +708,18 @@ impl App {
         }
     }
 
-    fn pre_fetch(&mut self, cell_size: Size) {
+    fn pre_fetch(&mut self, cell_size: Size, range: Range<usize>) {
         use image_buffer::{is_animation, get_pixbuf};
 
         let len = self.gui.len();
         let mut entries = vec![];
 
-        for index in 0..len * 10 {
-            let index = index + len;
-            if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                entries.push(entry);
+        for n in range {
+            for index in 0..len {
+                let index = index + len * n;
+                if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
+                    entries.push(entry);
+                }
             }
         }
 
@@ -722,7 +748,7 @@ impl App {
             self.gui.reset_scrolls(to_end);
         }
 
-        self.pre_fetch(cell_size);
+        self.pre_fetch(cell_size, 0..1);
 
         for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
@@ -743,6 +769,16 @@ impl App {
             } else {
                 cell.image.set_from_pixbuf(None);
             }
+        }
+
+        {
+            self.pre_fetch_serial += 1;
+            let pre_fetch_serial = self.pre_fetch_serial;
+            let tx = self.tx.clone();
+            spawn(move || {
+                sleep(Duration::from_millis(200));
+                tx.send(Operation::PreFetch(pre_fetch_serial)).unwrap();
+            });
         }
 
         image_size

@@ -51,6 +51,7 @@ pub enum Operation {
     Next(Option<usize>, bool),
     Nop,
     OperateFile(filer::FileOperation),
+    PreFetch(u64),
     Previous(Option<usize>, bool),
     PrintEntries,
     Push(String, Meta),
@@ -75,6 +76,7 @@ pub enum Operation {
     Unclip,
     Views(Option<usize>, Option<usize>),
     ViewsFellow(bool), /* for_rows */
+    WindowResized,
 }
 
 

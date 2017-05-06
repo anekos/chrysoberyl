@@ -33,7 +33,9 @@ impl PopplerDocument {
         let filepath = filepath.as_ref().to_str().unwrap();
         let filepath = format!("file://{}", filepath);
         let filepath = CString::new(filepath).unwrap();
-        let raw = unsafe { sys::poppler_document_new_from_file(filepath.as_ptr(), null(), null_mut()) };
+        let raw = unsafe {
+            time!("poppler/new_from_file" => sys::poppler_document_new_from_file(filepath.as_ptr(), null(), null_mut()))
+        };
         PopplerDocument(raw)
     }
 
@@ -44,7 +46,9 @@ impl PopplerDocument {
     }
 
     pub fn nth_page(&self, index: usize) -> PopplerPage {
-        let page = unsafe { sys::poppler_document_get_page(self.0, index as c_int) };
+        let page = unsafe {
+            time!("nth_page" => sys::poppler_document_get_page(self.0, index as c_int))
+        };
         PopplerPage(page)
     }
 }

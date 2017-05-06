@@ -36,7 +36,7 @@ use output;
 use shell;
 use shellexpand_wrapper as sh;
 use size::{Size, FitTo, Region};
-use state::{ScalingMethod, STATUS_FORMAT_DEFAULT, States, StateName};
+use state::{ScalingMethod, STATUS_FORMAT_DEFAULT, States, StateName, PreFetchState};
 use termination;
 use utils::path_to_str;
 
@@ -97,6 +97,8 @@ impl App {
             puts_event!("info/pid", "value" => pid);
         }
 
+        let cache_limit = PreFetchState::default().limit_of_items;
+
         let mut app = App {
             entries: EntryContainer::new(entry_options),
             cherenkoved: Cherenkoved::new(),
@@ -111,7 +113,7 @@ impl App {
             rng: rand::thread_rng(),
             pointer: IndexPointer::new(),
             current_env_keys: HashSet::new(),
-            pre_fetched: ImageCache::new(),
+            pre_fetched: ImageCache::new(cache_limit),
         };
 
         app.reset_view();
@@ -266,7 +268,7 @@ impl App {
                 UpdateOption(ref name, ref modifier, ref series) =>
                     self.on_update_option(&mut updated, name, modifier, series),
                 UpdatePreFetchState(ref state) =>
-                    self.states.pre_fetch = state.clone(),
+                    self.on_update_pre_fetch_state(state),
                 User(ref data) =>
                     self.on_user(data),
                 Views(cols, rows) =>
@@ -675,6 +677,13 @@ impl App {
         };
     }
 
+    fn on_update_pre_fetch_state(&mut self, state: &Option<PreFetchState>) {
+        self.states.pre_fetch = state.clone();
+        if let Some(ref pre_fetch) = *state {
+            self.pre_fetched.update_limit(pre_fetch.limit_of_items);
+        }
+    }
+
     fn on_user(&self, data: &[(String, String)]) {
         let mut pairs = vec![(o!("event"), o!("user"))];
         pairs.extend_from_slice(data);
@@ -707,7 +716,6 @@ impl App {
 
     fn on_window_resized(&mut self, updated: &mut Updated) {
         updated.image_options = true;
-        self.pre_fetched.clear();
         // Ignore followed PreFetch
         self.pre_fetch_serial += 1;
     }

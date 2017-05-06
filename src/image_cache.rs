@@ -37,11 +37,15 @@ pub struct StaticImage {
 
 
 impl ImageCache {
-    pub fn new() -> ImageCache {
+    pub fn new(limit: usize) -> ImageCache {
         ImageCache {
-            cache: Cache::new(),
+            cache: Cache::new(limit),
             fetching: Arc::new((Mutex::new(HashSet::new()), Condvar::new())),
         }
+    }
+
+    pub fn update_limit(&mut self, limit: usize) {
+        self.cache.update_limit(limit);
     }
 
     pub fn clear(&mut self) {

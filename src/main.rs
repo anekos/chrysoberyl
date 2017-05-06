@@ -20,6 +20,7 @@ extern crate immeta;
 extern crate libarchive3_sys;
 extern crate libarchive;
 extern crate libc;
+extern crate lru_cache;
 extern crate mkstemp;
 extern crate onig;
 extern crate rand;

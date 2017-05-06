@@ -1,25 +1,29 @@
 
 use std::clone::Clone;
 use std::cmp::Eq;
-use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::{Arc, Mutex};
+
+use lru_cache::LruCache;
 
 
 
 #[derive(Clone)]
-pub struct Cache<K, V> {
-    limit: usize,
-    entries: Arc<Mutex<HashMap<K, V>>>
+pub struct Cache<K: Hash + Eq, V> {
+    entries: Arc<Mutex<LruCache<K, V>>>
 }
 
 
 impl<K, V> Cache<K, V> where K: Hash + Eq, V: Clone {
-    pub fn new() -> Cache<K, V> {
+    pub fn new(limit: usize) -> Cache<K, V> {
         Cache {
-            limit: 10,
-            entries: Arc::new(Mutex::new(HashMap::new()))
+            entries: Arc::new(Mutex::new(LruCache::new(limit)))
         }
+    }
+
+    pub fn update_limit(&mut self, limit: usize) {
+        let mut entries = self.entries.lock().unwrap();
+        entries.set_capacity(limit);
     }
 
     pub fn clear(&mut self) {
@@ -33,12 +37,12 @@ impl<K, V> Cache<K, V> where K: Hash + Eq, V: Clone {
     }
 
     pub fn get(&self, key: &K) -> Option<V> {
-        let entries = self.entries.lock().unwrap();
-        entries.get(key).cloned()
+        let mut entries = self.entries.lock().unwrap();
+        entries.get_mut(key).map(|it| it.clone())
     }
 
     pub fn contains(&self, key: &K) -> bool {
-        let entries = self.entries.lock().unwrap();
+        let mut entries = self.entries.lock().unwrap();
         entries.contains_key(key)
     }
 }

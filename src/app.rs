@@ -73,7 +73,8 @@ pub struct Initial {
 struct Updated {
     pointer: bool,
     label: bool,
-    image: bool
+    image: bool,
+    image_options: bool,
 }
 
 
@@ -162,7 +163,7 @@ impl App {
     pub fn operate_with_context(&mut self, operation: &Operation, context: Option<&OperationContext>) {
         use self::Operation::*;
 
-        let mut updated = Updated { pointer: false, label: false, image: false };
+        let mut updated = Updated { pointer: false, label: false, image: false, image_options: false };
         let mut to_end = false;
         let len = self.entries.len();
 
@@ -296,12 +297,16 @@ impl App {
             self.tx.send(Operation::LazyDraw(self.draw_serial, to_end)).unwrap();
         }
 
-        if updated.image {
+        if updated.image_options {
+            self.pre_fetched.clear();
+        }
+
+        if updated.image || updated.image_options {
             let image_size = time!("show_image" => self.show_image(to_end));
             self.on_image_updated(image_size);
         }
 
-        if updated.image || updated.label {
+        if updated.image || updated.image_options || updated.label {
             self.update_label(updated.image);
         }
     }
@@ -314,12 +319,12 @@ impl App {
 
     fn on_change_fit_to(&mut self, updated: &mut Updated, fit_to: &FitTo) {
         self.states.drawing.fit_to = fit_to.clone();
-        updated.image = true;
+        updated.image_options = true;
     }
 
     fn on_change_scaling_method(&mut self, updated: &mut Updated, method: &ScalingMethod) {
         self.states.drawing.scaling = method.clone();
-        updated.image = true;
+        updated.image_options = true;
     }
 
     fn on_cherenkov(&mut self, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<&OperationContext>) {
@@ -354,7 +359,7 @@ impl App {
                                 color: parameter.color,
                             },
                             &self.states.drawing);
-                        updated.image = true;
+                        updated.image_options = true;
                     }
                 }
             }
@@ -364,7 +369,7 @@ impl App {
     fn on_cherenkov_clear(&mut self, updated: &mut Updated) {
         if let Some(entry) = self.entries.current_entry(&self.pointer) {
             self.cherenkoved.remove(&entry);
-            updated.image = true;
+            updated.image_options = true;
         }
     }
 
@@ -395,7 +400,7 @@ impl App {
                         (region.right - x1 as f64) / w,
                         (region.bottom - y1 as f64) / h);
                     self.states.drawing.clipping = Some(current + inner);
-                    updated.image = true;
+                    updated.image_options = true;
                 }
             }
         }
@@ -633,7 +638,7 @@ impl App {
 
     fn on_unclip(&mut self, updated: &mut Updated) {
         self.states.drawing.clipping = None;
-        updated.image = true;
+        updated.image_options = true;
     }
 
     fn on_update_option(&mut self, updated: &mut Updated, name: &StateName, method: &OptionUpdateMethod, series: &[String]) {
@@ -658,6 +663,12 @@ impl App {
         }
 
         updated.image = true;
+        match *name {
+            StatusBar | FitTo | CenterAlignment =>
+                updated.image_options = true,
+            _ =>
+                ()
+        };
     }
 
     fn on_user(&self, data: &[(String, String)]) {
@@ -673,7 +684,7 @@ impl App {
         if let Some(rows) = rows {
             self.states.view.rows = rows
         }
-        updated.image = true;
+        updated.image_options = true;
         self.reset_view();
         self.pointer.set_multiplier(self.gui.len());
     }
@@ -685,13 +696,13 @@ impl App {
         } else {
             self.states.view.cols = count;
         };
-        updated.image = true;
+        updated.image_options = true;
         self.reset_view();
         self.pointer.set_multiplier(self.gui.len());
     }
 
     fn on_window_resized(&mut self, updated: &mut Updated) {
-        updated.image = true;
+        updated.image_options = true;
         self.pre_fetched.clear();
         // Ignore followed PreFetch
         self.pre_fetch_serial += 1;

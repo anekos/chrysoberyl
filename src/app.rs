@@ -504,11 +504,13 @@ impl App {
     }
 
     fn on_pre_fetch(&mut self, serial: u64) {
-        trace!("pre_fetch_serial: {}, serial: {}", self.pre_fetch_serial, serial);
-        if self.pre_fetch_serial == serial {
-            puts_event!("pre_fetch/start");
-            let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar.is_enabled());
-            self.pre_fetch(cell_size, 1..6);
+        if let Some(pre_fetch) = self.states.pre_fetch.clone() {
+            trace!("pre_fetch_serial: {}, serial: {}", self.pre_fetch_serial, serial);
+
+            if self.pre_fetch_serial == serial {
+                let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar.is_enabled());
+                self.pre_fetch(cell_size, 1..pre_fetch.page_size);
+            }
         }
     }
 
@@ -759,7 +761,9 @@ impl App {
             self.gui.reset_scrolls(to_end);
         }
 
-        self.pre_fetch(cell_size, 0..1);
+        if self.states.pre_fetch.is_some() {
+            self.pre_fetch(cell_size, 0..1);
+        }
 
         for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
@@ -782,7 +786,7 @@ impl App {
             }
         }
 
-        {
+        if self.states.pre_fetch.is_some() {
             self.pre_fetch_serial += 1;
             let pre_fetch_serial = self.pre_fetch_serial;
             let tx = self.tx.clone();

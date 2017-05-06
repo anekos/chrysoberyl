@@ -51,6 +51,7 @@ impl ImageCache {
 
     pub fn fetching(&mut self, key: Key) -> bool {
         trace!("image_cache/fetching: key={:?}", key);
+
         let &(ref fetching, _) = &*self.fetching;
         let mut fetching = fetching.lock().unwrap();
         if self.cache.contains(&key) || fetching.contains(&key) {
@@ -63,12 +64,13 @@ impl ImageCache {
 
     pub fn push<F>(&mut self, entry: Entry, fetcher: F)
     where F: FnOnce(Entry) -> Result<(Pixbuf, Size), String> {
-        let key = entry.key.clone();
+        trace!("image_cache/push: key={:?}", entry.key);
 
+        let key = entry.key.clone();
         let &(ref fetching, ref cond) = &*self.fetching;
 
-        trace!("image_cache/fetcher: key={:?}", key);
-        let image = fetcher(entry);
+        let image = time!("image_cache/fetcher" => fetcher(entry));
+
         self.cache.push(
             key.clone(),
             image.map(|(pixbuf, original)| {
@@ -94,11 +96,12 @@ impl ImageCache {
     }
 
     pub fn push_animation(&mut self, key: Key) {
+        trace!("image_cache/finished/animation: key={:?}", key);
+
         let &(ref fetching, ref cond) = &*self.fetching;
 
         self.cache.push(key.clone(), Ok(CacheEntry::Animation));
 
-        trace!("image_cache/finished/animation: key={:?}", key);
         let mut fetching = fetching.lock().unwrap();
         fetching.remove(&key);
         cond.notify_all();
@@ -111,8 +114,9 @@ impl ImageCache {
         })
     }
 
-    pub fn wait(&mut self, key: &Key) {
+    fn wait(&mut self, key: &Key) {
         trace!("image_cache/wait/start: key={:?}", key);
+
         let &(ref fetching, ref cond) = &*self.fetching;
         let mut fetching = fetching.lock().unwrap();
         while fetching.contains(key) {

@@ -18,6 +18,7 @@ pub struct States {
     pub show: Option<SearchKey>,
     pub status_format: String,
     pub drawing: DrawingOption,
+    pub pre_fetch: Option<PreFetchOption>,
 }
 
 boolean_option!(StatusBarValue, STATUS_BAR_DEFAULT, 's', 'S');
@@ -50,29 +51,40 @@ pub struct DrawingOption {
     pub clipping: Option<Region>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct PreFetchOption {
+    pub page_size: usize,
+    pub limit_of_items: usize,
+}
+
 
 pub const STATUS_FORMAT_DEFAULT: &'static str = "[$CHRYSOBERYL_PAGING/$CHRYSOBERYL_COUNT] $CHRYSOBERYL_PATH {$CHRYSOBERYL_FLAGS}";
 
 
-impl States {
-    pub fn new() -> States {
+impl Default for States {
+    fn default() -> Self {
         States {
             initialized: false,
             status_bar: StatusBarValue::Enabled,
             reverse: ReverseValue::Disabled,
             auto_paging: AutoPagingValue::Disabled,
             status_format: o!(STATUS_FORMAT_DEFAULT),
-            view: ViewState {
-                cols: 1,
-                rows: 1,
-                center_alignment: CenterAlignmentValue::Disabled,
-            },
+            view: ViewState::default(),
             show: None,
-            drawing: DrawingOption {
-                fit_to: FitTo::Cell,
-                scaling: ScalingMethod::default(),
-                clipping: None,
-            }
+            drawing: DrawingOption::default(),
+            pre_fetch: Some(PreFetchOption::default()),
+        }
+    }
+
+}
+
+
+impl Default for DrawingOption {
+    fn default() -> Self {
+        DrawingOption {
+            fit_to: FitTo::Cell,
+            scaling: ScalingMethod::default(),
+            clipping: None,
         }
     }
 }
@@ -93,7 +105,28 @@ impl FromStr for ScalingMethod {
 }
 
 impl Default for ScalingMethod {
-    fn default() -> ScalingMethod {
+    fn default() -> Self {
         ScalingMethod(InterpType::Bilinear)
+    }
+}
+
+
+impl Default for PreFetchOption {
+    fn default() -> Self {
+        PreFetchOption {
+            page_size: 5,
+            limit_of_items: 100,
+        }
+    }
+}
+
+
+impl Default for ViewState {
+    fn default() -> Self {
+        ViewState {
+            cols: 1,
+            rows: 1,
+            center_alignment: CenterAlignmentValue::Disabled,
+        }
     }
 }

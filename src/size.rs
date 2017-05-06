@@ -10,7 +10,7 @@ use utils::feq;
 
 
 
-#[derive(Clone, PartialEq, Eq, Copy)]
+#[derive(Clone, PartialEq, Eq, Copy, Debug)]
 pub struct Size {
     pub width: i32,
     pub height: i32,

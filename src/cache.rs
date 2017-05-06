@@ -31,4 +31,9 @@ impl<K, V> Cache<K, V> where K: Hash + Eq, V: Clone {
         let entries = self.entries.lock().unwrap();
         entries.get(key).cloned()
     }
+
+    pub fn contains(&self, key: &K) -> bool {
+        let entries = self.entries.lock().unwrap();
+        entries.contains_key(key)
+    }
 }

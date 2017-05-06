@@ -197,7 +197,7 @@ impl App {
                 Fragile(ref path) =>
                     self.on_fragile(path),
                 Initialized =>
-                    self.on_initialized(),
+                    return self.on_initialized(),
                 Input(ref input) =>
                     self.on_input(input),
                 Last(count, ignore_views) =>
@@ -267,7 +267,11 @@ impl App {
             }
         }
 
-        if self.states.initialized && self.entries.len() != len {
+        if !self.states.initialized {
+            return
+        }
+
+        if self.entries.len() != len {
             if let Some(current) = self.pointer.current {
                 let gui_len = self.gui.len();
                 if current < len && len < current + gui_len {
@@ -284,7 +288,7 @@ impl App {
             self.tx.send(Operation::LazyDraw(self.draw_serial, to_end)).unwrap();
         }
 
-        if updated.image && self.states.initialized {
+        if updated.image {
             let image_size = time!("show_image" => self.show_image(to_end));
             self.on_image_updated(image_size);
         }
@@ -421,6 +425,7 @@ impl App {
 
     fn on_initialized(&mut self) {
         self.states.initialized = true;
+        self.tx.send(Operation::Draw).unwrap();
         puts_event!("initialized");
     }
 
@@ -679,6 +684,36 @@ impl App {
         }
     }
 
+    fn pre_fetch(&mut self, cell_size: Size) {
+        use image_buffer::{is_animation, get_pixbuf};
+
+        let len = self.gui.len();
+        let mut entries = vec![];
+
+        for index in 0..len * 10 {
+            let index = index + len;
+            if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
+                entries.push(entry);
+            }
+        }
+
+        for entry in entries {
+            let mut pre_fetched = self.pre_fetched.clone();
+            let drawing = self.states.drawing.clone();
+            if pre_fetched.fetching(entry.key.clone()) {
+                spawn(move || {
+                    if is_animation(&entry) {
+                        pre_fetched.push_animation(entry.key);
+                    } else {
+                        pre_fetched.push(entry, move |entry| get_pixbuf(&entry, &cell_size, &drawing));
+                    }
+                });
+            } else {
+                trace!("image_cache/skip: key={:?}", entry.key);
+            }
+        }
+    }
+
     fn show_image(&mut self, to_end: bool) -> Option<Size> {
         let mut image_size = None;
         let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar.is_enabled());
@@ -686,6 +721,8 @@ impl App {
         if self.states.drawing.fit_to.is_scrollable() {
             self.gui.reset_scrolls(to_end);
         }
+
+        self.pre_fetch(cell_size);
 
         for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
@@ -705,33 +742,6 @@ impl App {
                 }
             } else {
                 cell.image.set_from_pixbuf(None);
-            }
-        }
-
-        {
-            use image_buffer::{is_animation, get_pixbuf};
-
-            let len = self.gui.len();
-            let mut entries = vec![];
-
-            for index in 0..len {
-                let index = index + len;
-                if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                    entries.push(entry);
-                }
-            }
-
-            for entry in entries {
-                let mut pre_fetched = self.pre_fetched.clone();
-                let drawing = self.states.drawing.clone();
-                spawn(move || {
-                    if is_animation(&entry) {
-                        pre_fetched.push_animation(entry.key);
-                    } else {
-                        let image = get_pixbuf(&entry, &cell_size, &drawing);
-                        pre_fetched.push(entry.key, image);
-                    }
-                });
             }
         }
 

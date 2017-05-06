@@ -1,4 +1,7 @@
 
+use std::collections::HashSet;
+use std::sync::{Arc, Mutex, Condvar};
+
 use gdk_pixbuf::{Pixbuf, Colorspace};
 
 use entry::{Entry, Key};
@@ -10,7 +13,8 @@ use image_buffer::{ImageData, ImageBuffer, get_pixbuf_animation};
 
 #[derive(Clone)]
 pub struct ImageCache {
-    cache: Cache<Key, Result<CacheEntry, String>>
+    cache: Cache<Key, Result<CacheEntry, String>>,
+    fetching: Arc<(Mutex<HashSet<Key>>, Condvar)>,
 }
 
 #[derive(Clone)]
@@ -36,12 +40,32 @@ impl ImageCache {
     pub fn new() -> ImageCache {
         ImageCache {
             cache: Cache::new(),
+            fetching: Arc::new((Mutex::new(HashSet::new()), Condvar::new())),
         }
     }
 
-    pub fn push(&mut self, key: Key, image: Result<(Pixbuf, Size), String>) {
+    pub fn fetching(&mut self, key: Key) -> bool {
+        trace!("image_cache/fetching: key={:?}", key);
+        let &(ref fetching, _) = &*self.fetching;
+        let mut fetching = fetching.lock().unwrap();
+        if self.cache.contains(&key) || fetching.contains(&key) {
+            false
+        } else {
+            fetching.insert(key);
+            true
+        }
+    }
+
+    pub fn push<F>(&mut self, entry: Entry, fetcher: F)
+    where F: FnOnce(Entry) -> Result<(Pixbuf, Size), String> {
+        let key = entry.key.clone();
+
+        let &(ref fetching, ref cond) = &*self.fetching;
+
+        trace!("image_cache/fetcher: key={:?}", key);
+        let image = fetcher(entry);
         self.cache.push(
-            key,
+            key.clone(),
             image.map(|(pixbuf, original)| {
                 CacheEntry::Static(
                     StaticImage {
@@ -54,17 +78,35 @@ impl ImageCache {
                         height: pixbuf.get_height(),
                         rowstride: pixbuf.get_rowstride(),
                     })
-            }))
+            }));
+
+        {
+            trace!("image_cache/finished: key={:?}", key);
+            let mut fetching = fetching.lock().unwrap();
+            fetching.remove(&key);
+            cond.notify_all();
+        }
     }
 
     pub fn push_animation(&mut self, key: Key) {
         self.cache.push(key, Ok(CacheEntry::Animation))
     }
 
-    pub fn get(&self, entry: &Entry) -> Option<Result<ImageData, String>> {
+    pub fn get(&mut self, entry: &Entry) -> Option<Result<ImageData, String>> {
+        self.wait(&entry.key);
         self.cache.get(&entry.key).map(|found| {
             found.and_then(|found| found.get_image_data(entry))
         })
+    }
+
+    pub fn wait(&mut self, key: &Key) {
+        trace!("image_cache/wait/start: key={:?}", key);
+        let &(ref fetching, ref cond) = &*self.fetching;
+        let mut fetching = fetching.lock().unwrap();
+        while fetching.contains(key) {
+            fetching = cond.wait(fetching).unwrap();
+        }
+        trace!("image_cache/wait/end: key={:?}", key);
     }
 }
 

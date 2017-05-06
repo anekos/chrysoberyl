@@ -59,6 +59,9 @@ pub static DEFAULT_CONFIG: &'static str = "
 @map mouse 1 @scroll --size 0.8 down  @next
 @map mouse 2 @cherenkov --radius 0.02 --color random --spokes 50
 @map mouse 3 @scroll --size 0.8 up    @previous
+
+# Not default
+# @pre-fetch --page-size 4 --limit-of-items 100
 ";
 
 

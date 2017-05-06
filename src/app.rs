@@ -297,12 +297,15 @@ impl App {
         }
 
         if updated.pointer {
-            self.draw_serial += 1;
-            self.tx.send(Operation::LazyDraw(self.draw_serial, to_end)).unwrap();
+            self.send_lazy_draw(None, to_end);
         }
 
         if updated.image_options {
+            puts_event!("pre_fetch_cache/clear");
             self.pre_fetched.clear();
+            // FIXME Re-draw just after UI updated
+            self.send_lazy_draw(Some(100), to_end);
+            return;
         }
 
         if updated.image || updated.image_options {
@@ -317,6 +320,21 @@ impl App {
 
     fn reset_view(&mut self) {
         self.gui.reset_view(&self.states.view);
+    }
+
+    fn send_lazy_draw(&mut self, delay: Option<u64>, to_end: bool) {
+        self.draw_serial += 1;
+        let op = Operation::LazyDraw(self.draw_serial, to_end);
+
+        if let Some(delay) = delay {
+            let tx = self.tx.clone();
+            spawn(move || {
+                sleep(Duration::from_millis(delay));
+                tx.send(op).unwrap();
+            });
+        } else {
+            self.tx.send(op).unwrap();
+        }
     }
 
     /* Operation event */

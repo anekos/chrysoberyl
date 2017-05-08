@@ -41,6 +41,7 @@ mod color;
 mod config;
 mod constant;
 mod controller;
+mod lazy_sender;
 mod editor;
 mod entry;
 mod events;

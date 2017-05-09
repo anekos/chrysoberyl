@@ -2,7 +2,7 @@
 use std::fs::File;
 use std::io::Read;
 
-use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufLoader};
+use gdk_pixbuf::{Pixbuf, PixbufLoader};
 use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
 
@@ -11,21 +11,8 @@ use poppler::PopplerDocument;
 use size::Size;
 use state::{DrawingOption};
 use utils::path_to_str;
+use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 
-
-
-#[derive(Clone)]
-pub struct ImageData {
-    pub size: Size,
-    pub buffer: ImageBuffer,
-}
-
-
-#[derive(Clone)]
-pub enum ImageBuffer {
-    Static(Pixbuf),
-    Animation(PixbufAnimation),
-}
 
 
 type Error = String;
@@ -44,21 +31,16 @@ pub fn is_animation(entry: &Entry) -> bool {
     false
 }
 
-pub fn get_image_data(entry: &Entry, cell: &Size, drawing: &DrawingOption) -> Result<ImageData, Error> {
+pub fn get_image_buffer(entry: &Entry, cell: &Size, drawing: &DrawingOption) -> Result<ImageBuffer, Error> {
     if is_animation(entry) {
-        get_pixbuf_animation(entry)
+        get_animation_buffer(entry).map(ImageBuffer::Animation)
     } else {
-        get_pixbuf(entry, cell, drawing).map(|(pixbuf, size)| {
-            ImageData {
-                size: size,
-                buffer: ImageBuffer::Static(pixbuf),
-            }
-        })
+        get_static_image_buffer(entry, cell, drawing).map(ImageBuffer::Static)
     }
 }
 
 
-pub fn get_pixbuf(entry: &Entry, cell: &Size, drawing: &DrawingOption) -> Result<(Pixbuf, Size), Error> {
+pub fn get_static_image_buffer(entry: &Entry, cell: &Size, drawing: &DrawingOption) -> Result<StaticImageBuffer, Error> {
     use self::EntryContent::*;
 
     match (*entry).content {
@@ -72,33 +54,19 @@ pub fn get_pixbuf(entry: &Entry, cell: &Size, drawing: &DrawingOption) -> Result
 }
 
 
-pub fn get_pixbuf_animation(entry: &Entry) -> Result<ImageData, Error> {
+pub fn get_animation_buffer(entry: &Entry) -> Result<AnimationBuffer, Error> {
     use self::EntryContent::*;
 
     match (*entry).content {
-        File(ref path) | Http(ref path, _) => {
-            PixbufAnimation::new_from_file(path_to_str(path)).map(|pixbuf| {
-                let size = Size::from_pixbuf_animation(&pixbuf);
-                let buffer = ImageBuffer::Animation(pixbuf);
-                ImageData { buffer: buffer, size: size }
-            })
-        }
-        Archive(_, ref entry) => {
-            let loader = PixbufLoader::new();
-            loader.loader_write(&*entry.content.as_slice()).map(|_| {
-                loader.close().unwrap();
-                let buf = loader.get_animation().unwrap();
-                ImageData {
-                    size: Size::from_pixbuf_animation(&buf),
-                    buffer: ImageBuffer::Animation(buf)
-                }
-            })
-        }
+        File(ref path) | Http(ref path, _) =>
+            AnimationBuffer::new_from_file(path),
+        Archive(_, ref entry) =>
+            Ok(AnimationBuffer::new_from_slice(&*entry.content)),
         _ => not_implemented!(),
-    } .map_err(|it| s!(it))
+    }
 }
 
-fn make_scaled(buffer: &[u8], cell: &Size, drawing: &DrawingOption) -> Result<(Pixbuf, Size), Error> {
+fn make_scaled(buffer: &[u8], cell: &Size, drawing: &DrawingOption) -> Result<StaticImageBuffer, Error> {
     let loader = PixbufLoader::new();
     loader.loader_write(buffer).map_err(|it| s!(it)).and_then(|_| {
         if loader.close().is_err() {
@@ -109,14 +77,14 @@ fn make_scaled(buffer: &[u8], cell: &Size, drawing: &DrawingOption) -> Result<(P
             let (scale, fitted) = original.fit(cell, &drawing.fit_to);
             let scaled = unsafe { Pixbuf::new(0, true, 8, fitted.width, fitted.height).unwrap() };
             source.scale(&scaled, 0, 0, fitted.width, fitted.height, 0.0, 0.0, scale, scale, drawing.scaling.0);
-            Ok((scaled, original))
+            Ok(StaticImageBuffer::new_from_pixbuf(&scaled))
         } else {
             Err(o!("Invalid image"))
         }
     })
 }
 
-fn make_scaled_from_file(path: &str, cell: &Size, drawing: &DrawingOption) -> Result<(Pixbuf, Size), Error> {
+fn make_scaled_from_file(path: &str, cell: &Size, drawing: &DrawingOption) -> Result<StaticImageBuffer, Error> {
     File::open(path).map_err(|it| s!(it)).and_then(|mut file| {
         let mut buffer: Vec<u8> = vec![];
         file.read_to_end(&mut buffer).map_err(|it| s!(it)).and_then(|_| {
@@ -125,11 +93,9 @@ fn make_scaled_from_file(path: &str, cell: &Size, drawing: &DrawingOption) -> Re
     })
 }
 
-fn make_scaled_from_pdf(pdf_path: &str, index: usize, cell: &Size, drawing: &DrawingOption) -> (Pixbuf, Size) {
+fn make_scaled_from_pdf(pdf_path: &str, index: usize, cell: &Size, drawing: &DrawingOption) -> StaticImageBuffer {
     let document = PopplerDocument::new_from_file(&pdf_path);
-    let pixbuf = document.nth_page(index).get_pixbuf(cell, drawing);
-    let size = Size::from_pixbuf(&pixbuf);
-    (pixbuf, size)
+    StaticImageBuffer::new_from_pixbuf(&document.nth_page(index).get_pixbuf(cell, drawing))
 }
 
 fn get_meta(entry: &Entry) -> Option<Result<GenericMetadata, immeta::Error>> {

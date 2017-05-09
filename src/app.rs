@@ -750,7 +750,7 @@ impl App {
     }
 
     fn pre_fetch(&mut self, cell_size: Size, range: Range<usize>) {
-        use image_buffer::{is_animation, get_pixbuf};
+        use entry_image::get_image_buffer;
 
         let len = self.gui.len();
         let mut entries = vec![];
@@ -769,11 +769,7 @@ impl App {
             let drawing = self.states.drawing.clone();
             if pre_fetched.fetching(entry.key.clone()) {
                 spawn(move || {
-                    if is_animation(&entry) {
-                        pre_fetched.push_animation(entry.key);
-                    } else {
-                        pre_fetched.push(entry, move |entry| get_pixbuf(&entry, &cell_size, &drawing));
-                    }
+                    pre_fetched.push(entry, move |entry| get_image_buffer(&entry, &cell_size, &drawing));
                 });
             } else {
                 trace!("image_cache/skip: key={:?}", entry.key);
@@ -782,7 +778,7 @@ impl App {
     }
 
     fn show_image(&mut self, to_end: bool) -> Option<Size> {
-        let mut image_size = None;
+        let image_size = None;
         let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar.is_enabled());
 
         if self.states.drawing.fit_to.is_scrollable() {
@@ -796,18 +792,17 @@ impl App {
         for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
                 let cached = self.pre_fetched.get(&entry);
-                let image = if let Some(cached) = cached {
+                let image_buffer = if let Some(cached) = cached {
                     cached
                 } else {
-                    self.cherenkoved.get_image_data(&entry, &cell_size, &self.states.drawing)
+                    self.cherenkoved.get_image_buffer(&entry, &cell_size, &self.states.drawing)
                 };
-                match image {
-                    Ok(image) => {
-                        cell.draw(&image, &cell_size, &self.states.drawing.fit_to);
-                        image_size = Some(image.size);
-                    }
+                let (fg, bg) = (self.gui.colors.error, self.gui.colors.error_background);
+                match image_buffer {
+                    Ok(image_buffer) =>
+                        cell.draw(&image_buffer, &cell_size, &self.states.drawing.fit_to, &fg, &bg),
                     Err(error) =>
-                        cell.draw_text(&error, &cell_size, &self.gui.colors.error, &self.gui.colors.error_background)
+                        cell.draw_text(&error, &cell_size, &fg, &bg)
                 }
             } else {
                 cell.image.set_from_pixbuf(None);

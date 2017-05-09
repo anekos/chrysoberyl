@@ -4,14 +4,14 @@ use std::path::Path;
 use std::str::FromStr;
 
 use cairo::{Context, ImageSurface, Format};
-use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufAnimationExt};
+use gdk_pixbuf::{Pixbuf, PixbufAnimationExt};
 use gtk::prelude::*;
 use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment};
 
 use color::Color;
 use constant;
 use gtk_utils::new_pixbuf_from_surface;
-use image_buffer::{ImageBuffer, ImageData};
+use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use option::OptionValue;
 use size::{FitTo, Size};
 use state::ViewState;
@@ -260,12 +260,12 @@ impl Cell {
         Cell { image: image, window: window }
     }
 
-    pub fn draw(&self, image: &ImageData, cell_size: &Size, fit_to: &FitTo) {
-        match image.buffer {
-            ImageBuffer::Static(ref pixbuf) =>
-                self.draw_pixbuf(pixbuf, cell_size, fit_to),
-            ImageBuffer::Animation(ref pixbuf) =>
-                self.draw_pixbuf_animation(pixbuf),
+    pub fn draw(&self, image_buffer: &ImageBuffer, cell_size: &Size, fit_to: &FitTo, fg: &Color, bg: &Color) {
+        match *image_buffer {
+            ImageBuffer::Static(ref buf) =>
+                self.draw_static(buf, cell_size, fit_to),
+            ImageBuffer::Animation(ref buf) =>
+                self.draw_animation(buf, cell_size, fg, bg),
 
         }
     }
@@ -301,6 +301,10 @@ impl Cell {
         self.draw_pixbuf(&new_pixbuf_from_surface(&surface), cell_size, &FitTo::Original)
     }
 
+    fn draw_static(&self, image_buffer: &StaticImageBuffer, cell_size: &Size, fit_to: &FitTo) {
+        self.draw_pixbuf(&image_buffer.get_pixbuf(), cell_size, fit_to)
+    }
+
     fn draw_pixbuf(&self, pixbuf: &Pixbuf, cell_size: &Size, fit_to: &FitTo) {
         self.image.set_from_pixbuf(Some(pixbuf));
         let (image_width, image_height) = (pixbuf.get_width(), pixbuf.get_height());
@@ -315,10 +319,16 @@ impl Cell {
         }
     }
 
-    fn draw_pixbuf_animation(&self, pixbuf: &PixbufAnimation) {
-        self.image.set_from_animation(pixbuf);
-        let (w, h) = (pixbuf.get_width(), pixbuf.get_height());
-        self.window.set_size_request(w, h);
+    fn draw_animation(&self, image_buffer: &AnimationBuffer, cell_size: &Size, fg: &Color, bg: &Color) {
+        match image_buffer.get_pixbuf_animation() {
+            Ok(buf) => {
+                self.image.set_from_animation(&buf);
+                let (w, h) = (buf.get_width(), buf.get_height());
+                self.window.set_size_request(w, h);
+            }
+            Err(ref error) =>
+                self.draw_text(error, cell_size, fg, bg)
+        }
     }
 
     /** return (x, y, w, h) **/

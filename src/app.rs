@@ -15,7 +15,6 @@ use rand::distributions::{IndependentSample, Range as RandRange};
 use rand::{self, ThreadRng};
 
 use archive::{self, ArchiveEntry};
-use cherenkov::Cherenkoved;
 use color::Color;
 use config;
 use constant;
@@ -44,7 +43,6 @@ use utils::path_to_str;
 
 pub struct App {
     entries: EntryContainer,
-    cherenkoved: Cherenkoved,
     mapping: Mapping,
     http_cache: HttpCache,
     encodings: Vec<EncodingRef>,
@@ -54,7 +52,7 @@ pub struct App {
     rng: ThreadRng,
     pointer: IndexPointer,
     current_env_keys: HashSet<String>,
-    pre_fetched: ImageCache,
+    cache: ImageCache,
     pub tx: Sender<Operation>,
     pub states: States
 }
@@ -101,7 +99,6 @@ impl App {
 
         let mut app = App {
             entries: EntryContainer::new(entry_options),
-            cherenkoved: Cherenkoved::new(),
             gui: gui.clone(),
             tx: tx.clone(),
             http_cache: HttpCache::new(initial.http_threads, tx.clone()),
@@ -113,7 +110,7 @@ impl App {
             rng: rand::thread_rng(),
             pointer: IndexPointer::new(),
             current_env_keys: HashSet::new(),
-            pre_fetched: ImageCache::new(cache_limit),
+            cache: ImageCache::new(cache_limit),
         };
 
         app.reset_view();
@@ -302,7 +299,7 @@ impl App {
 
         if updated.image_options {
             puts_event!("pre_fetch_cache/clear");
-            self.pre_fetched.clear();
+            self.cache.clear();
             // FIXME Re-draw just after UI updated
             self.send_lazy_draw(Some(100), to_end);
             return;
@@ -370,7 +367,7 @@ impl App {
                         let center = (
                             parameter.x.unwrap_or_else(|| mx - x1) as f64 / w as f64,
                             parameter.y.unwrap_or_else(|| my - y1) as f64 / h as f64);
-                        self.cherenkoved.cherenkov(
+                        self.cache.cherenkov(
                             &entry,
                             &cell_size,
                             &Che {
@@ -381,7 +378,7 @@ impl App {
                                 color: parameter.color,
                             },
                             &self.states.drawing);
-                        updated.image_options = true;
+                        updated.image = true;
                     }
                 }
             }
@@ -390,7 +387,7 @@ impl App {
 
     fn on_cherenkov_clear(&mut self, updated: &mut Updated) {
         if let Some(entry) = self.entries.current_entry(&self.pointer) {
-            self.cherenkoved.remove(&entry);
+            self.cache.uncherenkov(&entry);
             updated.image_options = true;
         }
     }
@@ -698,7 +695,7 @@ impl App {
     fn on_update_pre_fetch_state(&mut self, state: &Option<PreFetchState>) {
         self.states.pre_fetch = state.clone();
         if let Some(ref pre_fetch) = *state {
-            self.pre_fetched.update_limit(pre_fetch.limit_of_items);
+            self.cache.update_limit(pre_fetch.limit_of_items);
         }
     }
 
@@ -750,7 +747,7 @@ impl App {
     }
 
     fn pre_fetch(&mut self, cell_size: Size, range: Range<usize>) {
-        use image_buffer::{is_animation, get_pixbuf};
+        use entry_image::get_image_buffer;
 
         let len = self.gui.len();
         let mut entries = vec![];
@@ -765,15 +762,11 @@ impl App {
         }
 
         for entry in entries {
-            let mut pre_fetched = self.pre_fetched.clone();
+            let mut cache = self.cache.clone();
             let drawing = self.states.drawing.clone();
-            if pre_fetched.fetching(entry.key.clone()) {
+            if cache.fetching(entry.key.clone()) {
                 spawn(move || {
-                    if is_animation(&entry) {
-                        pre_fetched.push_animation(entry.key);
-                    } else {
-                        pre_fetched.push(entry, move |entry| get_pixbuf(&entry, &cell_size, &drawing));
-                    }
+                    cache.push(entry, move |entry| get_image_buffer(&entry, &cell_size, &drawing));
                 });
             } else {
                 trace!("image_cache/skip: key={:?}", entry.key);
@@ -782,7 +775,7 @@ impl App {
     }
 
     fn show_image(&mut self, to_end: bool) -> Option<Size> {
-        let mut image_size = None;
+        let image_size = None;
         let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar.is_enabled());
 
         if self.states.drawing.fit_to.is_scrollable() {
@@ -795,19 +788,13 @@ impl App {
 
         for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                let cached = self.pre_fetched.get(&entry);
-                let image = if let Some(cached) = cached {
-                    cached
-                } else {
-                    self.cherenkoved.get_image_data(&entry, &cell_size, &self.states.drawing)
-                };
-                match image {
-                    Ok(image) => {
-                        cell.draw(&image, &cell_size, &self.states.drawing.fit_to);
-                        image_size = Some(image.size);
-                    }
+                let image_buffer = self.cache.get_image_buffer(&entry, &cell_size, &self.states.drawing);
+                let (fg, bg) = (self.gui.colors.error, self.gui.colors.error_background);
+                match image_buffer {
+                    Ok(image_buffer) =>
+                        cell.draw(&image_buffer, &cell_size, &self.states.drawing.fit_to, &fg, &bg),
                     Err(error) =>
-                        cell.draw_text(&error, &cell_size, &self.gui.colors.error, &self.gui.colors.error_background)
+                        cell.draw_text(&error, &cell_size, &fg, &bg)
                 }
             } else {
                 cell.image.set_from_pixbuf(None);

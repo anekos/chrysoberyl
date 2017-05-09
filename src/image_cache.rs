@@ -2,43 +2,28 @@
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex, Condvar};
 
-use gdk_pixbuf::{Pixbuf, Colorspace};
-
-use entry::{Entry, Key};
 use cache::Cache;
+use cherenkov::{Cherenkoved, Che};
+use entry::{Entry, Key};
+use entry_image;
+use image::{ImageBuffer};
 use size::Size;
-use image_buffer::{ImageData, ImageBuffer, get_pixbuf_animation};
+use state::DrawingOption;
 
 
 
 #[derive(Clone)]
 pub struct ImageCache {
-    cache: Cache<Key, Result<CacheEntry, String>>,
+    cherenkoved: Arc<Mutex<Cherenkoved>>,
+    cache: Cache<Key, Result<ImageBuffer, String>>,
     fetching: Arc<(Mutex<HashSet<Key>>, Condvar)>,
-}
-
-#[derive(Clone)]
-pub enum CacheEntry {
-    Static(StaticImage),
-    Animation,
-}
-
-#[derive(Clone)]
-pub struct StaticImage {
-    original: Size,
-    pixels: Vec<u8>,
-    colorspace: Colorspace,
-    has_alpha: bool,
-    bits_per_sample: i32,
-    width: i32,
-    height: i32,
-    rowstride: i32,
 }
 
 
 impl ImageCache {
     pub fn new(limit: usize) -> ImageCache {
         ImageCache {
+            cherenkoved: Arc::new(Mutex::new(Cherenkoved::new())),
             cache: Cache::new(limit),
             fetching: Arc::new((Mutex::new(HashSet::new()), Condvar::new())),
         }
@@ -67,7 +52,7 @@ impl ImageCache {
     }
 
     pub fn push<F>(&mut self, entry: Entry, fetcher: F)
-    where F: FnOnce(Entry) -> Result<(Pixbuf, Size), String> {
+    where F: FnOnce(Entry) -> Result<ImageBuffer, String> {
         trace!("image_cache/push: key={:?}", entry.key);
 
         let key = entry.key.clone();
@@ -75,21 +60,7 @@ impl ImageCache {
 
         let image = time!("image_cache/fetcher" => fetcher(entry));
 
-        self.cache.push(
-            key.clone(),
-            image.map(|(pixbuf, original)| {
-                CacheEntry::Static(
-                    StaticImage {
-                        original: original,
-                        pixels: unsafe { pixbuf.get_pixels().to_vec() },
-                        colorspace: pixbuf.get_colorspace(),
-                        bits_per_sample: pixbuf.get_bits_per_sample(),
-                        has_alpha: pixbuf.get_has_alpha(),
-                        width: pixbuf.get_width(),
-                        height: pixbuf.get_height(),
-                        rowstride: pixbuf.get_rowstride(),
-                    })
-            }));
+        self.cache.push(key.clone(), image);
 
         {
             trace!("image_cache/finished/static: key={:?}", key);
@@ -99,23 +70,26 @@ impl ImageCache {
         }
     }
 
-    pub fn push_animation(&mut self, key: Key) {
-        trace!("image_cache/finished/animation: key={:?}", key);
-
-        let &(ref fetching, ref cond) = &*self.fetching;
-
-        self.cache.push(key.clone(), Ok(CacheEntry::Animation));
-
-        let mut fetching = fetching.lock().unwrap();
-        fetching.remove(&key);
-        cond.notify_all();
+    pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: &Size, drawing: &DrawingOption) -> Result<ImageBuffer, String> {
+        {
+            let mut cherenkoved = self.cherenkoved.lock().unwrap();
+            cherenkoved.get_image_buffer(entry, cell_size, drawing)
+        }.unwrap_or_else(|| {
+            self.wait(&entry.key);
+            self.cache.get(&entry.key).unwrap_or_else(|| {
+                entry_image::get_image_buffer(entry, cell_size, drawing)
+            })
+        })
     }
 
-    pub fn get(&mut self, entry: &Entry) -> Option<Result<ImageData, String>> {
-        self.wait(&entry.key);
-        self.cache.get(&entry.key).map(|found| {
-            found.and_then(|found| found.get_image_data(entry))
-        })
+    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, che: &Che, drawing: &DrawingOption) {
+        let mut cherenkoved = self.cherenkoved.lock().unwrap();
+        cherenkoved.cherenkov(entry, cell_size, che, drawing)
+    }
+
+    pub fn uncherenkov(&mut self, entry: &Entry) {
+        let mut cherenkoved = self.cherenkoved.lock().unwrap();
+        cherenkoved.remove(entry)
     }
 
     fn wait(&mut self, key: &Key) {
@@ -127,27 +101,5 @@ impl ImageCache {
             fetching = cond.wait(fetching).unwrap();
         }
         trace!("image_cache/wait/end: key={:?}", key);
-    }
-}
-
-impl CacheEntry {
-    pub fn get_image_data(&self, entry: &Entry) -> Result<ImageData, String> {
-        match *self {
-            CacheEntry::Static(ref it) =>
-                Ok(ImageData {
-                    size: it.original,
-                    buffer: ImageBuffer::Static(
-                        Pixbuf::new_from_vec(
-                            it.pixels.clone(),
-                            it.colorspace,
-                            it.has_alpha,
-                            it.bits_per_sample,
-                            it.width,
-                            it.height,
-                            it.rowstride))
-                }),
-            CacheEntry::Animation =>
-                get_pixbuf_animation(entry)
-        }
     }
 }

@@ -2,7 +2,7 @@
 use std::ops::Add;
 use std::str::FromStr;
 
-use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufAnimationExt};
+use gdk_pixbuf::Pixbuf;
 
 use option;
 use state::DrawingOption;
@@ -49,12 +49,12 @@ impl Size {
         }
     }
 
-    pub fn from_pixbuf_animation(pixbuf: &PixbufAnimation) -> Size {
-        Size {
-            width: pixbuf.get_width(),
-            height: pixbuf.get_height(),
-        }
-    }
+    // pub fn from_pixbuf_animation(pixbuf: &PixbufAnimation) -> Size {
+    //     Size {
+    //         width: pixbuf.get_width(),
+    //         height: pixbuf.get_height(),
+    //     }
+    // }
 
     pub fn floated(&self) -> (f64, f64) {
         (self.width as f64, self.height as f64)

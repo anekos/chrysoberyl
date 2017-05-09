@@ -21,17 +21,21 @@ pub static DEFAULT_CONFIG: &'static str = "
 @map key k @scroll --size 0.8 up    @previous
 @map key l @scroll --size 0.8 right @next
 
+# move
+@map key asciicircum @first
+@map key dollar      @last
+@map key g           @first --ignore-views
+@map key G           @last  --ignore-views
+
 # move (ignore views)
 @map key H @previous --ignore-views
 @map key J @next     --ignore-views
 @map key K @previous --ignore-views
 @map key L @next     --ignore-views
 
-# move
-@map key asciicircum @first
-@map key dollar      @last
-@map key g           @first --ignore-views
-@map key G           @last  --ignore-views
+# move (archive)
+@map key p @previous --archive
+@map key n @next     --archive
 
 # option
 @map key a @toggle auto-paging

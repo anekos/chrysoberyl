@@ -1,35 +1,32 @@
 
+use std::collections::HashSet;
 use std::env;
+use std::ops::Range;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::mpsc::{channel, Sender, Receiver};
-use std::thread::spawn;
-use std::collections::HashSet;
+use std::thread::{sleep, spawn};
+use std::time::Duration;
 
 use encoding::types::EncodingRef;
-use gdk_pixbuf::PixbufAnimation;
-use gtk::Image;
 use gtk::prelude::*;
-use immeta::markers::Gif;
-use immeta::{self, GenericMetadata};
 use libc;
-use rand::distributions::{IndependentSample, Range};
+use rand::distributions::{IndependentSample, Range as RandRange};
 use rand::{self, ThreadRng};
 
 use archive::{self, ArchiveEntry};
-use cherenkov::Cherenkoved;
 use color::Color;
 use config;
 use constant;
 use controller;
 use editor;
-use entry::{Entry, EntryContent, EntryContainer, EntryContainerOptions, MetaSlice, new_meta, SearchKey};
+use entry::{EntryContainer, EntryContainerOptions, MetaSlice, new_meta, SearchKey};
 use events;
 use filer;
 use fragile_input::new_fragile_input;
 use gui::{Gui, ColorTarget, Direction};
 use http_cache::HttpCache;
-use image_buffer;
+use image_cache::ImageCache;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
 use operation::{self, Operation, OperationContext, MappingTarget};
@@ -37,9 +34,8 @@ use option::{OptionValue, OptionUpdateMethod};
 use output;
 use shell;
 use shellexpand_wrapper as sh;
-use size::FitTo;
-use state::{ScalingMethod, STATUS_FORMAT_DEFAULT};
-use state::{States, StateName};
+use size::{Size, FitTo, Region};
+use state::{ScalingMethod, STATUS_FORMAT_DEFAULT, States, StateName, PreFetchState};
 use termination;
 use utils::path_to_str;
 
@@ -47,15 +43,16 @@ use utils::path_to_str;
 
 pub struct App {
     entries: EntryContainer,
-    cherenkoved: Cherenkoved,
     mapping: Mapping,
     http_cache: HttpCache,
     encodings: Vec<EncodingRef>,
     gui: Gui,
     draw_serial: u64,
+    pre_fetch_serial: u64,
     rng: ThreadRng,
     pointer: IndexPointer,
     current_env_keys: HashSet<String>,
+    cache: ImageCache,
     pub tx: Sender<Operation>,
     pub states: States
 }
@@ -74,7 +71,8 @@ pub struct Initial {
 struct Updated {
     pointer: bool,
     label: bool,
-    image: bool
+    image: bool,
+    image_options: bool,
 }
 
 
@@ -97,9 +95,10 @@ impl App {
             puts_event!("info/pid", "value" => pid);
         }
 
+        let cache_limit = PreFetchState::default().limit_of_items;
+
         let mut app = App {
             entries: EntryContainer::new(entry_options),
-            cherenkoved: Cherenkoved::new(),
             gui: gui.clone(),
             tx: tx.clone(),
             http_cache: HttpCache::new(initial.http_threads, tx.clone()),
@@ -107,9 +106,11 @@ impl App {
             encodings: initial.encodings,
             mapping: Mapping::new(),
             draw_serial: 0,
+            pre_fetch_serial: 0,
             rng: rand::thread_rng(),
             pointer: IndexPointer::new(),
             current_env_keys: HashSet::new(),
+            cache: ImageCache::new(cache_limit),
         };
 
         app.reset_view();
@@ -161,11 +162,9 @@ impl App {
     pub fn operate_with_context(&mut self, operation: &Operation, context: Option<&OperationContext>) {
         use self::Operation::*;
 
-        let mut updated = Updated { pointer: false, label: false, image: false };
+        let mut updated = Updated { pointer: false, label: false, image: false, image_options: false };
         let mut to_end = false;
         let len = self.entries.len();
-
-        debug!("Operate\t{:?}", operation);
 
         {
             match *operation {
@@ -179,6 +178,8 @@ impl App {
                     self.on_cherenkov_clear(&mut updated),
                 Clear =>
                     self.on_clear(&mut updated),
+                Clip(ref region) =>
+                    self.on_clip(&mut updated, region),
                 Color(ref target, ref color) =>
                     self.on_color(&mut updated, target, color),
                 Context(ref context, ref op) =>
@@ -187,6 +188,8 @@ impl App {
                     self.pointer.set_count(count),
                 CountDigit(digit) =>
                     self.pointer.push_count_digit(digit),
+                Draw =>
+                    updated.image = true,
                 Editor(ref editor_command, ref config_sources) =>
                    self.on_editor(editor_command.clone(), config_sources.to_owned()),
                 Expand(recursive, ref base) =>
@@ -198,7 +201,7 @@ impl App {
                 Fragile(ref path) =>
                     self.on_fragile(path),
                 Initialized =>
-                    self.on_initialized(),
+                    return self.on_initialized(),
                 Input(ref input) =>
                     self.on_input(input),
                 Last(count, ignore_views) =>
@@ -217,6 +220,8 @@ impl App {
                     (),
                 OperateFile(ref file_operation) =>
                     self.on_operate_file(file_operation),
+                PreFetch(pre_fetch_serial) =>
+                    self.on_pre_fetch(pre_fetch_serial),
                 Previous(count, ignore_views) =>
                     self.on_previous(&mut updated, &mut to_end, count, ignore_views),
                 PrintEntries =>
@@ -241,6 +246,8 @@ impl App {
                     updated.pointer = true,
                 Save(ref path, ref index) =>
                     self.on_save(path, index),
+                SetEnv(ref name, ref value) =>
+                    self.on_set_env(name, value),
                 SetStatusFormat(ref format) =>
                     self.on_set_status_format(&mut updated, format),
                 Scroll(ref direction, ref operation, scroll_size) =>
@@ -253,18 +260,28 @@ impl App {
                     self.on_shuffle(&mut updated, fix_current),
                 Sort =>
                     self.on_sort(&mut updated),
+                Unclip => 
+                    self.on_unclip(&mut updated),
                 UpdateOption(ref name, ref modifier, ref series) =>
                     self.on_update_option(&mut updated, name, modifier, series),
+                UpdatePreFetchState(ref state) =>
+                    self.on_update_pre_fetch_state(state),
                 User(ref data) =>
                     self.on_user(data),
                 Views(cols, rows) =>
                     self.on_views(&mut updated, cols, rows),
                 ViewsFellow(for_rows) =>
                     self.on_views_fellow(&mut updated, for_rows),
+                WindowResized =>
+                    self.on_window_resized(&mut updated),
             }
         }
 
-        if self.states.initialized && self.entries.len() != len {
+        if !self.states.initialized {
+            return
+        }
+
+        if self.entries.len() != len {
             if let Some(current) = self.pointer.current {
                 let gui_len = self.gui.len();
                 if current < len && len < current + gui_len {
@@ -277,18 +294,24 @@ impl App {
         }
 
         if updated.pointer {
-            self.draw_serial += 1;
-            self.tx.send(Operation::LazyDraw(self.draw_serial, to_end)).unwrap();
+            self.send_lazy_draw(None, to_end);
         }
 
-        if updated.image && self.states.initialized {
-            time!("show_image" => self.show_image(to_end));
-            self.puts_event_with_current("show", None);
+        if updated.image_options {
+            puts_event!("pre_fetch_cache/clear");
+            self.cache.clear();
+            // FIXME Re-draw just after UI updated
+            self.send_lazy_draw(Some(100), to_end);
+            return;
         }
 
-        if updated.image || updated.label {
-            self.update_env();
-            self.update_label();
+        if updated.image || updated.image_options {
+            let image_size = time!("show_image" => self.show_image(to_end));
+            self.on_image_updated(image_size);
+        }
+
+        if updated.image || updated.image_options || updated.label {
+            self.update_label(updated.image);
         }
     }
 
@@ -296,30 +319,35 @@ impl App {
         self.gui.reset_view(&self.states.view);
     }
 
+    fn send_lazy_draw(&mut self, delay: Option<u64>, to_end: bool) {
+        self.draw_serial += 1;
+        let op = Operation::LazyDraw(self.draw_serial, to_end);
+
+        if let Some(delay) = delay {
+            let tx = self.tx.clone();
+            spawn(move || {
+                sleep(Duration::from_millis(delay));
+                tx.send(op).unwrap();
+            });
+        } else {
+            self.tx.send(op).unwrap();
+        }
+    }
+
     /* Operation event */
 
-    fn on_change_fit_to(&mut self, updated: &mut Updated, fit: &FitTo) {
-        self.states.fit_to = fit.clone();
-        updated.image = true;
+    fn on_change_fit_to(&mut self, updated: &mut Updated, fit_to: &FitTo) {
+        self.states.drawing.fit_to = fit_to.clone();
+        updated.image_options = true;
     }
 
     fn on_change_scaling_method(&mut self, updated: &mut Updated, method: &ScalingMethod) {
-        self.states.scaling = method.clone();
-        updated.image = true;
+        self.states.drawing.scaling = method.clone();
+        updated.image_options = true;
     }
 
     fn on_cherenkov(&mut self, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<&OperationContext>) {
         use cherenkov::Che;
-        use gdk_pixbuf::PixbufAnimationExt;
-
-        fn get_image_size(image: &Image) -> Option<(i32, i32)> {
-            image.get_pixbuf()
-                .map(|it| (it.get_width(), it.get_height()))
-                .or_else(|| {
-                    image.get_animation()
-                        .map(|it| (it.get_width(), it.get_height()))
-                })
-        }
 
         if let Some(OperationContext::Input(Input::MouseButton((mx, my), _))) = context.cloned() {
             let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar.is_enabled());
@@ -328,7 +356,7 @@ impl App {
                 if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
                     let (x1, y1, w, h) = {
                         let (cx, cy, cw, ch) = cell.get_top_left();
-                        if let Some((iw, ih)) = get_image_size(&cell.image) {
+                        if let Some((iw, ih)) = cell.get_image_size() {
                             (cx + (cw - iw) / 2, cy + (ch - ih) / 2, iw, ih)
                         } else {
                             continue;
@@ -339,10 +367,9 @@ impl App {
                         let center = (
                             parameter.x.unwrap_or_else(|| mx - x1) as f64 / w as f64,
                             parameter.y.unwrap_or_else(|| my - y1) as f64 / h as f64);
-                        self.cherenkoved.cherenkov(
+                        self.cache.cherenkov(
                             &entry,
                             &cell_size,
-                            &self.states.fit_to,
                             &Che {
                                 center: center,
                                 n_spokes: parameter.n_spokes,
@@ -350,7 +377,7 @@ impl App {
                                 random_hue: parameter.random_hue,
                                 color: parameter.color,
                             },
-                            &self.states.scaling);
+                            &self.states.drawing);
                         updated.image = true;
                     }
                 }
@@ -360,14 +387,42 @@ impl App {
 
     fn on_cherenkov_clear(&mut self, updated: &mut Updated) {
         if let Some(entry) = self.entries.current_entry(&self.pointer) {
-            self.cherenkoved.remove(&entry);
-            updated.image = true;
+            self.cache.uncherenkov(&entry);
+            updated.image_options = true;
         }
     }
 
     fn on_clear(&mut self, updated: &mut Updated) {
         self.entries.clear(&mut self.pointer);
         updated.image = true;
+    }
+
+    fn on_clip(&mut self, updated: &mut Updated, region: &Region) {
+        let (mx, my) = (region.left as i32, region.top as i32);
+        let current = self.states.drawing.clipping.unwrap_or_default();
+        for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
+            if self.entries.current_with(&self.pointer, index).is_some() {
+                let (x1, y1, w, h) = {
+                    let (cx, cy, cw, ch) = cell.get_top_left();
+                    if let Some((iw, ih)) = cell.get_image_size() {
+                        (cx + (cw - iw) / 2, cy + (ch - ih) / 2, iw, ih)
+                    } else {
+                        continue;
+                    }
+                };
+                let (x2, y2) = (x1 + w, y1 + h);
+                if x1 <= mx && mx <= x2 && y1 <= my && my <= y2 {
+                    let (w, h) = (w as f64, h as f64);
+                    let inner = Region::new(
+                        (mx - x1) as f64 / w,
+                        (my - y1) as f64 / h,
+                        (region.right - x1 as f64) / w,
+                        (region.bottom - y1 as f64) / h);
+                    self.states.drawing.clipping = Some(current + inner);
+                    updated.image_options = true;
+                }
+            }
+        }
     }
 
     fn on_color(&mut self, updated: &mut Updated, target: &ColorTarget, color: &Color) {
@@ -402,6 +457,7 @@ impl App {
 
     fn on_initialized(&mut self) {
         self.states.initialized = true;
+        self.tx.send(Operation::Draw).unwrap();
         puts_event!("initialized");
     }
 
@@ -415,9 +471,7 @@ impl App {
                     puts_error!("at" => "input", "reason" => err)
             }
         } else {
-            self.puts_event_with_current(
-                input.type_name(),
-                Some(&[(o!("name"), o!(input.text()))]));
+            puts_event!("input", "type" => input.type_name(), "name" => input.text());
         }
     }
 
@@ -436,10 +490,7 @@ impl App {
     fn on_map(&mut self, target: &MappingTarget, operation: &[String]) {
         use self::MappingTarget::*;
 
-        // FIXME
-        puts_event!("map",
-                    "target" => format!("{:?}", target),
-                    "operation" => format!("{:?}", operation));
+        // puts_event!("map", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
         match *target {
             Key(ref key) =>
                 self.mapping.register_key(key, operation),
@@ -467,6 +518,17 @@ impl App {
             match result {
                 Ok(_) => puts_event!("operate_file", "status" => "ok", "operation" => text),
                 Err(err) => puts_event!("operate_file", "status" => "fail", "reason" => err, "operation" => text),
+            }
+        }
+    }
+
+    fn on_pre_fetch(&mut self, serial: u64) {
+        if let Some(pre_fetch) = self.states.pre_fetch.clone() {
+            trace!("pre_fetch_serial: {}, serial: {}", self.pre_fetch_serial, serial);
+
+            if self.pre_fetch_serial == serial {
+                let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar.is_enabled());
+                self.pre_fetch(cell_size, 1..pre_fetch.page_size);
             }
         }
     }
@@ -523,9 +585,7 @@ impl App {
     }
 
     fn on_push_pdf(&mut self, updated: &mut Updated, file: PathBuf, meta: &MetaSlice) {
-        use poppler::PopplerDocument;
-        let doc = PopplerDocument::new_from_file(&file);
-        updated.pointer = self.entries.push_pdf(&mut self.pointer, &file, doc, meta);
+        updated.pointer = self.entries.push_pdf(&mut self.pointer, &file, meta);
         updated.label = true;
         self.do_show(updated);
     }
@@ -536,7 +596,7 @@ impl App {
 
     fn on_random(&mut self, updated: &mut Updated, len: usize) {
         if len > 0 {
-            self.pointer.current = Some(Range::new(0, len).ind_sample(&mut self.rng));
+            self.pointer.current = Some(RandRange::new(0, len).ind_sample(&mut self.rng));
             updated.image = true;
         }
     }
@@ -548,15 +608,27 @@ impl App {
         }
     }
 
+    fn on_set_env(&mut self, name: &str, value: &Option<String>) {
+        if let Some(ref value) = *value {
+            env::set_var(name, value);
+        } else {
+            env::remove_var(name);
+        }
+    }
+
     fn on_set_status_format(&mut self, updated: &mut Updated, format: &Option<String>) {
         self.states.status_format = format.clone().unwrap_or_else(|| o!(STATUS_FORMAT_DEFAULT));
         updated.label = true;
     }
 
     fn on_scroll(&mut self, direction: &Direction, operation: &[String], scroll_size: f64) {
+        let save = self.pointer.save();
         if !self.gui.scroll_views(direction, scroll_size, self.pointer.counted()) && !operation.is_empty() {
             match Operation::parse_from_vec(operation) {
-                Ok(op) => self.operate(&op),
+                Ok(op) => {
+                    self.pointer.restore(&save);
+                    self.operate(&op);
+                },
                 Err(err) => puts_error!("at" => "scroll", "reason" => err),
             }
         }
@@ -585,6 +657,11 @@ impl App {
         updated.label = true;
     }
 
+    fn on_unclip(&mut self, updated: &mut Updated) {
+        self.states.drawing.clipping = None;
+        updated.image_options = true;
+    }
+
     fn on_update_option(&mut self, updated: &mut Updated, name: &StateName, method: &OptionUpdateMethod, series: &[String]) {
         use state::StateName::*;
 
@@ -593,7 +670,7 @@ impl App {
             Reverse => self.states.reverse.update_with_series_reader(method, series),
             CenterAlignment => self.states.view.center_alignment.update_with_series_reader(method, series),
             AutoPaging => self.states.auto_paging.update_with_series_reader(method, series),
-            FitTo => self.states.fit_to.update_with_series_reader(method, series),
+            FitTo => self.states.drawing.fit_to.update_with_series_reader(method, series),
         };
 
         if let Err(err) = result {
@@ -607,10 +684,25 @@ impl App {
         }
 
         updated.image = true;
+        match *name {
+            StatusBar | FitTo | CenterAlignment =>
+                updated.image_options = true,
+            _ =>
+                ()
+        };
+    }
+
+    fn on_update_pre_fetch_state(&mut self, state: &Option<PreFetchState>) {
+        self.states.pre_fetch = state.clone();
+        if let Some(ref pre_fetch) = *state {
+            self.cache.update_limit(pre_fetch.limit_of_items);
+        }
     }
 
     fn on_user(&self, data: &[(String, String)]) {
-        self.puts_event_with_current("user", Some(data));
+        let mut pairs = vec![(o!("event"), o!("user"))];
+        pairs.extend_from_slice(data);
+        output::puts(&pairs);
     }
 
     fn on_views(&mut self, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>) {
@@ -620,7 +712,7 @@ impl App {
         if let Some(rows) = rows {
             self.states.view.rows = rows
         }
-        updated.image = true;
+        updated.image_options = true;
         self.reset_view();
         self.pointer.set_multiplier(self.gui.len());
     }
@@ -632,9 +724,15 @@ impl App {
         } else {
             self.states.view.cols = count;
         };
-        updated.image = true;
+        updated.image_options = true;
         self.reset_view();
         self.pointer.set_multiplier(self.gui.len());
+    }
+
+    fn on_window_resized(&mut self, updated: &mut Updated) {
+        updated.image_options = true;
+        // Ignore followed PreFetch
+        self.pre_fetch_serial += 1;
     }
 
     /* Private methods */
@@ -648,72 +746,79 @@ impl App {
         }
     }
 
-    fn get_meta(&self, entry: &Entry) -> Option<Result<GenericMetadata, immeta::Error>> {
-        use self::EntryContent::*;
+    fn pre_fetch(&mut self, cell_size: Size, range: Range<usize>) {
+        use entry_image::get_image_buffer;
 
-        match (*entry).content {
-            File(ref path) | Http(ref path, _) =>
-                Some(immeta::load_from_file(&path)),
-            Archive(_, ref entry) =>
-                Some(immeta::load_from_buf(&entry.content)),
-            Pdf(_, _, _) =>
-                None
-        }
-    }
+        let len = self.gui.len();
+        let mut entries = vec![];
 
-    fn puts_event_with_current(&self, event: &str, data: Option<&[(String, String)]>) {
-        let mut pairs = vec![(o!("event"), o!(event))];
-        pairs.extend_from_slice(self.current_env(false).as_slice());
-        if let Some(data) = data {
-            pairs.extend_from_slice(data);
-        }
-        output::puts(&pairs);
-    }
-
-    fn get_animation(&self, entry: &Entry) -> Option<Result<PixbufAnimation, image_buffer::Error>> {
-        self.get_meta(entry).and_then(|img| {
-            if let Ok(img) = img {
-                if let Ok(gif) = img.into::<Gif>() {
-                    if gif.is_animated() {
-                        return Some(image_buffer::get_pixbuf_animation(entry));
-                    }
+        for n in range {
+            for index in 0..len {
+                let index = index + len * n;
+                if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
+                    entries.push(entry);
                 }
             }
-            None
-        })
+        }
+
+        for entry in entries {
+            let mut cache = self.cache.clone();
+            let drawing = self.states.drawing.clone();
+            if cache.fetching(entry.key.clone()) {
+                spawn(move || {
+                    cache.push(entry, move |entry| get_image_buffer(&entry, &cell_size, &drawing));
+                });
+            } else {
+                trace!("image_cache/skip: key={:?}", entry.key);
+            }
+        }
     }
 
-    fn show_image(&mut self, to_end: bool) {
+    fn show_image(&mut self, to_end: bool) -> Option<Size> {
+        let image_size = None;
         let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar.is_enabled());
 
-        if self.states.fit_to.is_scrollable() {
+        if self.states.drawing.fit_to.is_scrollable() {
             self.gui.reset_scrolls(to_end);
+        }
+
+        if self.states.pre_fetch.is_some() {
+            self.pre_fetch(cell_size, 0..1);
         }
 
         for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                match self.get_animation(&entry) {
-                    Some(pixbuf) => match pixbuf {
-                        Ok(animation) => cell.draw_animation(&animation),
-                        Err(error) => cell.draw_error(&error, &cell_size, &self.states.fit_to, &self.gui.colors)
-                    },
-                    None =>
-                        match self.cherenkoved.get_pixbuf(&entry, &cell_size, &self.states.fit_to, &self.states.scaling) {
-                            Ok(pixbuf) => cell.draw(&pixbuf, &cell_size, &self.states.fit_to),
-                            Err(error) => cell.draw_error(&error, &cell_size, &self.states.fit_to, &self.gui.colors)
-                        }
+                let image_buffer = self.cache.get_image_buffer(&entry, &cell_size, &self.states.drawing);
+                let (fg, bg) = (self.gui.colors.error, self.gui.colors.error_background);
+                match image_buffer {
+                    Ok(image_buffer) =>
+                        cell.draw(&image_buffer, &cell_size, &self.states.drawing.fit_to, &fg, &bg),
+                    Err(error) =>
+                        cell.draw_text(&error, &cell_size, &fg, &bg)
                 }
             } else {
                 cell.image.set_from_pixbuf(None);
             }
         }
+
+        if self.states.pre_fetch.is_some() {
+            self.pre_fetch_serial += 1;
+            let pre_fetch_serial = self.pre_fetch_serial;
+            let tx = self.tx.clone();
+            spawn(move || {
+                sleep(Duration::from_millis(200));
+                tx.send(Operation::PreFetch(pre_fetch_serial)).unwrap();
+            });
+        }
+
+        image_size
     }
 
-    fn update_env(&mut self) {
+    fn update_env(&mut self, envs: &[(String, String)]) {
         let mut new_keys = HashSet::<String>::new();
-        for (name, value) in self.current_env(true) {
-            env::set_var(constant::env_name(&name), value);
-            new_keys.insert(name);
+        for &(ref name, ref value) in envs {
+            env::set_var(constant::env_name(name), value);
+            new_keys.insert(o!(name));
         }
         for name in self.current_env_keys.difference(&new_keys) {
             env::remove_var(name);
@@ -721,10 +826,11 @@ impl App {
         self.current_env_keys = new_keys;
     }
 
-    fn current_env(&self, include_helpers: bool) -> Vec<(String, String)> {
+    fn on_image_updated(&mut self, image_size: Option<Size>) {
         use entry::EntryContent::*;
 
         let mut envs: Vec<(String, String)> = vec![];
+        let mut envs_sub: Vec<(String, String)> = vec![];
         let len = self.entries.len();
         let gui_len = self.gui.len();
 
@@ -737,22 +843,22 @@ impl App {
             match entry.content {
                 File(ref path) => {
                     envs.push((o!("file"), o!(path_to_str(path))));
-                    if include_helpers { envs.push((o!("path"), o!(path_to_str(path)))); }
+                    envs_sub.push((o!("path"), o!(path_to_str(path))));
                 }
                 Http(ref path, ref url) => {
                     envs.push((o!("file"), o!(path_to_str(path))));
                     envs.push((o!("url"), o!(url)));
-                    if include_helpers { envs.push((o!("path"), o!(url))); }
+                    envs_sub.push((o!("path"), o!(url)))
                 }
                 Archive(ref archive_file, ref entry) => {
                     envs.push((o!("file"), entry.name.clone()));
                     envs.push((o!("archive_file"), o!(path_to_str(archive_file))));
-                    if include_helpers { envs.push((o!("path"), entry.name.clone())); }
+                    envs_sub.push((o!("path"), entry.name.clone()));
                 },
-                Pdf(ref pdf_file, _, index) => {
+                Pdf(ref pdf_file, index) => {
                     envs.push((o!("file"), o!(path_to_str(pdf_file))));
                     envs.push((o!("pdf_page"), s!(index)));
-                    if include_helpers { envs.push((o!("path"), o!(path_to_str(pdf_file)))); }
+                    envs_sub.push((o!("path"), o!(path_to_str(pdf_file))));
                 }
             }
 
@@ -761,36 +867,42 @@ impl App {
             envs.push((o!("last_page"), s!(last_page)));
             envs.push((o!("count"), s!(self.entries.len())));
 
-            if include_helpers {
-                envs.push((o!("paging"), {
-                    let (from, to) = (index + 1, min!(index + gui_len, len));
-                    if gui_len > 1 {
-                        if self.states.reverse.is_enabled() {
-                            format!("{}←{}", to, from)
-                        } else {
-                            format!("{}→{}", from, to)
-                        }
-                    } else {
-                        format!("{}", from)
-                    }
-                }));
-
-                envs.push((o!("flags"), {
-                    let mut text = o!("");
-                    text.push(self.states.fit_to.to_char());
-                    text.push(self.states.reverse.to_char());
-                    text.push(self.states.auto_paging.to_char());
-                    text.push(self.states.view.center_alignment.to_char());
-                    text
-                }));
+            if let Some(image_size) = image_size {
+                envs.push((o!("width"), s!(image_size.width)));
+                envs.push((o!("height"), s!(image_size.height)));
             }
 
+            envs_sub.push((o!("paging"), {
+                let (from, to) = (index + 1, min!(index + gui_len, len));
+                if gui_len > 1 {
+                    if self.states.reverse.is_enabled() {
+                        format!("{}←{}", to, from)
+                    } else {
+                        format!("{}→{}", from, to)
+                    }
+                } else {
+                    format!("{}", from)
+                }
+            }));
+
+            envs_sub.push((o!("flags"), {
+                let mut text = o!("");
+                text.push(self.states.drawing.fit_to.to_char());
+                text.push(self.states.reverse.to_char());
+                text.push(self.states.auto_paging.to_char());
+                text.push(self.states.view.center_alignment.to_char());
+                text
+            }));
         }
 
-        envs
+        puts_show_event(&envs);
+        envs.extend_from_slice(&envs_sub);
+        self.update_env(&envs);
     }
 
-    fn update_label(&self) {
+    fn update_label(&self, update_title: bool) {
+        env::set_var(constant::env_name("count"), s!(self.entries.len()));
+
         let text =
             if self.entries.current(&self.pointer).is_some() {
                 sh::expand(&self.states.status_format)
@@ -798,7 +910,9 @@ impl App {
                 o!(constant::DEFAULT_INFORMATION)
             };
 
-        self.gui.window.set_title(&text);
+        if update_title {
+            self.gui.window.set_title(&text);
+        }
         if self.states.status_bar.is_enabled() {
             self.gui.label.set_text(&text);
         }
@@ -828,3 +942,11 @@ impl Initial {
         }
     }
 }
+
+
+fn puts_show_event(envs: &[(String, String)]) {
+    let mut pairs = vec![(o!("event"), o!("show"))];
+    pairs.extend_from_slice(envs);
+    output::puts(&pairs);
+}
+

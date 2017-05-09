@@ -37,6 +37,7 @@ pub struct EntryContainerOptions {
 
 #[derive(Debug, Eq, Clone)]
 pub struct Entry {
+    pub key: Key,
     pub content: EntryContent,
     pub meta: Meta
 }
@@ -45,8 +46,8 @@ pub struct Entry {
 pub enum EntryContent {
     File(PathBuf),
     Http(PathBuf, String),
-    Archive(Rc<PathBuf>, ArchiveEntry),
-    Pdf(Rc<PathBuf>, Rc<PopplerDocument>, usize)
+    Archive(Arc<PathBuf>, ArchiveEntry),
+    Pdf(Arc<PathBuf>, usize)
 }
 
 pub type Meta = Arc<Vec<MetaEntry>>;
@@ -62,42 +63,59 @@ pub struct MetaEntry {
 pub struct SearchKey {
     pub path: String,
     pub index: Option<usize>
-
 }
 
+pub type Key = (char, String, usize);
 
 
 impl Entry {
     pub fn new(content: EntryContent, meta: Meta) -> Entry {
-        Entry { content: content, meta: meta }
+        Entry { key: content.key(), content: content, meta: meta }
     }
 
     pub fn new_without_meta(content: EntryContent) -> Entry {
-        Entry { content: content, meta: new_meta(&[]) }
+        Entry { key: content.key(), content: content, meta: new_meta(&[]) }
     }
 }
 
 impl Ord for Entry {
     fn cmp(&self, other: &Entry) -> Ordering {
-        self.content.cmp(&other.content)
+        self.key.cmp(&other.key)
     }
 }
 
 impl PartialEq for Entry {
     fn eq(&self, other: &Entry) -> bool {
-        self.content.eq(&other.content)
+        self.key.eq(&other.key)
     }
 }
 
 impl PartialOrd for Entry {
     fn partial_cmp(&self, other: &Entry) -> Option<Ordering> {
-        self.content.partial_cmp(&other.content)
+        self.key.partial_cmp(&other.key)
     }
 }
 
 impl Hash for Entry {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.content.hash(state);
+        self.key.hash(state);
+    }
+}
+
+impl EntryContent {
+    fn key(&self) -> Key {
+        use self::EntryContent::*;
+
+        match *self {
+            File(ref path) =>
+                ('f', path_to_str(path).to_owned(), 1),
+            Http(_, ref url) =>
+                ('h', url.clone(), 1),
+            Archive(ref path, ref entry) =>
+                ('a', path_to_str(path).to_owned(), entry.index),
+            Pdf(ref path, index) =>
+                ('p', path_to_str(path).to_owned(), index),
+        }
     }
 }
 
@@ -280,17 +298,17 @@ impl EntryContainer {
             pointer,
             Entry::new_without_meta(
                 EntryContent::Archive(
-                    Rc::new(archive_path.clone()),
+                    Arc::new(archive_path.clone()),
                     entry.clone())))
     }
 
-    pub fn push_pdf(&mut self, pointer: &mut IndexPointer, pdf_path: &PathBuf, document: PopplerDocument, meta: &MetaSlice) -> bool {
+    pub fn push_pdf(&mut self, pointer: &mut IndexPointer, pdf_path: &PathBuf, meta: &MetaSlice) -> bool {
+        let document = PopplerDocument::new_from_file(&pdf_path);
         let n_pages = document.n_pages();
         let mut result = false;
-        let document = Rc::new(document);
         for index in 0 .. n_pages {
-            let content = EntryContent::Pdf(Rc::new(pdf_path.clone()), document.clone(), index);
-            result = self.push_entry(pointer, Entry::new(content, new_meta(meta)));
+            let content = EntryContent::Pdf(Arc::new(pdf_path.clone()), index);
+            result |= self.push_entry(pointer, Entry::new(content, new_meta(meta)));
         }
         result
     }
@@ -328,18 +346,14 @@ impl EntryContainer {
 
         match (*entry).content {
             File(ref path) | Http(ref path, _) => self.is_valid_image_file(path),
-            Archive(_, _) | Pdf(_, _, _)=> true, // FIXME archive
+            Archive(_, _) | Pdf(_,  _) => true, // FIXME archive
         }
     }
 
     fn is_valid_image_file(&self, path: &PathBuf) -> bool {
         let opt = &self.options;
 
-        if !is_valid_image_filename(path) {
-            return false;
-        }
-
-        if !opt.needs_image_info() {
+        if !opt.needs_image_info() && is_valid_image_filename(path){
             return true;
         }
 
@@ -399,7 +413,7 @@ impl Entry {
             File(ref path) => path_to_str(path).to_owned(),
             Http(_, ref url) => url.clone(),
             Archive(ref archive_path, ref entry) => format!("{}@{}", entry.name, path_to_str(&*archive_path)),
-            Pdf(ref pdf_path, _, ref index) => format!("{}@{}", index, path_to_str(&*pdf_path)),
+            Pdf(ref pdf_path, ref index) => format!("{}@{}", index, path_to_str(&*pdf_path)),
         }
     }
 }
@@ -443,7 +457,7 @@ impl SearchKey {
                 url == key,
             File(ref path) =>
                 Path::new(key) == path,
-            Archive(ref path, _) | Pdf(ref path, _, _) =>
+            Archive(ref path, _) | Pdf(ref path, _) =>
                 Path::new(key) == **path,
         }
     }
@@ -458,7 +472,7 @@ impl SearchKey {
                 Path::new(key_path) == path,
             Archive(ref path, ref entry) =>
                 Path::new(key_path) == **path && key_index == entry.index,
-            Pdf(ref path, _, index) =>
+            Pdf(ref path, index) =>
                 Path::new(key_path) == **path && key_index == index,
         }
     }

@@ -15,7 +15,8 @@ use glib::translate::*;
 use glib::translate::ToGlibPtr;
 use libc::{c_int, c_double};
 
-use size::{FitTo, Size};
+use size::Size;
+use state::DrawingOption;
 
 mod sys;
 
@@ -32,7 +33,9 @@ impl PopplerDocument {
         let filepath = filepath.as_ref().to_str().unwrap();
         let filepath = format!("file://{}", filepath);
         let filepath = CString::new(filepath).unwrap();
-        let raw = unsafe { sys::poppler_document_new_from_file(filepath.as_ptr(), null(), null_mut()) };
+        let raw = unsafe {
+            time!("poppler/new_from_file" => sys::poppler_document_new_from_file(filepath.as_ptr(), null(), null_mut()))
+        };
         PopplerDocument(raw)
     }
 
@@ -43,7 +46,9 @@ impl PopplerDocument {
     }
 
     pub fn nth_page(&self, index: usize) -> PopplerPage {
-        let page = unsafe { sys::poppler_document_get_page(self.0, index as c_int) };
+        let page = unsafe {
+            time!("nth_page" => sys::poppler_document_get_page(self.0, index as c_int))
+        };
         PopplerPage(page)
     }
 }
@@ -69,16 +74,21 @@ impl PopplerPage {
         Size::new(width as i32, height as i32)
     }
 
-    pub fn get_pixbuf(&self, cell: &Size, fit: &FitTo) -> Pixbuf {
+    pub fn get_pixbuf(&self, cell: &Size, drawing: &DrawingOption) -> Pixbuf {
         let page = self.get_size();
 
-        let (scale, fitted, _) = page.fit(cell, fit);
+        let (scale, fitted, clipped_region) = page.fit_with_clipping(cell, drawing);
         let surface = ImageSurface::create(Format::ARgb32, fitted.width, fitted.height);
 
         {
             let context = Context::new(&surface);
             context.scale(scale, scale);
             context.set_source_rgb(1.0, 1.0, 1.0);
+            if let Some(r) = clipped_region {
+                context.translate(-r.left as f64, -r.top as f64);
+                context.rectangle(r.left as f64, r.top as f64, r.right as f64, r.bottom as f64);
+                context.clip();
+            }
             context.paint();
             self.render(&context);
         }

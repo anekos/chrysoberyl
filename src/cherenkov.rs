@@ -33,9 +33,10 @@ use rand::{self, Rng, ThreadRng};
 
 use color::Color;
 use entry::Entry;
-use image_buffer;
-use size::{FitTo, Size};
-use state::ScalingMethod;
+use entry_image;
+use image::{ImageBuffer, StaticImageBuffer};
+use size::Size;
+use state::DrawingOption;
 use utils::feq;
 
 
@@ -54,14 +55,16 @@ pub struct Che {
     pub color: Color,
 }
 
+#[derive(Clone)]
 pub struct Cherenkoved {
     cache: HashMap<Entry, CacheEntry>
 }
 
+#[derive(Clone)]
 pub struct CacheEntry {
-    buffer: Pixbuf,
+    image: StaticImageBuffer,
     cell_size: Size,
-    fit_to: FitTo,
+    drawing: DrawingOption,
     modifiers: Vec<Che>
 }
 
@@ -71,70 +74,79 @@ impl Cherenkoved {
         Cherenkoved { cache: HashMap::new() }
     }
 
-    pub fn get_pixbuf(&mut self, entry: &Entry, cell_size: &Size, fit_to: &FitTo, scaling: &ScalingMethod) -> Result<Pixbuf, image_buffer::Error> {
-        let new_entry = match self.cache.get(entry) {
-            None =>
-                return image_buffer::get_pixbuf(entry, cell_size, fit_to, scaling),
-            Some(cache_entry) => {
-                if cache_entry.is_valid(cell_size, fit_to) {
-                    return Ok(cache_entry.buffer.clone())
-                }
-                let modifiers = cache_entry.modifiers.clone();
-                match self.re_cherenkov(entry, cell_size, fit_to, scaling, &modifiers) {
-                    Ok(pixbuf) =>
-                        CacheEntry {buffer: pixbuf, cell_size: cell_size.clone(), fit_to: fit_to.clone(), modifiers: modifiers},
-                    Err(error) =>
-                        return Err(error)
-                }
+    pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: &Size, drawing: &DrawingOption) -> Option<Result<ImageBuffer, String>> {
+        let new_entry = if let Some(cache_entry) = self.cache.get(entry) { 
+            if cache_entry.is_valid(cell_size, drawing) {
+                return Some(Ok(ImageBuffer::Static(cache_entry.image.clone())))
             }
+            let modifiers = cache_entry.modifiers.clone();
+            match self.re_cherenkov(entry, cell_size, drawing, &modifiers) {
+                Ok(image_buffer) =>
+                    CacheEntry {image: image_buffer, cell_size: *cell_size, drawing: drawing.clone(), modifiers: modifiers},
+                Err(error) =>
+                    return Some(Err(error))
+            }
+        } else {
+            return None
         };
 
-        let result = new_entry.buffer.clone();
+        let result = new_entry.image.clone();
         self.cache.insert(entry.clone(), new_entry);
-        Ok(result)
+        Some(Ok(ImageBuffer::Static(result)))
     }
 
     pub fn remove(&mut self, entry: &Entry) {
         self.cache.remove(entry);
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, fit_to: &FitTo, che: &Che, scaling: &ScalingMethod) {
+    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, che: &Che, drawing: &DrawingOption) {
         if let Some(mut cache_entry) = self.cache.get_mut(entry) {
-            let buffer = cache_entry.buffer.clone();
             cache_entry.modifiers.push(che.clone());
-            cache_entry.buffer = cherenkov_pixbuf(buffer, che);
+            cache_entry.image = cherenkov_static_image_buffer(&cache_entry.image, che);
             return;
         }
 
-        if let Ok(pixbuf) = self.get_pixbuf(entry, cell_size, fit_to, scaling) {
-            self.cache.insert(
-                entry.clone(),
-                CacheEntry {
-                    buffer: cherenkov_pixbuf(pixbuf, che),
-                    cell_size: cell_size.clone(),
-                    fit_to: fit_to.clone(),
-                    modifiers: vec![],
-                });
+        let image_buffer = self.get_image_buffer(entry, cell_size, drawing).unwrap_or_else(|| entry_image::get_image_buffer(entry, cell_size, drawing));
+        if let Ok(image_buffer) =  image_buffer {
+            if let ImageBuffer::Static(image_buffer) = image_buffer {
+                self.cache.insert(
+                    entry.clone(),
+                    CacheEntry {
+                        image: cherenkov_static_image_buffer(&image_buffer, che),
+                        cell_size: *cell_size,
+                        drawing: drawing.clone(),
+                        modifiers: vec![che.clone()],
+                    });
+            }
         }
     }
 
-    fn re_cherenkov(&self, entry: &Entry, cell_size: &Size, fit_to: &FitTo, scaling: &ScalingMethod, modifiers: &[Che]) -> Result<Pixbuf, image_buffer::Error> {
-        image_buffer::get_pixbuf(entry, cell_size, fit_to, scaling).map(|mut pixbuf| {
-            for che in modifiers {
-                pixbuf = cherenkov_pixbuf(pixbuf, che);
+    fn re_cherenkov(&self, entry: &Entry, cell_size: &Size, drawing: &DrawingOption, modifiers: &[Che]) -> Result<StaticImageBuffer, String> {
+        entry_image::get_image_buffer(entry, cell_size, drawing).and_then(|image_buffer| {
+            if let ImageBuffer::Static(buf) = image_buffer {
+                let mut pixbuf = buf.get_pixbuf();
+                for che in modifiers {
+                    pixbuf = cherenkov_pixbuf(pixbuf, che);
+                }
+                Ok(StaticImageBuffer::new_from_pixbuf(&pixbuf))
+            } else {
+                Err(o!("Not static image"))
             }
-            pixbuf
         })
     }
 }
 
 
 impl CacheEntry {
-    pub fn is_valid(&self, cell_size: &Size, fit_to: &FitTo) -> bool {
-        self.cell_size == *cell_size && self.fit_to == *fit_to
+    pub fn is_valid(&self, cell_size: &Size, drawing: &DrawingOption) -> bool {
+        self.cell_size == *cell_size && self.drawing.fit_to == drawing.fit_to && self.drawing.clipping == drawing.clipping
     }
 }
 
+
+fn cherenkov_static_image_buffer(image_buffer: &StaticImageBuffer, che: &Che) -> StaticImageBuffer {
+    StaticImageBuffer::new_from_pixbuf(&cherenkov_pixbuf(image_buffer.get_pixbuf(), che))
+}
 
 fn cherenkov_pixbuf(pixbuf: Pixbuf, che: &Che) -> Pixbuf {
     {

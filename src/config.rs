@@ -21,6 +21,12 @@ pub static DEFAULT_CONFIG: &'static str = "
 @map key k @scroll --size 0.8 up    @previous
 @map key l @scroll --size 0.8 right @next
 
+# move (ignore views)
+@map key H @previous --ignore-views
+@map key J @next     --ignore-views
+@map key K @previous --ignore-views
+@map key L @next     --ignore-views
+
 # move
 @map key asciicircum @first
 @map key dollar      @last
@@ -47,10 +53,15 @@ pub static DEFAULT_CONFIG: &'static str = "
 @map key q @quit
 @map key q @quit
 @map key Escape @count
+@map key c @unclip
 
+# Mouse
 @map mouse 1 @scroll --size 0.8 down  @next
 @map mouse 2 @cherenkov --radius 0.02 --color random --spokes 50
 @map mouse 3 @scroll --size 0.8 up    @previous
+
+# Not default
+# @pre-fetch --page-size 4 --limit-of-items 100
 ";
 
 

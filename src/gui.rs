@@ -4,13 +4,14 @@ use std::path::Path;
 use std::str::FromStr;
 
 use cairo::{Context, ImageSurface, Format};
-use gdk_pixbuf::{Pixbuf, PixbufAnimation};
+use gdk_pixbuf::{Pixbuf, PixbufAnimationExt};
 use gtk::prelude::*;
 use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment};
 
 use color::Color;
 use constant;
-use image_buffer;
+use gtk_utils::new_pixbuf_from_surface;
+use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use option::OptionValue;
 use size::{FitTo, Size};
 use state::ViewState;
@@ -72,6 +73,10 @@ pub enum Direction {
     Right,
     Down
 }
+
+
+const FONT_SIZE: f64 = 12.0;
+const PADDING: f64 = 5.0;
 
 
 impl Gui {
@@ -255,7 +260,52 @@ impl Cell {
         Cell { image: image, window: window }
     }
 
-    pub fn draw(&self, pixbuf: &Pixbuf, cell_size: &Size, fit_to: &FitTo) {
+    pub fn draw(&self, image_buffer: &ImageBuffer, cell_size: &Size, fit_to: &FitTo, fg: &Color, bg: &Color) {
+        match *image_buffer {
+            ImageBuffer::Static(ref buf) =>
+                self.draw_static(buf, cell_size, fit_to),
+            ImageBuffer::Animation(ref buf) =>
+                self.draw_animation(buf, cell_size, fg, bg),
+
+        }
+    }
+
+    pub fn draw_text(&self, text: &str, cell_size: &Size, fg: &Color, bg: &Color) {
+        let surface = ImageSurface::create(Format::ARgb32, cell_size.width, cell_size.height);
+
+        let (width, height) = cell_size.floated();
+
+        let context = Context::new(&surface);
+
+        context.set_font_size(FONT_SIZE);
+        let extents = context.text_extents(text);
+
+        let (x, y) = (width / 2.0 - extents.width / 2.0, height / 2.0 - extents.height / 2.0);
+
+        let bg = bg.gdk_rgba();
+        context.set_source_rgba(bg.red, bg.green, bg.blue, bg.alpha);
+        context.rectangle(
+            x - PADDING,
+            y - extents.height - PADDING,
+            extents.width + PADDING * 2.0,
+            extents.height + PADDING * 2.0);
+        context.fill();
+
+        context.move_to(x, y);
+        let fg = fg.gdk_rgba();
+        context.set_source_rgba(fg.red, fg.green, fg.blue, fg.alpha);
+        context.show_text(text);
+
+        // puts_error!("at" => "show_image", "reason" => text);
+
+        self.draw_pixbuf(&new_pixbuf_from_surface(&surface), cell_size, &FitTo::Original)
+    }
+
+    fn draw_static(&self, image_buffer: &StaticImageBuffer, cell_size: &Size, fit_to: &FitTo) {
+        self.draw_pixbuf(&image_buffer.get_pixbuf(), cell_size, fit_to)
+    }
+
+    fn draw_pixbuf(&self, pixbuf: &Pixbuf, cell_size: &Size, fit_to: &FitTo) {
         self.image.set_from_pixbuf(Some(pixbuf));
         let (image_width, image_height) = (pixbuf.get_width(), pixbuf.get_height());
         let (ci_width, ci_height) = (min!(image_width, cell_size.width), min!(image_height, cell_size.height));
@@ -269,15 +319,16 @@ impl Cell {
         }
     }
 
-    pub fn draw_animation(&self, pixbuf: &PixbufAnimation) {
-        self.image.set_from_animation(pixbuf);
-    }
-
-    pub fn draw_error(&self, error: &image_buffer::Error, cell_size: &Size, fit_to: &FitTo, colors: &Colors) {
-        self.draw(
-            &error.get_pixbuf(cell_size, &colors.error, &colors.error_background),
-            cell_size,
-            fit_to);
+    fn draw_animation(&self, image_buffer: &AnimationBuffer, cell_size: &Size, fg: &Color, bg: &Color) {
+        match image_buffer.get_pixbuf_animation() {
+            Ok(buf) => {
+                self.image.set_from_animation(&buf);
+                let (w, h) = (buf.get_width(), buf.get_height());
+                self.window.set_size_request(w, h);
+            }
+            Err(ref error) =>
+                self.draw_text(error, cell_size, fg, bg)
+        }
     }
 
     /** return (x, y, w, h) **/
@@ -293,6 +344,15 @@ impl Cell {
          w.y - sy as i32,
          sw as i32,
          sh as i32)
+    }
+
+    pub fn get_image_size(&self) -> Option<(i32, i32)> {
+        self.image.get_pixbuf()
+            .map(|it| (it.get_width(), it.get_height()))
+            .or_else(|| {
+                self.image.get_animation()
+                    .map(|it| (it.get_width(), it.get_height()))
+            })
     }
 }
 

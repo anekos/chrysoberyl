@@ -305,6 +305,23 @@ pub fn parse_option_updater(args: &[String], method: OptionUpdateMethod) -> Resu
     })
 }
 
+pub fn parse_pre_fetch(args: &[String]) -> Result<Operation, String> {
+    let mut state = PreFetchState::default();
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut state.page_size).add_option(&["--page-size", "-p"], Store, "Fetch N page");
+        ap.refer(&mut state.limit_of_items).add_option(&["--limit-of-items", "-l"], Store, "Limit of cache items");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        if args.len() > 1 {
+            Operation::UpdatePreFetchState(Some(state))
+        } else {
+            Operation::UpdatePreFetchState(None)
+        }
+    })
+}
+
 pub fn parse_push<T>(args: &[String], op: T) -> Result<Operation, String>
 where T: FnOnce(String, Meta) -> Operation {
     impl FromStr for MetaEntry {
@@ -346,6 +363,20 @@ pub fn parse_save(args: &[String]) -> Result<Operation, String> {
         parse_args(&mut ap, args)
     } .map(|_| {
         Operation::Save(sh::expand_to_pathbuf(&path), index)
+    })
+}
+
+pub fn parse_set_env(args: &[String]) -> Result<Operation, String> {
+    let mut name = o!("");
+    let mut value: Option<String> = None;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut name).add_argument("env-name", Store, "Env name").required();
+        ap.refer(&mut value).add_argument("env-value", StoreOption, "Value");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::SetEnv(name, value.map(|it| sh::expand(&it)))
     })
 }
 

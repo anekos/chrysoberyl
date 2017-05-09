@@ -15,9 +15,8 @@ use gui::{ColorTarget, Direction};
 use mapping::{self, mouse_mapping};
 use option::OptionUpdateMethod;
 use shellexpand_wrapper as sh;
-use size::FitTo;
-use state::ScalingMethod;
-use state::StateName;
+use size::{FitTo, Region};
+use state::{ScalingMethod, StateName, PreFetchState};
 
 mod parser;
 
@@ -30,10 +29,12 @@ pub enum Operation {
     Cherenkov(CherenkovParameter),
     CherenkovClear,
     Clear,
+    Clip(Region),
     Color(ColorTarget, Color),
     Context(OperationContext, Box<Operation>),
     Count(Option<usize>),
     CountDigit(u8),
+    Draw,
     Editor(Option<String>, Vec<ConfigSource>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool),
@@ -49,6 +50,7 @@ pub enum Operation {
     Next(Option<usize>, bool),
     Nop,
     OperateFile(filer::FileOperation),
+    PreFetch(u64),
     Previous(Option<usize>, bool),
     PrintEntries,
     Push(String, Meta),
@@ -61,16 +63,20 @@ pub enum Operation {
     Random,
     Refresh,
     Save(PathBuf, Option<usize>),
-    SetStatusFormat(Option<String>),
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
+    SetEnv(String, Option<String>),
+    SetStatusFormat(Option<String>),
     Shell(bool, bool, Vec<String>), /* async, operation, command_line */
     Show(entry::SearchKey),
     Shuffle(bool), /* Fix current */
     Sort,
     UpdateOption(StateName, OptionUpdateMethod, Vec<String>),
+    UpdatePreFetchState(Option<PreFetchState>),
     User(Vec<(String, String)>),
+    Unclip,
     Views(Option<usize>, Option<usize>),
     ViewsFellow(bool), /* for_rows */
+    WindowResized,
 }
 
 
@@ -100,7 +106,6 @@ pub enum ParsingError {
     NotOperation,
     InvalidOperation(String),
 }
-
 
 
 impl FromStr for Operation {
@@ -188,6 +193,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@count"                     => parse_count(whole),
             "@cycle"                     => parse_option_updater(whole, OptionUpdateMethod::Cycle),
             "@disable"                   => parse_option_updater(whole, OptionUpdateMethod::Disable),
+            "@draw"                      => Ok(Draw),
             "@editor"                    => parse_editor(whole),
             "@enable"                    => parse_option_updater(whole, OptionUpdateMethod::Enable),
             "@entries"                   => Ok(PrintEntries),
@@ -203,6 +209,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@multi"                     => parse_multi(whole),
             "@move"                      => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Move(path, if_exist))),
             "@next" | "@n"               => parse_move(whole, Next),
+            "@pre-fetch"                 => parse_pre_fetch(whole),
             "@prev" | "@p" | "@previous" => parse_move(whole, Previous),
             "@push"                      => parse_push(whole, |it, meta| Push(sh::expand(&it), meta)),
             "@push-pdf"                  => parse_push(whole, |it, meta| PushPdf(sh::expand_to_pathbuf(&it), meta)),
@@ -212,6 +219,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@random" | "@rand"          => Ok(Random),
             "@refresh" | "@r"            => Ok(Refresh),
             "@save"                      => parse_save(whole),
+            "@set-env"                   => parse_set_env(whole),
             "@scaling"                   => parse_scaling(whole),
             "@scroll"                    => parse_scroll(whole),
             "@shell"                     => parse_shell(whole),
@@ -220,6 +228,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@sort"                      => Ok(Sort),
             "@status"                    => parse_status(whole),
             "@toggle"                    => parse_option_updater(whole, OptionUpdateMethod::Toggle),
+            "@unclip"                    => Ok(Unclip),
             "@user"                      => Ok(Operation::user(args.to_vec())),
             "@views"                     => parse_views(whole),
             ";"                          => parse_multi_args(args, ";"),

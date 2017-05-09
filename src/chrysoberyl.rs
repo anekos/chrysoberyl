@@ -1,6 +1,6 @@
 
 use std::sync::mpsc::Receiver;
-use std::thread::{sleep};
+use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 use argparse::{ArgumentParser, List, Collect, Store, StoreTrue, StoreOption, Print, StoreConst};
@@ -67,7 +67,7 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
     use state::*;
 
     let mut eco = EntryContainerOptions::new();
-    let mut states = States::new();
+    let mut states = States::default();
     let mut encodings: Vec<String> = vec![];
     let mut initial = app::Initial::new();
 

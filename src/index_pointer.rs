@@ -6,10 +6,22 @@ pub struct IndexPointer {
     multiplier: usize,
 }
 
+pub struct Save {
+    count: Option<usize>
+}
+
 
 impl IndexPointer {
     pub fn new() -> IndexPointer {
         IndexPointer { current: None, count: None, multiplier: 1 }
+    }
+
+    pub fn save(&self) -> Save {
+        Save { count: self.count }
+    }
+
+    pub fn restore(&mut self, save: &Save) {
+        self.count = save.count;
     }
 
     pub fn current_with(&self, delta: usize) -> Option<usize> {

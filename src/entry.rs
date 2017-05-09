@@ -277,6 +277,14 @@ impl EntryContainer {
         })
     }
 
+    pub fn find_nth_archive(&self, count: usize, reverse: bool) -> Option<usize> {
+        if reverse {
+            self.find_previous_archive(&IndexPointer::new_with_index(self.len()), count)
+        } else {
+            self.find_next_archive(&IndexPointer::new_with_index(0), count)
+        }
+    }
+
     pub fn find_previous_archive(&self, pointer: &IndexPointer, mut count: usize) -> Option<usize> {
         self.current(pointer).map(|(entry, base_index)| {
             let current_archive = entry.archive_name().to_owned();

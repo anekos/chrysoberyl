@@ -194,8 +194,8 @@ impl App {
                    self.on_editor(editor_command.clone(), config_sources.to_owned()),
                 Expand(recursive, ref base) =>
                     self.on_expand(&mut updated, recursive, base),
-                First(count, ignore_views, _) =>
-                    updated.pointer = self.pointer.with_count(count).first(len, !ignore_views),
+                First(count, ignore_views, move_by) =>
+                    self.on_first(&mut updated, len, count, ignore_views, move_by),
                 ForceFlush =>
                     self.http_cache.force_flush(),
                 Fragile(ref path) =>
@@ -204,8 +204,8 @@ impl App {
                     return self.on_initialized(),
                 Input(ref input) =>
                     self.on_input(input),
-                Last(count, ignore_views, _) =>
-                    updated.pointer = self.pointer.with_count(count).last(len, !ignore_views),
+                Last(count, ignore_views, move_by) =>
+                    self.on_last(&mut updated, len, count, ignore_views, move_by),
                 LazyDraw(serial, new_to_end) =>
                     self.on_lazy_draw(&mut updated, &mut to_end, serial, new_to_end),
                 LoadConfig(ref config_source) =>
@@ -451,6 +451,20 @@ impl App {
         updated.label = true;
     }
 
+    fn on_first(&mut self, updated: &mut Updated, len: usize, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {
+        match move_by {
+            MoveBy::Page =>
+                updated.pointer = self.pointer.with_count(count).first(len, !ignore_views),
+            MoveBy::Archive => {
+                let count = self.pointer.with_count(count).counted();
+                if let Some(first) = self.entries.find_nth_archive(count, false) {
+                    self.pointer.current = Some(first);
+                    updated.pointer = true;
+                }
+            }
+        }
+    }
+
     fn on_fragile(&mut self, path: &PathBuf) {
         new_fragile_input(self.tx.clone(), path_to_str(path));
     }
@@ -472,6 +486,20 @@ impl App {
             }
         } else {
             puts_event!("input", "type" => input.type_name(), "name" => input.text());
+        }
+    }
+
+    fn on_last(&mut self, updated: &mut Updated, len: usize, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {
+        match move_by {
+            MoveBy::Page =>
+                updated.pointer = self.pointer.with_count(count).last(len, !ignore_views),
+            MoveBy::Archive => {
+                let count = self.pointer.with_count(count).counted();
+                if let Some(nth) = self.entries.find_nth_archive(count, true) {
+                    self.pointer.current = Some(nth);
+                    updated.pointer = true;
+                }
+            }
         }
     }
 
@@ -510,12 +538,10 @@ impl App {
             MoveBy::Page =>
                 updated.pointer = self.pointer.with_count(count).next(len, !ignore_views),
             MoveBy::Archive => {
-                let count = self.pointer.counted();
+                let count = self.pointer.with_count(count).counted();
                 if let Some(next) = self.entries.find_next_archive(&self.pointer, count) {
                     self.pointer.current = Some(next);
                     updated.pointer = true;
-                } else {
-                    updated.pointer = false;
                 }
             }
         }
@@ -556,12 +582,10 @@ impl App {
                 *to_end = count.is_none() && !ignore_views;
             }
             MoveBy::Archive => {
-                let count = self.pointer.counted();
+                let count = self.pointer.with_count(count).counted();
                 if let Some(previous) = self.entries.find_previous_archive(&self.pointer, count) {
                     self.pointer.current = Some(previous);
                     updated.pointer = true;
-                } else {
-                    updated.pointer = false;
                 }
             }
         }

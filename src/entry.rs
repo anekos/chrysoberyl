@@ -277,12 +277,31 @@ impl EntryContainer {
         })
     }
 
-    pub fn find_nth_archive(&self, count: usize, reverse: bool) -> Option<usize> {
-        if reverse {
-            self.find_previous_archive(&IndexPointer::new_with_index(self.len()), count)
-        } else {
-            self.find_next_archive(&IndexPointer::new_with_index(0), count)
+    pub fn find_nth_archive(&self, mut count: usize, reverse: bool) -> Option<usize> {
+        let len = self.len();
+
+        if len == 0 {
+            return None;
+        } else if !reverse {
+            return self.find_next_archive(&IndexPointer::new_with_index(0), count)
         }
+
+        self.current(&IndexPointer::new_with_index(len - 1)).map(|(entry, base_index)| {
+            let mut previous_archive = entry.archive_name();
+            let mut previous_index = base_index;
+            for (index, it) in self.files.iter().enumerate().rev() {
+                if it.archive_name() != previous_archive {
+                    if count == 1 {
+                        break;
+                    }
+                    count -= 1;
+                    previous_archive = it.archive_name();
+                } else {
+                    previous_index = index;
+                }
+            }
+            previous_index
+        })
     }
 
     pub fn find_previous_archive(&self, pointer: &IndexPointer, mut count: usize) -> Option<usize> {
@@ -300,10 +319,8 @@ impl EntryContainer {
                         count -= 1;
                         previous_archive = Some(it.archive_name());
                     }
-                } else {
-                    if it.archive_name() != current_archive {
-                        previous_archive = Some(it.archive_name())
-                    }
+                } else if it.archive_name() != current_archive {
+                    previous_archive = Some(it.archive_name())
                 }
             }
             previous_index

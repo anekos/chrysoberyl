@@ -2,14 +2,19 @@
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex, Condvar};
 
-use entry::{Entry, Key};
 use cache::Cache;
+use cherenkov::{Cherenkoved, Che};
+use entry::{Entry, Key};
+use entry_image;
 use image::{ImageBuffer};
+use size::Size;
+use state::DrawingOption;
 
 
 
 #[derive(Clone)]
 pub struct ImageCache {
+    cherenkoved: Arc<Mutex<Cherenkoved>>,
     cache: Cache<Key, Result<ImageBuffer, String>>,
     fetching: Arc<(Mutex<HashSet<Key>>, Condvar)>,
 }
@@ -18,6 +23,7 @@ pub struct ImageCache {
 impl ImageCache {
     pub fn new(limit: usize) -> ImageCache {
         ImageCache {
+            cherenkoved: Arc::new(Mutex::new(Cherenkoved::new())),
             cache: Cache::new(limit),
             fetching: Arc::new((Mutex::new(HashSet::new()), Condvar::new())),
         }
@@ -64,9 +70,26 @@ impl ImageCache {
         }
     }
 
-    pub fn get(&mut self, entry: &Entry) -> Option<Result<ImageBuffer, String>> {
-        self.wait(&entry.key);
-        self.cache.get(&entry.key)
+    pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: &Size, drawing: &DrawingOption) -> Result<ImageBuffer, String> {
+        {
+            let mut cherenkoved = self.cherenkoved.lock().unwrap();
+            cherenkoved.get_image_buffer(entry, cell_size, drawing)
+        }.unwrap_or_else(|| {
+            self.wait(&entry.key);
+            self.cache.get(&entry.key).unwrap_or_else(|| {
+                entry_image::get_image_buffer(entry, cell_size, drawing)
+            })
+        })
+    }
+
+    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, che: &Che, drawing: &DrawingOption) {
+        let mut cherenkoved = self.cherenkoved.lock().unwrap();
+        cherenkoved.cherenkov(entry, cell_size, che, drawing)
+    }
+
+    pub fn uncherenkov(&mut self, entry: &Entry) {
+        let mut cherenkoved = self.cherenkoved.lock().unwrap();
+        cherenkoved.remove(entry)
     }
 
     fn wait(&mut self, key: &Key) {

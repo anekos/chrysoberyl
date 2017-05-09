@@ -55,10 +55,12 @@ pub struct Che {
     pub color: Color,
 }
 
+#[derive(Clone)]
 pub struct Cherenkoved {
     cache: HashMap<Entry, CacheEntry>
 }
 
+#[derive(Clone)]
 pub struct CacheEntry {
     image: StaticImageBuffer,
     cell_size: Size,
@@ -72,27 +74,25 @@ impl Cherenkoved {
         Cherenkoved { cache: HashMap::new() }
     }
 
-    pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: &Size, drawing: &DrawingOption) -> Result<ImageBuffer, String> {
-        let new_entry = match self.cache.get(entry) {
-            None =>
-                return entry_image::get_image_buffer(entry, cell_size, drawing),
-            Some(cache_entry) => {
-                if cache_entry.is_valid(cell_size, drawing) {
-                    return Ok(ImageBuffer::Static(cache_entry.image.clone()))
-                }
-                let modifiers = cache_entry.modifiers.clone();
-                match self.re_cherenkov(entry, cell_size, drawing, &modifiers) {
-                    Ok(image_buffer) =>
-                        CacheEntry {image: image_buffer, cell_size: *cell_size, drawing: drawing.clone(), modifiers: modifiers},
-                    Err(error) =>
-                        return Err(error)
-                }
+    pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: &Size, drawing: &DrawingOption) -> Option<Result<ImageBuffer, String>> {
+        let new_entry = if let Some(cache_entry) = self.cache.get(entry) { 
+            if cache_entry.is_valid(cell_size, drawing) {
+                return Some(Ok(ImageBuffer::Static(cache_entry.image.clone())))
             }
+            let modifiers = cache_entry.modifiers.clone();
+            match self.re_cherenkov(entry, cell_size, drawing, &modifiers) {
+                Ok(image_buffer) =>
+                    CacheEntry {image: image_buffer, cell_size: *cell_size, drawing: drawing.clone(), modifiers: modifiers},
+                Err(error) =>
+                    return Some(Err(error))
+            }
+        } else {
+            return None
         };
 
         let result = new_entry.image.clone();
         self.cache.insert(entry.clone(), new_entry);
-        Ok(ImageBuffer::Static(result))
+        Some(Ok(ImageBuffer::Static(result)))
     }
 
     pub fn remove(&mut self, entry: &Entry) {
@@ -106,7 +106,8 @@ impl Cherenkoved {
             return;
         }
 
-        if let Ok(image_buffer) = self.get_image_buffer(entry, cell_size, drawing) {
+        let image_buffer = self.get_image_buffer(entry, cell_size, drawing).unwrap_or_else(|| entry_image::get_image_buffer(entry, cell_size, drawing));
+        if let Ok(image_buffer) =  image_buffer {
             if let ImageBuffer::Static(image_buffer) = image_buffer {
                 self.cache.insert(
                     entry.clone(),
@@ -114,7 +115,7 @@ impl Cherenkoved {
                         image: cherenkov_static_image_buffer(&image_buffer, che),
                         cell_size: *cell_size,
                         drawing: drawing.clone(),
-                        modifiers: vec![],
+                        modifiers: vec![che.clone()],
                     });
             }
         }

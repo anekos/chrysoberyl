@@ -29,7 +29,7 @@ use http_cache::HttpCache;
 use image_cache::ImageCache;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
-use operation::{self, Operation, OperationContext, MappingTarget};
+use operation::{self, Operation, OperationContext, MappingTarget, MoveBy};
 use option::{OptionValue, OptionUpdateMethod};
 use output;
 use shell;
@@ -194,7 +194,7 @@ impl App {
                    self.on_editor(editor_command.clone(), config_sources.to_owned()),
                 Expand(recursive, ref base) =>
                     self.on_expand(&mut updated, recursive, base),
-                First(count, ignore_views) =>
+                First(count, ignore_views, _) =>
                     updated.pointer = self.pointer.with_count(count).first(len, !ignore_views),
                 ForceFlush =>
                     self.http_cache.force_flush(),
@@ -204,7 +204,7 @@ impl App {
                     return self.on_initialized(),
                 Input(ref input) =>
                     self.on_input(input),
-                Last(count, ignore_views) =>
+                Last(count, ignore_views, _) =>
                     updated.pointer = self.pointer.with_count(count).last(len, !ignore_views),
                 LazyDraw(serial, new_to_end) =>
                     self.on_lazy_draw(&mut updated, &mut to_end, serial, new_to_end),
@@ -214,16 +214,16 @@ impl App {
                     self.on_map(target, mapped_operation),
                 Multi(ref ops) =>
                     self.on_multi(ops),
-                Next(count, ignore_views) =>
-                    updated.pointer = self.pointer.with_count(count).next(len, !ignore_views),
+                Next(count, ignore_views, move_by) =>
+                    self.on_next(&mut updated, len, count, ignore_views, move_by),
                 Nop =>
                     (),
                 OperateFile(ref file_operation) =>
                     self.on_operate_file(file_operation),
                 PreFetch(pre_fetch_serial) =>
                     self.on_pre_fetch(pre_fetch_serial),
-                Previous(count, ignore_views) =>
-                    self.on_previous(&mut updated, &mut to_end, count, ignore_views),
+                Previous(count, ignore_views, move_by) =>
+                    self.on_previous(&mut updated, &mut to_end, count, ignore_views, move_by),
                 PrintEntries =>
                     self.on_print_entries(),
                 Push(ref path, ref meta) =>
@@ -287,7 +287,7 @@ impl App {
                 if current < len && len < current + gui_len {
                     updated.image = true;
                 } else if self.states.auto_paging.is_enabled() && gui_len <= len && len - gui_len == current {
-                    self.operate(&Operation::Next(None, false));
+                    self.operate(&Operation::Next(None, false, MoveBy::Page));
                     return
                 }
             }
@@ -505,6 +505,22 @@ impl App {
         }
     }
 
+    fn on_next(&mut self, updated: &mut Updated, len: usize, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {
+        match move_by {
+            MoveBy::Page =>
+                updated.pointer = self.pointer.with_count(count).next(len, !ignore_views),
+            MoveBy::Archive => {
+                let count = self.pointer.counted();
+                if let Some(next) = self.entries.find_next_archive(&self.pointer, count) {
+                    self.pointer.current = Some(next);
+                    updated.pointer = true;
+                } else {
+                    updated.pointer = false;
+                }
+            }
+        }
+    }
+
     fn on_operate_file(&mut self, file_operation: &filer::FileOperation) {
         use entry::EntryContent::*;
 
@@ -533,9 +549,22 @@ impl App {
         }
     }
 
-    fn on_previous(&mut self, updated: &mut Updated, to_end: &mut bool, count: Option<usize>, ignore_views: bool) {
-        updated.pointer = self.pointer.with_count(count).previous(!ignore_views);
-        *to_end = count.is_none() && !ignore_views;
+    fn on_previous(&mut self, updated: &mut Updated, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {
+        match move_by {
+            MoveBy::Page => {
+                updated.pointer = self.pointer.with_count(count).previous(!ignore_views);
+                *to_end = count.is_none() && !ignore_views;
+            }
+            MoveBy::Archive => {
+                let count = self.pointer.counted();
+                if let Some(previous) = self.entries.find_previous_archive(&self.pointer, count) {
+                    self.pointer.current = Some(previous);
+                    updated.pointer = true;
+                } else {
+                    updated.pointer = false;
+                }
+            }
+        }
     }
 
     fn on_print_entries(&self) {

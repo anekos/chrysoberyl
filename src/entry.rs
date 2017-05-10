@@ -76,6 +76,10 @@ impl Entry {
     pub fn new_without_meta(content: EntryContent) -> Entry {
         Entry { key: content.key(), content: content, meta: new_meta(&[]) }
     }
+
+    pub fn archive_name(&self) -> &str {
+        &self.key.1
+    }
 }
 
 impl Ord for Entry {
@@ -248,6 +252,85 @@ impl EntryContainer {
         if let Some(current_entry) = current_entry {
             self.set_current(pointer, current_entry);
         }
+    }
+
+    pub fn find_next_archive(&self, pointer: &IndexPointer, mut count: usize) -> Option<usize> {
+        self.current(pointer).map(|(entry, base_index)| {
+            let mut current_archive = entry.archive_name().to_owned();
+            for (index, it) in self.files.iter().enumerate().skip(base_index + 1) {
+                if it.archive_name() != current_archive {
+                    if count == 1 {
+                        return Some(index)
+                    } else {
+                        count -= 1;
+                        current_archive = it.archive_name().to_owned();
+                    }
+                }
+            }
+            None
+        }).unwrap_or_else(|| {
+            if self.len() == 0 {
+                None
+            } else {
+                Some(1)
+            }
+        })
+    }
+
+    pub fn find_nth_archive(&self, mut count: usize, reverse: bool) -> Option<usize> {
+        let len = self.len();
+
+        if len == 0 {
+            return None;
+        } else if !reverse {
+            return self.find_next_archive(&IndexPointer::new_with_index(0), count)
+        }
+
+        self.current(&IndexPointer::new_with_index(len - 1)).map(|(entry, base_index)| {
+            let mut previous_archive = entry.archive_name();
+            let mut previous_index = base_index;
+            for (index, it) in self.files.iter().enumerate().rev() {
+                if it.archive_name() != previous_archive {
+                    if count == 1 {
+                        break;
+                    }
+                    count -= 1;
+                    previous_archive = it.archive_name();
+                } else {
+                    previous_index = index;
+                }
+            }
+            previous_index
+        })
+    }
+
+    pub fn find_previous_archive(&self, pointer: &IndexPointer, mut count: usize) -> Option<usize> {
+        self.current(pointer).map(|(entry, base_index)| {
+            let current_archive = entry.archive_name().to_owned();
+            let mut previous_archive: Option<&str> = None;
+            let mut previous_index = None;
+            for (index, it) in self.files.iter().enumerate().rev().skip(self.files.len() - base_index + 1) {
+                if let Some(prev) = previous_archive {
+                    if it.archive_name() == prev {
+                        previous_index = Some(index)
+                    } else if count == 1 {
+                        break;
+                    } else {
+                        count -= 1;
+                        previous_archive = Some(it.archive_name());
+                    }
+                } else if it.archive_name() != current_archive {
+                    previous_archive = Some(it.archive_name())
+                }
+            }
+            previous_index
+        }).unwrap_or_else(|| {
+            if self.len() == 0 {
+                None
+            } else {
+                Some(1)
+            }
+        })
     }
 
     fn reset_indices(&mut self) {

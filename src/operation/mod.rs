@@ -37,21 +37,21 @@ pub enum Operation {
     Draw,
     Editor(Option<String>, Vec<ConfigSource>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
-    First(Option<usize>, bool),
+    First(Option<usize>, bool, MoveBy),
     ForceFlush,
     Fragile(PathBuf),
     Initialized,
     Input(mapping::Input),
-    Last(Option<usize>, bool),
+    Last(Option<usize>, bool, MoveBy),
     LazyDraw(u64, bool), /* serial, to_end */
     LoadConfig(ConfigSource),
     Map(MappingTarget, Vec<String>),
     Multi(Vec<Operation>),
-    Next(Option<usize>, bool),
+    Next(Option<usize>, bool, MoveBy),
     Nop,
     OperateFile(filer::FileOperation),
     PreFetch(u64),
-    Previous(Option<usize>, bool),
+    Previous(Option<usize>, bool, MoveBy),
     PrintEntries,
     Push(String, Meta),
     PushArchiveEntry(PathBuf, ArchiveEntry),
@@ -105,6 +105,12 @@ pub enum MappingTarget {
 pub enum ParsingError {
     NotOperation,
     InvalidOperation(String),
+}
+
+#[derive(Clone, Debug, PartialEq, Copy)]
+pub enum MoveBy {
+    Page,
+    Archive,
 }
 
 

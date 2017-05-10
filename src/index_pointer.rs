@@ -1,5 +1,6 @@
 
 
+#[derive(Clone)]
 pub struct IndexPointer {
     pub current: Option<usize>,
     count: Option<usize>,
@@ -14,6 +15,10 @@ pub struct Save {
 impl IndexPointer {
     pub fn new() -> IndexPointer {
         IndexPointer { current: None, count: None, multiplier: 1 }
+    }
+
+    pub fn new_with_index(index: usize) -> IndexPointer {
+        IndexPointer { current: Some(index), count: None, multiplier: 1 }
     }
 
     pub fn save(&self) -> Save {

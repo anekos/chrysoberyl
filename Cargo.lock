@@ -29,6 +29,7 @@ dependencies = [
  "log 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "lru-cache 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "mkstemp-rs 0.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num_cpus 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "onig 1.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",

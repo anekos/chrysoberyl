@@ -22,6 +22,7 @@ extern crate libarchive;
 extern crate libc;
 extern crate lru_cache;
 extern crate mkstemp;
+extern crate num_cpus;
 extern crate onig;
 extern crate rand;
 extern crate shell_escape;

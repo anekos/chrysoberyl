@@ -5,6 +5,8 @@ use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread::spawn;
 
+use num_cpus;
+
 use entry::Entry;
 use entry_image::get_image_buffer;
 use image_cache::ImageCache;
@@ -64,11 +66,12 @@ impl Default for FetchTarget {
 fn main(target: ArcTarget, cache: ImageCache) -> Sender<FetcherOperation> {
     use self::FetcherOperation::*;
 
-
     let (tx, rx) = channel();
 
     spawn(clone_army!([tx] move || {
-        let mut idles = 4;
+        let mut idles = num_cpus::get();
+
+        info!("image_fetcher: threads={}", idles);
 
         while let Ok(op) = rx.recv() {
             match op {

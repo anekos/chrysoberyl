@@ -509,7 +509,7 @@ impl App {
     }
 
     fn on_lazy_draw(&mut self, updated: &mut Updated, to_end: &mut bool, serial: u64, new_to_end: bool) {
-        trace!("draw_serial: {}, serial: {}", self.draw_serial, serial);
+        trace!("on_lazy_draw: draw_serial={} serial={}", self.draw_serial, serial);
         if self.draw_serial == serial {
             updated.image = true;
             *to_end = new_to_end;
@@ -571,7 +571,7 @@ impl App {
 
     fn on_pre_fetch(&mut self, serial: u64) {
         if let Some(pre_fetch) = self.states.pre_fetch.clone() {
-            trace!("pre_fetch_serial: {}, serial: {}", self.pre_fetch_serial, serial);
+            trace!("on_pre_fetch: pre_fetch_serial={} serial={}", self.pre_fetch_serial, serial);
 
             if self.pre_fetch_serial == serial {
                 let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar.is_enabled());

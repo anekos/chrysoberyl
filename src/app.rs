@@ -1,5 +1,6 @@
 
 use std::collections::HashSet;
+use std::collections::VecDeque;
 use std::env;
 use std::ops::Range;
 use std::path::{Path, PathBuf};
@@ -27,6 +28,7 @@ use fragile_input::new_fragile_input;
 use gui::{Gui, ColorTarget, Direction};
 use http_cache::HttpCache;
 use image_cache::ImageCache;
+use image_fetcher::ImageFetcher;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
 use operation::{self, Operation, OperationContext, MappingTarget, MoveBy};
@@ -53,6 +55,7 @@ pub struct App {
     pointer: IndexPointer,
     current_env_keys: HashSet<String>,
     cache: ImageCache,
+    fetcher: ImageFetcher,
     pub tx: Sender<Operation>,
     pub states: States
 }
@@ -96,6 +99,7 @@ impl App {
         }
 
         let cache_limit = PreFetchState::default().limit_of_items;
+        let cache = ImageCache::new(cache_limit);
 
         let mut app = App {
             entries: EntryContainer::new(entry_options),
@@ -110,7 +114,8 @@ impl App {
             rng: rand::thread_rng(),
             pointer: IndexPointer::new(),
             current_env_keys: HashSet::new(),
-            cache: ImageCache::new(cache_limit),
+            cache: cache.clone(),
+            fetcher: ImageFetcher::new(cache),
         };
 
         app.reset_view();
@@ -800,31 +805,19 @@ impl App {
     }
 
     fn pre_fetch(&mut self, cell_size: Size, range: Range<usize>) {
-        use entry_image::get_image_buffer;
-
         let len = self.gui.len();
-        let mut entries = vec![];
+        let mut entries = VecDeque::new();
 
         for n in range {
             for index in 0..len {
                 let index = index + len * n;
                 if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
-                    entries.push(entry);
+                    entries.push_back(entry);
                 }
             }
         }
 
-        for entry in entries {
-            let mut cache = self.cache.clone();
-            let drawing = self.states.drawing.clone();
-            if cache.fetching(entry.key.clone()) {
-                spawn(move || {
-                    cache.push(entry, move |entry| get_image_buffer(&entry, &cell_size, &drawing));
-                });
-            } else {
-                trace!("image_cache/skip: key={:?}", entry.key);
-            }
-        }
+        self.fetcher.new_target(entries, cell_size, self.states.drawing.clone());
     }
 
     fn show_image(&mut self, to_end: bool) -> Option<Size> {
@@ -1002,4 +995,3 @@ fn puts_show_event(envs: &[(String, String)]) {
     pairs.extend_from_slice(envs);
     output::puts(&pairs);
 }
-

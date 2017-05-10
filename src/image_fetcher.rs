@@ -78,7 +78,6 @@ fn main(target: ArcTarget, cache: ImageCache) -> Sender<FetcherOperation> {
                 Refresh(new_targets) => {
                     let mut target = target.lock().unwrap();
                     *target = new_targets;
-                    println!("refresh: {:?}", idles);
                     start(&tx, cache.clone(), &mut idles, &mut target);
                 }
                 Done => {

@@ -1,15 +1,14 @@
 
 use std::collections::VecDeque;
 use std::fs::{File, create_dir_all};
-use std::io::{BufWriter, Write, Read};
+use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::sync::mpsc::{channel, Sender};
 use std::thread::spawn;
+use std::time::Duration;
 
-use hyper::client::Client;
-use hyper::client::response::Response;
-use hyper::net::HttpsConnector;
-use hyper_native_tls::NativeTlsClient;
+use curl::easy::Easy as EasyCurl;
+use curl;
 use url::Url;
 
 use app_path;
@@ -101,6 +100,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
                     while let Some(request) = buffer.pull() {
                         app_tx.send(Operation::PushHttpCache(request.cache_filepath, request.url, request.meta)).unwrap();
                     }
+
                     puts!("event" => "http/complete", "thread_id" => s!(thread_id), "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
 
                     if let Some(next) = queued.pop_front() {
@@ -112,7 +112,14 @@ fn main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
                 Fail(thread_id, err, request) => {
                     waiting.push(thread_id);
                     buffer.skip(request.serial);
-                    puts_error!("at" => "http/get", "reason" => err, "url" => o!(request.url), "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
+
+                    puts_error!("at" => "http/get", "thread_id" => s!(thread_id), "reason" => err, "url" => o!(request.url), "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
+
+                    if let Some(next) = queued.pop_front() {
+                        threads[thread_id].send(next).unwrap();
+                    } else {
+                        waiting.push(thread_id);
+                    }
                 }
                 Flush => {
                     puts!("event" => "http/flush/start", "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
@@ -131,24 +138,28 @@ fn main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
 fn processor(thread_id: usize, main_tx: Sender<Getter>) -> Sender<Request> {
     let (getter_tx, getter_rx) = channel();
 
-    let ssl = NativeTlsClient::new().unwrap();
-    let connector = HttpsConnector::new(ssl);
-    let client = Client::with_connector(connector);
-
     spawn(move || {
+        let mut curl = EasyCurl::new();
+
+        // http://php.net/manual/ja/function.curl-setopt.php
+        curl.low_speed_time(Duration::from_secs(10)).unwrap(); // CURLOPT_LOW_SPEED_TIME=10sec
+        curl.low_speed_limit(1024).unwrap(); // CURLOPT_LOW_SPEED_LIMIT=1024
+        // curl.timeout(Duration::from_secs(60)); // CURLOPT_TIMEOUT=60
+
         while let Ok(request) = getter_rx.recv() {
             let request: Request = request;
 
             puts!("event" => "http/get", "thread_id" => s!(thread_id), "url" => o!(&request.url));
 
-            match client.get(&request.url).send() {
-                Ok(response) => {
-                    write_to_file(&request.cache_filepath, response);
+            let mut buf = vec![];
+            match curl_get(&mut curl, &request.url, &mut buf) {
+                Ok(_) => {
+                    let mut writer = BufWriter::new(File::create(&request.cache_filepath).unwrap());
+                    writer.write_all(buf.as_slice()).unwrap();
                     main_tx.send(Getter::Done(thread_id, request)).unwrap();
                 }
-                Err(err) => {
-                    main_tx.send(Getter::Fail(thread_id, format!("{}", err), request)).unwrap();
-                }
+                Err(err) =>
+                    main_tx.send(Getter::Fail(thread_id, format!("{}", err), request)).unwrap(),
             }
         }
     });
@@ -156,11 +167,16 @@ fn processor(thread_id: usize, main_tx: Sender<Getter>) -> Sender<Request> {
     getter_tx
 }
 
-fn write_to_file(filepath: &PathBuf, mut response: Response) {
-    let mut writer = BufWriter::new(File::create(filepath).unwrap());
-    let mut data = vec![];
-    response.read_to_end(&mut data).unwrap();
-    writer.write_all(data.as_slice()).unwrap();
+fn curl_get(curl: &mut EasyCurl, url: &str, buf: &mut Vec<u8>) -> Result<(), curl::Error> {
+    try!(curl.url(url));
+    let mut transfer = curl.transfer();
+    try! {
+        transfer.write_function(|data| {
+            buf.extend_from_slice(data);
+            Ok(data.len())
+        })
+    };
+    transfer.perform()
 }
 
 fn generate_temporary_filename(url: &str) -> PathBuf {

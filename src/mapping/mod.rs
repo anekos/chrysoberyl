@@ -83,19 +83,3 @@ impl Input {
         }
     }
 }
-
-
-impl InputType {
-    pub fn input_from_text(&self, text: &str) -> Result<Input, String> {
-        match *self {
-            InputType::Key =>
-                Ok(Input::key(text)),
-            InputType::MouseButton => {
-                match text.parse() {
-                    Ok(button) => Ok(Input::mouse_button(0, 0, button)),
-                    Err(err) => Err(s!(err)),
-                }
-            }
-        }
-    }
-}

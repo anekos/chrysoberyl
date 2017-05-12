@@ -10,7 +10,7 @@ use config::ConfigSource;
 use entry::{Meta, MetaEntry, new_meta_from_vec, SearchKey};
 use filer;
 use gui::ColorTarget;
-use mapping::{InputType, mouse_mapping};
+use mapping::{Input, InputType, mouse_mapping};
 use option::OptionUpdateMethod;
 use shellexpand_wrapper as sh;
 use size::FitTo;
@@ -167,6 +167,21 @@ pub fn parse_fit(args: &[String]) -> Result<Operation, String> {
 }
 
 pub fn parse_input(args: &[String]) -> Result<Operation, String> {
+    impl InputType {
+        pub fn input_from_text(&self, text: &str) -> Result<Input, String> {
+            match *self {
+                InputType::Key =>
+                    Ok(Input::key(text)),
+                InputType::MouseButton => {
+                    match text.parse() {
+                        Ok(button) => Ok(Input::mouse_button(0, 0, button)),
+                        Err(err) => Err(s!(err)),
+                    }
+                }
+            }
+        }
+    }
+
     let mut input_type = InputType::Key;
     let mut input = "".to_owned();
 

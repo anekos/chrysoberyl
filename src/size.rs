@@ -1,10 +1,8 @@
 
 use std::ops::Add;
-use std::str::FromStr;
 
 use gdk_pixbuf::Pixbuf;
 
-use option;
 use state::DrawingOption;
 use utils::feq;
 
@@ -189,43 +187,5 @@ impl PartialEq for Region {
 impl FitTo {
     pub fn is_scrollable(&self) -> bool {
         *self != FitTo::Cell
-    }
-}
-
-impl FromStr for FitTo {
-    type Err = String;
-
-    fn from_str(src: &str) -> Result<FitTo, String> {
-        use self::FitTo::*;
-
-        let result = match src {
-            "original" => Original,
-            "original-or-cell" | "cell-or-original" => OriginalOrCell,
-            "cell" => Cell,
-            "width" => Width,
-            "height" => Height,
-            _ => return Err(format!("Invalid target name: {}", src))
-        };
-        Ok(result)
-    }
-}
-
-const FIT_TO_DEFAULT: &'static [FitTo] = &[FitTo::Original, FitTo::Cell, FitTo::OriginalOrCell, FitTo::Width, FitTo::Height];
-
-impl option::OptionValue for FitTo {
-    fn default_series<'a>() -> &'a [FitTo] {
-        FIT_TO_DEFAULT
-    }
-
-    fn to_char(&self) -> char {
-        use self::FitTo::*;
-
-        match *self {
-            Original => 'O',
-            OriginalOrCell => 'o',
-            Width => 'w',
-            Height => 'h',
-            Cell => 'c',
-        }
     }
 }

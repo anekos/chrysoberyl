@@ -11,7 +11,6 @@ use entry::{Meta, MetaEntry, new_meta_from_vec, SearchKey};
 use filer;
 use gui::ColorTarget;
 use mapping::{Input, InputType, mouse_mapping};
-use option::OptionUpdateMethod;
 use shellexpand_wrapper as sh;
 use size::FitTo;
 
@@ -298,27 +297,29 @@ pub fn parse_multi_args(xs: &[String], separator: &str) -> Result<Operation, Str
     Ok(Operation::Multi(result))
 }
 
-pub fn parse_option_updater(args: &[String], method: OptionUpdateMethod) -> Result<Operation, String> {
-    use state::StateName::*;
-    use self::Operation::UpdateOption;
-
-    let mut name = "".to_owned();
-    let mut series: Vec<String> = vec![];
+pub fn parse_option_set(args: &[String]) -> Result<Operation, String> {
+    let mut option_name = OptionName::default();
+    let mut option_value = o!("");
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut name).add_argument("option_name", Store, "Option name").required();
-        ap.refer(&mut series).add_argument("series", Collect, "Target value series (disable enable ....)");
+        ap.refer(&mut option_name).add_argument("option_name", Store, "Option name").required();
+        ap.refer(&mut option_value).add_argument("option_value", Store, "Option value").required();
         parse_args(&mut ap, args)
-    } .and_then(|_| {
-        match &*name.to_lowercase() {
-            "status-bar" | "status"                => Ok(UpdateOption(StatusBar, method, series)),
-            "reverse" | "rev"                      => Ok(UpdateOption(Reverse, method, series)),
-            "center" | "center-alignment"          => Ok(UpdateOption(CenterAlignment, method, series)),
-            "auto-page" | "auto-paging" | "paging" => Ok(UpdateOption(AutoPaging, method, series)),
-            "fit" | "fit-to"                       => Ok(UpdateOption(FitTo, method, series)),
-            _  => Err(format!("Unknown option: {}", name))
-        }
+    } .map(|_| {
+        Operation::UpdateOption(option_name, OptionUpdater::Set(option_value))
+    })
+}
+
+pub fn parse_option_1(args: &[String], updater: OptionUpdater) -> Result<Operation, String> {
+    let mut option_name = OptionName::default();
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut option_name).add_argument("option_name", Store, "Option name").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::UpdateOption(option_name, updater)
     })
 }
 

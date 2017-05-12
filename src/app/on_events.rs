@@ -14,10 +14,9 @@ use entry::{MetaSlice, new_meta, SearchKey};
 use filer;
 use fragile_input::new_fragile_input;
 use gui::{ColorTarget, Direction};
-use operation::{self, Operation, OperationContext, MappingTarget, MoveBy};
-use option::{OptionValue, OptionUpdateMethod};
+use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater};
 use output;
-use state::{ScalingMethod, STATUS_FORMAT_DEFAULT, StateName, PreFetchState};
+use state::{ScalingMethod, STATUS_FORMAT_DEFAULT, PreFetchState};
 use utils::path_to_str;
 
 use app::*;
@@ -38,9 +37,9 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
     use cherenkov::Che;
 
     if let Some(OperationContext::Input(Input::MouseButton((mx, my), _))) = context.cloned() {
-        let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar.is_enabled());
+        let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
 
-        for (index, cell) in app.gui.cells(app.states.reverse.is_enabled()).enumerate() {
+        for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
             if let Some(entry) = app.entries.current_with(&app.pointer, index).map(|(entry,_)| entry) {
                 let (x1, y1, w, h) = {
                     let (cx, cy, cw, ch) = cell.get_top_left();
@@ -88,7 +87,7 @@ pub fn on_clear(app: &mut App, updated: &mut Updated) {
 pub fn on_clip(app: &mut App, updated: &mut Updated, region: &Region) {
     let (mx, my) = (region.left as i32, region.top as i32);
     let current = app.states.drawing.clipping.unwrap_or_default();
-    for (index, cell) in app.gui.cells(app.states.reverse.is_enabled()).enumerate() {
+    for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
         if app.entries.current_with(&app.pointer, index).is_some() {
             let (x1, y1, w, h) = {
                 let (cx, cy, cw, ch) = cell.get_top_left();
@@ -257,7 +256,7 @@ pub fn on_pre_fetch(app: &mut App, serial: u64) {
         trace!("on_pre_fetch: pre_fetch_serial={} serial={}", app.pre_fetch_serial, serial);
 
         if app.pre_fetch_serial == serial {
-            let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar.is_enabled());
+            let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
             app.pre_fetch(cell_size, 1..pre_fetch.page_size);
         }
     }
@@ -403,34 +402,51 @@ pub fn on_unclip(app: &mut App, updated: &mut Updated) {
     updated.image_options = true;
 }
 
-pub fn on_update_option(app: &mut App, updated: &mut Updated, name: &StateName, method: &OptionUpdateMethod, series: &[String]) {
-    use state::StateName::*;
+pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &OptionName, updater: OptionUpdater) {
+    use option::OptionValue;
+    use operation::OptionName::*;
+    use operation::OptionUpdater::*;
 
-    let result = match *name {
-        StatusBar => app.states.status_bar.update_with_series_reader(method, series),
-        Reverse => app.states.reverse.update_with_series_reader(method, series),
-        CenterAlignment => app.states.view.center_alignment.update_with_series_reader(method, series),
-        AutoPaging => app.states.auto_paging.update_with_series_reader(method, series),
-        FitTo => app.states.drawing.fit_to.update_with_series_reader(method, series),
-    };
+    {
+        let value: &mut OptionValue = match *option_name {
+            AutoPaging => &mut app.states.auto_paging,
+            CenterAlignment => &mut app.states.view.center_alignment,
+            FitTo => &mut app.states.drawing.fit_to,
+            Reverse => &mut app.states.reverse,
+            Scaling => &mut app.states.drawing.scaling,
+            StatusBar => &mut app.states.status_bar,
+        };
 
-    if let Err(err) = result {
-        puts_error!("at" => "on_update", "reason" => err);
-    }
+        let result = match updater {
+            Cycle => value.cycle(),
+            Disable => value.disable(),
+            Enable => value.enable(),
+            Set(arg) => value.set(&arg),
+            Toggle => value.toggle(),
+            Unset => value.unset(),
+        };
 
-    match *name {
-        StatusBar => app.update_label_visibility(),
-        CenterAlignment => app.reset_view(),
-        _ => ()
+        if let Err(error) = result {
+            puts_error!("at" => "update_option", "reason" => error);
+            return;
+        }
     }
 
     updated.image = true;
-    match *name {
-        StatusBar | FitTo | CenterAlignment =>
+
+    match *option_name {
+        StatusBar => {
+            app.update_label_visibility();
+            updated.image_options = true;
+        }
+        CenterAlignment => {
+            app.reset_view();
+            updated.image_options = true;
+        }
+        FitTo =>
             updated.image_options = true,
-        _ =>
-            ()
-    };
+        _ => ()
+    }
 }
 
 pub fn on_update_pre_fetch_state(app: &mut App, state: &Option<PreFetchState>) {

@@ -13,10 +13,9 @@ use entry;
 use filer;
 use gui::{ColorTarget, Direction};
 use mapping::{self, mouse_mapping};
-use option::OptionUpdateMethod;
 use shellexpand_wrapper as sh;
 use size::{FitTo, Region};
-use state::{ScalingMethod, StateName, PreFetchState};
+use state::{ScalingMethod, PreFetchState};
 
 mod parser;
 
@@ -70,7 +69,7 @@ pub enum Operation {
     Show(entry::SearchKey),
     Shuffle(bool), /* Fix current */
     Sort,
-    UpdateOption(StateName, OptionUpdateMethod, Vec<String>),
+    UpdateOption(OptionName, OptionUpdater),
     UpdatePreFetchState(Option<PreFetchState>),
     User(Vec<(String, String)>),
     Unclip,
@@ -113,12 +112,56 @@ pub enum MoveBy {
     Archive,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum OptionUpdater {
+    Set(String),
+    Unset,
+    Enable,
+    Disable,
+    Toggle,
+    Cycle,
+}
+
+#[derive(Clone, Debug, PartialEq, Copy)]
+pub enum OptionName {
+    AutoPaging,
+    CenterAlignment,
+    FitTo,
+    Reverse,
+    Scaling,
+    StatusBar,
+}
+
 
 impl FromStr for Operation {
     type Err = ParsingError;
 
-    fn from_str(src: &str) -> Result<Operation, ParsingError> {
+    fn from_str(src: &str) -> Result<Self, ParsingError> {
         Operation::parse(src)
+    }
+}
+
+impl FromStr for OptionName {
+    type Err = ParsingError;
+
+    fn from_str(src: &str) -> Result<Self, ParsingError> {
+        use self::OptionName::*;
+
+        match src {
+            "status-bar" | "status"                => Ok(StatusBar),
+            "reverse" | "rev"                      => Ok(Reverse),
+            "center" | "center-alignment"          => Ok(CenterAlignment),
+            "auto-page" | "auto-paging" | "paging" => Ok(AutoPaging),
+            "fit" | "fit-to"                       => Ok(FitTo),
+            "scaling"                              => Ok(Scaling),
+            _ => Err(ParsingError::InvalidOperation(format!("Invalid option name: {}", src)))
+        }
+    }
+}
+
+impl Default for OptionName {
+    fn default() -> Self {
+        OptionName::StatusBar
     }
 }
 
@@ -197,11 +240,11 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@color"                     => parse_color(whole),
             "@copy"                      => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Copy(path, if_exist))),
             "@count"                     => parse_count(whole),
-            "@cycle"                     => parse_option_updater(whole, OptionUpdateMethod::Cycle),
-            "@disable"                   => parse_option_updater(whole, OptionUpdateMethod::Disable),
+            "@cycle"                     => parse_option_1(whole, OptionUpdater::Cycle),
+            "@disable"                   => parse_option_1(whole, OptionUpdater::Disable),
             "@draw"                      => Ok(Draw),
             "@editor"                    => parse_editor(whole),
-            "@enable"                    => parse_option_updater(whole, OptionUpdateMethod::Enable),
+            "@enable"                    => parse_option_1(whole, OptionUpdater::Enable),
             "@entries"                   => Ok(PrintEntries),
             "@expand"                    => parse_expand(whole),
             "@first" | "@f"              => parse_move(whole, First),
@@ -225,6 +268,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@random" | "@rand"          => Ok(Random),
             "@refresh" | "@r"            => Ok(Refresh),
             "@save"                      => parse_save(whole),
+            "@set"                       => parse_option_set(whole),
             "@set-env"                   => parse_set_env(whole),
             "@scaling"                   => parse_scaling(whole),
             "@scroll"                    => parse_scroll(whole),
@@ -233,8 +277,9 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@shuffle"                   => Ok(Shuffle(false)),
             "@sort"                      => Ok(Sort),
             "@status"                    => parse_status(whole),
-            "@toggle"                    => parse_option_updater(whole, OptionUpdateMethod::Toggle),
+            "@toggle"                    => parse_option_1(whole, OptionUpdater::Toggle),
             "@unclip"                    => Ok(Unclip),
+            "@unset"                     => parse_option_1(whole, OptionUpdater::Unset),
             "@user"                      => Ok(Operation::user(args.to_vec())),
             "@views"                     => parse_views(whole),
             ";"                          => parse_multi_args(args, ";"),

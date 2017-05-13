@@ -14,9 +14,9 @@ pub struct States {
     pub auto_paging: bool,
     pub view: ViewState,
     pub show: Option<SearchKey>,
-    pub status_format: String,
+    pub status_format: StatusFormat,
     pub drawing: DrawingOption,
-    pub pre_fetch: Option<PreFetchState>,
+    pub pre_fetch: PreFetchState,
 }
 
 pub struct ViewState {
@@ -37,12 +37,13 @@ pub struct DrawingOption {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PreFetchState {
+    pub enabled: bool,
     pub page_size: usize,
     pub limit_of_items: usize,
 }
 
-
-pub const STATUS_FORMAT_DEFAULT: &'static str = "[$CHRYSOBERYL_PAGING/$CHRYSOBERYL_COUNT] $CHRYSOBERYL_PATH {$CHRYSOBERYL_FLAGS}";
+#[derive(Clone, Debug, PartialEq)]
+pub struct StatusFormat(pub String);
 
 
 impl Default for States {
@@ -52,11 +53,11 @@ impl Default for States {
             status_bar: true,
             reverse: false,
             auto_paging: false,
-            status_format: o!(STATUS_FORMAT_DEFAULT),
+            status_format: StatusFormat::default(),
             view: ViewState::default(),
             show: None,
             drawing: DrawingOption::default(),
-            pre_fetch: Some(PreFetchState::default()),
+            pre_fetch: PreFetchState::default(),
         }
     }
 
@@ -84,6 +85,7 @@ impl Default for ScalingMethod {
 impl Default for PreFetchState {
     fn default() -> Self {
         PreFetchState {
+            enabled: true,
             page_size: 5,
             limit_of_items: 100,
         }
@@ -98,5 +100,12 @@ impl Default for ViewState {
             rows: 1,
             center_alignment: false,
         }
+    }
+}
+
+
+impl Default for StatusFormat {
+    fn default() -> Self {
+        StatusFormat(o!("[$CHRYSOBERYL_PAGING/$CHRYSOBERYL_COUNT] $CHRYSOBERYL_PATH {$CHRYSOBERYL_FLAGS}"))
     }
 }

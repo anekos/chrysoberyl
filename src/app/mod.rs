@@ -18,7 +18,7 @@ use constant;
 use controller;
 use entry::{EntryContainer, EntryContainerOptions};
 use events;
-use gui::{Gui, ColorTarget};
+use gui::Gui;
 use http_cache::HttpCache;
 use image_cache::ImageCache;
 use image_fetcher::ImageFetcher;
@@ -168,10 +168,6 @@ impl App {
 
         {
             match *operation {
-                ChangeFitTo(ref fit) =>
-                    on_change_fit_to(self, &mut updated, fit),
-                ChangeScalingMethod(ref scaling_method) =>
-                    on_change_scaling_method(self, &mut updated, scaling_method),
                 Cherenkov(ref parameter) =>
                     on_cherenkov(self, &mut updated, parameter, context),
                 CherenkovClear =>
@@ -180,8 +176,6 @@ impl App {
                     on_clear(self, &mut updated),
                 Clip(ref region) =>
                     on_clip(self, &mut updated, region),
-                Color(ref target, ref color) =>
-                    on_color(self, &mut updated, target, color),
                 Context(ref context, ref op) =>
                     return self.operate_with_context(op, Some(context)),
                 Count(count) =>
@@ -248,8 +242,6 @@ impl App {
                     on_save(self, path, index),
                 SetEnv(ref name, ref value) =>
                     on_set_env(self, name, value),
-                SetStatusFormat(ref format) =>
-                    on_set_status_format(self, &mut updated, format),
                 Scroll(ref direction, ref operation, scroll_size) =>
                     on_scroll(self, direction, operation, scroll_size),
                 Shell(async, read_operations, ref command_line) =>
@@ -264,8 +256,6 @@ impl App {
                     on_unclip(self, &mut updated),
                 UpdateOption(ref option_name, ref updater) =>
                     on_update_option(self, &mut updated, option_name, updater.clone()),
-                UpdatePreFetchState(ref state) =>
-                    on_update_pre_fetch_state(self, state),
                 User(ref data) =>
                     on_user(self, data),
                 Views(cols, rows) =>
@@ -371,7 +361,7 @@ impl App {
             self.gui.reset_scrolls(to_end);
         }
 
-        if self.states.pre_fetch.is_some() {
+        if self.states.pre_fetch.enabled {
             self.pre_fetch(cell_size, 0..1);
         }
 
@@ -390,7 +380,7 @@ impl App {
             }
         }
 
-        if self.states.pre_fetch.is_some() {
+        if self.states.pre_fetch.enabled {
             self.pre_fetch_serial += 1;
             let pre_fetch_serial = self.pre_fetch_serial;
             let tx = self.tx.clone();
@@ -501,7 +491,7 @@ impl App {
 
         let text =
             if self.entries.current(&self.pointer).is_some() {
-                sh::expand(&self.states.status_format)
+                sh::expand(&self.states.status_format.0)
             } else {
                 o!(constant::DEFAULT_INFORMATION)
             };

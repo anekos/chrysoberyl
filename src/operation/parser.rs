@@ -9,10 +9,8 @@ use color::Color;
 use config::ConfigSource;
 use entry::{Meta, MetaEntry, new_meta_from_vec, SearchKey};
 use filer;
-use gui::ColorTarget;
 use mapping::{Input, InputType, mouse_mapping};
 use shellexpand_wrapper as sh;
-use size::FitTo;
 
 use operation::*;
 
@@ -97,20 +95,6 @@ pub fn parse_copy_or_move(args: &[String]) -> Result<(PathBuf, filer::IfExist), 
     })
 }
 
-pub fn parse_color(args: &[String]) -> Result<Operation, String> {
-    let mut target: ColorTarget = ColorTarget::WindowBackground;
-    let mut color: Color = "white".parse().unwrap();
-
-    {
-        let mut ap = ArgumentParser::new();
-        ap.refer(&mut target).add_argument("target", Store, "Target").required();
-        ap.refer(&mut color).add_argument("color", Store, "CSS Color").required();
-        parse_args(&mut ap, args)
-    } .map(|_| {
-        Operation::Color(target, color)
-    })
-}
-
 pub fn parse_count(args: &[String]) -> Result<Operation, String> {
     let mut count: Option<usize> = None;
 
@@ -150,18 +134,6 @@ pub fn parse_expand(args: &[String]) -> Result<Operation, String> {
         parse_args(&mut ap, args)
     } .map(|_| {
         Operation::Expand(recursive, base.map(|it| Path::new(&it).to_path_buf()))
-    })
-}
-
-pub fn parse_fit(args: &[String]) -> Result<Operation, String> {
-    let mut to = FitTo::Cell;
-
-    {
-        let mut ap = ArgumentParser::new();
-        ap.refer(&mut to).add_argument("fit-to", Store, "Fit to cell/width/height/original");
-        parse_args(&mut ap, args)
-    } .map(|_| {
-        Operation::ChangeFitTo(to)
     })
 }
 
@@ -323,23 +295,6 @@ pub fn parse_option_1(args: &[String], updater: OptionUpdater) -> Result<Operati
     })
 }
 
-pub fn parse_pre_fetch(args: &[String]) -> Result<Operation, String> {
-    let mut state = PreFetchState::default();
-
-    {
-        let mut ap = ArgumentParser::new();
-        ap.refer(&mut state.page_size).add_option(&["--page-size", "-p"], Store, "Fetch N page");
-        ap.refer(&mut state.limit_of_items).add_option(&["--limit-of-items", "-l"], Store, "Limit of cache items");
-        parse_args(&mut ap, args)
-    } .map(|_| {
-        if args.len() > 1 {
-            Operation::UpdatePreFetchState(Some(state))
-        } else {
-            Operation::UpdatePreFetchState(None)
-        }
-    })
-}
-
 pub fn parse_push<T>(args: &[String], op: T) -> Result<Operation, String>
 where T: FnOnce(String, Meta) -> Operation {
     impl FromStr for MetaEntry {
@@ -398,18 +353,6 @@ pub fn parse_set_env(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_scaling(args: &[String]) -> Result<Operation, String> {
-    let mut scaling_method = ScalingMethod::default();
-
-    {
-        let mut ap = ArgumentParser::new();
-        ap.refer(&mut scaling_method).add_argument("method-name", Store, "Scaling method (nearest/tiles/bilinear/hyper)").required();
-        parse_args(&mut ap, args)
-    } .map(|_| {
-        Operation::ChangeScalingMethod(scaling_method)
-    })
-}
-
 pub fn parse_scroll(args: &[String]) -> Result<Operation, String> {
     let mut direction = Direction::Up;
     let mut operation = vec![];
@@ -465,10 +408,6 @@ pub fn parse_show(args: &[String]) -> Result<Operation, String> {
         }
         Ok(Operation::Show(key))
     })
-}
-
-pub fn parse_status(args: &[String]) -> Result<Operation, String> {
-    Ok(Operation::SetStatusFormat(args.get(1).cloned()))
 }
 
 pub fn parse_views(args: &[String]) -> Result<Operation, String> {

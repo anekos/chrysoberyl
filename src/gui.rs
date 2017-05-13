@@ -1,4 +1,5 @@
 
+use std::default::Default;
 use std::fs::File;
 use std::path::Path;
 use std::str::FromStr;
@@ -49,20 +50,11 @@ pub struct CellIterator<'a> {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Colors {
-    // pub window_background: RGB,
-    // pub status_bar: RGB,
-    // pub status_bar_background: RGB,
+    pub window_background: Color,
+    pub status_bar: Color,
+    pub status_bar_background: Color,
     pub error: Color,
     pub error_background: Color,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum ColorTarget {
-    WindowBackground,
-    StatusBar,
-    StatusBarBackground,
-    Error,
-    ErrorBackground,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -163,19 +155,16 @@ impl Gui {
         Size::new(width, height)
     }
 
-    pub fn update_color(&mut self, target: &ColorTarget, color: &Color) {
-        use self::ColorTarget::*;
-
-        match *target {
-            WindowBackground =>
-                self.window.override_background_color(self.window.get_state_flags(), &color.gdk_rgba()),
-            StatusBar =>
-                self.label.override_color(self.label.get_state_flags(), &color.gdk_rgba()),
-            StatusBarBackground =>
-                self.label.override_background_color(self.label.get_state_flags(), &color.gdk_rgba()),
-            Error => self.colors.error = color.to_owned(),
-            ErrorBackground => self.colors.error_background = color.to_owned(),
-        }
+    pub fn update_colors(&self) {
+        self.window.override_background_color(
+            self.window.get_state_flags(),
+            &self.colors.window_background.gdk_rgba());
+        self.label.override_color(
+            self.label.get_state_flags(),
+            &self.colors.status_bar.gdk_rgba());
+        self.label.override_background_color(
+            self.label.get_state_flags(),
+            &self.colors.status_bar_background.gdk_rgba());
     }
 
     pub fn scroll_views(&self, direction: &Direction, scroll_size: f64, count: usize) -> bool {
@@ -379,29 +368,13 @@ impl<'a> Iterator for CellIterator<'a> {
     }
 }
 
-impl FromStr for ColorTarget {
-    type Err = String;
 
-    fn from_str(src: &str) -> Result<ColorTarget, String> {
-        use self::ColorTarget::*;
-
-        match src {
-            "window-background" | "window-bg" => Ok(WindowBackground),
-            "status-bar" | "status-bar-fg" => Ok(StatusBar),
-            "status-bar-background" | "status-bar-bg" => Ok(StatusBarBackground),
-            "error" | "error-fg" => Ok(Error),
-            "error-background" | "error-bg" => Ok(ErrorBackground),
-            _ => Err(format!("Invalid name: {}", src))
-        }
-    }
-}
-
-impl Colors {
-    pub fn default() -> Colors {
+impl Default for Colors {
+    fn default() -> Colors {
         Colors {
-            // window_background: "#004040",
-            // status_bar: "#004040",
-            // status_bar_background: "#004040",
+            window_background: "#004040".parse().unwrap(),
+            status_bar: "white".parse().unwrap(),
+            status_bar_background: "#004040".parse().unwrap(),
             error: "white".parse().unwrap(),
             error_background: "red".parse().unwrap(),
         }

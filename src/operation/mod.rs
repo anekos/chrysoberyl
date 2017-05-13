@@ -11,11 +11,10 @@ use config::ConfigSource;
 use entry::Meta;
 use entry;
 use filer;
-use gui::{ColorTarget, Direction};
+use gui::Direction;
 use mapping::{self, mouse_mapping};
 use shellexpand_wrapper as sh;
-use size::{FitTo, Region};
-use state::{ScalingMethod, PreFetchState};
+use size::Region;
 
 mod parser;
 
@@ -23,13 +22,10 @@ mod parser;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Operation {
-    ChangeFitTo(FitTo),
-    ChangeScalingMethod(ScalingMethod),
     Cherenkov(CherenkovParameter),
     CherenkovClear,
     Clear,
     Clip(Region),
-    Color(ColorTarget, Color),
     Context(OperationContext, Box<Operation>),
     Count(Option<usize>),
     CountDigit(u8),
@@ -64,13 +60,11 @@ pub enum Operation {
     Save(PathBuf, Option<usize>),
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     SetEnv(String, Option<String>),
-    SetStatusFormat(Option<String>),
     Shell(bool, bool, Vec<String>), /* async, operation, command_line */
     Show(entry::SearchKey),
     Shuffle(bool), /* Fix current */
     Sort,
     UpdateOption(OptionName, OptionUpdater),
-    UpdatePreFetchState(Option<PreFetchState>),
     User(Vec<(String, String)>),
     Unclip,
     Views(Option<usize>, Option<usize>),
@@ -130,6 +124,15 @@ pub enum OptionName {
     Reverse,
     Scaling,
     StatusBar,
+    StatusFormat,
+    PreFetchEnabled,
+    PreFetchLimit,
+    PreFetchPageSize,
+    ColorWindowBackground,
+    ColorStatusBar,
+    ColorStatusBarBackground,
+    ColorError,
+    ColorErrorBackground,
 }
 
 
@@ -148,12 +151,21 @@ impl FromStr for OptionName {
         use self::OptionName::*;
 
         match src {
-            "status-bar" | "status"                => Ok(StatusBar),
-            "reverse" | "rev"                      => Ok(Reverse),
-            "center" | "center-alignment"          => Ok(CenterAlignment),
             "auto-page" | "auto-paging" | "paging" => Ok(AutoPaging),
+            "center" | "center-alignment"          => Ok(CenterAlignment),
             "fit" | "fit-to"                       => Ok(FitTo),
+            "reverse" | "rev"                      => Ok(Reverse),
             "scaling"                              => Ok(Scaling),
+            "status-bar" | "status"                => Ok(StatusBar),
+            "status-format"                        => Ok(StatusFormat),
+            "pre-render"                           => Ok(PreFetchEnabled),
+            "pre-render-limit"                     => Ok(PreFetchLimit),
+            "pre-render-pages"                     => Ok(PreFetchPageSize),
+            "color-window-background"              => Ok(ColorWindowBackground),
+            "color-status-bar"                     => Ok(ColorStatusBar),
+            "color-status-bar-background"          => Ok(ColorStatusBarBackground),
+            "color-error"                          => Ok(ColorError),
+            "color-error-background"               => Ok(ColorErrorBackground),
             _ => Err(ParsingError::InvalidOperation(format!("Invalid option name: {}", src)))
         }
     }
@@ -237,7 +249,6 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
         match name {
             "@cherenkov"                 => parse_cherenkov(whole),
             "@clear"                     => Ok(Clear),
-            "@color"                     => parse_color(whole),
             "@copy"                      => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Copy(path, if_exist))),
             "@count"                     => parse_count(whole),
             "@cycle"                     => parse_option_1(whole, OptionUpdater::Cycle),
@@ -249,7 +260,6 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@expand"                    => parse_expand(whole),
             "@first" | "@f"              => parse_move(whole, First),
             "@force-flush"               => Ok(ForceFlush),
-            "@fit"                       => parse_fit(whole),
             "@fragile"                   => parse_command1(whole, |it| Fragile(sh::expand_to_pathbuf(&it))),
             "@input"                     => parse_input(whole),
             "@last" | "@l"               => parse_move(whole, Last),
@@ -258,7 +268,6 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@multi"                     => parse_multi(whole),
             "@move"                      => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Move(path, if_exist))),
             "@next" | "@n"               => parse_move(whole, Next),
-            "@pre-fetch"                 => parse_pre_fetch(whole),
             "@prev" | "@p" | "@previous" => parse_move(whole, Previous),
             "@push"                      => parse_push(whole, |it, meta| Push(sh::expand(&it), meta)),
             "@push-pdf"                  => parse_push(whole, |it, meta| PushPdf(sh::expand_to_pathbuf(&it), meta)),
@@ -270,13 +279,11 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@save"                      => parse_save(whole),
             "@set"                       => parse_option_set(whole),
             "@set-env"                   => parse_set_env(whole),
-            "@scaling"                   => parse_scaling(whole),
             "@scroll"                    => parse_scroll(whole),
             "@shell"                     => parse_shell(whole),
             "@show"                      => parse_show(whole),
             "@shuffle"                   => Ok(Shuffle(false)),
             "@sort"                      => Ok(Sort),
-            "@status"                    => parse_status(whole),
             "@toggle"                    => parse_option_1(whole, OptionUpdater::Toggle),
             "@unclip"                    => Ok(Unclip),
             "@unset"                     => parse_option_1(whole, OptionUpdater::Unset),

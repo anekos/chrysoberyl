@@ -7,31 +7,19 @@ use gtk::prelude::*;
 use rand::distributions::{IndependentSample, Range as RandRange};
 
 use archive::{self, ArchiveEntry};
-use color::Color;
 use config;
 use editor;
 use entry::{MetaSlice, new_meta, SearchKey};
 use filer;
 use fragile_input::new_fragile_input;
-use gui::{ColorTarget, Direction};
+use gui::Direction;
 use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater};
 use output;
-use state::{ScalingMethod, STATUS_FORMAT_DEFAULT, PreFetchState};
 use utils::path_to_str;
 
 use app::*;
 
 
-
-pub fn on_change_fit_to(app: &mut App, updated: &mut Updated, fit_to: &FitTo) {
-    app.states.drawing.fit_to = fit_to.clone();
-    updated.image_options = true;
-}
-
-pub fn on_change_scaling_method(app: &mut App, updated: &mut Updated, method: &ScalingMethod) {
-    app.states.drawing.scaling = method.clone();
-    updated.image_options = true;
-}
 
 pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<&OperationContext>) {
     use cherenkov::Che;
@@ -112,17 +100,6 @@ pub fn on_clip(app: &mut App, updated: &mut Updated, region: &Region) {
     }
 }
 
-pub fn on_color(app: &mut App, updated: &mut Updated, target: &ColorTarget, color: &Color) {
-    use app::ColorTarget::*;
-
-    app.gui.update_color(target, color);
-
-    updated.image = match *target {
-        Error | ErrorBackground => true,
-        _ => false
-    };
-}
-
 pub fn on_editor(app: &mut App, editor_command: Option<String>, config_sources: Vec<config::ConfigSource>) {
     let tx = app.tx.clone();
     spawn(move || editor::start_edit(&tx, editor_command, config_sources));
@@ -158,6 +135,7 @@ pub fn on_fragile(app: &mut App, path: &PathBuf) {
 
 pub fn on_initialized(app: &mut App) {
     app.states.initialized = true;
+    app.gui.update_colors();
     app.tx.send(Operation::Draw).unwrap();
     puts_event!("initialized");
 }
@@ -252,7 +230,8 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) {
 }
 
 pub fn on_pre_fetch(app: &mut App, serial: u64) {
-    if let Some(pre_fetch) = app.states.pre_fetch.clone() {
+    let pre_fetch = app.states.pre_fetch.clone();
+    if pre_fetch.enabled {
         trace!("on_pre_fetch: pre_fetch_serial={} serial={}", app.pre_fetch_serial, serial);
 
         if app.pre_fetch_serial == serial {
@@ -356,11 +335,6 @@ pub fn on_set_env(_: &mut App, name: &str, value: &Option<String>) {
     }
 }
 
-pub fn on_set_status_format(app: &mut App, updated: &mut Updated, format: &Option<String>) {
-    app.states.status_format = format.clone().unwrap_or_else(|| o!(STATUS_FORMAT_DEFAULT));
-    updated.label = true;
-}
-
 pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scroll_size: f64) {
     let save = app.pointer.save();
     if !app.gui.scroll_views(direction, scroll_size, app.pointer.counted()) && !operation.is_empty() {
@@ -415,6 +389,15 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
             Reverse => &mut app.states.reverse,
             Scaling => &mut app.states.drawing.scaling,
             StatusBar => &mut app.states.status_bar,
+            StatusFormat => &mut app.states.status_format,
+            PreFetchEnabled => &mut app.states.pre_fetch.enabled,
+            PreFetchLimit => &mut app.states.pre_fetch.limit_of_items,
+            PreFetchPageSize => &mut app.states.pre_fetch.page_size,
+            ColorWindowBackground => &mut app.gui.colors.window_background,
+            ColorStatusBar => &mut app.gui.colors.status_bar,
+            ColorStatusBarBackground => &mut app.gui.colors.status_bar_background,
+            ColorError => &mut app.gui.colors.error,
+            ColorErrorBackground => &mut app.gui.colors.error_background,
         };
 
         let result = match updater {
@@ -445,14 +428,11 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
         }
         FitTo =>
             updated.image_options = true,
+        PreFetchLimit =>
+            app.cache.update_limit(app.states.pre_fetch.limit_of_items),
+        ColorWindowBackground | ColorStatusBar | ColorStatusBarBackground =>
+            app.gui.update_colors(),
         _ => ()
-    }
-}
-
-pub fn on_update_pre_fetch_state(app: &mut App, state: &Option<PreFetchState>) {
-    app.states.pre_fetch = state.clone();
-    if let Some(ref pre_fetch) = *state {
-        app.cache.update_limit(pre_fetch.limit_of_items);
     }
 }
 

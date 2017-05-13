@@ -3,9 +3,10 @@ use std::str::FromStr;
 
 use gdk_pixbuf::InterpType;
 
+use color::Color;
 use option::*;
 use size::FitTo;
-use state::ScalingMethod;
+use state::{ScalingMethod, StatusFormat};
 
 
 
@@ -35,6 +36,35 @@ impl OptionValue for bool {
             _ => return Err(format!("Invalid value: {}", value))
         };
         Ok(())
+    }
+}
+
+
+impl OptionValue for usize {
+    fn cycle(&mut self) -> Result {
+        *self += 1;
+        Ok(())
+    }
+
+    fn set(&mut self, value: &str) -> Result {
+        value.parse().map(|value| {
+            *self = value;
+        }).map_err(|it| s!(it))
+    }
+}
+
+
+impl OptionValue for Color {
+    // CSS Color names
+    // fn cycle(&mut self) -> Result {
+    //     *self += 1;
+    //     Ok(())
+    // }
+
+    fn set(&mut self, value: &str) -> Result {
+        value.parse().map(|value| {
+            *self = value;
+        })
     }
 }
 
@@ -111,6 +141,19 @@ impl OptionValue for FitTo {
             Width => Height,
             Height => Cell,
         };
+        Ok(())
+    }
+}
+
+
+impl OptionValue for StatusFormat {
+    fn set(&mut self, value: &str) -> Result {
+        *self = StatusFormat(o!(value));
+        Ok(())
+    }
+
+    fn unset(&mut self) -> Result {
+        *self = StatusFormat::default();
         Ok(())
     }
 }

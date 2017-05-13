@@ -25,7 +25,7 @@ impl OptionValue for bool {
         Ok(())
     }
 
-    fn cycle(&mut self) -> Result {
+    fn cycle(&mut self, _: bool) -> Result {
         self.toggle()
     }
 
@@ -41,8 +41,14 @@ impl OptionValue for bool {
 
 
 impl OptionValue for usize {
-    fn cycle(&mut self) -> Result {
-        *self += 1;
+    fn cycle(&mut self, reverse: bool) -> Result {
+        if reverse {
+            if *self != 0 {
+                *self -= 1;
+            }
+        } else {
+            *self += 1;
+        }
         Ok(())
     }
 
@@ -91,15 +97,9 @@ impl OptionValue for ScalingMethod {
         })
     }
 
-    fn cycle(&mut self) -> Result {
+    fn cycle(&mut self, reverse: bool) -> Result {
         use self::InterpType::*;
-
-        match self.0 {
-            Hyper => self.0 = Bilinear,
-            Bilinear => self.0 = Nearest,
-            Nearest => self.0 = Tiles,
-            Tiles => self.0 = Hyper,
-        }
+        self.0 = cycled(self.0, &[Bilinear, Nearest, Tiles, Hyper], reverse);
         Ok(())
     }
 }
@@ -131,16 +131,9 @@ impl OptionValue for FitTo {
         })
     }
 
-    fn cycle(&mut self) -> Result {
+    fn cycle(&mut self, reverse: bool) -> Result {
         use self::FitTo::*;
-
-        *self = match *self {
-            Cell => OriginalOrCell,
-            OriginalOrCell => Original,
-            Original => Width,
-            Width => Height,
-            Height => Cell,
-        };
+        *self = cycled(*self, &[Cell, OriginalOrCell, Original, Width, Height], reverse);
         Ok(())
     }
 }
@@ -155,5 +148,20 @@ impl OptionValue for StatusFormat {
     fn unset(&mut self) -> Result {
         *self = StatusFormat::default();
         Ok(())
+    }
+}
+
+
+pub fn cycled<T>(current: T, order: &[T], reverse: bool) -> T
+where T: Eq + Copy {
+    let i = order.iter().position(|it| *it == current).expect("Invalid value");
+    if reverse {
+        if i == 0 {
+            order.last().cloned().unwrap()
+        } else {
+            order[i - 1]
+        }
+    } else {
+        order.iter().nth(i + 1).cloned().unwrap_or_else(|| order[0])
     }
 }

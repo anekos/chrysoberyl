@@ -269,6 +269,20 @@ pub fn parse_multi_args(xs: &[String], separator: &str) -> Result<Operation, Str
     Ok(Operation::Multi(result))
 }
 
+pub fn parse_option_cycle(args: &[String]) -> Result<Operation, String> {
+    let mut option_name = OptionName::default();
+    let mut reverse = false;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut reverse).add_option(&["--reverse", "-r"], StoreTrue, "Reversed cycle");
+        ap.refer(&mut option_name).add_argument("option_name", Store, "Option name").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::UpdateOption(option_name, OptionUpdater::Cycle(reverse))
+    })
+}
+
 pub fn parse_option_set(args: &[String]) -> Result<Operation, String> {
     let mut option_name = OptionName::default();
     let mut option_value = o!("");

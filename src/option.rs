@@ -38,7 +38,7 @@ pub trait OptionValue {
         Err(o!("Not supported operation"))
     }
 
-    fn cycle(&mut self) -> Result {
+    fn cycle(&mut self, _: bool) -> Result {
         Err(o!("Not supported operation"))
     }
 }

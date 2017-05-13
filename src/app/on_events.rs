@@ -393,6 +393,8 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
             PreFetchEnabled => &mut app.states.pre_fetch.enabled,
             PreFetchLimit => &mut app.states.pre_fetch.limit_of_items,
             PreFetchPageSize => &mut app.states.pre_fetch.page_size,
+            HorizontalViews => &mut app.states.view.cols,
+            VerticalViews => &mut app.states.view.rows,
             ColorWindowBackground => &mut app.gui.colors.window_background,
             ColorStatusBar => &mut app.gui.colors.status_bar,
             ColorStatusBarBackground => &mut app.gui.colors.status_bar_background,
@@ -401,7 +403,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
         };
 
         let result = match updater {
-            Cycle => value.cycle(),
+            Cycle(reverse) => value.cycle(reverse),
             Disable => value.disable(),
             Enable => value.enable(),
             Set(arg) => value.set(&arg),
@@ -432,6 +434,8 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
             app.cache.update_limit(app.states.pre_fetch.limit_of_items),
         ColorWindowBackground | ColorStatusBar | ColorStatusBarBackground =>
             app.gui.update_colors(),
+        VerticalViews | HorizontalViews =>
+            on_update_views(app, updated),
         _ => ()
     }
 }
@@ -449,9 +453,7 @@ pub fn on_views(app: &mut App, updated: &mut Updated, cols: Option<usize>, rows:
     if let Some(rows) = rows {
         app.states.view.rows = rows
     }
-    updated.image_options = true;
-    app.reset_view();
-    app.pointer.set_multiplier(app.gui.len());
+    on_update_views(app, updated);
 }
 
 pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool) {
@@ -461,9 +463,7 @@ pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool) {
     } else {
         app.states.view.cols = count;
     };
-    updated.image_options = true;
-    app.reset_view();
-    app.pointer.set_multiplier(app.gui.len());
+    on_update_views(app, updated);
 }
 
 pub fn on_window_resized(app: &mut App, updated: &mut Updated) {
@@ -472,3 +472,9 @@ pub fn on_window_resized(app: &mut App, updated: &mut Updated) {
     app.pre_fetch_serial += 1;
 }
 
+
+fn on_update_views(app: &mut App, updated: &mut Updated) {
+    updated.image_options = true;
+    app.reset_view();
+    app.pointer.set_multiplier(app.gui.len());
+}

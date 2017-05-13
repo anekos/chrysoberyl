@@ -113,7 +113,7 @@ pub enum OptionUpdater {
     Enable,
     Disable,
     Toggle,
-    Cycle,
+    Cycle(bool), /* reverse */
 }
 
 #[derive(Clone, Debug, PartialEq, Copy)]
@@ -128,6 +128,8 @@ pub enum OptionName {
     PreFetchEnabled,
     PreFetchLimit,
     PreFetchPageSize,
+    VerticalViews,
+    HorizontalViews,
     ColorWindowBackground,
     ColorStatusBar,
     ColorStatusBarBackground,
@@ -161,6 +163,8 @@ impl FromStr for OptionName {
             "pre-render"                           => Ok(PreFetchEnabled),
             "pre-render-limit"                     => Ok(PreFetchLimit),
             "pre-render-pages"                     => Ok(PreFetchPageSize),
+            "vertical-views"                       => Ok(VerticalViews),
+            "horizontal-views"                     => Ok(HorizontalViews),
             "color-window-background"              => Ok(ColorWindowBackground),
             "color-status-bar"                     => Ok(ColorStatusBar),
             "color-status-bar-background"          => Ok(ColorStatusBarBackground),
@@ -251,7 +255,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@clear"                     => Ok(Clear),
             "@copy"                      => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Copy(path, if_exist))),
             "@count"                     => parse_count(whole),
-            "@cycle"                     => parse_option_1(whole, OptionUpdater::Cycle),
+            "@cycle"                     => parse_option_cycle(whole),
             "@disable"                   => parse_option_1(whole, OptionUpdater::Disable),
             "@draw"                      => Ok(Draw),
             "@editor"                    => parse_editor(whole),

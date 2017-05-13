@@ -22,7 +22,7 @@ pub struct Region {
     pub bottom: f64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum FitTo {
     Original,
     OriginalOrCell,

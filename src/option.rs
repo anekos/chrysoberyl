@@ -1,125 +1,44 @@
 
-use std::str::FromStr;
-use std::fmt::Debug;
+use std::result;
 
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
-pub enum OptionUpdateMethod {
-    Enable,
-    Disable,
-    Toggle,
-    Cycle,
-}
+
+pub type StdResult<T, U> = result::Result<T, U>;
+pub type Result = StdResult<(), String>;
 
 
-pub trait OptionValue : Sized + PartialEq + Clone + FromStr + Debug {
-    /* [enabled, disabled, ...other...] */
-    fn default_series<'a>() -> &'a [Self];
-
-    fn to_char(&self) -> char;
-
-    fn or_default(series: &[Self]) -> &[Self] {
-        if series.len() <= 1 {
-            Self::default_series()
-        } else {
-            series
-        }
-    }
-
-    fn update_with_series_reader(&mut self, method: &OptionUpdateMethod, series: &[String]) -> Result<(), <Self as FromStr>::Err> {
-        let mut _series: Vec<Self> = vec![];
-        for it in series {
-            match it.parse() {
-                Ok(it) => _series.push(it),
-                Err(error) => return Err(error)
+pub trait OptionValue {
+    fn toggle(&mut self) -> Result {
+        self.is_enabled().and_then(|v| {
+            if v {
+                self.disable()
+            } else {
+                self.enable()
             }
-        }
-
-        Ok(self.update(method, &_series))
+        })
     }
 
-    fn update(&mut self, method: &OptionUpdateMethod, series: &[Self]) {
-        use self::OptionUpdateMethod::*;
-
-        match *method {
-            Enable => self.enable(Self::or_default(series)),
-            Disable => self.disable(Self::or_default(series)),
-            Toggle => self.toggle(Self::or_default(series)),
-            Cycle => self.cycle(Self::or_default(series)),
-        }
+    fn enable(&mut self) -> Result {
+        Err(o!("Not supported operation"))
     }
 
-    fn cycled(&self, series: &[Self]) -> Self {
-        let series = Self::or_default(series);
-        if let Some(index) = series.iter().position(|it| it == self) {
-            if let Some(result) = series.get(index + 1) {
-                return result.clone()
-            }
-        }
-        series[0].clone()
+    fn disable(&mut self) -> Result {
+        Err(o!("Not supported operation"))
     }
 
-    fn disable(&mut self, series: &[Self]) {
-        let series = Self::or_default(series);
-        *self = series[0].clone();
+    fn is_enabled(&self) -> StdResult<bool, String> {
+        Err(o!("Not supported operation"))
     }
 
-    fn enable(&mut self, series: &[Self]) {
-        let series = Self::or_default(series);
-        *self = series[1].clone();
+    fn set(&mut self, _: &str) -> Result {
+        Err(o!("Not supported operation"))
     }
 
-    fn is_enabled(&self) -> bool {
-        Self::default_series()[0] != *self
+    fn unset(&mut self) -> Result {
+        Err(o!("Not supported operation"))
     }
 
-    fn toggle(&mut self, series: &[Self]) {
-        let series = Self::or_default(series);
-        if series[0] == *self {
-            self.enable(series);
-        } else {
-            self.disable(series);
-        }
-    }
-
-    fn cycle(&mut self, series: &[Self]) {
-        let series = Self::or_default(series);
-        *self = self.cycled(series);
-    }
-}
-
-
-macro_rules! boolean_option {
-    ($name:ident, $default:ident, $disable:expr, $enable:expr) => {
-
-        #[derive(PartialEq, Eq, Clone, Copy, Debug)]
-        pub enum $name {
-            Disabled,
-            Enabled,
-        }
-
-        const $default: &'static [$name] = &[$name::Disabled, $name::Enabled];
-
-        impl option::OptionValue for $name {
-            fn default_series<'a>() -> &'a [$name] {
-                $default
-            }
-
-            fn to_char(&self) -> char {
-                if self.is_enabled() { $enable } else { $disable }
-            }
-        }
-
-        impl FromStr for $name {
-            type Err = String;
-
-            fn from_str(src: &str) -> Result<$name, String> {
-                match &*src.to_lowercase() {
-                    "yes" | "enable" | "true" | "0" => Ok($name::Enabled),
-                    "no" | "disable" | "false" | "1" => Ok($name::Disabled),
-                    _ => Err(format!("Invalid value: {}", src))
-                }
-            }
-        }
+    fn cycle(&mut self, _: bool) -> Result {
+        Err(o!("Not supported operation"))
     }
 }

@@ -29,7 +29,6 @@ extern crate shellexpand;
 extern crate url;
 
 #[macro_use] mod macro_utils;
-#[macro_use] mod option;
 #[macro_use] mod output;
 mod app;
 mod app_path;
@@ -58,6 +57,8 @@ mod lazy_sender;
 mod mapping;
 mod operation;
 mod operation_utils;
+mod option;
+mod option_impls;
 mod poppler;
 mod shell;
 mod shellexpand_wrapper;

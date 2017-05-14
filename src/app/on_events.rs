@@ -7,40 +7,27 @@ use gtk::prelude::*;
 use rand::distributions::{IndependentSample, Range as RandRange};
 
 use archive::{self, ArchiveEntry};
-use color::Color;
 use config;
 use editor;
 use entry::{MetaSlice, new_meta, SearchKey};
 use filer;
 use fragile_input::new_fragile_input;
-use gui::{ColorTarget, Direction};
-use operation::{self, Operation, OperationContext, MappingTarget, MoveBy};
-use option::{OptionValue, OptionUpdateMethod};
+use gui::Direction;
+use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater};
 use output;
-use state::{ScalingMethod, STATUS_FORMAT_DEFAULT, StateName, PreFetchState};
 use utils::path_to_str;
 
 use app::*;
 
 
 
-pub fn on_change_fit_to(app: &mut App, updated: &mut Updated, fit_to: &FitTo) {
-    app.states.drawing.fit_to = fit_to.clone();
-    updated.image_options = true;
-}
-
-pub fn on_change_scaling_method(app: &mut App, updated: &mut Updated, method: &ScalingMethod) {
-    app.states.drawing.scaling = method.clone();
-    updated.image_options = true;
-}
-
 pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<&OperationContext>) {
     use cherenkov::Che;
 
     if let Some(OperationContext::Input(Input::MouseButton((mx, my), _))) = context.cloned() {
-        let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar.is_enabled());
+        let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
 
-        for (index, cell) in app.gui.cells(app.states.reverse.is_enabled()).enumerate() {
+        for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
             if let Some(entry) = app.entries.current_with(&app.pointer, index).map(|(entry,_)| entry) {
                 let (x1, y1, w, h) = {
                     let (cx, cy, cw, ch) = cell.get_top_left();
@@ -88,7 +75,7 @@ pub fn on_clear(app: &mut App, updated: &mut Updated) {
 pub fn on_clip(app: &mut App, updated: &mut Updated, region: &Region) {
     let (mx, my) = (region.left as i32, region.top as i32);
     let current = app.states.drawing.clipping.unwrap_or_default();
-    for (index, cell) in app.gui.cells(app.states.reverse.is_enabled()).enumerate() {
+    for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
         if app.entries.current_with(&app.pointer, index).is_some() {
             let (x1, y1, w, h) = {
                 let (cx, cy, cw, ch) = cell.get_top_left();
@@ -111,17 +98,6 @@ pub fn on_clip(app: &mut App, updated: &mut Updated, region: &Region) {
             }
         }
     }
-}
-
-pub fn on_color(app: &mut App, updated: &mut Updated, target: &ColorTarget, color: &Color) {
-    use app::ColorTarget::*;
-
-    app.gui.update_color(target, color);
-
-    updated.image = match *target {
-        Error | ErrorBackground => true,
-        _ => false
-    };
 }
 
 pub fn on_editor(app: &mut App, editor_command: Option<String>, config_sources: Vec<config::ConfigSource>) {
@@ -159,6 +135,7 @@ pub fn on_fragile(app: &mut App, path: &PathBuf) {
 
 pub fn on_initialized(app: &mut App) {
     app.states.initialized = true;
+    app.gui.update_colors();
     app.tx.send(Operation::Draw).unwrap();
     puts_event!("initialized");
 }
@@ -253,11 +230,12 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) {
 }
 
 pub fn on_pre_fetch(app: &mut App, serial: u64) {
-    if let Some(pre_fetch) = app.states.pre_fetch.clone() {
+    let pre_fetch = app.states.pre_fetch.clone();
+    if pre_fetch.enabled {
         trace!("on_pre_fetch: pre_fetch_serial={} serial={}", app.pre_fetch_serial, serial);
 
         if app.pre_fetch_serial == serial {
-            let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar.is_enabled());
+            let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
             app.pre_fetch(cell_size, 1..pre_fetch.page_size);
         }
     }
@@ -357,11 +335,6 @@ pub fn on_set_env(_: &mut App, name: &str, value: &Option<String>) {
     }
 }
 
-pub fn on_set_status_format(app: &mut App, updated: &mut Updated, format: &Option<String>) {
-    app.states.status_format = format.clone().unwrap_or_else(|| o!(STATUS_FORMAT_DEFAULT));
-    updated.label = true;
-}
-
 pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scroll_size: f64) {
     let save = app.pointer.save();
     if !app.gui.scroll_views(direction, scroll_size, app.pointer.counted()) && !operation.is_empty() {
@@ -403,40 +376,67 @@ pub fn on_unclip(app: &mut App, updated: &mut Updated) {
     updated.image_options = true;
 }
 
-pub fn on_update_option(app: &mut App, updated: &mut Updated, name: &StateName, method: &OptionUpdateMethod, series: &[String]) {
-    use state::StateName::*;
+pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &OptionName, updater: OptionUpdater) {
+    use option::OptionValue;
+    use operation::OptionName::*;
+    use operation::OptionUpdater::*;
 
-    let result = match *name {
-        StatusBar => app.states.status_bar.update_with_series_reader(method, series),
-        Reverse => app.states.reverse.update_with_series_reader(method, series),
-        CenterAlignment => app.states.view.center_alignment.update_with_series_reader(method, series),
-        AutoPaging => app.states.auto_paging.update_with_series_reader(method, series),
-        FitTo => app.states.drawing.fit_to.update_with_series_reader(method, series),
-    };
+    {
+        let value: &mut OptionValue = match *option_name {
+            AutoPaging => &mut app.states.auto_paging,
+            CenterAlignment => &mut app.states.view.center_alignment,
+            FitTo => &mut app.states.drawing.fit_to,
+            Reverse => &mut app.states.reverse,
+            Scaling => &mut app.states.drawing.scaling,
+            StatusBar => &mut app.states.status_bar,
+            StatusFormat => &mut app.states.status_format,
+            PreFetchEnabled => &mut app.states.pre_fetch.enabled,
+            PreFetchLimit => &mut app.states.pre_fetch.limit_of_items,
+            PreFetchPageSize => &mut app.states.pre_fetch.page_size,
+            HorizontalViews => &mut app.states.view.cols,
+            VerticalViews => &mut app.states.view.rows,
+            ColorWindowBackground => &mut app.gui.colors.window_background,
+            ColorStatusBar => &mut app.gui.colors.status_bar,
+            ColorStatusBarBackground => &mut app.gui.colors.status_bar_background,
+            ColorError => &mut app.gui.colors.error,
+            ColorErrorBackground => &mut app.gui.colors.error_background,
+        };
 
-    if let Err(err) = result {
-        puts_error!("at" => "on_update", "reason" => err);
-    }
+        let result = match updater {
+            Cycle(reverse) => value.cycle(reverse),
+            Disable => value.disable(),
+            Enable => value.enable(),
+            Set(arg) => value.set(&arg),
+            Toggle => value.toggle(),
+            Unset => value.unset(),
+        };
 
-    match *name {
-        StatusBar => app.update_label_visibility(),
-        CenterAlignment => app.reset_view(),
-        _ => ()
+        if let Err(error) = result {
+            puts_error!("at" => "update_option", "reason" => error);
+            return;
+        }
     }
 
     updated.image = true;
-    match *name {
-        StatusBar | FitTo | CenterAlignment =>
-            updated.image_options = true,
-        _ =>
-            ()
-    };
-}
 
-pub fn on_update_pre_fetch_state(app: &mut App, state: &Option<PreFetchState>) {
-    app.states.pre_fetch = state.clone();
-    if let Some(ref pre_fetch) = *state {
-        app.cache.update_limit(pre_fetch.limit_of_items);
+    match *option_name {
+        StatusBar => {
+            app.update_label_visibility();
+            updated.image_options = true;
+        }
+        CenterAlignment => {
+            app.reset_view();
+            updated.image_options = true;
+        }
+        FitTo =>
+            updated.image_options = true,
+        PreFetchLimit =>
+            app.cache.update_limit(app.states.pre_fetch.limit_of_items),
+        ColorWindowBackground | ColorStatusBar | ColorStatusBarBackground =>
+            app.gui.update_colors(),
+        VerticalViews | HorizontalViews =>
+            on_update_views(app, updated),
+        _ => ()
     }
 }
 
@@ -453,9 +453,7 @@ pub fn on_views(app: &mut App, updated: &mut Updated, cols: Option<usize>, rows:
     if let Some(rows) = rows {
         app.states.view.rows = rows
     }
-    updated.image_options = true;
-    app.reset_view();
-    app.pointer.set_multiplier(app.gui.len());
+    on_update_views(app, updated);
 }
 
 pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool) {
@@ -465,9 +463,7 @@ pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool) {
     } else {
         app.states.view.cols = count;
     };
-    updated.image_options = true;
-    app.reset_view();
-    app.pointer.set_multiplier(app.gui.len());
+    on_update_views(app, updated);
 }
 
 pub fn on_window_resized(app: &mut App, updated: &mut Updated) {
@@ -476,3 +472,9 @@ pub fn on_window_resized(app: &mut App, updated: &mut Updated) {
     app.pre_fetch_serial += 1;
 }
 
+
+fn on_update_views(app: &mut App, updated: &mut Updated) {
+    updated.image_options = true;
+    app.reset_view();
+    app.pointer.set_multiplier(app.gui.len());
+}

@@ -18,14 +18,13 @@ use constant;
 use controller;
 use entry::{EntryContainer, EntryContainerOptions};
 use events;
-use gui::{Gui, ColorTarget};
+use gui::Gui;
 use http_cache::HttpCache;
 use image_cache::ImageCache;
 use image_fetcher::ImageFetcher;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
 use operation::{Operation, OperationContext, MappingTarget, MoveBy};
-use option::OptionValue;
 use output;
 use shell;
 use shellexpand_wrapper as sh;
@@ -169,10 +168,6 @@ impl App {
 
         {
             match *operation {
-                ChangeFitTo(ref fit) =>
-                    on_change_fit_to(self, &mut updated, fit),
-                ChangeScalingMethod(ref scaling_method) =>
-                    on_change_scaling_method(self, &mut updated, scaling_method),
                 Cherenkov(ref parameter) =>
                     on_cherenkov(self, &mut updated, parameter, context),
                 CherenkovClear =>
@@ -181,8 +176,6 @@ impl App {
                     on_clear(self, &mut updated),
                 Clip(ref region) =>
                     on_clip(self, &mut updated, region),
-                Color(ref target, ref color) =>
-                    on_color(self, &mut updated, target, color),
                 Context(ref context, ref op) =>
                     return self.operate_with_context(op, Some(context)),
                 Count(count) =>
@@ -249,8 +242,6 @@ impl App {
                     on_save(self, path, index),
                 SetEnv(ref name, ref value) =>
                     on_set_env(self, name, value),
-                SetStatusFormat(ref format) =>
-                    on_set_status_format(self, &mut updated, format),
                 Scroll(ref direction, ref operation, scroll_size) =>
                     on_scroll(self, direction, operation, scroll_size),
                 Shell(async, read_operations, ref command_line) =>
@@ -263,10 +254,8 @@ impl App {
                     on_sort(self, &mut updated),
                 Unclip => 
                     on_unclip(self, &mut updated),
-                UpdateOption(ref name, ref modifier, ref series) =>
-                    on_update_option(self, &mut updated, name, modifier, series),
-                UpdatePreFetchState(ref state) =>
-                    on_update_pre_fetch_state(self, state),
+                UpdateOption(ref option_name, ref updater) =>
+                    on_update_option(self, &mut updated, option_name, updater.clone()),
                 User(ref data) =>
                     on_user(self, data),
                 Views(cols, rows) =>
@@ -287,7 +276,7 @@ impl App {
                 let gui_len = self.gui.len();
                 if current < len && len < current + gui_len {
                     updated.image = true;
-                } else if self.states.auto_paging.is_enabled() && gui_len <= len && len - gui_len == current {
+                } else if self.states.auto_paging && gui_len <= len && len - gui_len == current {
                     self.operate(&Operation::Next(None, false, MoveBy::Page));
                     return
                 }
@@ -366,17 +355,17 @@ impl App {
 
     fn show_image(&mut self, to_end: bool) -> Option<Size> {
         let image_size = None;
-        let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar.is_enabled());
+        let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
 
         if self.states.drawing.fit_to.is_scrollable() {
             self.gui.reset_scrolls(to_end);
         }
 
-        if self.states.pre_fetch.is_some() {
+        if self.states.pre_fetch.enabled {
             self.pre_fetch(cell_size, 0..1);
         }
 
-        for (index, cell) in self.gui.cells(self.states.reverse.is_enabled()).enumerate() {
+        for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
                 let image_buffer = self.cache.get_image_buffer(&entry, &cell_size, &self.states.drawing);
                 let (fg, bg) = (self.gui.colors.error, self.gui.colors.error_background);
@@ -391,7 +380,7 @@ impl App {
             }
         }
 
-        if self.states.pre_fetch.is_some() {
+        if self.states.pre_fetch.enabled {
             self.pre_fetch_serial += 1;
             let pre_fetch_serial = self.pre_fetch_serial;
             let tx = self.tx.clone();
@@ -465,7 +454,7 @@ impl App {
             envs_sub.push((o!("paging"), {
                 let (from, to) = (index + 1, min!(index + gui_len, len));
                 if gui_len > 1 {
-                    if self.states.reverse.is_enabled() {
+                    if self.states.reverse {
                         format!("{}←{}", to, from)
                     } else {
                         format!("{}→{}", from, to)
@@ -476,11 +465,18 @@ impl App {
             }));
 
             envs_sub.push((o!("flags"), {
+                use self::FitTo::*;
                 let mut text = o!("");
-                text.push(self.states.drawing.fit_to.to_char());
-                text.push(self.states.reverse.to_char());
-                text.push(self.states.auto_paging.to_char());
-                text.push(self.states.view.center_alignment.to_char());
+                text.push(match self.states.drawing.fit_to {
+                    Cell => 'C',
+                    Height => 'H',
+                    Original => 'O',
+                    OriginalOrCell => 'o',
+                    Width => 'W',
+                });
+                text.push(if self.states.reverse { 'R' } else { 'r' });
+                text.push(if self.states.auto_paging { 'A' } else { 'a' });
+                text.push(if self.states.view.center_alignment { 'C' } else { 'c' });
                 text
             }));
         }
@@ -495,7 +491,7 @@ impl App {
 
         let text =
             if self.entries.current(&self.pointer).is_some() {
-                sh::expand(&self.states.status_format)
+                sh::expand(&self.states.status_format.0)
             } else {
                 o!(constant::DEFAULT_INFORMATION)
             };
@@ -503,13 +499,13 @@ impl App {
         if update_title {
             self.gui.window.set_title(&text);
         }
-        if self.states.status_bar.is_enabled() {
+        if self.states.status_bar {
             self.gui.label.set_text(&text);
         }
     }
 
     fn update_label_visibility(&self) {
-        if self.states.status_bar.is_enabled() {
+        if self.states.status_bar {
             self.gui.label.show();
         } else {
             self.gui.label.hide();

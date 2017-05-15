@@ -64,9 +64,22 @@ impl Input {
     }
 
     pub fn key_from_event_key(key: &gdk::EventKey) -> Input {
+        use gdk;
+
         let keyval = key.as_ref().keyval;
-        Input::Key(
-            gdk::keyval_name(keyval).unwrap_or_else(|| s!(keyval)))
+        let state = key.get_state();
+
+        let mut name = o!("");
+
+        if state.contains(gdk::CONTROL_MASK) { name.push_str("C-"); }
+        if state.contains(gdk::HYPER_MASK) { name.push_str("H-"); }
+        if state.contains(gdk::META_MASK) { name.push_str("M-"); }
+        if state.contains(gdk::MOD1_MASK) { name.push_str("A-"); }
+        if state.contains(gdk::SUPER_MASK) { name.push_str("S-"); }
+
+        name.push_str(&gdk::keyval_name(keyval).unwrap_or_else(|| s!(keyval)));
+
+        Input::Key(name)
     }
 
     pub fn mouse_button(x: i32, y: i32, button: u32) -> Input {

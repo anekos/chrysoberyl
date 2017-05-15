@@ -90,7 +90,7 @@ pub enum OperationContext {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum MappingTarget {
-    Key(String),
+    Key(Vec<String>),
     Mouse(u32, Option<mouse_mapping::Area>)
 }
 

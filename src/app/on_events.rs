@@ -185,8 +185,8 @@ pub fn on_map(app: &mut App, target: &MappingTarget, operation: &[String]) {
 
     // puts_event!("map", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
     match *target {
-        Key(ref key) =>
-            app.mapping.register_key(key, operation),
+        Key(ref key_sequence) =>
+            app.mapping.register_key(key_sequence.clone(), operation.to_vec()),
         Mouse(ref button, ref area) =>
             app.mapping.register_mouse(*button, area.clone(), operation)
     }

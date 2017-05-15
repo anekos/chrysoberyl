@@ -22,6 +22,7 @@ pub enum InputType {
 
 
 pub struct Mapping {
+    key_input_history: key_mapping::KeyInputHistory,
     key_mapping: key_mapping::KeyMapping,
     mouse_mapping: mouse_mapping::MouseMapping,
 }
@@ -30,23 +31,26 @@ pub struct Mapping {
 impl Mapping {
     pub fn new() -> Mapping {
         Mapping {
+            key_input_history: key_mapping::KeyInputHistory::new(),
             key_mapping: key_mapping::KeyMapping::new(),
             mouse_mapping: mouse_mapping::MouseMapping::new(),
         }
     }
 
-    pub fn register_key(&mut self, key: &str, operation: &[String]) {
-        self.key_mapping.register(key.to_owned(), operation);
+    pub fn register_key(&mut self, key: Vec<String>, operation: Vec<String>) {
+        self.key_mapping.register(key, operation);
     }
 
     pub fn register_mouse(&mut self, button: u32, area: Option<mouse_mapping::Area>, operation: &[String]) {
         self.mouse_mapping.register(button, area, operation);
     }
 
-    pub fn matched(&self, input: &Input, width: i32, height: i32) -> Option<Result<Operation, String>> {
+    pub fn matched(&mut self, input: &Input, width: i32, height: i32) -> Option<Result<Operation, String>> {
         match *input {
-            Input::Key(ref key) =>
-                self.key_mapping.matched(key),
+            Input::Key(ref key) => {
+                self.key_input_history.push(key.clone(), self.key_mapping.depth);
+                self.key_mapping.matched(&self.key_input_history)
+            }
             Input::MouseButton((x, y), ref button) =>
                 self.mouse_mapping.matched(*button, x, y, width, height),
         }

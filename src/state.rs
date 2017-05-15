@@ -7,6 +7,7 @@ use entry::SearchKey;
 use size::{FitTo, Region};
 
 
+
 pub struct States {
     pub initialized: bool,
     pub status_bar: bool,

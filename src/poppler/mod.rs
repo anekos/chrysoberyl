@@ -16,7 +16,7 @@ use glib::translate::ToGlibPtr;
 use libc::{c_int, c_double};
 
 use size::Size;
-use state::DrawingOption;
+use state::DrawingState;
 
 mod sys;
 
@@ -74,7 +74,7 @@ impl PopplerPage {
         Size::new(width as i32, height as i32)
     }
 
-    pub fn get_pixbuf(&self, cell: &Size, drawing: &DrawingOption) -> Pixbuf {
+    pub fn get_pixbuf(&self, cell: &Size, drawing: &DrawingState) -> Pixbuf {
         let page = self.get_size();
 
         let (scale, fitted, clipped_region) = page.fit_with_clipping(cell, drawing);

@@ -15,7 +15,7 @@ pub struct States {
     pub view: ViewState,
     pub show: Option<SearchKey>,
     pub status_format: StatusFormat,
-    pub drawing: DrawingOption,
+    pub drawing: DrawingState,
     pub pre_fetch: PreFetchState,
 }
 
@@ -29,7 +29,7 @@ pub struct ViewState {
 pub struct ScalingMethod(pub InterpType);
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct DrawingOption {
+pub struct DrawingState {
     pub fit_to: FitTo,
     pub scaling: ScalingMethod,
     pub clipping: Option<Region>,
@@ -56,7 +56,7 @@ impl Default for States {
             status_format: StatusFormat::default(),
             view: ViewState::default(),
             show: None,
-            drawing: DrawingOption::default(),
+            drawing: DrawingState::default(),
             pre_fetch: PreFetchState::default(),
         }
     }
@@ -64,9 +64,9 @@ impl Default for States {
 }
 
 
-impl Default for DrawingOption {
+impl Default for DrawingState {
     fn default() -> Self {
-        DrawingOption {
+        DrawingState {
             fit_to: FitTo::Cell,
             scaling: ScalingMethod::default(),
             clipping: None,

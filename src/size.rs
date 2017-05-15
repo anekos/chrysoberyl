@@ -3,7 +3,7 @@ use std::ops::Add;
 
 use gdk_pixbuf::Pixbuf;
 
-use state::DrawingOption;
+use state::DrawingState;
 use utils::feq;
 
 
@@ -93,7 +93,7 @@ impl Size {
         (scale, fitted)
     }
 
-    pub fn fit_with_clipping(&self, cell_size: &Size, drawing: &DrawingOption) -> (f64, Size, Option<Region>) {
+    pub fn fit_with_clipping(&self, cell_size: &Size, drawing: &DrawingState) -> (f64, Size, Option<Region>) {
         if let Some(ref clip) = drawing.clipping {
             let (clipped_size, clipped_region) = self.clipped(clip);
             let (scale, fitted) = clipped_size.fit(cell_size, &drawing.fit_to);

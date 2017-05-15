@@ -8,7 +8,7 @@ use entry::{Entry, Key};
 use entry_image;
 use image::{ImageBuffer};
 use size::Size;
-use state::DrawingOption;
+use state::DrawingState;
 
 
 
@@ -70,7 +70,7 @@ impl ImageCache {
         }
     }
 
-    pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: &Size, drawing: &DrawingOption) -> Result<ImageBuffer, String> {
+    pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: &Size, drawing: &DrawingState) -> Result<ImageBuffer, String> {
         {
             let mut cherenkoved = self.cherenkoved.lock().unwrap();
             cherenkoved.get_image_buffer(entry, cell_size, drawing)
@@ -82,7 +82,7 @@ impl ImageCache {
         })
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, che: &Che, drawing: &DrawingOption) {
+    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, che: &Che, drawing: &DrawingState) {
         let mut cherenkoved = self.cherenkoved.lock().unwrap();
         cherenkoved.cherenkov(entry, cell_size, che, drawing)
     }

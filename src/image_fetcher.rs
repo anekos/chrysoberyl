@@ -11,7 +11,7 @@ use entry::Entry;
 use entry_image::get_image_buffer;
 use image_cache::ImageCache;
 use size::Size;
-use state::DrawingOption;
+use state::DrawingState;
 
 
 type ArcTarget = Arc<Mutex<FetchTarget>>;
@@ -22,7 +22,7 @@ pub struct ImageFetcher {
 
 pub struct FetchTarget {
     cell_size: Size,
-    drawing: DrawingOption,
+    drawing: DrawingState,
     entries: VecDeque<Entry>,
 }
 
@@ -40,7 +40,7 @@ impl ImageFetcher {
         }
     }
 
-    pub fn new_target(&self, entries: VecDeque<Entry>, cell_size: Size, drawing: DrawingOption) {
+    pub fn new_target(&self, entries: VecDeque<Entry>, cell_size: Size, drawing: DrawingState) {
         self.main_tx.send(
             FetcherOperation::Refresh(
                 FetchTarget {
@@ -56,7 +56,7 @@ impl Default for FetchTarget {
     fn default() -> FetchTarget {
         FetchTarget {
             cell_size: Size::new(0, 0),
-            drawing: DrawingOption::default(),
+            drawing: DrawingState::default(),
             entries: VecDeque::new()
         }
     }
@@ -105,7 +105,7 @@ pub fn start(tx: &Sender<FetcherOperation>, mut cache: ImageCache, idles: &mut u
 }
 
 
-pub fn fetch(tx: Sender<FetcherOperation>, mut cache: ImageCache, entry: Entry, cell_size: Size, drawing: DrawingOption) {
+pub fn fetch(tx: Sender<FetcherOperation>, mut cache: ImageCache, entry: Entry, cell_size: Size, drawing: DrawingState) {
     cache.push(entry, move |entry| {
         let result = get_image_buffer(&entry, &cell_size, &drawing);
         tx.send(FetcherOperation::Done).unwrap();

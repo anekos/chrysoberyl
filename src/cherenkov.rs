@@ -36,7 +36,7 @@ use entry::Entry;
 use entry_image;
 use image::{ImageBuffer, StaticImageBuffer};
 use size::Size;
-use state::DrawingOption;
+use state::DrawingState;
 use utils::feq;
 
 
@@ -64,7 +64,7 @@ pub struct Cherenkoved {
 pub struct CacheEntry {
     image: StaticImageBuffer,
     cell_size: Size,
-    drawing: DrawingOption,
+    drawing: DrawingState,
     modifiers: Vec<Che>
 }
 
@@ -74,7 +74,7 @@ impl Cherenkoved {
         Cherenkoved { cache: HashMap::new() }
     }
 
-    pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: &Size, drawing: &DrawingOption) -> Option<Result<ImageBuffer, String>> {
+    pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: &Size, drawing: &DrawingState) -> Option<Result<ImageBuffer, String>> {
         let new_entry = if let Some(cache_entry) = self.cache.get(entry) { 
             if cache_entry.is_valid(cell_size, drawing) {
                 return Some(Ok(ImageBuffer::Static(cache_entry.image.clone())))
@@ -99,7 +99,7 @@ impl Cherenkoved {
         self.cache.remove(entry);
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, che: &Che, drawing: &DrawingOption) {
+    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, che: &Che, drawing: &DrawingState) {
         if let Some(mut cache_entry) = self.cache.get_mut(entry) {
             cache_entry.modifiers.push(che.clone());
             cache_entry.image = cherenkov_static_image_buffer(&cache_entry.image, che);
@@ -121,7 +121,7 @@ impl Cherenkoved {
         }
     }
 
-    fn re_cherenkov(&self, entry: &Entry, cell_size: &Size, drawing: &DrawingOption, modifiers: &[Che]) -> Result<StaticImageBuffer, String> {
+    fn re_cherenkov(&self, entry: &Entry, cell_size: &Size, drawing: &DrawingState, modifiers: &[Che]) -> Result<StaticImageBuffer, String> {
         entry_image::get_image_buffer(entry, cell_size, drawing).and_then(|image_buffer| {
             if let ImageBuffer::Static(buf) = image_buffer {
                 let mut pixbuf = buf.get_pixbuf();
@@ -138,7 +138,7 @@ impl Cherenkoved {
 
 
 impl CacheEntry {
-    pub fn is_valid(&self, cell_size: &Size, drawing: &DrawingOption) -> bool {
+    pub fn is_valid(&self, cell_size: &Size, drawing: &DrawingState) -> bool {
         self.cell_size == *cell_size && self.drawing.fit_to == drawing.fit_to && self.drawing.clipping == drawing.clipping
     }
 }

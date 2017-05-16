@@ -67,7 +67,7 @@ pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Opera
 
         impl PartialOrd for IndexWithName {
             fn partial_cmp(&self, other: &IndexWithName) -> Option<Ordering> {
-                Some(self.cmp(&other))
+                Some(self.cmp(other))
             }
         }
 

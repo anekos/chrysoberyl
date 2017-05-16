@@ -35,13 +35,11 @@ pub fn register(gui: &Gui, tx: &Sender<Operation>) {
 
 fn on_key_press(tx: &Sender<Operation>, key: &EventKey) -> Inhibit {
     let keyval = key.as_ref().keyval;
-    tx.send({
-        if 48 <= keyval && keyval <= 57 {
-            Operation::CountDigit((keyval - 48) as u8)
-        } else {
-            Operation::Input(Input::key_from_event_key(key))
-        }
-    }).unwrap();
+    if 48 <= keyval && keyval <= 57 {
+        tx.send(Operation::CountDigit((keyval - 48) as u8)).unwrap();
+    } else if !is_modifier_key(key.get_keyval()) {
+        tx.send(Operation::Input(Input::key_from_event_key(key))).unwrap();
+    }
 
     Inhibit(false)
 }
@@ -79,4 +77,15 @@ fn on_configure(mut sender: LazySender, configure: &EventConfigure, last_window_
 fn on_delete(tx: &Sender<Operation>) -> Inhibit {
     tx.send(Operation::Quit).unwrap();
     Inhibit(false)
+}
+
+fn is_modifier_key(key: u32) -> bool {
+    use gdk::enums::key;
+
+    match key {
+        key::Shift_L | key::Shift_R | key::Control_L | key::Control_R | key::Meta_L | key::Meta_R | key::Alt_L | key::Alt_R | key::Super_L | key::Super_R | key::Hyper_L | key::Hyper_R =>
+            true,
+        _ =>
+            false,
+    }
 }

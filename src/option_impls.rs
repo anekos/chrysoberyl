@@ -162,6 +162,6 @@ where T: Eq + Copy {
             order[i - 1]
         }
     } else {
-        order.iter().nth(i + 1).cloned().unwrap_or_else(|| order[0])
+        order.get(i + 1).cloned().unwrap_or_else(|| order[0])
     }
 }

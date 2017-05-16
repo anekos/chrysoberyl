@@ -190,11 +190,11 @@ pub fn parse_map(args: &[String]) -> Result<Operation, String> {
         let mut to: Vec<String> = vec![];
         {
             let mut ap = ArgumentParser::new();
-            ap.refer(&mut from).add_argument("from", Store, "Target key name").required();
+            ap.refer(&mut from).add_argument("from", Store, "Target key sequence").required();
             ap.refer(&mut to).add_argument("to", List, "Command").required();
             parse_args(&mut ap, args)
         } .map(|_| {
-            Operation::Map(MappingTarget::Key(from), to)
+            Operation::Map(MappingTarget::Key(from.split(',').map(|it| o!(it)).collect()), to)
         })
     }
 

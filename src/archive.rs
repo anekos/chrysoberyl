@@ -53,7 +53,7 @@ impl Hash for ArchiveEntry {
 
 pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Operation>) {
     let from_index: HashMap<usize, (usize, String)> = {
-        #[derive(Eq, Clone, Debug, PartialOrd)]
+        #[derive(Clone, Debug)]
         struct IndexWithName {
             index: usize,
             name: String,
@@ -64,6 +64,14 @@ pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Opera
                 self.name.cmp(&other.name)
             }
         }
+
+        impl PartialOrd for IndexWithName {
+            fn partial_cmp(&self, other: &IndexWithName) -> Option<Ordering> {
+                Some(self.cmp(&other))
+            }
+        }
+
+        impl Eq for IndexWithName {}
 
         impl PartialEq for IndexWithName {
             fn eq(&self, other: &IndexWithName) -> bool {

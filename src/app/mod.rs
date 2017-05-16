@@ -245,7 +245,7 @@ impl App {
                 Scroll(ref direction, ref operation, scroll_size) =>
                     on_scroll(self, direction, operation, scroll_size),
                 Shell(async, read_operations, ref command_line) =>
-                    shell::call(async, command_line, option!(read_operations, self.tx.clone())),
+                    shell::call(async, command_line, None, option!(read_operations, self.tx.clone())),
                 Show(ref key) =>
                     on_show(self, &mut updated, key),
                 Shuffle(fix_current) =>

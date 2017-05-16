@@ -27,9 +27,7 @@ fn run(tx: Option<Sender<Operation>>, command_line: &[String], stdin: Option<Str
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-    if stdin.is_some() {
-        command.stdin(Stdio::piped());
-    }
+    command.stdin(if stdin.is_some() { Stdio::piped() } else { Stdio::null() });
 
     let child = command.spawn().unwrap();
 

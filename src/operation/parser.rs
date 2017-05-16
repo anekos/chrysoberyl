@@ -384,15 +384,28 @@ pub fn parse_scroll(args: &[String]) -> Result<Operation, String> {
 }
 
 pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
+    impl FromStr for StdinSource {
+        type Err = String;
+
+        fn from_str(src: &str) -> Result<Self, String> {
+            match src {
+                "states" => Ok(StdinSource::States),
+                _ => Err(format!("Invalid stdin source: {}", src))
+            }
+        }
+    }
+
     let mut async = true;
     let mut read_operations = false;
     let mut command_line: Vec<String> = vec![];
+    let mut stdin_sources: Vec<StdinSource> = vec![];
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut async)
             .add_option(&["--async", "-a"], StoreTrue, "Async (Non-blocking)")
             .add_option(&["--sync", "-s"], StoreFalse, "Sync (Blocking)");
+        ap.refer(&mut stdin_sources).add_option(&["--stdin", "-i"], Collect, "STDIN source");
         ap.refer(&mut read_operations).add_option(&["--operation", "-o"], StoreTrue, "Read operations form stdout");
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
@@ -401,7 +414,7 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
         for it in command_line {
             cl.push(sh::expand(&it));
         }
-        Ok(Operation::Shell(async, read_operations, cl))
+        Ok(Operation::Shell(async, read_operations, cl, stdin_sources))
     })
 }
 

@@ -26,10 +26,9 @@ use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
 use operation::{Operation, OperationContext, MappingTarget, MoveBy};
 use output;
-use shell;
 use shellexpand_wrapper as sh;
 use size::{Size, FitTo, Region};
-use state::{ States, PreFetchState};
+use state::{States, PreFetchState};
 use termination;
 use utils::path_to_str;
 
@@ -244,8 +243,8 @@ impl App {
                     on_set_env(self, name, value),
                 Scroll(ref direction, ref operation, scroll_size) =>
                     on_scroll(self, direction, operation, scroll_size),
-                Shell(async, read_operations, ref command_line) =>
-                    shell::call(async, command_line, None, option!(read_operations, self.tx.clone())),
+                Shell(async, read_operations, ref command_line, ref stdin_sources) =>
+                    on_shell(self, async, read_operations, command_line, self.tx.clone(), stdin_sources),
                 Show(ref key) =>
                     on_show(self, &mut updated, key),
                 Shuffle(fix_current) =>

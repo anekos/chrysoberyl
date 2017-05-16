@@ -60,7 +60,7 @@ pub enum Operation {
     Save(PathBuf, Option<usize>),
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     SetEnv(String, Option<String>),
-    Shell(bool, bool, Vec<String>), /* async, operation, command_line */
+    Shell(bool, bool, Vec<String>, Vec<StdinSource>), /* async, operation, command_line, stdin */
     Show(entry::SearchKey),
     Shuffle(bool), /* Fix current */
     Sort,
@@ -135,6 +135,11 @@ pub enum OptionName {
     ColorStatusBarBackground,
     ColorError,
     ColorErrorBackground,
+}
+
+#[derive(Clone, Debug, PartialEq, Copy)]
+pub enum StdinSource {
+    States
 }
 
 

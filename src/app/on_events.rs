@@ -13,8 +13,9 @@ use entry::{MetaSlice, new_meta, SearchKey};
 use filer;
 use fragile_input::new_fragile_input;
 use gui::Direction;
-use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater};
+use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater, StdinSource};
 use output;
+use shell;
 use utils::path_to_str;
 
 use app::*;
@@ -346,6 +347,24 @@ pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scr
             Err(err) => puts_error!("at" => "scroll", "reason" => err),
         }
     }
+}
+
+pub fn on_shell(app: &App, async: bool, read_operations: bool, command_line: &[String], tx: Sender<Operation>, stdin_sources: &[StdinSource]) {
+    use string::stringify_states;
+
+    let stdin = if !stdin_sources.is_empty() {
+        let mut stdin = o!("");
+        for source in stdin_sources {
+            match *source {
+                StdinSource::States => stdin.push_str(&stringify_states(&app.states)),
+            }
+        }
+        Some(stdin)
+    } else {
+        None
+    };
+
+    shell::call(async, command_line, stdin, option!(read_operations, tx));
 }
 
 pub fn on_show(app: &mut App, updated: &mut Updated, key: &SearchKey) {

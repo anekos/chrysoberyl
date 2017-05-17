@@ -8,7 +8,7 @@ use libc;
 
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Process {
     Kill(u32),
     Delete(String)
@@ -23,12 +23,19 @@ lazy_static! {
     };
 }
 
-
-
 pub fn register(process: Process) {
     let mut list = (*PROCESS_LIST).lock().unwrap();
     list.push(process);
     debug!("register: {:?}", *list);
+}
+
+pub fn unregister(process: &Process) {
+    let mut list = (*PROCESS_LIST).lock().unwrap();
+
+    if let Some(pos) = list.iter().position(|x| *x == *process) {
+        list.remove(pos);
+        debug!("unregister: {:?}", *list);
+    }
 }
 
 

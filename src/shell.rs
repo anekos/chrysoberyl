@@ -29,7 +29,8 @@ fn run(tx: Option<Sender<Operation>>, command_line: &[String]) {
 
     let child = command.spawn().unwrap();
 
-    termination::register(termination::Process::Kill(child.id()));
+    let terminator = termination::Process::Kill(child.id());
+    termination::register(terminator.clone());
 
     puts_event!("shell/open");
     if process_stdout(tx, child) {
@@ -37,6 +38,8 @@ fn run(tx: Option<Sender<Operation>>, command_line: &[String]) {
     } else {
         puts_error!("at" => "shell", "for" => join(command_line));
     }
+
+    termination::unregister(&terminator);
 }
 
 fn process_stdout(tx: Option<Sender<Operation>>, child: Child) -> bool {

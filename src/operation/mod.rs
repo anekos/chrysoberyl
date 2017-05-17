@@ -331,18 +331,18 @@ fn test_parse() {
     assert_eq!(p("@editor"), Editor(None, vec![]));
 
     // Move
-    assert_eq!(p("@First"), First(None, false));
-    assert_eq!(p("@Next"), Next(None, false));
-    assert_eq!(p("@Previous"), Previous(None, false));
-    assert_eq!(p("@Prev"), Previous(None, false));
-    assert_eq!(p("@Last"), Last(None, false));
-    assert_eq!(p("@First 1"), First(Some(1), false));
-    assert_eq!(p("@Next 2"), Next(Some(2), false));
-    assert_eq!(p("@Previous 3"), Previous(Some(3), false));
-    assert_eq!(p("@Prev 4"), Previous(Some(4), false));
-    assert_eq!(p("@Last 5"), Last(Some(5), false));
-    assert_eq!(p("@Last -i 5"), Last(Some(5), true));
-    assert_eq!(p("@Last --ignore-views 5"), Last(Some(5), true));
+    assert_eq!(p("@First"), First(None, false, MoveBy::Page));
+    assert_eq!(p("@Next"), Next(None, false, MoveBy::Page));
+    assert_eq!(p("@Previous"), Previous(None, false, MoveBy::Page));
+    assert_eq!(p("@Prev"), Previous(None, false, MoveBy::Page));
+    assert_eq!(p("@Last"), Last(None, false, MoveBy::Page));
+    assert_eq!(p("@First 1"), First(Some(1), false, MoveBy::Page));
+    assert_eq!(p("@Next 2"), Next(Some(2), false, MoveBy::Page));
+    assert_eq!(p("@Previous 3"), Previous(Some(3), false, MoveBy::Page));
+    assert_eq!(p("@Prev 4"), Previous(Some(4), false, MoveBy::Page));
+    assert_eq!(p("@Last 5"), Last(Some(5), false, MoveBy::Page));
+    assert_eq!(p("@Last -i 5"), Last(Some(5), true, MoveBy::Page));
+    assert_eq!(p("@Last --ignore-views 5"), Last(Some(5), true, MoveBy::Page));
 
     // @push*
     assert_eq!(p("@push http://example.com/moge.jpg"), Push(o!("http://example.com/moge.jpg"), Arc::new(vec![])));
@@ -350,9 +350,9 @@ fn test_parse() {
     assert_eq!(p("@push-url http://example.com/moge.jpg"), PushURL(o!("http://example.com/moge.jpg"), Arc::new(vec![])));
 
     // @map
-    assert_eq!(q("@map key k @first"), Ok(Map(MappingTarget::Key(s!("k")), vec![o!("@first")])));
-    assert_eq!(p("@map k k @next"), Map(MappingTarget::Key(s!("k")), vec![o!("@next")]));
-    assert_eq!(p("@map key k @next"), Map(MappingTarget::Key(s!("k")), vec![o!("@next")]));
+    assert_eq!(q("@map key k @first"), Ok(Map(MappingTarget::Key(vec![s!("k")]), vec![o!("@first")])));
+    assert_eq!(p("@map k k @next"), Map(MappingTarget::Key(vec![s!("k")]), vec![o!("@next")]));
+    assert_eq!(p("@map key k @next"), Map(MappingTarget::Key(vec![s!("k")]), vec![o!("@next")]));
     assert_eq!(q("@map mouse 6 @last"), Ok(Map(MappingTarget::Mouse(6, None), vec![o!("@last")])));
     assert_eq!(p("@map m 6 @last"), Map(MappingTarget::Mouse(6, None), vec![o!("@last")]));
     assert_eq!(p("@map m --area 0.1x0.2-0.3x0.4 6 @last"), Map(MappingTarget::Mouse(6, Some(Area::new(0.1, 0.2, 0.3, 0.4))), vec![o!("@last")]));
@@ -364,15 +364,15 @@ fn test_parse() {
     assert_eq!(p("@expand --recursive"), Expand(true, None));
 
     // Option
-    assert_eq!(p("@toggle status"), UpdateOption(StateName::StatusBar, OptionUpdateMethod::Toggle, vec!()));
-    assert_eq!(p("@toggle status-bar"), UpdateOption(StateName::StatusBar, OptionUpdateMethod::Toggle, vec!()));
-    assert_eq!(p("@enable center"), UpdateOption(StateName::CenterAlignment, OptionUpdateMethod::Enable, vec!()));
-    assert_eq!(p("@disable center-alignment"), UpdateOption(StateName::CenterAlignment, OptionUpdateMethod::Disable, vec!()));
-    assert_eq!(p("@disable fit"), UpdateOption(StateName::FitTo, OptionUpdateMethod::Disable, vec!()));
+    assert_eq!(p("@toggle status"), UpdateOption(OptionName::StatusBar, OptionUpdater::Toggle));
+    assert_eq!(p("@toggle status-bar"), UpdateOption(OptionName::StatusBar, OptionUpdater::Toggle));
+    assert_eq!(p("@enable center"), UpdateOption(OptionName::CenterAlignment, OptionUpdater::Enable));
+    assert_eq!(p("@disable center-alignment"), UpdateOption(OptionName::CenterAlignment, OptionUpdater::Disable));
+    assert_eq!(p("@disable fit"), UpdateOption(OptionName::FitTo, OptionUpdater::Disable));
 
     // Multi
-    assert_eq!(p("; @first ; @next"), Multi(vec![First(None, false), Next(None, false)]));
-    assert_eq!(p("@multi / @first / @next"), Multi(vec![First(None, false), Next(None, false)]));
+    assert_eq!(p("; @first ; @next"), Multi(vec![First(None, false, MoveBy::Page), Next(None, false, MoveBy::Page)]));
+    assert_eq!(p("@multi / @first / @next"), Multi(vec![First(None, false, MoveBy::Page), Next(None, false, MoveBy::Page)]));
 
     // Shell
     assert_eq!(p("@shell ls -l -a"), Shell(true, false, vec![o!("ls"), o!("-l"), o!("-a")]));

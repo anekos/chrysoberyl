@@ -113,7 +113,7 @@ fn make_scaled_from_file(path: &str, cell: &Size, drawing: &DrawingState) -> Res
 }
 
 fn make_scaled_from_pdf(pdf_path: &str, index: usize, cell: &Size, drawing: &DrawingState) -> StaticImageBuffer {
-    let document = PopplerDocument::new_from_file(&pdf_path);
+    let document = PopplerDocument::new_from_file(pdf_path);
     StaticImageBuffer::new_from_pixbuf(&document.nth_page(index).get_pixbuf(cell, drawing))
 }
 

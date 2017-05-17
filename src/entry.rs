@@ -1,7 +1,6 @@
 
 use std::cmp::{PartialEq, PartialOrd, Ord, Ordering};
 use std::collections::HashMap;
-use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::io;
 use std::path::{PathBuf, Path};
@@ -10,6 +9,7 @@ use std::sync::Arc;
 
 
 use immeta;
+use natord;
 use rand::{thread_rng, Rng, ThreadRng};
 
 use archive::ArchiveEntry;
@@ -35,14 +35,14 @@ pub struct EntryContainerOptions {
     pub ratio: Option<f32>, // width / height
 }
 
-#[derive(Debug, Eq, Clone)]
+#[derive(Clone)]
 pub struct Entry {
     pub key: Key,
     pub content: EntryContent,
     pub meta: Meta
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
+#[derive(Clone)]
 pub enum EntryContent {
     File(PathBuf),
     Http(PathBuf, String),
@@ -84,19 +84,21 @@ impl Entry {
 
 impl Ord for Entry {
     fn cmp(&self, other: &Entry) -> Ordering {
-        self.key.cmp(&other.key)
-    }
-}
-
-impl PartialEq for Entry {
-    fn eq(&self, other: &Entry) -> bool {
-        self.key.eq(&other.key)
+        compare_key(&self.key, &other.key)
     }
 }
 
 impl PartialOrd for Entry {
     fn partial_cmp(&self, other: &Entry) -> Option<Ordering> {
-        self.key.partial_cmp(&other.key)
+        Some(compare_key(&self.key, &other.key))
+    }
+}
+
+impl Eq for Entry {}
+
+impl PartialEq for Entry {
+    fn eq(&self, other: &Entry) -> bool {
+        self.key.eq(&other.key)
     }
 }
 
@@ -411,6 +413,8 @@ impl EntryContainer {
         let mut changed = false;
 
         through!([expanded = expand(dir, <u8>::max_value())] {
+            let mut expanded = expanded;
+            expanded.sort_by(|a, b| natord::compare(path_to_str(a), path_to_str(b)));
             for file in expanded {
                 changed |= self.push_file(pointer, &file, meta);
             }
@@ -455,16 +459,6 @@ impl EntryContainer {
         } else {
             false
         }
-    }
-}
-
-
-impl fmt::Display for EntryContainer {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for entry in &self.files {
-            writeln!(f, "{:?}", entry).unwrap();
-        }
-        Ok(())
     }
 }
 
@@ -591,4 +585,13 @@ fn expand(dir: &PathBuf, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
     });
 
     Ok(result)
+}
+
+fn compare_key(a: &Key, b: &Key) -> Ordering {
+    let name = natord::compare(&a.1, &b.1);
+    if name == Ordering::Equal {
+        a.2.cmp(&b.2)
+    } else {
+        name
+    }
 }

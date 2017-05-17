@@ -368,7 +368,7 @@ pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) {
 
 pub fn on_sort(app: &mut App, updated: &mut Updated) {
     app.entries.sort(&mut app.pointer);
-    updated.label = true;
+    updated.image = true;
 }
 
 pub fn on_unclip(app: &mut App, updated: &mut Updated) {

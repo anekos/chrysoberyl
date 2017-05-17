@@ -11,6 +11,7 @@ use encoding::types::EncodingRef;
 use libarchive::archive::{ReadFilter, ReadFormat, Entry, FileType};
 use libarchive::reader::Builder;
 use libarchive::reader::Reader;
+use natord;
 
 use operation::Operation;
 use sorting_buffer::SortingBuffer;
@@ -61,7 +62,7 @@ pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Opera
 
         impl Ord for IndexWithName {
             fn cmp(&self, other: &IndexWithName) -> Ordering {
-                self.name.cmp(&other.name)
+                natord::compare(&self.name, &other.name)
             }
         }
 

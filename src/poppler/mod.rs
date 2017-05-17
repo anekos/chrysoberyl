@@ -11,10 +11,10 @@ use std::mem::transmute;
 use cairo::{Context, ImageSurface, Format};
 use cairo;
 use gdk_pixbuf::Pixbuf;
-use glib::translate::*;
 use glib::translate::ToGlibPtr;
 use libc::{c_int, c_double};
 
+use gtk_utils::new_pixbuf_from_surface;
 use size::Size;
 use state::DrawingState;
 
@@ -93,12 +93,7 @@ impl PopplerPage {
             self.render(&context);
         }
 
-        let (width, height) = (surface.get_width(), surface.get_height());
-
-        unsafe {
-            let surface = surface.as_ref().to_glib_none().0;
-            from_glib_full(gdk_sys::gdk_pixbuf_get_from_surface(surface, 0, 0, width, height))
-        }
+        new_pixbuf_from_surface(&surface)
     }
 }
 

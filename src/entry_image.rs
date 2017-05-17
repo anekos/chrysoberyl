@@ -2,16 +2,19 @@
 use std::fs::File;
 use std::io::Read;
 
+use cairo::{Context, ImageSurface, Format};
+use gdk::prelude::ContextExt;
 use gdk_pixbuf::{Pixbuf, PixbufLoader};
 use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
 
 use entry::{Entry, EntryContent};
+use gtk_utils::new_pixbuf_from_surface;
+use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use poppler::PopplerDocument;
 use size::Size;
 use state::DrawingState;
 use utils::path_to_str;
-use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 
 
 
@@ -74,10 +77,26 @@ fn make_scaled(buffer: &[u8], cell: &Size, drawing: &DrawingState) -> Result<Sta
         }
         if let Some(source) = loader.get_pixbuf() {
             let original = Size::from_pixbuf(&source);
-            let (scale, fitted) = original.fit(cell, &drawing.fit_to);
-            let scaled = unsafe { Pixbuf::new(0, true, 8, fitted.width, fitted.height).unwrap() };
-            source.scale(&scaled, 0, 0, fitted.width, fitted.height, 0.0, 0.0, scale, scale, drawing.scaling.0);
-            Ok(StaticImageBuffer::new_from_pixbuf(&scaled))
+            let (scale, fitted, clipped_region) = original.fit_with_clipping(cell, drawing);
+
+            let result =
+                if let Some(r) = clipped_region {
+                    let surface = ImageSurface::create(Format::ARgb32, fitted.width, fitted.height);
+                    let context = Context::new(&surface);
+                    context.scale(scale, scale);
+                    context.translate(-r.left as f64, -r.top as f64);
+                    context.rectangle(r.left as f64, r.top as f64, r.right as f64, r.bottom as f64);
+                    context.clip();
+                    context.set_source_pixbuf(&source, 0.0, 0.0);
+                    context.paint();
+                    new_pixbuf_from_surface(&surface)
+                } else {
+                    let scaled = unsafe { Pixbuf::new(0, true, 8, fitted.width, fitted.height).unwrap() };
+                    source.scale(&scaled, 0, 0, fitted.width, fitted.height, 0.0, 0.0, scale, scale, drawing.scaling.0);
+                    scaled
+                };
+
+            Ok(StaticImageBuffer::new_from_pixbuf(&result))
         } else {
             Err(o!("Invalid image"))
         }

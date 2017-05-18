@@ -69,6 +69,7 @@ pub fn on_cherenkov_clear(app: &mut App, updated: &mut Updated) {
 
 pub fn on_clear(app: &mut App, updated: &mut Updated) {
     app.entries.clear(&mut app.pointer);
+    app.cache.clear();
     updated.image = true;
 }
 

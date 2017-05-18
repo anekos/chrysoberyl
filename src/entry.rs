@@ -138,6 +138,7 @@ impl EntryContainer {
 
     pub fn clear(&mut self, pointer: &mut IndexPointer) {
         self.files.clear();
+        self.reset_indices();
         pointer.current = None;
     }
 

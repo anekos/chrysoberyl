@@ -500,7 +500,7 @@ impl App {
             self.gui.window.set_title(&text);
         }
         if self.states.status_bar {
-            self.gui.label.set_text(&text);
+            self.gui.label.set_markup(&text);
         }
     }
 

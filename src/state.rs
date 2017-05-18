@@ -107,6 +107,6 @@ impl Default for ViewState {
 
 impl Default for StatusFormat {
     fn default() -> Self {
-        StatusFormat(o!("[$CHRYSOBERYL_PAGING/$CHRYSOBERYL_COUNT] $CHRYSOBERYL_PATH {$CHRYSOBERYL_FLAGS}"))
+        StatusFormat(o!("<span background=\"#005050\"> $CHRYSOBERYL_PAGING/$CHRYSOBERYL_COUNT </span> $CHRYSOBERYL_PATH <span foreground=\"grey\">$CHRYSOBERYL_FLAGS</span>"))
     }
 }

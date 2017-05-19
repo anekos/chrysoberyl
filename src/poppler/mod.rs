@@ -3,10 +3,11 @@ extern crate gdk_sys;
 extern crate glib;
 extern crate gobject_sys;
 
-use std::ptr::{null, null_mut};
 use std::ffi::CString;
-use std::path::Path;
 use std::mem::transmute;
+use std::path::Path;
+use std::ptr::{null, null_mut};
+use std::sync::{Arc, Mutex};
 
 use cairo::{Context, ImageSurface, Format};
 use cairo;
@@ -20,6 +21,11 @@ use state::DrawingState;
 
 mod sys;
 
+
+
+lazy_static! {
+    static ref LOCK: Arc<Mutex<usize>> = Arc::new(Mutex::new(0));
+}
 
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
@@ -64,8 +70,12 @@ impl Drop for PopplerDocument {
 
 impl PopplerPage {
     pub fn render(&self, context: &cairo::Context) {
+        let mut count = (*LOCK).lock().unwrap();
+        trace!("render/start: {:?}", *count);
         let context = context.as_ref().to_glib_none().0;
         unsafe { sys::poppler_page_render(self.0, context) };
+        trace!("render/end: {:?}", *count);
+        *count += 1;
     }
 
     pub fn get_size(&self) -> Size {

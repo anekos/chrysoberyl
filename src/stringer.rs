@@ -31,7 +31,7 @@ pub fn write_states(st: &States, out: &mut String) {
 
 pub fn write_entries(entries: &EntryContainer, out: &mut String) {
     for entry in entries.iter() {
-        write_entry(&entry, out);
+        write_entry(entry, out);
     }
 }
 
@@ -45,11 +45,9 @@ fn write_entry(entry: &Entry, out: &mut String) {
             sprintln!(out, "@push-url {}", escape(url)),
         Archive(ref path, ref entry) if entry.index == 0 =>
             sprintln!(out, "@push {}", escape_pathbuf(&*path)),
-        Archive(_, _) =>
-            (),
         Pdf(ref path, index) if index == 0 =>
             sprintln!(out, "@push-pdf {}", escape_pathbuf(&*path)),
-        Pdf(_, _) =>
+        Archive(_, _) | Pdf(_, _) =>
             (),
     }
 }

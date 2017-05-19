@@ -9,7 +9,7 @@ use gtk::prelude::*;
 use rand::distributions::{IndependentSample, Range as RandRange};
 
 use app_path;
-use archive::{self, ArchiveEntry};
+use archive;
 use editor;
 use entry::{MetaSlice, new_meta, SearchKey};
 use filer;
@@ -102,19 +102,6 @@ pub fn on_clip(app: &mut App, updated: &mut Updated, region: &Region) {
             }
         }
     }
-}
-
-pub fn on_dequeue(app: &mut App, updated: &mut Updated) {
-    use operation::QueuedOperation::*;
-
-    while let Some(op) = app.sorting_buffer.pull() {
-        match op {
-            PushHttpCache(file, url, meta) =>
-                updated.pointer |= app.entries.push_http_cache(&mut app.pointer, &file, &url, &meta),
-        }
-    }
-    updated.label = true;
-    app.do_show(updated);
 }
 
 pub fn on_editor(app: &mut App, editor_command: Option<String>, script_sources: Vec<script::ScriptSource>) {
@@ -281,6 +268,21 @@ pub fn on_print_entries(app: &App) {
     }
 }
 
+pub fn on_pull(app: &mut App, updated: &mut Updated) {
+    use operation::QueuedOperation::*;
+
+    while let Some(op) = app.sorting_buffer.pull() {
+        match op {
+            PushHttpCache(file, url, meta) =>
+                updated.pointer |= app.entries.push_http_cache(&mut app.pointer, &file, &url, &meta),
+            PushArchiveEntry(ref archive_path, ref entry) =>
+                updated.pointer |= app.entries.push_archive_entry(&mut app.pointer, archive_path, entry),
+        }
+        updated.label = true;
+    }
+    app.do_show(updated);
+}
+
 pub fn on_push(app: &mut App, path: String, meta: &MetaSlice) {
     if path.starts_with("http://") || path.starts_with("https://") {
         app.tx.send(Operation::PushURL(path, new_meta(meta))).unwrap();
@@ -291,7 +293,7 @@ pub fn on_push(app: &mut App, path: String, meta: &MetaSlice) {
         if let Some(ext) = path.extension() {
             match &*ext.to_str().unwrap().to_lowercase() {
                 "zip" | "rar" | "tar.gz" | "lzh" | "lha" =>
-                    return archive::fetch_entries(&path, &app.encodings, app.tx.clone()),
+                    return archive::fetch_entries(&path, &app.encodings, app.tx.clone(), app.sorting_buffer.clone()),
                 "pdf" =>
                     return app.tx.send(Operation::PushPdf(path.clone(), new_meta(meta))).unwrap(),
                 _ => ()
@@ -300,12 +302,6 @@ pub fn on_push(app: &mut App, path: String, meta: &MetaSlice) {
     }
 
     app.operate(&Operation::PushFile(Path::new(&path).to_path_buf(), new_meta(meta)));
-}
-
-pub fn on_push_archive_entry(app: &mut App, updated: &mut Updated, archive_path: &PathBuf, entry: &ArchiveEntry) {
-    updated.pointer = app.entries.push_archive_entry(&mut app.pointer, archive_path, entry);
-    updated.label = true;
-    app.do_show(updated);
 }
 
 pub fn on_push_path(app: &mut App, updated: &mut Updated, file: &PathBuf, meta: &MetaSlice) {

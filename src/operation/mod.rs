@@ -29,7 +29,6 @@ pub enum Operation {
     Context(OperationContext, Box<Operation>),
     Count(Option<usize>),
     CountDigit(u8),
-    Dequeue,
     Draw,
     Editor(Option<String>, Vec<ScriptSource>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
@@ -48,8 +47,8 @@ pub enum Operation {
     PreFetch(u64),
     Previous(Option<usize>, bool, MoveBy),
     PrintEntries,
+    Pull,
     Push(String, Meta),
-    PushArchiveEntry(PathBuf, ArchiveEntry),
     PushFile(PathBuf, Meta),
     PushPdf(PathBuf, Meta),
     PushURL(String, Meta),
@@ -148,6 +147,7 @@ pub enum StdinSource {
 #[derive(Clone, Debug, PartialEq)]
 pub enum QueuedOperation {
     PushHttpCache(PathBuf, String, Meta),
+    PushArchiveEntry(PathBuf, ArchiveEntry),
 }
 
 

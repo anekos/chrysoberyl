@@ -28,7 +28,7 @@ use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, Mov
 use output;
 use shellexpand_wrapper as sh;
 use size::{Size, FitTo, Region};
-use sorting_queue::SortingBuffer;
+use sorting_buffer::SortingBuffer;
 use state::{States, PreFetchState};
 use termination;
 use utils::path_to_str;
@@ -186,8 +186,6 @@ impl App {
                     self.pointer.set_count(count),
                 CountDigit(digit) =>
                     self.pointer.push_count_digit(digit),
-                Dequeue =>
-                    on_dequeue(self, &mut updated),
                 Draw =>
                     updated.image = true,
                 Editor(ref editor_command, ref config_sources) =>
@@ -224,10 +222,10 @@ impl App {
                     on_previous(self, &mut updated, &mut to_end, count, ignore_views, move_by),
                 PrintEntries =>
                     on_print_entries(self),
+                Pull =>
+                    on_pull(self, &mut updated),
                 Push(ref path, ref meta) =>
                     on_push(self, path.clone(), meta),
-                PushArchiveEntry(ref archive_path, ref entry) =>
-                    on_push_archive_entry(self, &mut updated, archive_path, entry),
                 PushFile(ref file, ref meta) =>
                     on_push_path(self, &mut updated, file, meta),
                 PushPdf(ref file, ref meta) =>

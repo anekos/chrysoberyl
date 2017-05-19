@@ -14,7 +14,7 @@ use url::Url;
 use app_path;
 use entry::{Meta, MetaSlice, new_meta};
 use operation::{Operation, QueuedOperation};
-use sorting_queue::SortingBuffer;
+use sorting_buffer::SortingBuffer;
 
 
 type TID = usize;
@@ -55,7 +55,7 @@ impl HttpCache {
         if filepath.exists() {
             self.sorting_buffer.push_without_reserve(
                 QueuedOperation::PushHttpCache(filepath, url, new_meta(meta)));
-            self.app_tx.send(Operation::Dequeue).unwrap();
+            self.app_tx.send(Operation::Pull).unwrap();
         } else {
             self.main_tx.send(Getter::Queue(url, filepath, new_meta(meta))).unwrap();
         }
@@ -98,7 +98,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                         request.ticket,
                         QueuedOperation::PushHttpCache(request.cache_filepath, request.url, request.meta));
 
-                    app_tx.send(Operation::Dequeue).unwrap();
+                    app_tx.send(Operation::Pull).unwrap();
 
                     puts!("event" => "http/complete", "thread_id" => s!(thread_id), "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
 

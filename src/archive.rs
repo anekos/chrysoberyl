@@ -12,7 +12,7 @@ use libarchive::archive::{ReadFilter, ReadFormat, Entry, FileType};
 use libarchive::reader::Builder;
 use libarchive::reader::Reader;
 
-use operation::Operation;
+use operation::{Operation, QueuedOperation};
 use sorting_buffer::SortingBuffer;
 use validation::is_valid_image_filename;
 
@@ -51,7 +51,7 @@ impl Hash for ArchiveEntry {
 }
 
 
-pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Operation>) {
+pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Operation>, mut sorting_buffer: SortingBuffer<QueuedOperation>) {
     let from_index: HashMap<usize, (usize, String)> = {
         #[derive(Clone, Debug)]
         struct IndexWithName {
@@ -113,6 +113,8 @@ pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Opera
         result
     };
 
+    let ticket = sorting_buffer.reserve_n(from_index.len());
+
     spawn(clone_army!([path] move || {
         let mut builder = Builder::new();
         builder.support_format(ReadFormat::All).ok();
@@ -120,7 +122,7 @@ pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Opera
 
         let mut reader = builder.open_file(&path).unwrap();
 
-        let mut buffer = SortingBuffer::new(0);
+        let mut buffer = sorting_buffer;
         let mut index = 0;
 
         while let Some(_) = reader.next_header() {
@@ -135,7 +137,11 @@ pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Opera
                         } else if content.is_empty() {
                             panic!("Empty content in archive");
                         } else {
-                            buffer.push(serial, ArchiveEntry { name: (*name).to_owned(), index: index, content: Arc::new(content) });
+                            buffer.push(
+                                ticket + serial,
+                                QueuedOperation::PushArchiveEntry(
+                                    path.clone(),
+                                    ArchiveEntry { name: (*name).to_owned(), index: index, content: Arc::new(content) }));
                             break;
                         }
                     } else {
@@ -145,12 +151,14 @@ pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Opera
                 }
             }
 
-            while let Some(entry) = buffer.pull() {
-                tx.send(Operation::PushArchiveEntry(path.clone(), entry.clone())).unwrap();
+            if index < 10 || index % 20 == 0 {
+                tx.send(Operation::Pull).unwrap();
             }
 
             index += 1;
         }
+
+        tx.send(Operation::Pull).unwrap();
     }));
 }
 

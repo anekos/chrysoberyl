@@ -24,10 +24,11 @@ use image_cache::ImageCache;
 use image_fetcher::ImageFetcher;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
-use operation::{Operation, OperationContext, MappingTarget, MoveBy};
+use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy};
 use output;
 use shellexpand_wrapper as sh;
 use size::{Size, FitTo, Region};
+use sorting_queue::SortingBuffer;
 use state::{States, PreFetchState};
 use termination;
 use utils::path_to_str;
@@ -49,6 +50,7 @@ pub struct App {
     current_env_keys: HashSet<String>,
     cache: ImageCache,
     fetcher: ImageFetcher,
+    sorting_buffer: SortingBuffer<QueuedOperation>,
     pub tx: Sender<Operation>,
     pub states: States
 }
@@ -94,11 +96,13 @@ impl App {
         let cache_limit = PreFetchState::default().limit_of_items;
         let cache = ImageCache::new(cache_limit);
 
+        let sorting_buffer = SortingBuffer::new();
+
         let mut app = App {
             entries: EntryContainer::new(entry_options),
             gui: gui.clone(),
             tx: tx.clone(),
-            http_cache: HttpCache::new(initial.http_threads, tx.clone()),
+            http_cache: HttpCache::new(initial.http_threads, tx.clone(), sorting_buffer.clone()),
             states: states,
             encodings: initial.encodings,
             mapping: Mapping::new(),
@@ -109,6 +113,7 @@ impl App {
             current_env_keys: HashSet::new(),
             cache: cache.clone(),
             fetcher: ImageFetcher::new(cache),
+            sorting_buffer: sorting_buffer,
         };
 
         app.reset_view();
@@ -181,6 +186,8 @@ impl App {
                     self.pointer.set_count(count),
                 CountDigit(digit) =>
                     self.pointer.push_count_digit(digit),
+                Dequeue =>
+                    on_dequeue(self, &mut updated),
                 Draw =>
                     updated.image = true,
                 Editor(ref editor_command, ref config_sources) =>
@@ -189,8 +196,6 @@ impl App {
                     on_expand(self, &mut updated, recursive, base),
                 First(count, ignore_views, move_by) =>
                     on_first(self, &mut updated, len, count, ignore_views, move_by),
-                ForceFlush =>
-                    self.http_cache.force_flush(),
                 Fragile(ref path) =>
                     on_fragile(self, path),
                 Initialized =>
@@ -223,8 +228,6 @@ impl App {
                     on_push(self, path.clone(), meta),
                 PushArchiveEntry(ref archive_path, ref entry) =>
                     on_push_archive_entry(self, &mut updated, archive_path, entry),
-                PushHttpCache(ref file, ref url, ref meta) =>
-                    on_push_http_cache(self, &mut updated, file, url, meta),
                 PushFile(ref file, ref meta) =>
                     on_push_path(self, &mut updated, file, meta),
                 PushPdf(ref file, ref meta) =>

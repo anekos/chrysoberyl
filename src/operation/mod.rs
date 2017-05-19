@@ -29,11 +29,11 @@ pub enum Operation {
     Context(OperationContext, Box<Operation>),
     Count(Option<usize>),
     CountDigit(u8),
+    Dequeue,
     Draw,
     Editor(Option<String>, Vec<ScriptSource>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool, MoveBy),
-    ForceFlush,
     Fragile(PathBuf),
     Initialized,
     Input(mapping::Input),
@@ -51,7 +51,6 @@ pub enum Operation {
     Push(String, Meta),
     PushArchiveEntry(PathBuf, ArchiveEntry),
     PushFile(PathBuf, Meta),
-    PushHttpCache(PathBuf, String, Meta),
     PushPdf(PathBuf, Meta),
     PushURL(String, Meta),
     Quit,
@@ -144,6 +143,11 @@ pub enum StdinSource {
     States,
     Entries,
     Position,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum QueuedOperation {
+    PushHttpCache(PathBuf, String, Meta),
 }
 
 
@@ -273,7 +277,6 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@entries"                   => Ok(PrintEntries),
             "@expand"                    => parse_expand(whole),
             "@first" | "@f"              => parse_move(whole, First),
-            "@force-flush"               => Ok(ForceFlush),
             "@fragile"                   => parse_command1(whole, |it| Fragile(sh::expand_to_pathbuf(&it))),
             "@input"                     => parse_input(whole),
             "@last" | "@l"               => parse_move(whole, Last),

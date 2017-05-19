@@ -104,6 +104,19 @@ pub fn on_clip(app: &mut App, updated: &mut Updated, region: &Region) {
     }
 }
 
+pub fn on_dequeue(app: &mut App, updated: &mut Updated) {
+    use operation::QueuedOperation::*;
+
+    while let Some(op) = app.sorting_buffer.pull() {
+        match op {
+            PushHttpCache(file, url, meta) =>
+                updated.pointer |= app.entries.push_http_cache(&mut app.pointer, &file, &url, &meta),
+        }
+    }
+    updated.label = true;
+    app.do_show(updated);
+}
+
 pub fn on_editor(app: &mut App, editor_command: Option<String>, script_sources: Vec<script::ScriptSource>) {
     let tx = app.tx.clone();
     spawn(move || editor::start_edit(&tx, editor_command, script_sources));
@@ -291,12 +304,6 @@ pub fn on_push(app: &mut App, path: String, meta: &MetaSlice) {
 
 pub fn on_push_archive_entry(app: &mut App, updated: &mut Updated, archive_path: &PathBuf, entry: &ArchiveEntry) {
     updated.pointer = app.entries.push_archive_entry(&mut app.pointer, archive_path, entry);
-    updated.label = true;
-    app.do_show(updated);
-}
-
-pub fn on_push_http_cache(app: &mut App, updated: &mut Updated, file: &PathBuf, url: &str, meta: &MetaSlice) {
-    updated.pointer = app.entries.push_http_cache(&mut app.pointer, file, url, meta);
     updated.label = true;
     app.do_show(updated);
 }

@@ -64,6 +64,7 @@ mod shell;
 mod shellexpand_wrapper;
 mod size;
 mod sorting_buffer;
+mod sorting_queue;
 mod state;
 mod stringer;
 mod termination;

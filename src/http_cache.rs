@@ -13,8 +13,8 @@ use url::Url;
 
 use app_path;
 use entry::{Meta, MetaSlice, new_meta};
-use operation::Operation;
-use sorting_buffer::SortingBuffer;
+use operation::{Operation, QueuedOperation};
+use sorting_queue::SortingBuffer;
 
 
 type TID = usize;
@@ -23,11 +23,12 @@ type TID = usize;
 pub struct HttpCache {
     app_tx: Sender<Operation>,
     main_tx: Sender<Getter>,
+    sorting_buffer: SortingBuffer<QueuedOperation>,
 }
 
 #[derive(Clone)]
 struct Request {
-    serial: usize,
+    ticket: usize,
     url: String,
     cache_filepath: PathBuf,
     meta: Meta
@@ -39,40 +40,35 @@ enum Getter {
     Queue(String, PathBuf, Meta),
     Done(usize, Request),
     Fail(usize, String, Request),
-    Flush,
 }
 
 
 impl HttpCache {
-    pub fn new(max_threads: u8, app_tx: Sender<Operation>) -> HttpCache {
-        let main_tx = main(max_threads, app_tx.clone());
-        HttpCache { app_tx: app_tx, main_tx: main_tx }
+    pub fn new(max_threads: u8, app_tx: Sender<Operation>, sorting_buffer: SortingBuffer<QueuedOperation>) -> HttpCache {
+        let main_tx = main(max_threads, app_tx.clone(), sorting_buffer.clone());
+        HttpCache { app_tx: app_tx, main_tx: main_tx, sorting_buffer: sorting_buffer  }
     }
 
     pub fn fetch(&mut self, url: String, meta: &MetaSlice) {
         let filepath = generate_temporary_filename(&url);
 
         if filepath.exists() {
-            self.app_tx.send(Operation::PushHttpCache(filepath, url, new_meta(meta))).unwrap();
+            self.sorting_buffer.push_without_reserve(
+                QueuedOperation::PushHttpCache(filepath, url, new_meta(meta)));
+            self.app_tx.send(Operation::Dequeue).unwrap();
         } else {
             self.main_tx.send(Getter::Queue(url, filepath, new_meta(meta))).unwrap();
         }
     }
-
-    pub fn force_flush(&self) {
-        self.main_tx.send(Getter::Flush).unwrap();
-    }
 }
 
 
-fn main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
+fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<QueuedOperation>) -> Sender<Getter> {
     let (main_tx, main_rx) = channel();
 
     spawn(clone_army!([main_tx] move || {
         use self::Getter::*;
 
-        let mut serial: usize = 0;
-        let mut buffer: SortingBuffer<Request> = SortingBuffer::new(serial);
         let mut threads: Vec<Sender<Request>> = vec![];
         let mut waiting: Vec<TID> = vec![];
         let mut queued = VecDeque::<Request>::new();
@@ -85,8 +81,10 @@ fn main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
         while let Ok(it) = main_rx.recv() {
             match it {
                 Queue(url, cache_filepath, meta) => {
-                    let request = Request { serial: serial, url: url.clone(), cache_filepath: cache_filepath, meta: meta };
-                    serial += 1;
+                    let ticket = buffer.reserve();
+
+                    let request = Request { ticket: ticket, url: url.clone(), cache_filepath: cache_filepath, meta: meta };
+
                     if let Some(worker) = waiting.pop() {
                         threads[worker].send(request).unwrap();
                     } else {
@@ -96,10 +94,11 @@ fn main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
 
                 }
                 Done(thread_id, request) => {
-                    buffer.push(request.serial, request);
-                    while let Some(request) = buffer.pull() {
-                        app_tx.send(Operation::PushHttpCache(request.cache_filepath, request.url, request.meta)).unwrap();
-                    }
+                    buffer.push(
+                        request.ticket,
+                        QueuedOperation::PushHttpCache(request.cache_filepath, request.url, request.meta));
+
+                    app_tx.send(Operation::Dequeue).unwrap();
 
                     puts!("event" => "http/complete", "thread_id" => s!(thread_id), "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
 
@@ -111,7 +110,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
                 }
                 Fail(thread_id, err, request) => {
                     waiting.push(thread_id);
-                    buffer.skip(request.serial);
+                    buffer.skip(request.ticket);
 
                     puts_error!("at" => "http/get", "thread_id" => s!(thread_id), "reason" => err, "url" => o!(request.url), "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
 
@@ -120,13 +119,6 @@ fn main(max_threads: u8, app_tx: Sender<Operation>) -> Sender<Getter> {
                     } else {
                         waiting.push(thread_id);
                     }
-                }
-                Flush => {
-                    puts!("event" => "http/flush/start", "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
-                    for request in buffer.force_flush() {
-                        app_tx.send(Operation::PushHttpCache(request.cache_filepath, request.url, request.meta)).unwrap();
-                    }
-                    puts!("event" => "http/flush/done", "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
                 }
             }
         }

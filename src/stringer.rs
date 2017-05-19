@@ -22,7 +22,11 @@ pub fn write_states(st: &States, out: &mut String) {
     sprintln!(out, "@set pre-render-pages {}", st.pre_fetch.page_size);
     sprintln!(out, "@set fit-to {}", st.drawing.fit_to);
     sprintln!(out, "@set scaling {}", st.drawing.scaling);
-    // result.push_str(format!("@set clip {}\n", st.drawing.fit_to); // FIXME
+    if let Some(c) = st.drawing.clipping {
+        sprintln!(out, "@clip {} {} {} {}", c.left, c.top, c.right, c.bottom);
+    } else {
+        sprintln!(out, "@unclip");
+    }
 }
 
 pub fn write_entries(entries: &EntryContainer, out: &mut String) {

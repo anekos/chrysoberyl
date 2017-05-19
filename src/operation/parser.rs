@@ -95,6 +95,21 @@ pub fn parse_copy_or_move(args: &[String]) -> Result<(PathBuf, filer::IfExist), 
     })
 }
 
+pub fn parse_clip(args: &[String]) -> Result<Operation, String> {
+    let mut region = Region { left: 0.0, top: 0.0, right: 0.0, bottom: 0.0 };
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut region.left).add_argument("Left", Store, "Left");
+        ap.refer(&mut region.top).add_argument("Top", Store, "Top");
+        ap.refer(&mut region.right).add_argument("Right", Store, "Right");
+        ap.refer(&mut region.bottom).add_argument("Bottom", Store, "Bottom");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Clip(region)
+    })
+}
+
 pub fn parse_count(args: &[String]) -> Result<Operation, String> {
     let mut count: Option<usize> = None;
 

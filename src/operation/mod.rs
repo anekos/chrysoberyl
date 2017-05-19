@@ -263,6 +263,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@cherenkov"                 => parse_cherenkov(whole),
             "@clear"                     => Ok(Clear),
             "@copy"                      => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Copy(path, if_exist))),
+            "@clip"                      => parse_clip(whole),
             "@count"                     => parse_count(whole),
             "@cycle"                     => parse_option_cycle(whole),
             "@disable"                   => parse_option_1(whole, OptionUpdater::Disable),

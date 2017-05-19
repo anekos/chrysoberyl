@@ -139,7 +139,10 @@ pub enum OptionName {
 
 #[derive(Clone, Debug, PartialEq, Copy)]
 pub enum StdinSource {
-    States
+    All,
+    States,
+    Entries,
+    Position,
 }
 
 

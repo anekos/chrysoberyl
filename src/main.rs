@@ -65,7 +65,7 @@ mod shellexpand_wrapper;
 mod size;
 mod sorting_buffer;
 mod state;
-mod string;
+mod stringer;
 mod termination;
 mod utils;
 mod validation;

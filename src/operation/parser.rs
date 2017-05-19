@@ -389,7 +389,10 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
 
         fn from_str(src: &str) -> Result<Self, String> {
             match src {
-                "states" => Ok(StdinSource::States),
+                "states" | "s" => Ok(StdinSource::States),
+                "entries" | "e" => Ok(StdinSource::Entries),
+                "position" | "p" => Ok(StdinSource::Position),
+                "all" | "a" => Ok(StdinSource::All),
                 _ => Err(format!("Invalid stdin source: {}", src))
             }
         }

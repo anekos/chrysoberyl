@@ -7,6 +7,7 @@ use std::io;
 use std::path::{PathBuf, Path};
 use std::rc::Rc;
 use std::sync::Arc;
+use std::slice;
 
 
 use immeta;
@@ -132,6 +133,10 @@ impl EntryContainer {
             rng: thread_rng(),
             options: options
         }
+    }
+
+    pub fn iter(&self) -> slice::Iter<Rc<Entry>> {
+        self.files.iter()
     }
 
     pub fn clear(&mut self, pointer: &mut IndexPointer) {

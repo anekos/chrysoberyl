@@ -1,11 +1,14 @@
 
 use std::env;
+use std::fs::File;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::thread::spawn;
 
 use gtk::prelude::*;
 use rand::distributions::{IndependentSample, Range as RandRange};
 
+use app_path;
 use archive::{self, ArchiveEntry};
 use config;
 use editor;
@@ -321,7 +324,20 @@ pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) {
     }
 }
 
-pub fn on_save(app: &mut App, path: &PathBuf, index: &Option<usize>) {
+pub fn on_save_session(app: &mut App, path: &Option<PathBuf>, sources: &[StdinSource]) {
+    let default = app_path::config_file(Some("session.conf"));
+    let path = path.as_ref().unwrap_or(&default);
+
+    let result = File::create(path).map(|mut file| {
+        file.write_all(sources_to_string(app, sources).as_bytes())
+    });
+
+    if let Err(err) = result {
+        puts_error!("at" => "save_session", "reason" => s!(err))
+    }
+}
+
+pub fn on_save_image(app: &mut App, path: &PathBuf, index: &Option<usize>) {
     let count = index.unwrap_or_else(|| app.pointer.counted()) - 1;
     if let Err(error) = app.gui.save(path, count) {
         puts_error!("at" => "save", "reason" => error)
@@ -350,23 +366,8 @@ pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scr
 }
 
 pub fn on_shell(app: &App, async: bool, read_operations: bool, command_line: &[String], tx: Sender<Operation>, stdin_sources: &[StdinSource]) {
-    use stringer::*;
-
     let stdin = if !stdin_sources.is_empty() {
-        let mut stdin = o!("");
-        for source in stdin_sources {
-            match *source {
-                StdinSource::States => write_states(&app.states, &mut stdin),
-                StdinSource::Entries => write_entries(&app.entries, &mut stdin),
-                StdinSource::Position => write_position(app.pointer.current, &mut stdin),
-                StdinSource::All => {
-                    write_states(&app.states, &mut stdin);
-                    write_entries(&app.entries, &mut stdin);
-                    write_position(app.pointer.current, &mut stdin);
-                }
-            }
-        }
-        Some(stdin)
+        Some(sources_to_string(app, stdin_sources))
     } else {
         None
     };
@@ -503,4 +504,24 @@ fn on_update_views(app: &mut App, updated: &mut Updated) {
     updated.image_options = true;
     app.reset_view();
     app.pointer.set_multiplier(app.gui.len());
+}
+
+fn sources_to_string(app: &App, sources: &[StdinSource]) -> String {
+    use stringer::*;
+    use operation::StdinSource::*;
+
+    let mut result = o!("");
+    for source in sources {
+        match *source {
+            States => write_states(&app.states, &mut result),
+            Entries => write_entries(&app.entries, &mut result),
+            Position => write_position(app.pointer.current, &mut result),
+            All => {
+                write_states(&app.states, &mut result);
+                write_entries(&app.entries, &mut result);
+                write_position(app.pointer.current, &mut result);
+            }
+        }
+    }
+    result
 }

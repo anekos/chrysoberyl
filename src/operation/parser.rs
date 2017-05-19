@@ -339,7 +339,24 @@ where T: FnOnce(String, Meta) -> Operation {
     })
 }
 
-pub fn parse_save(args: &[String]) -> Result<Operation, String> {
+pub fn parse_save_session(args: &[String]) -> Result<Operation, String> {
+    let mut path: Option<String> = None;
+    let mut sources: Vec<StdinSource> = vec![];
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut sources).add_option(&["--stdin", "-i"], Collect, "STDIN source");
+        ap.refer(&mut path).add_argument("path", StoreOption, "Save to");
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        if sources.is_empty() {
+            sources.push(StdinSource::All);
+        }
+        Ok(Operation::SaveSession(path.map(|it| sh::expand_to_pathbuf(&it)), sources))
+    })
+}
+
+pub fn parse_save_image(args: &[String]) -> Result<Operation, String> {
     let mut index = None;
     let mut path = o!("");
 
@@ -349,7 +366,7 @@ pub fn parse_save(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut path).add_argument("path", Store, "Save to").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Save(sh::expand_to_pathbuf(&path), index)
+        Operation::SaveImage(sh::expand_to_pathbuf(&path), index)
     })
 }
 
@@ -384,20 +401,6 @@ pub fn parse_scroll(args: &[String]) -> Result<Operation, String> {
 }
 
 pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
-    impl FromStr for StdinSource {
-        type Err = String;
-
-        fn from_str(src: &str) -> Result<Self, String> {
-            match src {
-                "states" | "s" => Ok(StdinSource::States),
-                "entries" | "e" => Ok(StdinSource::Entries),
-                "position" | "p" => Ok(StdinSource::Position),
-                "all" | "a" => Ok(StdinSource::All),
-                _ => Err(format!("Invalid stdin source: {}", src))
-            }
-        }
-    }
-
     let mut async = true;
     let mut read_operations = false;
     let mut command_line: Vec<String> = vec![];
@@ -472,4 +475,19 @@ pub fn parse_views(args: &[String]) -> Result<Operation, String> {
 pub fn parse_args(parser: &mut ArgumentParser, args: &[String]) -> Result<(), String> {
     parser.stop_on_first_argument(true);
     parser.parse(args.to_vec(), &mut sink(), &mut sink()).map_err(|code| s!(code))
+}
+
+
+impl FromStr for StdinSource {
+    type Err = String;
+
+    fn from_str(src: &str) -> Result<Self, String> {
+        match src {
+            "states" | "s" => Ok(StdinSource::States),
+            "entries" | "e" => Ok(StdinSource::Entries),
+            "position" | "p" => Ok(StdinSource::Position),
+            "all" | "a" => Ok(StdinSource::All),
+            _ => Err(format!("Invalid stdin source: {}", src))
+        }
+    }
 }

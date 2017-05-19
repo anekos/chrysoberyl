@@ -42,7 +42,7 @@ pub fn config_lines(config_source: &ConfigSource) -> Vec<String> {
 
     match *config_source {
         ConfigSource::User =>
-            if let Ok(mut file) = File::open(app_path::config_file()) {
+            if let Ok(mut file) = File::open(app_path::config_file(None)) {
                 let mut source = o!("");
                 file.read_to_string(&mut source).unwrap();
                 source.lines().map(|it| o!(it)).collect()

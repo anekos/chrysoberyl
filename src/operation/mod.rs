@@ -57,7 +57,8 @@ pub enum Operation {
     Quit,
     Random,
     Refresh,
-    Save(PathBuf, Option<usize>),
+    SaveSession(Option<PathBuf>, Vec<StdinSource>),
+    SaveImage(PathBuf, Option<usize>),
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     SetEnv(String, Option<String>),
     Shell(bool, bool, Vec<String>, Vec<StdinSource>), /* async, operation, command_line, stdin */
@@ -288,7 +289,8 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@quit"                      => Ok(Quit),
             "@random" | "@rand"          => Ok(Random),
             "@refresh" | "@r"            => Ok(Refresh),
-            "@save"                      => parse_save(whole),
+            "@save-session"              => parse_save_session(whole),
+            "@save-image"                => parse_save_image(whole),
             "@set"                       => parse_option_set(whole),
             "@set-env"                   => parse_set_env(whole),
             "@scroll"                    => parse_scroll(whole),

@@ -237,8 +237,10 @@ impl App {
                     on_random(self, &mut updated, len),
                 Refresh =>
                     updated.pointer = true,
-                Save(ref path, ref index) =>
-                    on_save(self, path, index),
+                SaveSession(ref path, ref sources) =>
+                    on_save_session(self, path, sources),
+                SaveImage(ref path, ref index) =>
+                    on_save_image(self, path, index),
                 SetEnv(ref name, ref value) =>
                     on_set_env(self, name, value),
                 Scroll(ref direction, ref operation, scroll_size) =>

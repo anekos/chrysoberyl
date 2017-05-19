@@ -77,7 +77,7 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
 
         let path = format!(
             "Configuration: {}\nCache: {}",
-            app_path::config_file().to_str().unwrap(),
+            app_path::config_file(None).to_str().unwrap(),
             app_path::cache_dir("/").to_str().unwrap());
 
         {

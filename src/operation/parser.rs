@@ -6,10 +6,10 @@ use std::str::FromStr;
 use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse, StoreOption, List, PushConst};
 
 use color::Color;
-use config::ConfigSource;
 use entry::{Meta, MetaEntry, new_meta_from_vec, SearchKey};
 use filer;
 use mapping::{Input, InputType, mouse_mapping};
+use script::{ConfigSource, ScriptSource};
 use shellexpand_wrapper as sh;
 
 use operation::*;
@@ -124,6 +124,7 @@ pub fn parse_count(args: &[String]) -> Result<Operation, String> {
 
 pub fn parse_editor(args: &[String]) -> Result<Operation, String> {
     let mut config_sources: Vec<ConfigSource> = vec![];
+    let mut files: Vec<String> = vec![];
     let mut command_line: Option<String> = None;
 
     {
@@ -131,10 +132,19 @@ pub fn parse_editor(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut config_sources)
             .add_option(&["--user", "-u"], PushConst(ConfigSource::User), "Insert user config")
             .add_option(&["--default", "-d"], PushConst(ConfigSource::Default), "Insert defult config");
+        ap.refer(&mut files)
+            .add_option(&["--file", "-f"], Collect, "Insert the given file");
         ap.refer(&mut command_line).add_argument("command-line", StoreOption, "Command line to open editor");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Editor(command_line, config_sources)
+        let mut script_sources = vec![];
+        for source in config_sources {
+            script_sources.push(ScriptSource::Config(source))
+        }
+        for file in files {
+            script_sources.push(ScriptSource::File(sh::expand_to_pathbuf(&file)))
+        }
+        Operation::Editor(command_line, script_sources)
     })
 }
 
@@ -187,15 +197,23 @@ pub fn parse_input(args: &[String]) -> Result<Operation, String> {
 
 pub fn parse_load(args: &[String]) -> Result<Operation, String> {
     let mut config_source = ConfigSource::Default;
+    let mut path: Option<String> = None;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut config_source)
             .add_option(&["--user", "-u"], StoreConst(ConfigSource::User), "Load user config (rc.conf)")
             .add_option(&["--default", "-d"], StoreConst(ConfigSource::Default), "Load default config");
+        ap.refer(&mut path).add_argument("file-path", StoreOption, "File path");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::LoadConfig(config_source)
+        Operation::Load({
+            if let Some(ref path) = path {
+                ScriptSource::File(sh::expand_to_pathbuf(path))
+            } else {
+                ScriptSource::Config(config_source)
+            }
+        })
     })
 }
 

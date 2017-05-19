@@ -7,12 +7,12 @@ use cmdline_parser::Parser;
 
 use archive::ArchiveEntry;
 use color::Color;
-use config::ConfigSource;
 use entry::Meta;
 use entry;
 use filer;
 use gui::Direction;
 use mapping::{self, mouse_mapping};
+use script::ScriptSource;
 use shellexpand_wrapper as sh;
 use size::Region;
 
@@ -30,7 +30,7 @@ pub enum Operation {
     Count(Option<usize>),
     CountDigit(u8),
     Draw,
-    Editor(Option<String>, Vec<ConfigSource>),
+    Editor(Option<String>, Vec<ScriptSource>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool, MoveBy),
     ForceFlush,
@@ -39,7 +39,7 @@ pub enum Operation {
     Input(mapping::Input),
     Last(Option<usize>, bool, MoveBy),
     LazyDraw(u64, bool), /* serial, to_end */
-    LoadConfig(ConfigSource),
+    Load(ScriptSource),
     Map(MappingTarget, Vec<String>),
     Multi(Vec<Operation>),
     Next(Option<usize>, bool, MoveBy),

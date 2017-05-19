@@ -201,8 +201,8 @@ impl App {
                     on_last(self, &mut updated, len, count, ignore_views, move_by),
                 LazyDraw(serial, new_to_end) =>
                     on_lazy_draw(self, &mut updated, &mut to_end, serial, new_to_end),
-                LoadConfig(ref config_source) =>
-                    on_load_config(self, config_source),
+                Load(ref script_source) =>
+                    on_load(self, script_source),
                 Map(ref target, ref mapped_operation) =>
                     on_map(self, target, mapped_operation),
                 Multi(ref ops) =>

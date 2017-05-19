@@ -10,7 +10,6 @@ use rand::distributions::{IndependentSample, Range as RandRange};
 
 use app_path;
 use archive::{self, ArchiveEntry};
-use config;
 use editor;
 use entry::{MetaSlice, new_meta, SearchKey};
 use filer;
@@ -18,6 +17,7 @@ use fragile_input::new_fragile_input;
 use gui::Direction;
 use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater, StdinSource};
 use output;
+use script;
 use shell;
 use utils::path_to_str;
 
@@ -104,9 +104,9 @@ pub fn on_clip(app: &mut App, updated: &mut Updated, region: &Region) {
     }
 }
 
-pub fn on_editor(app: &mut App, editor_command: Option<String>, config_sources: Vec<config::ConfigSource>) {
+pub fn on_editor(app: &mut App, editor_command: Option<String>, script_sources: Vec<script::ScriptSource>) {
     let tx = app.tx.clone();
-    spawn(move || editor::start_edit(&tx, editor_command, config_sources));
+    spawn(move || editor::start_edit(&tx, editor_command, script_sources));
 }
 
 pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: &Option<PathBuf>) {
@@ -180,8 +180,8 @@ pub fn on_lazy_draw(app: &mut App, updated: &mut Updated, to_end: &mut bool, ser
     }
 }
 
-pub fn on_load_config(app: &mut App, config_source: &config::ConfigSource) {
-    config::load_config(&app.tx, config_source);
+pub fn on_load(app: &mut App, script_source: &script::ScriptSource) {
+    script::load(&app.tx, script_source);
 }
 
 pub fn on_map(app: &mut App, target: &MappingTarget, operation: &[String]) {

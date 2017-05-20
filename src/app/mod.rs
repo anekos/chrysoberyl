@@ -66,6 +66,7 @@ pub struct Initial {
     pub operations: Vec<String>
 }
 
+#[derive(Default)]
 pub struct Updated {
     pointer: bool,
     label: bool,
@@ -130,8 +131,11 @@ impl App {
 
         app.update_label_visibility();
 
-        for file in &initial.files {
-           on_events::on_push(&mut app, file.clone(), &[]);
+        {
+            let mut updated = Updated::default();
+            for file in &initial.files {
+                on_events::on_push(&mut app, &mut updated, file.clone(), &[]);
+            }
         }
 
         {
@@ -225,7 +229,7 @@ impl App {
                 Pull =>
                     on_pull(self, &mut updated),
                 Push(ref path, ref meta) =>
-                    on_push(self, path.clone(), meta),
+                    on_push(self, &mut updated, path.clone(), meta),
                 PushFile(ref file, ref meta) =>
                     on_push_path(self, &mut updated, file, meta),
                 PushPdf(ref file, ref meta) =>

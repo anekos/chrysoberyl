@@ -47,28 +47,9 @@ impl<T> SortingBuffer<T> {
         pull_all(&mut buffer, &mut shipped)
     }
 
-    fn push_n_without_reserve(&mut self, entries: Vec<T>) -> Vec<T> {
-        let mut buffer = self.buffer.lock().unwrap();
-        let ticket = reserve_n(&self.reserved, buffer.len());
-
-        for (index, entry) in entries.into_iter().enumerate() {
-            buffer.insert(ticket + index, Some(entry));
-        }
-
-        let mut shipped = self.shipped.lock().unwrap();
-        pull_all(&mut buffer, &mut shipped)
-    }
-
     pub fn skip(&mut self, ticket: Ticket) {
         let mut buffer = self.buffer.lock().unwrap();
         buffer.insert(ticket, None);
-    }
-
-    pub fn pull(&mut self) -> Option<T> {
-        let mut shipped = self.shipped.lock().unwrap();
-        let mut buffer = self.buffer.lock().unwrap();
-
-        pull(&mut buffer, &mut shipped)
     }
 
     pub fn pull_all(&mut self) -> Vec<T> {

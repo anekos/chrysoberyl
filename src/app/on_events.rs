@@ -3,6 +3,7 @@ use std::env;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::thread::spawn;
 
 use gtk::prelude::*;
@@ -17,6 +18,7 @@ use fragile_input::new_fragile_input;
 use gui::Direction;
 use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater, StdinSource};
 use output;
+use poppler::PopplerDocument;
 use script;
 use shell;
 use utils::path_to_str;
@@ -269,21 +271,11 @@ pub fn on_print_entries(app: &App) {
 }
 
 pub fn on_pull(app: &mut App, updated: &mut Updated) {
-    use operation::QueuedOperation::*;
-
-    for op in app.sorting_buffer.pull_all() {
-        match op {
-            PushHttpCache(file, url, meta) =>
-                updated.pointer |= app.entries.push_http_cache(&mut app.pointer, &file, &url, &meta),
-            PushArchiveEntry(ref archive_path, ref entry) =>
-                updated.pointer |= app.entries.push_archive_entry(&mut app.pointer, archive_path, entry),
-        }
-        updated.label = true;
-    }
-    app.do_show(updated);
+    let buffered = app.sorting_buffer.pull_all();
+    push_buffered(app, updated, buffered);
 }
 
-pub fn on_push(app: &mut App, path: String, meta: &MetaSlice) {
+pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: &MetaSlice) {
     if path.starts_with("http://") || path.starts_with("https://") {
         app.tx.send(Operation::PushURL(path, new_meta(meta))).unwrap();
         return;
@@ -295,7 +287,7 @@ pub fn on_push(app: &mut App, path: String, meta: &MetaSlice) {
                 "zip" | "rar" | "tar.gz" | "lzh" | "lha" =>
                     return archive::fetch_entries(&path, &app.encodings, app.tx.clone(), app.sorting_buffer.clone()),
                 "pdf" =>
-                    return app.tx.send(Operation::PushPdf(path.clone(), new_meta(meta))).unwrap(),
+                    on_push_pdf(app, updated, &path.to_path_buf(), meta),
                 _ => ()
             }
         }
@@ -305,15 +297,18 @@ pub fn on_push(app: &mut App, path: String, meta: &MetaSlice) {
 }
 
 pub fn on_push_path(app: &mut App, updated: &mut Updated, file: &PathBuf, meta: &MetaSlice) {
-    updated.pointer = app.entries.push_path(&mut app.pointer, file, meta);
-    updated.label = true;
-    app.do_show(updated);
+    let buffered = app.sorting_buffer.push_without_reserve(
+        QueuedOperation::PushFile(file.clone(), new_meta(meta)));
+    push_buffered(app, updated, buffered);
 }
 
 pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: &PathBuf, meta: &MetaSlice) {
-    updated.pointer = app.entries.push_pdf(&mut app.pointer, file, meta);
-    updated.label = true;
-    app.do_show(updated);
+    let document = PopplerDocument::new_from_file(&file);
+    let n_pages = document.n_pages();
+
+    let buffered = app.sorting_buffer.push_without_reserve(
+        QueuedOperation::PushPdfEntries(file.clone(), n_pages, new_meta(meta)));
+    push_buffered(app, updated, buffered);
 }
 
 pub fn on_push_url(app: &mut App, url: String, meta: &MetaSlice) {
@@ -527,4 +522,27 @@ fn sources_to_string(app: &App, sources: &[StdinSource]) -> String {
         }
     }
     result
+}
+
+fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>) {
+    use operation::QueuedOperation::*;
+
+    for op in ops {
+        match op {
+            PushPath(ref path, ref meta) =>
+                updated.pointer = app.entries.push_path(&mut app.pointer, path, meta),
+            PushHttpCache(file, url, meta) =>
+                updated.pointer |= app.entries.push_http_cache(&mut app.pointer, &file, &url, &meta),
+            PushArchiveEntry(ref archive_path, ref entry) =>
+                updated.pointer |= app.entries.push_archive_entry(&mut app.pointer, archive_path, entry),
+            PushPdfEntries(pdf_path, pages, meta) => {
+                let pdf_path = Arc::new(pdf_path.clone());
+                for index in 0 .. pages {
+                    updated.pointer |= app.entries.push_pdf_entry(&mut app.pointer, pdf_path.clone(), index, meta.clone())
+                }
+            }
+        }
+        updated.label = true;
+    }
+    app.do_show(updated);
 }

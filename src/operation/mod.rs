@@ -146,8 +146,10 @@ pub enum StdinSource {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum QueuedOperation {
+    PushPath(PathBuf, Meta),
     PushHttpCache(PathBuf, String, Meta),
     PushArchiveEntry(PathBuf, ArchiveEntry),
+    PushPdfEntries(PathBuf, usize, Meta), /* path, pages, meta */
 }
 
 

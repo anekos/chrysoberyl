@@ -149,10 +149,10 @@ pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Opera
                         break;
                     }
                 }
-            }
 
-            if index < 10 || index % 20 == 0 {
-                tx.send(Operation::Pull).unwrap();
+                if serial < 10 || serial % 20 == 0 {
+                    tx.send(Operation::Pull).unwrap();
+                }
             }
 
             index += 1;

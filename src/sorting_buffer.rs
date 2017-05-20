@@ -26,13 +26,11 @@ impl<T> SortingBuffer<T> {
     }
 
     pub fn reserve(&mut self) -> Ticket {
-        let previous = self.reserved.fetch_add(1, Ordering::Relaxed);
-        previous + 1
+        reserve_n(&self.reserved, 1)
     }
 
     pub fn reserve_n(&mut self, n: usize) -> Ticket {
-        let previous = self.reserved.fetch_add(n, Ordering::Relaxed);
-        previous + 1
+        reserve_n(&self.reserved, n)
     }
 
     pub fn push(&mut self, ticket: Ticket, entry: T) {
@@ -40,12 +38,25 @@ impl<T> SortingBuffer<T> {
         buffer.insert(ticket, Some(entry));
     }
 
-    pub fn push_without_reserve(&mut self, entry: T) {
+    pub fn push_without_reserve(&mut self, entry: T) -> Vec<T> {
         let ticket = self.reserve();
-        {
-            let mut buffer = self.buffer.lock().unwrap();
-            buffer.insert(ticket, Some(entry));
+        let mut buffer = self.buffer.lock().unwrap();
+        buffer.insert(ticket, Some(entry));
+
+        let mut shipped = self.shipped.lock().unwrap();
+        pull_all(&mut buffer, &mut shipped)
+    }
+
+    fn push_n_without_reserve(&mut self, entries: Vec<T>) -> Vec<T> {
+        let mut buffer = self.buffer.lock().unwrap();
+        let ticket = reserve_n(&self.reserved, buffer.len());
+
+        for (index, entry) in entries.into_iter().enumerate() {
+            buffer.insert(ticket + index, Some(entry));
         }
+
+        let mut shipped = self.shipped.lock().unwrap();
+        pull_all(&mut buffer, &mut shipped)
     }
 
     pub fn skip(&mut self, ticket: Ticket) {
@@ -57,22 +68,46 @@ impl<T> SortingBuffer<T> {
         let mut shipped = self.shipped.lock().unwrap();
         let mut buffer = self.buffer.lock().unwrap();
 
-        while !buffer.is_empty() {
-            let result = buffer.remove(&*shipped);
-            if result.is_none() {
-                return None
-            }
-            *shipped += 1;
-            if let Some(result) = result {
-                return result
-            }
-        }
+        pull(&mut buffer, &mut shipped)
+    }
 
-        None
+    pub fn pull_all(&mut self) -> Vec<T> {
+        let mut shipped = self.shipped.lock().unwrap();
+        let mut buffer = self.buffer.lock().unwrap();
+
+        pull_all(&mut buffer, &mut shipped)
     }
 
     pub fn len(&self) -> usize {
         let buffer = self.buffer.lock().unwrap();
         buffer.len()
     }
+}
+
+
+fn reserve_n(reserved: &AtomicUsize, n: usize) -> Ticket {
+    reserved.fetch_add(n, Ordering::Relaxed) + 1
+}
+
+fn pull<T>(buffer: &mut HashMap<Ticket, Option<T>>, shipped: &mut Ticket) -> Option<T> {
+    while !buffer.is_empty() {
+        let result = buffer.remove(&*shipped);
+        if result.is_none() {
+            return None
+        }
+        *shipped += 1;
+        if let Some(result) = result {
+            return result
+        }
+    }
+
+    None
+}
+
+fn pull_all<T>(buffer: &mut HashMap<Ticket, Option<T>>, shipped: &mut Ticket) -> Vec<T> {
+    let mut result = vec![];
+    while let Some(it) = pull(buffer, shipped) {
+        result.push(it);
+    }
+    result
 }

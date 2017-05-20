@@ -271,7 +271,7 @@ pub fn on_print_entries(app: &App) {
 pub fn on_pull(app: &mut App, updated: &mut Updated) {
     use operation::QueuedOperation::*;
 
-    while let Some(op) = app.sorting_buffer.pull() {
+    for op in app.sorting_buffer.pull_all() {
         match op {
             PushHttpCache(file, url, meta) =>
                 updated.pointer |= app.entries.push_http_cache(&mut app.pointer, &file, &url, &meta),

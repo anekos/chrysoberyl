@@ -49,7 +49,7 @@ pub enum Operation {
     PrintEntries,
     Pull,
     Push(String, Meta),
-    PushFile(PathBuf, Meta),
+    PushPath(PathBuf, Meta),
     PushPdf(PathBuf, Meta),
     PushURL(String, Meta),
     Quit,
@@ -290,7 +290,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@prev" | "@p" | "@previous" => parse_move(whole, Previous),
             "@push"                      => parse_push(whole, |it, meta| Push(sh::expand(&it), meta)),
             "@push-pdf"                  => parse_push(whole, |it, meta| PushPdf(sh::expand_to_pathbuf(&it), meta)),
-            "@push-file"                 => parse_push(whole, |it, meta| PushFile(sh::expand_to_pathbuf(&it), meta)),
+            "@push-path" | "@push-file"  => parse_push(whole, |it, meta| PushPath(sh::expand_to_pathbuf(&it), meta)),
             "@push-url"                  => parse_push(whole, PushURL),
             "@quit"                      => Ok(Quit),
             "@random" | "@rand"          => Ok(Random),
@@ -362,7 +362,7 @@ fn test_parse() {
 
     // @push*
     assert_eq!(p("@push http://example.com/moge.jpg"), Push(o!("http://example.com/moge.jpg"), Arc::new(vec![])));
-    assert_eq!(p("@push-file /hoge/moge.jpg"), PushFile(pathbuf("/hoge/moge.jpg"), Arc::new(vec![])));
+    assert_eq!(p("@push-file /hoge/moge.jpg"), PushPath(pathbuf("/hoge/moge.jpg"), Arc::new(vec![])));
     assert_eq!(p("@push-url http://example.com/moge.jpg"), PushURL(o!("http://example.com/moge.jpg"), Arc::new(vec![])));
 
     // @map

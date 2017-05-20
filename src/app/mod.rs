@@ -230,7 +230,7 @@ impl App {
                     on_pull(self, &mut updated),
                 Push(ref path, ref meta) =>
                     on_push(self, &mut updated, path.clone(), meta),
-                PushFile(ref file, ref meta) =>
+                PushPath(ref file, ref meta) =>
                     on_push_path(self, &mut updated, file, meta),
                 PushPdf(ref file, ref meta) =>
                     on_push_pdf(self, &mut updated, file, meta),

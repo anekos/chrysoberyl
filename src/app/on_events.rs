@@ -293,12 +293,12 @@ pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: &MetaSl
         }
     }
 
-    app.operate(&Operation::PushFile(Path::new(&path).to_path_buf(), new_meta(meta)));
+    app.operate(&Operation::PushPath(Path::new(&path).to_path_buf(), new_meta(meta)));
 }
 
 pub fn on_push_path(app: &mut App, updated: &mut Updated, file: &PathBuf, meta: &MetaSlice) {
     let buffered = app.sorting_buffer.push_without_reserve(
-        QueuedOperation::PushFile(file.clone(), new_meta(meta)));
+        QueuedOperation::PushPath(file.clone(), new_meta(meta)));
     push_buffered(app, updated, buffered);
 }
 

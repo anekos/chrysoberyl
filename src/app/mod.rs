@@ -330,8 +330,6 @@ impl App {
         }
     }
 
-    /* Operation event */
-
     /* Private methods */
 
     fn do_show(&mut self, updated: &mut Updated) {

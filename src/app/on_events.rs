@@ -513,11 +513,11 @@ fn sources_to_string(app: &App, sources: &[StdinSource]) -> String {
         match *source {
             States => write_states(&app.states, &mut result),
             Entries => write_entries(&app.entries, &mut result),
-            Position => write_position(app.pointer.current, &mut result),
+            Position => write_position(&app.entries, &app.pointer, &mut result),
             All => {
                 write_states(&app.states, &mut result);
                 write_entries(&app.entries, &mut result);
-                write_position(app.pointer.current, &mut result);
+                write_position(&app.entries, &app.pointer, &mut result);
             }
         }
     }

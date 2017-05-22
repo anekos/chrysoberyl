@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use shell_escape;
 
 use entry::{Entry, EntryContainer};
+use index_pointer::IndexPointer;
 use size::FitTo;
 use state::{States, ScalingMethod};
 use utils::path_to_str;
@@ -52,8 +53,11 @@ fn write_entry(entry: &Entry, out: &mut String) {
     }
 }
 
-pub fn write_position(index: Option<usize>, out: &mut String) {
-    sprintln!(out, "@first {}", index.map(|it| it + 1).unwrap_or(1));
+pub fn write_position(entries: &EntryContainer, pointer: &IndexPointer, out: &mut String) {
+    if let Some((entry, _)) = entries.current(pointer) {
+        let (_, ref path, index) = entry.key;
+        sprintln!(out, "@show {} {}", escape(path), index + 1);
+    }
 }
 
 fn b2s(b: bool) -> &'static str {

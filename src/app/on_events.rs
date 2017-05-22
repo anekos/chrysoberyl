@@ -323,7 +323,7 @@ pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) {
 }
 
 pub fn on_save_session(app: &mut App, path: &Option<PathBuf>, sources: &[StdinSource]) {
-    let default = app_path::config_file(Some("session.conf"));
+    let default = app_path::config_file(Some(app_path::DEFAULT_SESSION_FILENAME));
     let path = path.as_ref().unwrap_or(&default);
 
     let result = File::create(path).map(|mut file| {

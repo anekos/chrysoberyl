@@ -18,6 +18,7 @@ pub enum ScriptSource {
 pub enum ConfigSource {
     Default,
     User,
+    DefaultSession,
 }
 
 
@@ -65,6 +66,8 @@ pub fn script_lines(script_source: &ScriptSource) -> Result<Vec<String>, String>
             load_from_file(path).map_err(|it| s!(it)),
         ScriptSource::Config(ConfigSource::User) =>
             Ok(load_from_file(&app_path::config_file(None)).unwrap_or_else(|_| load_default())),
+        ScriptSource::Config(ConfigSource::DefaultSession) =>
+            Ok(load_from_file(&app_path::config_file(Some(app_path::DEFAULT_SESSION_FILENAME))).unwrap_or_else(|_| load_default())),
         ScriptSource::Config(ConfigSource::Default) =>
             Ok(load_default())
     }

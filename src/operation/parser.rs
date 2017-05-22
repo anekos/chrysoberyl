@@ -203,7 +203,8 @@ pub fn parse_load(args: &[String]) -> Result<Operation, String> {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut config_source)
             .add_option(&["--user", "-u"], StoreConst(ConfigSource::User), "Load user config (rc.conf)")
-            .add_option(&["--default", "-d"], StoreConst(ConfigSource::Default), "Load default config");
+            .add_option(&["--default", "-d"], StoreConst(ConfigSource::Default), "Load default config")
+            .add_option(&["--session", "-s"], StoreConst(ConfigSource::DefaultSession), "Load default session");
         ap.refer(&mut path).add_argument("file-path", StoreOption, "File path");
         parse_args(&mut ap, args)
     } .map(|_| {

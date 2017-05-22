@@ -1,62 +1,94 @@
 
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::collections::HashMap;
 
 
+pub type Ticket = usize;
 
+
+#[derive(Clone)]
 pub struct SortingBuffer<T> {
-    next_serial: usize,
-    buffer: HashMap<usize, Option<T>>
+    reserved: Arc<AtomicUsize>,
+    shipped: Arc<Mutex<Ticket>>,
+    buffer: Arc<Mutex<HashMap<Ticket, Option<T>>>>
 }
 
 
 impl<T> SortingBuffer<T> {
-    pub fn new(next_serial: usize) -> SortingBuffer<T> {
-        SortingBuffer { next_serial: next_serial, buffer: HashMap::new() }
-    }
-
-    pub fn push(&mut self, serial: usize, entry: T) {
-        self.buffer.insert(serial, Some(entry));
-    }
-
-    pub fn skip(&mut self, serial: usize) {
-        self.buffer.insert(serial, None);
-    }
-
-    pub fn pull(&mut self) -> Option<T> {
-        while !self.buffer.is_empty() {
-
-            let result = self.buffer.remove(&self.next_serial);
-            if result.is_none() {
-                return None
-            }
-
-            self.next_serial += 1;
-            if let Some(result) = result {
-                return result
-            }
+    #[cfg_attr(feature = "cargo-clippy", allow(mutex_atomic))]
+    pub fn new() -> SortingBuffer<T> {
+        SortingBuffer {
+            reserved: Arc::new(AtomicUsize::new(0)),
+            shipped: Arc::new(Mutex::new(1)),
+            buffer: Arc::new(Mutex::new(HashMap::new()))
         }
-
-        None
     }
 
-    pub fn force_flush(&mut self) -> Vec<T> {
-        let mut result = vec![];
+    pub fn reserve(&mut self) -> Ticket {
+        reserve_n(&self.reserved, 1)
+    }
 
-        while !self.buffer.is_empty() {
+    pub fn reserve_n(&mut self, n: usize) -> Ticket {
+        reserve_n(&self.reserved, n)
+    }
 
-            if let Some(found) = self.buffer.remove(&self.next_serial) {
-                if let Some(found) = found {
-                    result.push(found);
-                }
-            }
+    pub fn push(&mut self, ticket: Ticket, entry: T) {
+        let mut buffer = self.buffer.lock().unwrap();
+        buffer.insert(ticket, Some(entry));
+    }
 
-            self.next_serial += 1;
-        }
+    pub fn push_without_reserve(&mut self, entry: T) -> Vec<T> {
+        let ticket = self.reserve();
+        let mut buffer = self.buffer.lock().unwrap();
+        buffer.insert(ticket, Some(entry));
 
-        result
+        let mut shipped = self.shipped.lock().unwrap();
+        pull_all(&mut buffer, &mut shipped)
+    }
+
+    pub fn skip(&mut self, ticket: Ticket) {
+        let mut buffer = self.buffer.lock().unwrap();
+        buffer.insert(ticket, None);
+    }
+
+    pub fn pull_all(&mut self) -> Vec<T> {
+        let mut shipped = self.shipped.lock().unwrap();
+        let mut buffer = self.buffer.lock().unwrap();
+
+        pull_all(&mut buffer, &mut shipped)
     }
 
     pub fn len(&self) -> usize {
-        self.buffer.len()
+        let buffer = self.buffer.lock().unwrap();
+        buffer.len()
     }
+}
+
+
+fn reserve_n(reserved: &AtomicUsize, n: usize) -> Ticket {
+    reserved.fetch_add(n, Ordering::Relaxed) + 1
+}
+
+fn pull<T>(buffer: &mut HashMap<Ticket, Option<T>>, shipped: &mut Ticket) -> Option<T> {
+    while !buffer.is_empty() {
+        let result = buffer.remove(&*shipped);
+        if result.is_none() {
+            return None
+        }
+        *shipped += 1;
+        if let Some(result) = result {
+            return result
+        }
+    }
+
+    None
+}
+
+fn pull_all<T>(buffer: &mut HashMap<Ticket, Option<T>>, shipped: &mut Ticket) -> Vec<T> {
+    let mut result = vec![];
+    while let Some(it) = pull(buffer, shipped) {
+        result.push(it);
+    }
+    result
 }

@@ -41,7 +41,7 @@ pub fn load(tx: &Sender<Operation>, script_source: &ScriptSource) {
             puts_event!("input/script/close");
         }
         Err(err) =>
-            puts_error!("at" => "load", "reason" => s!(err)),
+            puts_error!("at" => "load", "reason" => o!(err)),
     }
 
 }

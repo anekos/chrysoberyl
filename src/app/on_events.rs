@@ -287,7 +287,7 @@ pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: &MetaSl
                 "zip" | "rar" | "tar.gz" | "lzh" | "lha" =>
                     return archive::fetch_entries(&path, &app.encodings, app.tx.clone(), app.sorting_buffer.clone()),
                 "pdf" =>
-                    on_push_pdf(app, updated, &path.to_path_buf(), meta),
+                    return on_push_pdf(app, updated, &path.to_path_buf(), meta),
                 _ => ()
             }
         }

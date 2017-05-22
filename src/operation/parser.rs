@@ -517,7 +517,7 @@ impl FromStr for StdinSource {
 
     fn from_str(src: &str) -> Result<Self, String> {
         match src {
-            "states" | "s" => Ok(StdinSource::States),
+            "options" | "s" => Ok(StdinSource::Options),
             "entries" | "e" => Ok(StdinSource::Entries),
             "position" | "p" => Ok(StdinSource::Position),
             "all" | "a" => Ok(StdinSource::All),

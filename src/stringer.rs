@@ -13,7 +13,7 @@ use utils::path_to_str;
 
 
 
-pub fn write_states(st: &States, out: &mut String) {
+pub fn write_options(st: &States, out: &mut String) {
     sprintln!(out, "@set status-bar {}", b2s(st.status_bar));
     sprintln!(out, "@set auto-paging {}", b2s(st.auto_paging));
     sprintln!(out, "@set reverse {}", b2s(st.auto_paging));

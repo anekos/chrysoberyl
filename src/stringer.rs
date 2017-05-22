@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use shell_escape;
 
 use entry::{Entry, EntryContainer};
+use gui::Gui;
 use index_pointer::IndexPointer;
 use size::FitTo;
 use state::{States, ScalingMethod};
@@ -13,7 +14,7 @@ use utils::path_to_str;
 
 
 
-pub fn write_options(st: &States, out: &mut String) {
+pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
     sprintln!(out, "@set status-bar {}", b2s(st.status_bar));
     sprintln!(out, "@set auto-paging {}", b2s(st.auto_paging));
     sprintln!(out, "@set reverse {}", b2s(st.auto_paging));
@@ -23,6 +24,10 @@ pub fn write_options(st: &States, out: &mut String) {
     sprintln!(out, "@set pre-render-pages {}", st.pre_fetch.page_size);
     sprintln!(out, "@set fit-to {}", st.drawing.fit_to);
     sprintln!(out, "@set scaling {}", st.drawing.scaling);
+    sprintln!(out, "@set scaling {}", st.drawing.scaling);
+    // sprintln!(out, "@set horizontal-views {}", gui.cols());
+    // sprintln!(out, "@set vertical-views {}", gui.rows());
+    sprintln!(out, "@views {} {}", gui.cols(), gui.rows());
     if let Some(c) = st.drawing.clipping {
         sprintln!(out, "@clip {} {} {} {}", c.left, c.top, c.right, c.bottom);
     } else {

@@ -108,11 +108,11 @@ impl Gui {
         }
     }
 
-    fn rows(&self) -> usize {
+    pub fn rows(&self) -> usize {
         self.cell_inners.len()
     }
 
-    fn cols(&self) -> usize {
+    pub fn cols(&self) -> usize {
         self.cell_inners.first().unwrap().cells.len()
     }
 

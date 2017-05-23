@@ -12,7 +12,7 @@ use curl;
 use url::Url;
 
 use app_path;
-use entry::{Meta, MetaSlice, new_meta};
+use entry::Meta;
 use operation::{Operation, QueuedOperation};
 use sorting_buffer::SortingBuffer;
 
@@ -31,13 +31,13 @@ struct Request {
     ticket: usize,
     url: String,
     cache_filepath: PathBuf,
-    meta: Meta
+    meta: Option<Meta>
 }
 
 
 #[derive(Clone)]
 enum Getter {
-    Queue(String, PathBuf, Meta),
+    Queue(String, PathBuf, Option<Meta>),
     Done(usize, Request),
     Fail(usize, String, Request),
 }
@@ -49,15 +49,15 @@ impl HttpCache {
         HttpCache { app_tx: app_tx, main_tx: main_tx, sorting_buffer: sorting_buffer  }
     }
 
-    pub fn fetch(&mut self, url: String, meta: &MetaSlice) {
+    pub fn fetch(&mut self, url: String, meta: Option<Meta>) {
         let filepath = generate_temporary_filename(&url);
 
         if filepath.exists() {
             self.sorting_buffer.push_without_reserve(
-                QueuedOperation::PushHttpCache(filepath, url, new_meta(meta)));
+                QueuedOperation::PushHttpCache(filepath, url, meta));
             self.app_tx.send(Operation::Pull).unwrap();
         } else {
-            self.main_tx.send(Getter::Queue(url, filepath, new_meta(meta))).unwrap();
+            self.main_tx.send(Getter::Queue(url, filepath, meta)).unwrap();
         }
     }
 }

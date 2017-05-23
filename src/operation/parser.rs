@@ -6,7 +6,7 @@ use std::str::FromStr;
 use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse, StoreOption, List, PushConst};
 
 use color::Color;
-use entry::{Meta, MetaEntry, new_meta_from_vec, SearchKey};
+use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
 use filer;
 use mapping::{Input, InputType, mouse_mapping};
 use script::{ConfigSource, ScriptSource};
@@ -344,7 +344,7 @@ pub fn parse_option_1(args: &[String], updater: OptionUpdater) -> Result<Operati
 }
 
 pub fn parse_push<T>(args: &[String], op: T) -> Result<Operation, String>
-where T: FnOnce(String, Meta) -> Operation {
+where T: FnOnce(String, Option<Meta>) -> Operation {
     impl FromStr for MetaEntry {
         type Err = String;
 
@@ -369,7 +369,7 @@ where T: FnOnce(String, Meta) -> Operation {
         ap.refer(&mut path).add_argument("Path", Store, "Path to resource").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        op(path, new_meta_from_vec(meta))
+        op(path, new_opt_meta(meta))
     })
 }
 

@@ -39,7 +39,7 @@ pub struct EntryContainerOptions {
 pub struct Entry {
     pub key: Key,
     pub content: EntryContent,
-    pub meta: Meta
+    pub meta: Option<Meta>
 }
 
 #[derive(Clone)]
@@ -51,7 +51,6 @@ pub enum EntryContent {
 }
 
 pub type Meta = Arc<Vec<MetaEntry>>;
-pub type MetaSlice = [MetaEntry];
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MetaEntry {
@@ -69,12 +68,8 @@ pub type Key = (char, String, usize);
 
 
 impl Entry {
-    pub fn new(content: EntryContent, meta: Meta) -> Entry {
+    pub fn new(content: EntryContent, meta: Option<Meta>) -> Entry {
         Entry { key: content.key(), content: content, meta: meta }
-    }
-
-    pub fn new_without_meta(content: EntryContent) -> Entry {
-        Entry { key: content.key(), content: content, meta: new_meta(&[]) }
     }
 
     pub fn archive_name(&self) -> &str {
@@ -210,7 +205,7 @@ impl EntryContainer {
                 expand(&dir.to_path_buf(), recursive).ok().map(|files| {
                     let mut result = self.files.clone();
                     let mut tail: Vec<Rc<Entry>> = files.into_iter().map(|it| {
-                        Entry::new(EntryContent::File(it), new_meta(&[]))
+                        Entry::new(EntryContent::File(it), None)
                     }).filter(|entry| {
                         !self.is_duplicated(entry) && self.is_valid_image(entry)
                     }).map(Rc::new).collect();
@@ -365,7 +360,7 @@ impl EntryContainer {
         }
     }
 
-    pub fn push_path(&mut self, pointer: &mut IndexPointer, file: &PathBuf, meta: &MetaSlice) -> bool {
+    pub fn push_path(&mut self, pointer: &mut IndexPointer, file: &PathBuf, meta: Option<Meta>) -> bool {
         if file.is_dir() {
             self.push_directory(pointer, file, meta)
         } else if file.is_file() {
@@ -376,23 +371,22 @@ impl EntryContainer {
         }
     }
 
-    pub fn push_http_cache(&mut self, pointer: &mut IndexPointer, file: &PathBuf, url: &str, meta: &MetaSlice) -> bool {
+    pub fn push_http_cache(&mut self, pointer: &mut IndexPointer, file: &PathBuf, url: String, meta: Option<Meta>) -> bool {
         let path = file.canonicalize().expect("canonicalize");
         self.push_entry(
             pointer,
-            Entry::new(EntryContent::Http(path, url.to_owned()), new_meta(meta)))
+            Entry::new(EntryContent::Http(path, url.to_owned()), meta))
     }
 
     pub fn push_archive_entry(&mut self, pointer: &mut IndexPointer, archive_path: &PathBuf, entry: &ArchiveEntry) -> bool {
         self.push_entry(
             pointer,
-            Entry::new_without_meta(
-                EntryContent::Archive(
-                    Arc::new(archive_path.clone()),
-                    entry.clone())))
+            Entry::new(
+                EntryContent::Archive(Arc::new(archive_path.clone()), entry.clone()),
+                None))
     }
 
-    pub fn push_pdf_entry(&mut self, pointer: &mut IndexPointer, pdf_path: Arc<PathBuf>, index: usize, meta: Meta) -> bool {
+    pub fn push_pdf_entry(&mut self, pointer: &mut IndexPointer, pdf_path: Arc<PathBuf>, index: usize, meta: Option<Meta>) -> bool {
         let content = EntryContent::Pdf(pdf_path.clone(), index);
         self.push_entry(pointer, Entry::new(content, meta))
     }
@@ -401,21 +395,21 @@ impl EntryContainer {
         self.files.iter().position(|it| key.matches(it))
     }
 
-    fn push_file(&mut self, pointer: &mut IndexPointer, file: &PathBuf, meta: &MetaSlice) -> bool {
+    fn push_file(&mut self, pointer: &mut IndexPointer, file: &PathBuf, meta: Option<Meta>) -> bool {
         let path = file.canonicalize().expect("canonicalize");
         self.push_entry(
             pointer,
-            Entry::new(EntryContent::File(path), new_meta(meta)))
+            Entry::new(EntryContent::File(path), meta))
     }
 
-    fn push_directory(&mut self, pointer: &mut IndexPointer, dir: &PathBuf, meta: &MetaSlice) -> bool {
+    fn push_directory(&mut self, pointer: &mut IndexPointer, dir: &PathBuf, meta: Option<Meta>) -> bool {
         let mut changed = false;
 
         through!([expanded = expand(dir, <u8>::max_value())] {
             let mut expanded = expanded;
             expanded.sort_by(|a, b| natord::compare(path_to_str(a), path_to_str(b)));
             for file in expanded {
-                changed |= self.push_file(pointer, &file, meta);
+                changed |= self.push_file(pointer, &file, meta.clone());
             }
         });
 
@@ -495,18 +489,13 @@ impl Entry {
 }
 
 
-pub fn new_meta(meta: &MetaSlice) -> Meta {
-    Arc::new(o!(meta))
+pub fn new_opt_meta(entries: Vec<MetaEntry>) -> Option<Meta> {
+    if entries.is_empty() {
+        None
+    } else {
+        Some(Arc::new(entries))
+    }
 }
-
-pub fn new_empty_meta() -> Meta {
-    Arc::new(vec![])
-}
-
-pub fn new_meta_from_vec(meta: Vec<MetaEntry>) -> Meta {
-    Arc::new(meta)
-}
-
 
 
 impl MetaEntry {

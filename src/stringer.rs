@@ -57,6 +57,29 @@ fn write_entry(entry: &Entry, out: &mut String) {
     }
 }
 
+pub fn write_paths(entries: &EntryContainer, out: &mut String) {
+    for entry in entries.iter() {
+        write_path(entry, out);
+    }
+}
+
+fn write_path(entry: &Entry, out: &mut String) {
+    use entry::EntryContent::*;
+
+    match entry.content {
+        File(ref path) =>
+            out.push_str(path_to_str(path)),
+        Http(_, ref url) =>
+            out.push_str(url),
+        Archive(ref path, ref entry) if entry.index == 0 =>
+            out.push_str(path_to_str(&*path)),
+        Pdf(ref path, index) if index == 0 =>
+            out.push_str(path_to_str(&*path)),
+        Archive(_, _) | Pdf(_, _) =>
+            (),
+    }
+}
+
 pub fn write_position(entries: &EntryContainer, pointer: &IndexPointer, out: &mut String) {
     if let Some((entry, _)) = entries.current(pointer) {
         let (_, ref path, index) = entry.key;

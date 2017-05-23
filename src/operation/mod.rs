@@ -142,6 +142,7 @@ pub enum StdinSource {
     Options,
     Entries,
     Position,
+    Paths,
 }
 
 #[derive(Clone, Debug, PartialEq)]

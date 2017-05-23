@@ -514,6 +514,7 @@ fn sources_to_string(app: &App, sources: &[StdinSource]) -> String {
         match *source {
             Options => write_options(&app.states, &app.gui, &mut result),
             Entries => write_entries(&app.entries, &mut result),
+            Paths => write_paths(&app.entries, &mut result),
             Position => write_position(&app.entries, &app.pointer, &mut result),
             All => {
                 write_options(&app.states, &app.gui, &mut result);

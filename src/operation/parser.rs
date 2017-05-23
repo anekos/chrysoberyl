@@ -517,11 +517,18 @@ impl FromStr for StdinSource {
 
     fn from_str(src: &str) -> Result<Self, String> {
         match src {
-            "options" | "s" => Ok(StdinSource::Options),
-            "entries" | "e" => Ok(StdinSource::Entries),
-            "position" | "p" => Ok(StdinSource::Position),
-            "all" | "a" => Ok(StdinSource::All),
-            _ => Err(format!("Invalid stdin source: {}", src))
+            "options" | "option" | "o" =>
+                Ok(StdinSource::Options),
+            "entries" | "entry" | "e" =>
+                Ok(StdinSource::Entries),
+            "paths" | "path" | "P" =>
+                Ok(StdinSource::Paths),
+            "position" | "pos" | "p" =>
+                Ok(StdinSource::Position),
+            "all" | "a" =>
+                Ok(StdinSource::All),
+            _ =>
+                Err(format!("Invalid stdin source: {}", src))
         }
     }
 }

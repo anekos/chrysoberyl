@@ -5,6 +5,7 @@ use std::env;
 use std::ops::Range;
 use std::path::Path;
 use std::str::FromStr;
+use std::sync::Arc;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::{sleep, spawn};
 use std::time::Duration;
@@ -134,7 +135,7 @@ impl App {
         {
             let mut updated = Updated::default();
             for file in &initial.files {
-                on_events::on_push(&mut app, &mut updated, file.clone(), &[]);
+                on_events::on_push(&mut app, &mut updated, file.clone(), Arc::new(vec![]));
             }
         }
 
@@ -162,11 +163,11 @@ impl App {
         (app, primary_rx, rx)
     }
 
-    pub fn operate(&mut self, operation: &Operation) {
+    pub fn operate(&mut self, operation: Operation) {
         self.operate_with_context(operation, None)
     }
 
-    pub fn operate_with_context(&mut self, operation: &Operation, context: Option<&OperationContext>) {
+    pub fn operate_with_context(&mut self, operation: Operation, context: Option<OperationContext>) {
         use self::Operation::*;
         use self::on_events::*;
 
@@ -175,17 +176,17 @@ impl App {
         let len = self.entries.len();
 
         {
-            match *operation {
+            match operation {
                 Cherenkov(ref parameter) =>
-                    on_cherenkov(self, &mut updated, parameter, context),
+                    on_cherenkov(self, &mut updated, parameter, &context),
                 CherenkovClear =>
                     on_cherenkov_clear(self, &mut updated),
                 Clear =>
                     on_clear(self, &mut updated),
                 Clip(ref region) =>
                     on_clip(self, &mut updated, region),
-                Context(ref context, ref op) =>
-                    return self.operate_with_context(op, Some(context)),
+                Context(context, op) =>
+                    return self.operate_with_context(*op, Some(context)),
                 Count(count) =>
                     self.pointer.set_count(count),
                 CountDigit(digit) =>
@@ -195,7 +196,7 @@ impl App {
                 Editor(ref editor_command, ref config_sources) =>
                    on_editor(self, editor_command.clone(), config_sources.to_owned()),
                 Expand(recursive, ref base) =>
-                    on_expand(self, &mut updated, recursive, base),
+                    on_expand(self, &mut updated, recursive, base.clone()),
                 First(count, ignore_views, move_by) =>
                     on_first(self, &mut updated, len, count, ignore_views, move_by),
                 Fragile(ref path) =>
@@ -211,8 +212,8 @@ impl App {
                 Load(ref script_source) =>
                     on_load(self, script_source),
                 Map(ref target, ref mapped_operation) =>
-                    on_map(self, target, mapped_operation),
-                Multi(ref ops) =>
+                    on_map(self, target, mapped_operation.to_vec()),
+                Multi(ops) =>
                     on_multi(self, ops),
                 Next(count, ignore_views, move_by) =>
                     on_next(self, &mut updated, len, count, ignore_views, move_by),
@@ -228,14 +229,14 @@ impl App {
                     on_print_entries(self),
                 Pull =>
                     on_pull(self, &mut updated),
-                Push(ref path, ref meta) =>
-                    on_push(self, &mut updated, path.clone(), meta),
-                PushPath(ref file, ref meta) =>
+                Push(path, meta) =>
+                    on_push(self, &mut updated, path, meta),
+                PushPath(file, meta) =>
                     on_push_path(self, &mut updated, file, meta),
-                PushPdf(ref file, ref meta) =>
+                PushPdf(file, meta) =>
                     on_push_pdf(self, &mut updated, file, meta),
-                PushURL(ref url, ref meta) =>
-                    on_push_url(self, url.clone(), meta),
+                PushURL(url, meta) =>
+                    on_push_url(self, url, meta),
                 Quit =>
                     termination::execute(),
                 Random =>
@@ -283,7 +284,7 @@ impl App {
                 if current < len && len < current + gui_len {
                     updated.image = true;
                 } else if self.states.auto_paging && gui_len <= len && len - gui_len == current {
-                    self.operate(&Operation::Next(None, false, MoveBy::Page));
+                    self.operate(Operation::Next(None, false, MoveBy::Page));
                     return
                 }
             }

@@ -12,7 +12,7 @@ use rand::distributions::{IndependentSample, Range as RandRange};
 use app_path;
 use archive;
 use editor;
-use entry::{MetaSlice, new_meta, SearchKey};
+use entry::{Meta, SearchKey};
 use filer;
 use fragile_input::new_fragile_input;
 use gui::Direction;
@@ -27,10 +27,10 @@ use app::*;
 
 
 
-pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<&OperationContext>) {
+pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: &Option<OperationContext>) {
     use cherenkov::Che;
 
-    if let Some(OperationContext::Input(Input::MouseButton((mx, my), _))) = context.cloned() {
+    if let Some(OperationContext::Input(Input::MouseButton((mx, my), _))) = *context {
         let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
 
         for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
@@ -112,12 +112,12 @@ pub fn on_editor(app: &mut App, editor_command: Option<String>, script_sources: 
     spawn(move || editor::start_edit(&tx, editor_command, script_sources));
 }
 
-pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: &Option<PathBuf>) {
+pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Option<PathBuf>) {
     let count = app.pointer.counted();
     if recursive {
-        app.entries.expand(&mut app.pointer, base.clone(), 1, count as u8);
+        app.entries.expand(&mut app.pointer, base, 1, count as u8);
     } else {
-        app.entries.expand(&mut app.pointer, base.clone(), count as u8, count as u8- 1);
+        app.entries.expand(&mut app.pointer, base, count as u8, count as u8- 1);
     }
     updated.label = true;
 }
@@ -152,7 +152,7 @@ pub fn on_input(app: &mut App, input: &Input) {
     if let Some(op) = app.mapping.matched(input, width, height) {
         match op {
             Ok(op) =>
-                app.operate(&Operation::Context(OperationContext::Input(input.clone()), Box::new(op))),
+                app.operate(Operation::Context(OperationContext::Input(input.clone()), Box::new(op))),
             Err(err) =>
                 puts_error!("at" => "input", "reason" => err)
         }
@@ -187,19 +187,19 @@ pub fn on_load(app: &mut App, script_source: &script::ScriptSource) {
     script::load(&app.tx, script_source);
 }
 
-pub fn on_map(app: &mut App, target: &MappingTarget, operation: &[String]) {
+pub fn on_map(app: &mut App, target: &MappingTarget, operation: Vec<String>) {
     use app::MappingTarget::*;
 
     // puts_event!("map", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
     match *target {
         Key(ref key_sequence) =>
-            app.mapping.register_key(key_sequence.clone(), operation.to_vec()),
+            app.mapping.register_key(key_sequence.clone(), operation),
         Mouse(ref button, ref area) =>
             app.mapping.register_mouse(*button, area.clone(), operation)
     }
 }
 
-pub fn on_multi(app: &mut App, operations: &[Operation]) {
+pub fn on_multi(app: &mut App, operations: Vec<Operation>) {
     for op in operations {
         app.operate(op)
     }
@@ -276,9 +276,9 @@ pub fn on_pull(app: &mut App, updated: &mut Updated) {
     push_buffered(app, updated, buffered);
 }
 
-pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: &MetaSlice) {
+pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Meta) {
     if path.starts_with("http://") || path.starts_with("https://") {
-        app.tx.send(Operation::PushURL(path, new_meta(meta))).unwrap();
+        app.tx.send(Operation::PushURL(path, meta)).unwrap();
         return;
     }
 
@@ -288,31 +288,31 @@ pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: &MetaSl
                 "zip" | "rar" | "tar.gz" | "lzh" | "lha" =>
                     return archive::fetch_entries(&path, &app.encodings, app.tx.clone(), app.sorting_buffer.clone()),
                 "pdf" =>
-                    return on_push_pdf(app, updated, &path.to_path_buf(), meta),
+                    return on_push_pdf(app, updated, path.to_path_buf(), meta),
                 _ => ()
             }
         }
     }
 
-    app.operate(&Operation::PushPath(Path::new(&path).to_path_buf(), new_meta(meta)));
+    app.operate(Operation::PushPath(Path::new(&path).to_path_buf(), meta));
 }
 
-pub fn on_push_path(app: &mut App, updated: &mut Updated, file: &PathBuf, meta: &MetaSlice) {
+pub fn on_push_path(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Meta) {
     let buffered = app.sorting_buffer.push_without_reserve(
-        QueuedOperation::PushPath(file.clone(), new_meta(meta)));
+        QueuedOperation::PushPath(file, meta));
     push_buffered(app, updated, buffered);
 }
 
-pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: &PathBuf, meta: &MetaSlice) {
+pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Meta) {
     let document = PopplerDocument::new_from_file(&file);
     let n_pages = document.n_pages();
 
     let buffered = app.sorting_buffer.push_without_reserve(
-        QueuedOperation::PushPdfEntries(file.clone(), n_pages, new_meta(meta)));
+        QueuedOperation::PushPdfEntries(file, n_pages, meta));
     push_buffered(app, updated, buffered);
 }
 
-pub fn on_push_url(app: &mut App, url: String, meta: &MetaSlice) {
+pub fn on_push_url(app: &mut App, url: String, meta: Meta) {
     app.http_cache.fetch(url, meta);
 }
 
@@ -357,7 +357,7 @@ pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scr
         match Operation::parse_from_vec(operation) {
             Ok(op) => {
                 app.pointer.restore(&save);
-                app.operate(&op);
+                app.operate(op);
             },
             Err(err) => puts_error!("at" => "scroll", "reason" => err),
         }
@@ -530,10 +530,10 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
 
     for op in ops {
         match op {
-            PushPath(ref path, ref meta) =>
-                updated.pointer = app.entries.push_path(&mut app.pointer, path, meta),
+            PushPath(path, meta) =>
+                updated.pointer = app.entries.push_path(&mut app.pointer, &path, meta),
             PushHttpCache(file, url, meta) =>
-                updated.pointer |= app.entries.push_http_cache(&mut app.pointer, &file, &url, &meta),
+                updated.pointer |= app.entries.push_http_cache(&mut app.pointer, &file, url, meta),
             PushArchiveEntry(ref archive_path, ref entry) =>
                 updated.pointer |= app.entries.push_archive_entry(&mut app.pointer, archive_path, entry),
             PushPdfEntries(pdf_path, pages, meta) => {

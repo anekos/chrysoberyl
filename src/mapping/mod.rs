@@ -41,7 +41,7 @@ impl Mapping {
         self.key_mapping.register(key, operation);
     }
 
-    pub fn register_mouse(&mut self, button: u32, area: Option<mouse_mapping::Area>, operation: &[String]) {
+    pub fn register_mouse(&mut self, button: u32, area: Option<mouse_mapping::Area>, operation: Vec<String>) {
         self.mouse_mapping.register(button, area, operation);
     }
 

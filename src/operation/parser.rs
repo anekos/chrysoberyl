@@ -2,11 +2,12 @@
 use std::io::sink;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::sync::Arc;
 
 use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse, StoreOption, List, PushConst};
 
 use color::Color;
-use entry::{Meta, MetaEntry, new_meta_from_vec, SearchKey};
+use entry::{Meta, MetaEntry, SearchKey};
 use filer;
 use mapping::{Input, InputType, mouse_mapping};
 use script::{ConfigSource, ScriptSource};
@@ -369,7 +370,7 @@ where T: FnOnce(String, Meta) -> Operation {
         ap.refer(&mut path).add_argument("Path", Store, "Path to resource").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        op(path, new_meta_from_vec(meta))
+        op(path, Arc::new(meta))
     })
 }
 

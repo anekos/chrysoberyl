@@ -24,7 +24,6 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
     sprintln!(out, "@set pre-render-pages {}", st.pre_fetch.page_size);
     sprintln!(out, "@set fit-to {}", st.drawing.fit_to);
     sprintln!(out, "@set scaling {}", st.drawing.scaling);
-    sprintln!(out, "@set scaling {}", st.drawing.scaling);
     // sprintln!(out, "@set horizontal-views {}", gui.cols());
     // sprintln!(out, "@set vertical-views {}", gui.rows());
     sprintln!(out, "@views {} {}", gui.cols(), gui.rows());

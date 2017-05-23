@@ -323,7 +323,6 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
 
 #[cfg(test)]#[test]
 fn test_parse() {
-    use std::sync::Arc;
     use std::path::Path;
     use self::Operation::*;
     use mapping::mouse_mapping::Area;
@@ -363,9 +362,9 @@ fn test_parse() {
     assert_eq!(p("@Last --ignore-views --archive 5"), Last(Some(5), true, MoveBy::Archive));
 
     // @push*
-    assert_eq!(p("@push http://example.com/moge.jpg"), Push(o!("http://example.com/moge.jpg"), Arc::new(vec![])));
-    assert_eq!(p("@push-file /hoge/moge.jpg"), PushPath(pathbuf("/hoge/moge.jpg"), Arc::new(vec![])));
-    assert_eq!(p("@push-url http://example.com/moge.jpg"), PushURL(o!("http://example.com/moge.jpg"), Arc::new(vec![])));
+    assert_eq!(p("@push http://example.com/moge.jpg"), Push(o!("http://example.com/moge.jpg"), None));
+    assert_eq!(p("@push-file /hoge/moge.jpg"), PushPath(pathbuf("/hoge/moge.jpg"), None));
+    assert_eq!(p("@push-url http://example.com/moge.jpg"), PushURL(o!("http://example.com/moge.jpg"), None));
 
     // @map
     assert_eq!(q("@map key k @first"), Ok(Map(MappingTarget::Key(vecs!["k"]), vec![o!("@first")])));
@@ -399,18 +398,18 @@ fn test_parse() {
     assert_eq!(p("@shell --sync ls -l -a"), Shell(false, false, vec![o!("ls"), o!("-l"), o!("-a")], vec![]));
 
     // Invalid command
-    assert_eq!(p("Meow Meow"), Push(o!("Meow Meow"), Arc::new(vec![])));
-    assert_eq!(p("expand /foo/bar.txt"), Push(o!("expand /foo/bar.txt"), Arc::new(vec![])));
+    assert_eq!(p("Meow Meow"), Push(o!("Meow Meow"), None));
+    assert_eq!(p("expand /foo/bar.txt"), Push(o!("expand /foo/bar.txt"), None));
 
     // Shell quotes
     assert_eq!(
         p(r#"@Push "http://example.com/sample.png""#),
-        Push(o!("http://example.com/sample.png"), Arc::new(vec![])));
+        Push(o!("http://example.com/sample.png"), None));
 
     // Shell quotes
     assert_eq!(
         p(r#"@Push 'http://example.com/sample.png'"#),
-        Push(o!("http://example.com/sample.png"), Arc::new(vec![])));
+        Push(o!("http://example.com/sample.png"), None));
 
     // Ignore case
     assert_eq!(p("@ShuFFle"), Shuffle(false));

@@ -11,7 +11,7 @@ use gtk;
 
 use app;
 use app_path;
-use config;
+use script::{self, ScriptSource, ConfigSource};
 use entry::EntryContainerOptions;
 use gui::Gui;
 use operation::Operation;
@@ -77,7 +77,7 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
 
         let path = format!(
             "Configuration: {}\nCache: {}",
-            app_path::config_file().to_str().unwrap(),
+            app_path::config_file(None).to_str().unwrap(),
             app_path::cache_dir("/").to_str().unwrap());
 
         {
@@ -140,7 +140,7 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
 
             ap.add_option(&["-V", "--version"], Print(env!("CARGO_PKG_VERSION").to_string()), "Show version");
 
-            ap.add_option(&["--print-default"], Print(o!(config::DEFAULT_CONFIG)), "Print default config");
+            ap.add_option(&["--print-default"], Print(o!(script::DEFAULT_CONFIG)), "Print default config");
             ap.add_option(&["--print-path"], Print(path), "Print application files path");
 
             ap.parse_args_or_exit();
@@ -154,7 +154,7 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
 
     let (app, primary_rx, rx) = app::App::new(initial, states, gui, eco);
 
-    config::load_config(&app.tx, &config::ConfigSource::User);
+    script::load(&app.tx, &ScriptSource::Config(ConfigSource::User));
 
     app.tx.send(Operation::Initialized).unwrap();
 

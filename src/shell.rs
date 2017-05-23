@@ -10,16 +10,16 @@ use termination;
 
 
 
-pub fn call(async: bool, command_line: &[String], tx: Option<Sender<Operation>>) {
+pub fn call(async: bool, command_line: &[String], stdin: Option<String>, tx: Option<Sender<Operation>>) {
     if async {
         let command_line = command_line.to_vec();
-        spawn(move || run(tx, &command_line));
+        spawn(move || run(tx, &command_line, stdin));
     } else {
-        run(tx, command_line);
+        run(tx, command_line, stdin);
     }
 }
 
-fn run(tx: Option<Sender<Operation>>, command_line: &[String]) {
+fn run(tx: Option<Sender<Operation>>, command_line: &[String], stdin: Option<String>) {
     let mut command = Command::new("setsid");
     command
         .args(command_line);
@@ -27,13 +27,15 @@ fn run(tx: Option<Sender<Operation>>, command_line: &[String]) {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
+    command.stdin(if stdin.is_some() { Stdio::piped() } else { Stdio::null() });
+
     let child = command.spawn().unwrap();
 
     let terminator = termination::Process::Kill(child.id());
     termination::register(terminator.clone());
 
     puts_event!("shell/open");
-    if process_stdout(tx, child) {
+    if process_stdout(tx, child, stdin) {
         puts_event!("shell/close");
     } else {
         puts_error!("at" => "shell", "for" => join(command_line));
@@ -42,7 +44,13 @@ fn run(tx: Option<Sender<Operation>>, command_line: &[String]) {
     termination::unregister(&terminator);
 }
 
-fn process_stdout(tx: Option<Sender<Operation>>, child: Child) -> bool {
+fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<String>) -> bool {
+    use std::io::Write;
+
+    if let Some(stdin) = stdin {
+        child.stdin.unwrap().write_all(stdin.as_bytes()).unwrap();
+    }
+
     if let Some(tx) = tx {
         let stderr = child.stderr;
         spawn(move || pass("stderr", stderr));

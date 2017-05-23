@@ -111,3 +111,12 @@ macro_rules! time {
         }
     }
 }
+
+macro_rules! sprintln {
+    ($name:expr, $fmt:expr ) => {
+        $name.push_str(concat!($fmt, "\n"));
+    };
+    ($name:expr, $fmt:expr $(,$args:expr)*) => {
+        $name.push_str(&format!(concat!($fmt, "\n") $(,$args)*));
+    }
+}

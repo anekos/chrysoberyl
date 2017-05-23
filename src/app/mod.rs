@@ -24,12 +24,12 @@ use image_cache::ImageCache;
 use image_fetcher::ImageFetcher;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
-use operation::{Operation, OperationContext, MappingTarget, MoveBy};
+use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy};
 use output;
-use shell;
 use shellexpand_wrapper as sh;
 use size::{Size, FitTo, Region};
-use state::{ States, PreFetchState};
+use sorting_buffer::SortingBuffer;
+use state::{States, PreFetchState};
 use termination;
 use utils::path_to_str;
 
@@ -50,6 +50,7 @@ pub struct App {
     current_env_keys: HashSet<String>,
     cache: ImageCache,
     fetcher: ImageFetcher,
+    sorting_buffer: SortingBuffer<QueuedOperation>,
     pub tx: Sender<Operation>,
     pub states: States
 }
@@ -65,6 +66,7 @@ pub struct Initial {
     pub operations: Vec<String>
 }
 
+#[derive(Default)]
 pub struct Updated {
     pointer: bool,
     label: bool,
@@ -95,11 +97,13 @@ impl App {
         let cache_limit = PreFetchState::default().limit_of_items;
         let cache = ImageCache::new(cache_limit);
 
+        let sorting_buffer = SortingBuffer::new();
+
         let mut app = App {
             entries: EntryContainer::new(entry_options),
             gui: gui.clone(),
             tx: tx.clone(),
-            http_cache: HttpCache::new(initial.http_threads, tx.clone()),
+            http_cache: HttpCache::new(initial.http_threads, tx.clone(), sorting_buffer.clone()),
             states: states,
             encodings: initial.encodings,
             mapping: Mapping::new(),
@@ -110,6 +114,7 @@ impl App {
             current_env_keys: HashSet::new(),
             cache: cache.clone(),
             fetcher: ImageFetcher::new(cache),
+            sorting_buffer: sorting_buffer,
         };
 
         app.reset_view();
@@ -126,8 +131,11 @@ impl App {
 
         app.update_label_visibility();
 
-        for file in &initial.files {
-           on_events::on_push(&mut app, file.clone(), &[]);
+        {
+            let mut updated = Updated::default();
+            for file in &initial.files {
+                on_events::on_push(&mut app, &mut updated, file.clone(), &[]);
+            }
         }
 
         {
@@ -190,8 +198,6 @@ impl App {
                     on_expand(self, &mut updated, recursive, base),
                 First(count, ignore_views, move_by) =>
                     on_first(self, &mut updated, len, count, ignore_views, move_by),
-                ForceFlush =>
-                    self.http_cache.force_flush(),
                 Fragile(ref path) =>
                     on_fragile(self, path),
                 Initialized =>
@@ -202,8 +208,8 @@ impl App {
                     on_last(self, &mut updated, len, count, ignore_views, move_by),
                 LazyDraw(serial, new_to_end) =>
                     on_lazy_draw(self, &mut updated, &mut to_end, serial, new_to_end),
-                LoadConfig(ref config_source) =>
-                    on_load_config(self, config_source),
+                Load(ref script_source) =>
+                    on_load(self, script_source),
                 Map(ref target, ref mapped_operation) =>
                     on_map(self, target, mapped_operation),
                 Multi(ref ops) =>
@@ -220,13 +226,11 @@ impl App {
                     on_previous(self, &mut updated, &mut to_end, count, ignore_views, move_by),
                 PrintEntries =>
                     on_print_entries(self),
+                Pull =>
+                    on_pull(self, &mut updated),
                 Push(ref path, ref meta) =>
-                    on_push(self, path.clone(), meta),
-                PushArchiveEntry(ref archive_path, ref entry) =>
-                    on_push_archive_entry(self, &mut updated, archive_path, entry),
-                PushHttpCache(ref file, ref url, ref meta) =>
-                    on_push_http_cache(self, &mut updated, file, url, meta),
-                PushFile(ref file, ref meta) =>
+                    on_push(self, &mut updated, path.clone(), meta),
+                PushPath(ref file, ref meta) =>
                     on_push_path(self, &mut updated, file, meta),
                 PushPdf(ref file, ref meta) =>
                     on_push_pdf(self, &mut updated, file, meta),
@@ -238,14 +242,16 @@ impl App {
                     on_random(self, &mut updated, len),
                 Refresh =>
                     updated.pointer = true,
-                Save(ref path, ref index) =>
-                    on_save(self, path, index),
+                SaveSession(ref path, ref sources) =>
+                    on_save_session(self, path, sources),
+                SaveImage(ref path, ref index) =>
+                    on_save_image(self, path, index),
                 SetEnv(ref name, ref value) =>
                     on_set_env(self, name, value),
                 Scroll(ref direction, ref operation, scroll_size) =>
                     on_scroll(self, direction, operation, scroll_size),
-                Shell(async, read_operations, ref command_line) =>
-                    shell::call(async, command_line, option!(read_operations, self.tx.clone())),
+                Shell(async, read_operations, ref command_line, ref stdin_sources) =>
+                    on_shell(self, async, read_operations, command_line, self.tx.clone(), stdin_sources),
                 Show(ref key) =>
                     on_show(self, &mut updated, key),
                 Shuffle(fix_current) =>
@@ -323,8 +329,6 @@ impl App {
             self.tx.send(op).unwrap();
         }
     }
-
-    /* Operation event */
 
     /* Private methods */
 

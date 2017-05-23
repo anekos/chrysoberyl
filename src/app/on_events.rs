@@ -1,20 +1,26 @@
 
 use std::env;
+use std::fs::File;
+use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::thread::spawn;
 
 use gtk::prelude::*;
 use rand::distributions::{IndependentSample, Range as RandRange};
 
-use archive::{self, ArchiveEntry};
-use config;
+use app_path;
+use archive;
 use editor;
 use entry::{MetaSlice, new_meta, SearchKey};
 use filer;
 use fragile_input::new_fragile_input;
 use gui::Direction;
-use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater};
+use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater, StdinSource};
 use output;
+use poppler::PopplerDocument;
+use script;
+use shell;
 use utils::path_to_str;
 
 use app::*;
@@ -101,9 +107,9 @@ pub fn on_clip(app: &mut App, updated: &mut Updated, region: &Region) {
     }
 }
 
-pub fn on_editor(app: &mut App, editor_command: Option<String>, config_sources: Vec<config::ConfigSource>) {
+pub fn on_editor(app: &mut App, editor_command: Option<String>, script_sources: Vec<script::ScriptSource>) {
     let tx = app.tx.clone();
-    spawn(move || editor::start_edit(&tx, editor_command, config_sources));
+    spawn(move || editor::start_edit(&tx, editor_command, script_sources));
 }
 
 pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: &Option<PathBuf>) {
@@ -177,8 +183,8 @@ pub fn on_lazy_draw(app: &mut App, updated: &mut Updated, to_end: &mut bool, ser
     }
 }
 
-pub fn on_load_config(app: &mut App, config_source: &config::ConfigSource) {
-    config::load_config(&app.tx, config_source);
+pub fn on_load(app: &mut App, script_source: &script::ScriptSource) {
+    script::load(&app.tx, script_source);
 }
 
 pub fn on_map(app: &mut App, target: &MappingTarget, operation: &[String]) {
@@ -265,7 +271,12 @@ pub fn on_print_entries(app: &App) {
     }
 }
 
-pub fn on_push(app: &mut App, path: String, meta: &MetaSlice) {
+pub fn on_pull(app: &mut App, updated: &mut Updated) {
+    let buffered = app.sorting_buffer.pull_all();
+    push_buffered(app, updated, buffered);
+}
+
+pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: &MetaSlice) {
     if path.starts_with("http://") || path.starts_with("https://") {
         app.tx.send(Operation::PushURL(path, new_meta(meta))).unwrap();
         return;
@@ -275,39 +286,30 @@ pub fn on_push(app: &mut App, path: String, meta: &MetaSlice) {
         if let Some(ext) = path.extension() {
             match &*ext.to_str().unwrap().to_lowercase() {
                 "zip" | "rar" | "tar.gz" | "lzh" | "lha" =>
-                    return archive::fetch_entries(&path, &app.encodings, app.tx.clone()),
+                    return archive::fetch_entries(&path, &app.encodings, app.tx.clone(), app.sorting_buffer.clone()),
                 "pdf" =>
-                    return app.tx.send(Operation::PushPdf(path.clone(), new_meta(meta))).unwrap(),
+                    return on_push_pdf(app, updated, &path.to_path_buf(), meta),
                 _ => ()
             }
         }
     }
 
-    app.operate(&Operation::PushFile(Path::new(&path).to_path_buf(), new_meta(meta)));
-}
-
-pub fn on_push_archive_entry(app: &mut App, updated: &mut Updated, archive_path: &PathBuf, entry: &ArchiveEntry) {
-    updated.pointer = app.entries.push_archive_entry(&mut app.pointer, archive_path, entry);
-    updated.label = true;
-    app.do_show(updated);
-}
-
-pub fn on_push_http_cache(app: &mut App, updated: &mut Updated, file: &PathBuf, url: &str, meta: &MetaSlice) {
-    updated.pointer = app.entries.push_http_cache(&mut app.pointer, file, url, meta);
-    updated.label = true;
-    app.do_show(updated);
+    app.operate(&Operation::PushPath(Path::new(&path).to_path_buf(), new_meta(meta)));
 }
 
 pub fn on_push_path(app: &mut App, updated: &mut Updated, file: &PathBuf, meta: &MetaSlice) {
-    updated.pointer = app.entries.push_path(&mut app.pointer, file, meta);
-    updated.label = true;
-    app.do_show(updated);
+    let buffered = app.sorting_buffer.push_without_reserve(
+        QueuedOperation::PushPath(file.clone(), new_meta(meta)));
+    push_buffered(app, updated, buffered);
 }
 
 pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: &PathBuf, meta: &MetaSlice) {
-    updated.pointer = app.entries.push_pdf(&mut app.pointer, file, meta);
-    updated.label = true;
-    app.do_show(updated);
+    let document = PopplerDocument::new_from_file(&file);
+    let n_pages = document.n_pages();
+
+    let buffered = app.sorting_buffer.push_without_reserve(
+        QueuedOperation::PushPdfEntries(file.clone(), n_pages, new_meta(meta)));
+    push_buffered(app, updated, buffered);
 }
 
 pub fn on_push_url(app: &mut App, url: String, meta: &MetaSlice) {
@@ -321,7 +323,20 @@ pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) {
     }
 }
 
-pub fn on_save(app: &mut App, path: &PathBuf, index: &Option<usize>) {
+pub fn on_save_session(app: &mut App, path: &Option<PathBuf>, sources: &[StdinSource]) {
+    let default = app_path::config_file(Some(app_path::DEFAULT_SESSION_FILENAME));
+    let path = path.as_ref().unwrap_or(&default);
+
+    let result = File::create(path).map(|mut file| {
+        file.write_all(sources_to_string(app, sources).as_bytes())
+    });
+
+    if let Err(err) = result {
+        puts_error!("at" => "save_session", "reason" => s!(err))
+    }
+}
+
+pub fn on_save_image(app: &mut App, path: &PathBuf, index: &Option<usize>) {
     let count = index.unwrap_or_else(|| app.pointer.counted()) - 1;
     if let Err(error) = app.gui.save(path, count) {
         puts_error!("at" => "save", "reason" => error)
@@ -347,6 +362,16 @@ pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scr
             Err(err) => puts_error!("at" => "scroll", "reason" => err),
         }
     }
+}
+
+pub fn on_shell(app: &App, async: bool, read_operations: bool, command_line: &[String], tx: Sender<Operation>, stdin_sources: &[StdinSource]) {
+    let stdin = if !stdin_sources.is_empty() {
+        Some(sources_to_string(app, stdin_sources))
+    } else {
+        None
+    };
+
+    shell::call(async, command_line, stdin, option!(read_operations, tx));
 }
 
 pub fn on_show(app: &mut App, updated: &mut Updated, key: &SearchKey) {
@@ -478,4 +503,47 @@ fn on_update_views(app: &mut App, updated: &mut Updated) {
     updated.image_options = true;
     app.reset_view();
     app.pointer.set_multiplier(app.gui.len());
+}
+
+fn sources_to_string(app: &App, sources: &[StdinSource]) -> String {
+    use stringer::*;
+    use operation::StdinSource::*;
+
+    let mut result = o!("");
+    for source in sources {
+        match *source {
+            Options => write_options(&app.states, &app.gui, &mut result),
+            Entries => write_entries(&app.entries, &mut result),
+            Position => write_position(&app.entries, &app.pointer, &mut result),
+            All => {
+                write_options(&app.states, &app.gui, &mut result);
+                write_entries(&app.entries, &mut result);
+                write_position(&app.entries, &app.pointer, &mut result);
+            }
+        }
+    }
+    result
+}
+
+fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>) {
+    use operation::QueuedOperation::*;
+
+    for op in ops {
+        match op {
+            PushPath(ref path, ref meta) =>
+                updated.pointer = app.entries.push_path(&mut app.pointer, path, meta),
+            PushHttpCache(file, url, meta) =>
+                updated.pointer |= app.entries.push_http_cache(&mut app.pointer, &file, &url, &meta),
+            PushArchiveEntry(ref archive_path, ref entry) =>
+                updated.pointer |= app.entries.push_archive_entry(&mut app.pointer, archive_path, entry),
+            PushPdfEntries(pdf_path, pages, meta) => {
+                let pdf_path = Arc::new(pdf_path.clone());
+                for index in 0 .. pages {
+                    updated.pointer |= app.entries.push_pdf_entry(&mut app.pointer, pdf_path.clone(), index, meta.clone())
+                }
+            }
+        }
+        updated.label = true;
+    }
+    app.do_show(updated);
 }

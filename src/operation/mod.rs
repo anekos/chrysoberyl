@@ -7,12 +7,12 @@ use cmdline_parser::Parser;
 
 use archive::ArchiveEntry;
 use color::Color;
-use config::ConfigSource;
 use entry::Meta;
 use entry;
 use filer;
 use gui::Direction;
 use mapping::{self, mouse_mapping};
+use script::ScriptSource;
 use shellexpand_wrapper as sh;
 use size::Region;
 
@@ -30,16 +30,15 @@ pub enum Operation {
     Count(Option<usize>),
     CountDigit(u8),
     Draw,
-    Editor(Option<String>, Vec<ConfigSource>),
+    Editor(Option<String>, Vec<ScriptSource>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool, MoveBy),
-    ForceFlush,
     Fragile(PathBuf),
     Initialized,
     Input(mapping::Input),
     Last(Option<usize>, bool, MoveBy),
     LazyDraw(u64, bool), /* serial, to_end */
-    LoadConfig(ConfigSource),
+    Load(ScriptSource),
     Map(MappingTarget, Vec<String>),
     Multi(Vec<Operation>),
     Next(Option<usize>, bool, MoveBy),
@@ -48,19 +47,19 @@ pub enum Operation {
     PreFetch(u64),
     Previous(Option<usize>, bool, MoveBy),
     PrintEntries,
+    Pull,
     Push(String, Meta),
-    PushArchiveEntry(PathBuf, ArchiveEntry),
-    PushFile(PathBuf, Meta),
-    PushHttpCache(PathBuf, String, Meta),
+    PushPath(PathBuf, Meta),
     PushPdf(PathBuf, Meta),
     PushURL(String, Meta),
     Quit,
     Random,
     Refresh,
-    Save(PathBuf, Option<usize>),
+    SaveSession(Option<PathBuf>, Vec<StdinSource>),
+    SaveImage(PathBuf, Option<usize>),
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     SetEnv(String, Option<String>),
-    Shell(bool, bool, Vec<String>), /* async, operation, command_line */
+    Shell(bool, bool, Vec<String>, Vec<StdinSource>), /* async, operation, command_line, stdin */
     Show(entry::SearchKey),
     Shuffle(bool), /* Fix current */
     Sort,
@@ -135,6 +134,22 @@ pub enum OptionName {
     ColorStatusBarBackground,
     ColorError,
     ColorErrorBackground,
+}
+
+#[derive(Clone, Debug, PartialEq, Copy)]
+pub enum StdinSource {
+    All,
+    Options,
+    Entries,
+    Position,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum QueuedOperation {
+    PushPath(PathBuf, Meta),
+    PushHttpCache(PathBuf, String, Meta),
+    PushArchiveEntry(PathBuf, ArchiveEntry),
+    PushPdfEntries(PathBuf, usize, Meta), /* path, pages, meta */
 }
 
 
@@ -254,6 +269,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@cherenkov"                 => parse_cherenkov(whole),
             "@clear"                     => Ok(Clear),
             "@copy"                      => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Copy(path, if_exist))),
+            "@clip"                      => parse_clip(whole),
             "@count"                     => parse_count(whole),
             "@cycle"                     => parse_option_cycle(whole),
             "@disable"                   => parse_option_1(whole, OptionUpdater::Disable),
@@ -263,7 +279,6 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@entries"                   => Ok(PrintEntries),
             "@expand"                    => parse_expand(whole),
             "@first" | "@f"              => parse_move(whole, First),
-            "@force-flush"               => Ok(ForceFlush),
             "@fragile"                   => parse_command1(whole, |it| Fragile(sh::expand_to_pathbuf(&it))),
             "@input"                     => parse_input(whole),
             "@last" | "@l"               => parse_move(whole, Last),
@@ -275,12 +290,13 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@prev" | "@p" | "@previous" => parse_move(whole, Previous),
             "@push"                      => parse_push(whole, |it, meta| Push(sh::expand(&it), meta)),
             "@push-pdf"                  => parse_push(whole, |it, meta| PushPdf(sh::expand_to_pathbuf(&it), meta)),
-            "@push-file"                 => parse_push(whole, |it, meta| PushFile(sh::expand_to_pathbuf(&it), meta)),
+            "@push-path" | "@push-file"  => parse_push(whole, |it, meta| PushPath(sh::expand_to_pathbuf(&it), meta)),
             "@push-url"                  => parse_push(whole, PushURL),
             "@quit"                      => Ok(Quit),
             "@random" | "@rand"          => Ok(Random),
             "@refresh" | "@r"            => Ok(Refresh),
-            "@save"                      => parse_save(whole),
+            "@save-session"              => parse_save_session(whole),
+            "@save-image"                => parse_save_image(whole),
             "@set"                       => parse_option_set(whole),
             "@set-env"                   => parse_set_env(whole),
             "@scroll"                    => parse_scroll(whole),
@@ -346,7 +362,7 @@ fn test_parse() {
 
     // @push*
     assert_eq!(p("@push http://example.com/moge.jpg"), Push(o!("http://example.com/moge.jpg"), Arc::new(vec![])));
-    assert_eq!(p("@push-file /hoge/moge.jpg"), PushFile(pathbuf("/hoge/moge.jpg"), Arc::new(vec![])));
+    assert_eq!(p("@push-file /hoge/moge.jpg"), PushPath(pathbuf("/hoge/moge.jpg"), Arc::new(vec![])));
     assert_eq!(p("@push-url http://example.com/moge.jpg"), PushURL(o!("http://example.com/moge.jpg"), Arc::new(vec![])));
 
     // @map

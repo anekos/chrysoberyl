@@ -6,10 +6,10 @@ use std::str::FromStr;
 use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse, StoreOption, List, PushConst};
 
 use color::Color;
-use config::ConfigSource;
 use entry::{Meta, MetaEntry, new_meta_from_vec, SearchKey};
 use filer;
 use mapping::{Input, InputType, mouse_mapping};
+use script::{ConfigSource, ScriptSource};
 use shellexpand_wrapper as sh;
 
 use operation::*;
@@ -95,6 +95,21 @@ pub fn parse_copy_or_move(args: &[String]) -> Result<(PathBuf, filer::IfExist), 
     })
 }
 
+pub fn parse_clip(args: &[String]) -> Result<Operation, String> {
+    let mut region = Region { left: 0.0, top: 0.0, right: 0.0, bottom: 0.0 };
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut region.left).add_argument("Left", Store, "Left");
+        ap.refer(&mut region.top).add_argument("Top", Store, "Top");
+        ap.refer(&mut region.right).add_argument("Right", Store, "Right");
+        ap.refer(&mut region.bottom).add_argument("Bottom", Store, "Bottom");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Clip(region)
+    })
+}
+
 pub fn parse_count(args: &[String]) -> Result<Operation, String> {
     let mut count: Option<usize> = None;
 
@@ -109,6 +124,7 @@ pub fn parse_count(args: &[String]) -> Result<Operation, String> {
 
 pub fn parse_editor(args: &[String]) -> Result<Operation, String> {
     let mut config_sources: Vec<ConfigSource> = vec![];
+    let mut files: Vec<String> = vec![];
     let mut command_line: Option<String> = None;
 
     {
@@ -116,10 +132,19 @@ pub fn parse_editor(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut config_sources)
             .add_option(&["--user", "-u"], PushConst(ConfigSource::User), "Insert user config")
             .add_option(&["--default", "-d"], PushConst(ConfigSource::Default), "Insert defult config");
+        ap.refer(&mut files)
+            .add_option(&["--file", "-f"], Collect, "Insert the given file");
         ap.refer(&mut command_line).add_argument("command-line", StoreOption, "Command line to open editor");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Editor(command_line, config_sources)
+        let mut script_sources = vec![];
+        for source in config_sources {
+            script_sources.push(ScriptSource::Config(source))
+        }
+        for file in files {
+            script_sources.push(ScriptSource::File(sh::expand_to_pathbuf(&file)))
+        }
+        Operation::Editor(command_line, script_sources)
     })
 }
 
@@ -172,15 +197,24 @@ pub fn parse_input(args: &[String]) -> Result<Operation, String> {
 
 pub fn parse_load(args: &[String]) -> Result<Operation, String> {
     let mut config_source = ConfigSource::Default;
+    let mut path: Option<String> = None;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut config_source)
             .add_option(&["--user", "-u"], StoreConst(ConfigSource::User), "Load user config (rc.conf)")
-            .add_option(&["--default", "-d"], StoreConst(ConfigSource::Default), "Load default config");
+            .add_option(&["--default", "-d"], StoreConst(ConfigSource::Default), "Load default config")
+            .add_option(&["--session", "-s"], StoreConst(ConfigSource::DefaultSession), "Load default session");
+        ap.refer(&mut path).add_argument("file-path", StoreOption, "File path");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::LoadConfig(config_source)
+        Operation::Load({
+            if let Some(ref path) = path {
+                ScriptSource::File(sh::expand_to_pathbuf(path))
+            } else {
+                ScriptSource::Config(config_source)
+            }
+        })
     })
 }
 
@@ -339,7 +373,24 @@ where T: FnOnce(String, Meta) -> Operation {
     })
 }
 
-pub fn parse_save(args: &[String]) -> Result<Operation, String> {
+pub fn parse_save_session(args: &[String]) -> Result<Operation, String> {
+    let mut path: Option<String> = None;
+    let mut sources: Vec<StdinSource> = vec![];
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut sources).add_option(&["--stdin", "-i"], Collect, "STDIN source");
+        ap.refer(&mut path).add_argument("path", StoreOption, "Save to");
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        if sources.is_empty() {
+            sources.push(StdinSource::All);
+        }
+        Ok(Operation::SaveSession(path.map(|it| sh::expand_to_pathbuf(&it)), sources))
+    })
+}
+
+pub fn parse_save_image(args: &[String]) -> Result<Operation, String> {
     let mut index = None;
     let mut path = o!("");
 
@@ -349,7 +400,7 @@ pub fn parse_save(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut path).add_argument("path", Store, "Save to").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Save(sh::expand_to_pathbuf(&path), index)
+        Operation::SaveImage(sh::expand_to_pathbuf(&path), index)
     })
 }
 
@@ -387,12 +438,14 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
     let mut async = true;
     let mut read_operations = false;
     let mut command_line: Vec<String> = vec![];
+    let mut stdin_sources: Vec<StdinSource> = vec![];
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut async)
             .add_option(&["--async", "-a"], StoreTrue, "Async (Non-blocking)")
             .add_option(&["--sync", "-s"], StoreFalse, "Sync (Blocking)");
+        ap.refer(&mut stdin_sources).add_option(&["--stdin", "-i"], Collect, "STDIN source");
         ap.refer(&mut read_operations).add_option(&["--operation", "-o"], StoreTrue, "Read operations form stdout");
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
@@ -401,7 +454,7 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
         for it in command_line {
             cl.push(sh::expand(&it));
         }
-        Ok(Operation::Shell(async, read_operations, cl))
+        Ok(Operation::Shell(async, read_operations, cl, stdin_sources))
     })
 }
 
@@ -456,4 +509,19 @@ pub fn parse_views(args: &[String]) -> Result<Operation, String> {
 pub fn parse_args(parser: &mut ArgumentParser, args: &[String]) -> Result<(), String> {
     parser.stop_on_first_argument(true);
     parser.parse(args.to_vec(), &mut sink(), &mut sink()).map_err(|code| s!(code))
+}
+
+
+impl FromStr for StdinSource {
+    type Err = String;
+
+    fn from_str(src: &str) -> Result<Self, String> {
+        match src {
+            "options" | "s" => Ok(StdinSource::Options),
+            "entries" | "e" => Ok(StdinSource::Entries),
+            "position" | "p" => Ok(StdinSource::Position),
+            "all" | "a" => Ok(StdinSource::All),
+            _ => Err(format!("Invalid stdin source: {}", src))
+        }
+    }
 }

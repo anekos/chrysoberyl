@@ -6,6 +6,7 @@ use std::io;
 use std::path::{PathBuf, Path};
 use std::rc::Rc;
 use std::sync::Arc;
+use std::slice;
 
 
 use immeta;
@@ -16,7 +17,6 @@ use archive::ArchiveEntry;
 use index_pointer::IndexPointer;
 use utils::path_to_str;
 use validation::is_valid_image_filename;
-use poppler::PopplerDocument;
 
 
 
@@ -134,6 +134,10 @@ impl EntryContainer {
             rng: thread_rng(),
             options: options
         }
+    }
+
+    pub fn iter(&self) -> slice::Iter<Rc<Entry>> {
+        self.files.iter()
     }
 
     pub fn clear(&mut self, pointer: &mut IndexPointer) {
@@ -388,15 +392,9 @@ impl EntryContainer {
                     entry.clone())))
     }
 
-    pub fn push_pdf(&mut self, pointer: &mut IndexPointer, pdf_path: &PathBuf, meta: &MetaSlice) -> bool {
-        let document = PopplerDocument::new_from_file(&pdf_path);
-        let n_pages = document.n_pages();
-        let mut result = false;
-        for index in 0 .. n_pages {
-            let content = EntryContent::Pdf(Arc::new(pdf_path.clone()), index);
-            result |= self.push_entry(pointer, Entry::new(content, new_meta(meta)));
-        }
-        result
+    pub fn push_pdf_entry(&mut self, pointer: &mut IndexPointer, pdf_path: Arc<PathBuf>, index: usize, meta: Meta) -> bool {
+        let content = EntryContent::Pdf(pdf_path.clone(), index);
+        self.push_entry(pointer, Entry::new(content, meta))
     }
 
     pub fn search(&self, key: &SearchKey) -> Option<usize> {

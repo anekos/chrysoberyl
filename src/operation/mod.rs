@@ -210,7 +210,7 @@ impl Operation {
     pub fn parse_fuzziness(s: &str) -> Result<Operation, String> {
         match Operation::parse(s) {
             Err(ParsingError::InvalidOperation(err)) => Err(err),
-            Err(ParsingError::NotOperation) => Ok(Operation::Push(o!(s), None)),
+            Err(ParsingError::NotOperation) => Ok(Operation::Push(sh::expand(s), None)),
             Ok(op) => Ok(op)
         }
     }

@@ -369,7 +369,7 @@ where T: FnOnce(String, Option<Meta>) -> Operation {
         ap.refer(&mut path).add_argument("Path", Store, "Path to resource").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        op(path, new_opt_meta(meta))
+        op(sh::expand(&path), new_opt_meta(meta))
     })
 }
 

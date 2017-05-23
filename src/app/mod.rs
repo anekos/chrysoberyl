@@ -5,7 +5,6 @@ use std::env;
 use std::ops::Range;
 use std::path::Path;
 use std::str::FromStr;
-use std::sync::Arc;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::{sleep, spawn};
 use std::time::Duration;
@@ -135,7 +134,7 @@ impl App {
         {
             let mut updated = Updated::default();
             for file in &initial.files {
-                on_events::on_push(&mut app, &mut updated, file.clone(), Arc::new(vec![]));
+                on_events::on_push(&mut app, &mut updated, file.clone(), None);
             }
         }
 
@@ -419,8 +418,10 @@ impl App {
         let gui_len = self.gui.len();
 
         if let Some((entry, index)) = self.entries.current(&self.pointer) {
-            for entry in entry.meta.iter() {
-                envs.push((format!("meta_{}", entry.key), entry.value.clone()));
+            if let Some(meta) = entry.meta {
+                for entry in meta.iter() {
+                    envs.push((format!("meta_{}", entry.key), entry.value.clone()));
+                }
             }
 
             // Path means local file path, url, or pdf file path

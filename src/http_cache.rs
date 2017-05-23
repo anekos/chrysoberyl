@@ -31,13 +31,13 @@ struct Request {
     ticket: usize,
     url: String,
     cache_filepath: PathBuf,
-    meta: Meta
+    meta: Option<Meta>
 }
 
 
 #[derive(Clone)]
 enum Getter {
-    Queue(String, PathBuf, Meta),
+    Queue(String, PathBuf, Option<Meta>),
     Done(usize, Request),
     Fail(usize, String, Request),
 }
@@ -49,7 +49,7 @@ impl HttpCache {
         HttpCache { app_tx: app_tx, main_tx: main_tx, sorting_buffer: sorting_buffer  }
     }
 
-    pub fn fetch(&mut self, url: String, meta: Meta) {
+    pub fn fetch(&mut self, url: String, meta: Option<Meta>) {
         let filepath = generate_temporary_filename(&url);
 
         if filepath.exists() {

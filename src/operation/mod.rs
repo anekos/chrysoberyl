@@ -48,10 +48,10 @@ pub enum Operation {
     Previous(Option<usize>, bool, MoveBy),
     PrintEntries,
     Pull,
-    Push(String, Meta),
-    PushPath(PathBuf, Meta),
-    PushPdf(PathBuf, Meta),
-    PushURL(String, Meta),
+    Push(String, Option<Meta>),
+    PushPath(PathBuf, Option<Meta>),
+    PushPdf(PathBuf, Option<Meta>),
+    PushURL(String, Option<Meta>),
     Quit,
     Random,
     Refresh,
@@ -146,10 +146,10 @@ pub enum StdinSource {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum QueuedOperation {
-    PushPath(PathBuf, Meta),
-    PushHttpCache(PathBuf, String, Meta),
+    PushPath(PathBuf, Option<Meta>),
+    PushHttpCache(PathBuf, String, Option<Meta>),
     PushArchiveEntry(PathBuf, ArchiveEntry),
-    PushPdfEntries(PathBuf, usize, Meta), /* path, pages, meta */
+    PushPdfEntries(PathBuf, usize, Option<Meta>), /* path, pages, meta */
 }
 
 
@@ -210,7 +210,7 @@ impl Operation {
     pub fn parse_fuzziness(s: &str) -> Result<Operation, String> {
         match Operation::parse(s) {
             Err(ParsingError::InvalidOperation(err)) => Err(err),
-            Err(ParsingError::NotOperation) => Ok(Operation::Push(o!(s), entry::new_empty_meta())),
+            Err(ParsingError::NotOperation) => Ok(Operation::Push(o!(s), None)),
             Ok(op) => Ok(op)
         }
     }

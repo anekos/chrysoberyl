@@ -24,7 +24,10 @@ mod sys;
 
 
 lazy_static! {
-    static ref LOCK: Arc<Mutex<usize>> = Arc::new(Mutex::new(0));
+    static ref LOCK: Arc<Mutex<usize>> = {
+        #[cfg_attr(feature = "cargo-clippy", allow(mutex_atomic))]
+        Arc::new(Mutex::new(0))
+    };
 }
 
 

@@ -120,3 +120,9 @@ macro_rules! sprintln {
         $name.push_str(&format!(concat!($fmt, "\n") $(,$args)*));
     }
 }
+
+macro_rules! vecs {
+    ($($args:expr),*) => {
+        vec![$(s!($args)),*]
+    }
+}

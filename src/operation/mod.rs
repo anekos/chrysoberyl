@@ -359,6 +359,7 @@ fn test_parse() {
     assert_eq!(p("@Last 5"), Last(Some(5), false, MoveBy::Page));
     assert_eq!(p("@Last -i 5"), Last(Some(5), true, MoveBy::Page));
     assert_eq!(p("@Last --ignore-views 5"), Last(Some(5), true, MoveBy::Page));
+    assert_eq!(p("@Last --ignore-views --archive 5"), Last(Some(5), true, MoveBy::Archive));
 
     // @push*
     assert_eq!(p("@push http://example.com/moge.jpg"), Push(o!("http://example.com/moge.jpg"), Arc::new(vec![])));
@@ -366,9 +367,9 @@ fn test_parse() {
     assert_eq!(p("@push-url http://example.com/moge.jpg"), PushURL(o!("http://example.com/moge.jpg"), Arc::new(vec![])));
 
     // @map
-    assert_eq!(q("@map key k @first"), Ok(Map(MappingTarget::Key(vec![s!("k")]), vec![o!("@first")])));
-    assert_eq!(p("@map k k @next"), Map(MappingTarget::Key(vec![s!("k")]), vec![o!("@next")]));
-    assert_eq!(p("@map key k @next"), Map(MappingTarget::Key(vec![s!("k")]), vec![o!("@next")]));
+    assert_eq!(q("@map key k @first"), Ok(Map(MappingTarget::Key(vecs!["k"]), vec![o!("@first")])));
+    assert_eq!(p("@map k k @next"), Map(MappingTarget::Key(vecs!["k"]), vec![o!("@next")]));
+    assert_eq!(p("@map key k @next"), Map(MappingTarget::Key(vecs!["k"]), vec![o!("@next")]));
     assert_eq!(q("@map mouse 6 @last"), Ok(Map(MappingTarget::Mouse(6, None), vec![o!("@last")])));
     assert_eq!(p("@map m 6 @last"), Map(MappingTarget::Mouse(6, None), vec![o!("@last")]));
     assert_eq!(p("@map m --area 0.1x0.2-0.3x0.4 6 @last"), Map(MappingTarget::Mouse(6, Some(Area::new(0.1, 0.2, 0.3, 0.4))), vec![o!("@last")]));
@@ -391,10 +392,10 @@ fn test_parse() {
     assert_eq!(p("@multi / @first / @next"), Multi(vec![First(None, false, MoveBy::Page), Next(None, false, MoveBy::Page)]));
 
     // Shell
-    assert_eq!(p("@shell ls -l -a"), Shell(true, false, vec![o!("ls"), o!("-l"), o!("-a")]));
-    assert_eq!(p("@shell --async ls -l -a"), Shell(true, false, vec![o!("ls"), o!("-l"), o!("-a")]));
-    assert_eq!(p("@shell --async --operation ls -l -a"), Shell(true, true, vec![o!("ls"), o!("-l"), o!("-a")]));
-    assert_eq!(p("@shell --sync ls -l -a"), Shell(false, false, vec![o!("ls"), o!("-l"), o!("-a")]));
+    assert_eq!(p("@shell ls -l -a"), Shell(true, false, vec![o!("ls"), o!("-l"), o!("-a")], vec![]));
+    assert_eq!(p("@shell --async ls -l -a"), Shell(true, false, vec![o!("ls"), o!("-l"), o!("-a")], vec![]));
+    assert_eq!(p("@shell --async --operation ls -l -a"), Shell(true, true, vec![o!("ls"), o!("-l"), o!("-a")], vec![]));
+    assert_eq!(p("@shell --sync ls -l -a"), Shell(false, false, vec![o!("ls"), o!("-l"), o!("-a")], vec![]));
 
     // Invalid command
     assert_eq!(p("Meow Meow"), Push(o!("Meow Meow"), Arc::new(vec![])));

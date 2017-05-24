@@ -113,7 +113,7 @@ macro_rules! time {
 }
 
 macro_rules! sprintln {
-    ($name:expr, $fmt:expr ) => {
+    ($name:expr, $fmt:expr) => {
         $name.push_str(concat!($fmt, "\n"));
     };
     ($name:expr, $fmt:expr $(,$args:expr)*) => {
@@ -122,7 +122,7 @@ macro_rules! sprintln {
 }
 
 macro_rules! sprint {
-    ($name:expr, $fmt:expr ) => {
+    ($name:expr, $fmt:expr) => {
         $name.push_str($fmt);
     };
     ($name:expr, $fmt:expr $(,$args:expr)*) => {

@@ -1,4 +1,5 @@
 
+use std::collections::VecDeque;
 use std::fmt;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -40,7 +41,7 @@ pub enum Operation {
     LazyDraw(u64, bool), /* serial, to_end */
     Load(ScriptSource),
     Map(MappingTarget, Vec<String>),
-    Multi(Vec<Operation>),
+    Multi(VecDeque<Operation>, bool), /* operations, async */
     Next(Option<usize>, bool, MoveBy),
     Nop,
     OperateFile(filer::FileOperation),
@@ -310,7 +311,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@unset"                     => parse_option_1(whole, OptionUpdater::Unset),
             "@user"                      => Ok(Operation::user(args.to_vec())),
             "@views"                     => parse_views(whole),
-            ";"                          => parse_multi_args(args, ";"),
+            ";"                          => parse_multi_args(args, ";", true),
             _ => Err(format!("Unknown operation: {}", name))
         } .map_err(ParsingError::InvalidOperation)
     } else {

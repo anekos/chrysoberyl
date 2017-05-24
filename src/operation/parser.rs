@@ -257,18 +257,22 @@ pub fn parse_map(args: &[String]) -> Result<Operation, String> {
 pub fn parse_multi(args: &[String]) -> Result<Operation, String> {
     let mut separator = "".to_owned();
     let mut commands: Vec<String> = vec![];
+    let mut async = true;
 
     {
         let mut ap = ArgumentParser::new();
+        ap.refer(&mut async)
+            .add_option(&["--async", "-a"], StoreTrue, "Async")
+            .add_option(&["--sync", "-s"], StoreFalse, "Sync");
         ap.refer(&mut separator).add_argument("separator", Store, "Commands separator").required();
         ap.refer(&mut commands).add_argument("arguments", List, "Commands");
         parse_args(&mut ap, args)
     } .and_then(|_| {
-        parse_multi_args(&commands, &separator)
+        parse_multi_args(&commands, &separator, async)
     })
 }
 
-pub fn parse_multi_args(xs: &[String], separator: &str) -> Result<Operation, String> {
+pub fn parse_multi_args(xs: &[String], separator: &str, async: bool) -> Result<Operation, String> {
     let mut ops: Vec<Vec<String>> = vec![];
     let mut buffer: Vec<String> = vec![];
 
@@ -285,16 +289,16 @@ pub fn parse_multi_args(xs: &[String], separator: &str) -> Result<Operation, Str
         ops.push(buffer);
     }
 
-    let mut result: Vec<Operation> = vec![];
+    let mut result: VecDeque<Operation> = VecDeque::new();
 
     for op in ops {
         match Operation::parse_from_vec(&op) {
-            Ok(op) => result.push(op),
+            Ok(op) => result.push_back(op),
             err => return err
         }
     }
 
-    Ok(Operation::Multi(result))
+    Ok(Operation::Multi(result, async))
 }
 
 pub fn parse_option_cycle(args: &[String]) -> Result<Operation, String> {

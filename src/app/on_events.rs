@@ -199,9 +199,18 @@ pub fn on_map(app: &mut App, target: &MappingTarget, operation: Vec<String>) {
     }
 }
 
-pub fn on_multi(app: &mut App, operations: Vec<Operation>) {
-    for op in operations {
-        app.operate(op)
+pub fn on_multi(app: &mut App, mut operations: VecDeque<Operation>, async: bool) {
+    if async {
+        if let Some(op) = operations.pop_front() {
+            app.operate(op);
+        }
+        if !operations.is_empty() {
+            app.tx.send(Operation::Multi(operations, async)).unwrap();
+        }
+    } else {
+        for op in operations {
+            app.operate(op);
+        }
     }
 }
 

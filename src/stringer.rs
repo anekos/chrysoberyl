@@ -8,8 +8,7 @@ use shell_escape;
 use entry::{Entry, EntryContainer};
 use gui::Gui;
 use index_pointer::IndexPointer;
-use mapping::Mapping;
-use mapping::key_mapping as kmap;
+use mapping::{Mapping, key_mapping as kmap, mouse_mapping as mmap};
 use size::FitTo;
 use state::{States, ScalingMethod};
 use utils::path_to_str;
@@ -99,6 +98,7 @@ pub fn write_position(entries: &EntryContainer, pointer: &IndexPointer, out: &mu
 
 pub fn write_mappings(mappings: &Mapping, out: &mut String) {
     write_key_mappings(None, &mappings.key_mapping, out);
+    write_mouse_mappings(&mappings.mouse_mapping, out);
 }
 
 fn write_key_mappings(base: Option<String>, mappings: &kmap::KeyMapping, out: &mut String) {
@@ -121,6 +121,22 @@ fn write_key_mapping_entry(name: String, entry: &kmap::MappingEntry, out: &mut S
         Code(ref code) => {
             sprint!(out, "@map key {}", escape(&name));
             for it in code {
+                sprint!(out, " {}", escape(it));
+            }
+            sprintln!(out, "");
+        }
+    }
+}
+
+fn write_mouse_mappings(mappings: &mmap::MouseMapping, out: &mut String) {
+    for (button, entries) in &mappings.table {
+        for entry in entries {
+            sprint!(out, "@map mouse");
+            if let Some(ref area) = entry.area {
+                sprint!(out, " --area {}x{}-{}x{}", area.left, area.top, area.right, area.bottom);
+            }
+            sprint!(out, " {}", button);
+            for it in &entry.operation {
                 sprint!(out, " {}", escape(it));
             }
             sprintln!(out, "");

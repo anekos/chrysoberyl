@@ -121,6 +121,15 @@ macro_rules! sprintln {
     }
 }
 
+macro_rules! sprint {
+    ($name:expr, $fmt:expr ) => {
+        $name.push_str($fmt);
+    };
+    ($name:expr, $fmt:expr $(,$args:expr)*) => {
+        $name.push_str(&format!($fmt $(,$args)*));
+    }
+}
+
 macro_rules! vecs {
     ($($args:expr),*) => {
         vec![$(s!($args)),*]

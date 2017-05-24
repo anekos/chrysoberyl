@@ -523,6 +523,8 @@ impl FromStr for StdinSource {
                 Ok(StdinSource::Paths),
             "position" | "pos" | "p" =>
                 Ok(StdinSource::Position),
+            "mappings" | "map" | "m" =>
+                Ok(StdinSource::Mappings),
             "session" | "a" =>
                 Ok(StdinSource::Session),
             _ =>

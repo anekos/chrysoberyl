@@ -23,8 +23,8 @@ pub enum InputType {
 
 pub struct Mapping {
     key_input_history: key_mapping::KeyInputHistory,
-    key_mapping: key_mapping::KeyMapping,
-    mouse_mapping: mouse_mapping::MouseMapping,
+    pub key_mapping: key_mapping::KeyMapping,
+    pub mouse_mapping: mouse_mapping::MouseMapping,
 }
 
 

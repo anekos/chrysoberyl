@@ -143,6 +143,7 @@ pub enum StdinSource {
     Entries,
     Position,
     Paths,
+    Mappings,
     Session,
 }
 

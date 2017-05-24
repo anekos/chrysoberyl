@@ -8,6 +8,8 @@ use shell_escape;
 use entry::{Entry, EntryContainer};
 use gui::Gui;
 use index_pointer::IndexPointer;
+use mapping::Mapping;
+use mapping::key_mapping as kmap;
 use size::FitTo;
 use state::{States, ScalingMethod};
 use utils::path_to_str;
@@ -15,6 +17,14 @@ use utils::path_to_str;
 
 
 pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
+    fn b2s(b: bool) -> &'static str {
+        if b {
+            "true"
+        } else {
+            "false"
+        }
+    }
+
     sprintln!(out, "@set status-bar {}", b2s(st.status_bar));
     sprintln!(out, "@set auto-paging {}", b2s(st.auto_paging));
     sprintln!(out, "@set reverse {}", b2s(st.auto_paging));
@@ -87,11 +97,34 @@ pub fn write_position(entries: &EntryContainer, pointer: &IndexPointer, out: &mu
     }
 }
 
-fn b2s(b: bool) -> &'static str {
-    if b {
-        "true"
-    } else {
-        "false"
+pub fn write_mappings(mappings: &Mapping, out: &mut String) {
+    write_key_mappings(None, &mappings.key_mapping, out);
+}
+
+fn write_key_mappings(base: Option<String>, mappings: &kmap::KeyMapping, out: &mut String) {
+    for (ref name, ref entry) in &mappings.table {
+        let name: String = if let Some(ref base) = base {
+            format!("{},{}", base, name)
+        } else {
+            s!(name)
+        };
+        write_key_mapping_entry(name, entry, out);
+    }
+}
+
+fn write_key_mapping_entry(name: String, entry: &kmap::MappingEntry, out: &mut String) {
+    use self::kmap::MappingEntry::*;
+
+    match *entry {
+        Sub(ref sub) =>
+            write_key_mappings(Some(name), &*sub, out),
+        Code(ref code) => {
+            sprint!(out, "@map key {}", escape(&name));
+            for it in code {
+                sprint!(out, " {}", escape(it));
+            }
+            sprintln!(out, "");
+        }
     }
 }
 

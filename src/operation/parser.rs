@@ -3,7 +3,7 @@ use std::io::sink;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse, StoreOption, List, PushConst};
+use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse, StoreOption, List};
 
 use color::Color;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
@@ -129,11 +129,8 @@ pub fn parse_editor(args: &[String]) -> Result<Operation, String> {
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut config_sources)
-            .add_option(&["--user", "-u"], PushConst(ConfigSource::User), "Insert user config")
-            .add_option(&["--default", "-d"], PushConst(ConfigSource::Default), "Insert defult config");
-        ap.refer(&mut files)
-            .add_option(&["--file", "-f"], Collect, "Insert the given file");
+        ap.refer(&mut config_sources).add_option(&["--config", "-c"], Collect, "Insert config");
+        ap.refer(&mut files).add_option(&["--file", "-f"], Collect, "Insert the given file");
         ap.refer(&mut command_line).add_argument("command-line", StoreOption, "Command line to open editor");
         parse_args(&mut ap, args)
     } .map(|_| {
@@ -201,10 +198,7 @@ pub fn parse_load(args: &[String]) -> Result<Operation, String> {
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut config_source)
-            .add_option(&["--user", "-u"], StoreConst(ConfigSource::User), "Load user config (rc.conf)")
-            .add_option(&["--default", "-d"], StoreConst(ConfigSource::Default), "Load default config")
-            .add_option(&["--session", "-s"], StoreConst(ConfigSource::DefaultSession), "Load default session");
+        ap.refer(&mut config_source).add_option(&["--config", "-c"], Store, "Load config");
         ap.refer(&mut path).add_argument("file-path", StoreOption, "File path");
         parse_args(&mut ap, args)
     } .map(|_| {
@@ -379,12 +373,12 @@ pub fn parse_save_session(args: &[String]) -> Result<Operation, String> {
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut sources).add_option(&["--stdin", "-i"], Collect, "STDIN source");
+        ap.refer(&mut sources).add_option(&["--target", "-t"], Collect, "Target");
         ap.refer(&mut path).add_argument("path", StoreOption, "Save to");
         parse_args(&mut ap, args)
     } .and_then(|_| {
         if sources.is_empty() {
-            sources.push(StdinSource::All);
+            sources.push(StdinSource::Session);
         }
         Ok(Operation::SaveSession(path.map(|it| sh::expand_to_pathbuf(&it)), sources))
     })
@@ -525,10 +519,29 @@ impl FromStr for StdinSource {
                 Ok(StdinSource::Paths),
             "position" | "pos" | "p" =>
                 Ok(StdinSource::Position),
-            "all" | "a" =>
-                Ok(StdinSource::All),
+            "session" | "a" =>
+                Ok(StdinSource::Session),
             _ =>
                 Err(format!("Invalid stdin source: {}", src))
+        }
+    }
+}
+
+impl FromStr for ConfigSource {
+    type Err = String;
+
+    fn from_str(src: &str) -> Result<Self, String> {
+        use self::ConfigSource::*;
+
+        match src {
+            "user" | "u" =>
+                Ok(User),
+            "default" | "d" =>
+                Ok(Default),
+            "session" | "s" =>
+                Ok(DefaultSession),
+            _ =>
+                Err(format!("Invalid config source: {}", src))
         }
     }
 }

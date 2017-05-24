@@ -138,11 +138,11 @@ pub enum OptionName {
 
 #[derive(Clone, Debug, PartialEq, Copy)]
 pub enum StdinSource {
-    All,
     Options,
     Entries,
     Position,
     Paths,
+    Session,
 }
 
 #[derive(Clone, Debug, PartialEq)]

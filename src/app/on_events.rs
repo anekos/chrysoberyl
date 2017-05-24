@@ -516,7 +516,7 @@ fn sources_to_string(app: &App, sources: &[StdinSource]) -> String {
             Entries => write_entries(&app.entries, &mut result),
             Paths => write_paths(&app.entries, &mut result),
             Position => write_position(&app.entries, &app.pointer, &mut result),
-            All => {
+            Session => {
                 write_options(&app.states, &app.gui, &mut result);
                 write_entries(&app.entries, &mut result);
                 write_position(&app.entries, &app.pointer, &mut result);

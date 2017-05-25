@@ -11,7 +11,7 @@ type OperationCode = Vec<String>;
 
 pub struct KeyMapping {
     pub depth: usize,
-    table: HashMap<String, MappingEntry>
+    pub table: HashMap<String, MappingEntry>
 }
 
 pub struct KeyInputHistory {

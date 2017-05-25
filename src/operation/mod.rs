@@ -56,8 +56,7 @@ pub enum Operation {
     Quit,
     Random,
     Refresh,
-    SaveSession(Option<PathBuf>, Vec<StdinSource>),
-    SaveImage(PathBuf, Option<usize>),
+    Save(Option<PathBuf>, Vec<StdinSource>),
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     SetEnv(String, Option<String>),
     Shell(bool, bool, Vec<String>, Vec<StdinSource>), /* async, operation, command_line, stdin */
@@ -70,6 +69,7 @@ pub enum Operation {
     Views(Option<usize>, Option<usize>),
     ViewsFellow(bool), /* for_rows */
     WindowResized,
+    Write(PathBuf, Option<usize>),
 }
 
 
@@ -143,6 +143,7 @@ pub enum StdinSource {
     Entries,
     Position,
     Paths,
+    Mappings,
     Session,
 }
 
@@ -297,8 +298,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@quit"                      => Ok(Quit),
             "@random" | "@rand"          => Ok(Random),
             "@refresh" | "@r"            => Ok(Refresh),
-            "@save-session"              => parse_save_session(whole),
-            "@save-image"                => parse_save_image(whole),
+            "@save"                      => parse_save(whole),
             "@set"                       => parse_option_set(whole),
             "@set-env"                   => parse_set_env(whole),
             "@scroll"                    => parse_scroll(whole),
@@ -311,6 +311,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@unset"                     => parse_option_1(whole, OptionUpdater::Unset),
             "@user"                      => Ok(Operation::user(args.to_vec())),
             "@views"                     => parse_views(whole),
+            "@write"                     => parse_write(whole),
             ";"                          => parse_multi_args(args, ";", true),
             _ => Err(format!("Unknown operation: {}", name))
         } .map_err(ParsingError::InvalidOperation)

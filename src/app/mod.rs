@@ -242,10 +242,8 @@ impl App {
                     on_random(self, &mut updated, len),
                 Refresh =>
                     updated.pointer = true,
-                SaveSession(ref path, ref sources) =>
-                    on_save_session(self, path, sources),
-                SaveImage(ref path, ref index) =>
-                    on_save_image(self, path, index),
+                Save(ref path, ref sources) =>
+                    on_save(self, path, sources),
                 SetEnv(ref name, ref value) =>
                     on_set_env(self, name, value),
                 Scroll(ref direction, ref operation, scroll_size) =>
@@ -268,6 +266,8 @@ impl App {
                     on_views(self, &mut updated, cols, rows),
                 ViewsFellow(for_rows) =>
                     on_views_fellow(self, &mut updated, for_rows),
+                Write(ref path, ref index) =>
+                    on_write(self, path, index),
                 WindowResized =>
                     on_window_resized(self, &mut updated),
             }

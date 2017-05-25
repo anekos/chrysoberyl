@@ -371,7 +371,7 @@ where T: FnOnce(String, Option<Meta>) -> Operation {
     })
 }
 
-pub fn parse_save_session(args: &[String]) -> Result<Operation, String> {
+pub fn parse_save(args: &[String]) -> Result<Operation, String> {
     let mut path: Option<String> = None;
     let mut sources: Vec<StdinSource> = vec![];
 
@@ -384,21 +384,7 @@ pub fn parse_save_session(args: &[String]) -> Result<Operation, String> {
         if sources.is_empty() {
             sources.push(StdinSource::Session);
         }
-        Ok(Operation::SaveSession(path.map(|it| sh::expand_to_pathbuf(&it)), sources))
-    })
-}
-
-pub fn parse_save_image(args: &[String]) -> Result<Operation, String> {
-    let mut index = None;
-    let mut path = o!("");
-
-    {
-        let mut ap = ArgumentParser::new();
-        ap.refer(&mut index).add_option(&["--index", "-i"], StoreOption, "Index (1 origin)");
-        ap.refer(&mut path).add_argument("path", Store, "Save to").required();
-        parse_args(&mut ap, args)
-    } .map(|_| {
-        Operation::SaveImage(sh::expand_to_pathbuf(&path), index)
+        Ok(Operation::Save(path.map(|it| sh::expand_to_pathbuf(&it)), sources))
     })
 }
 
@@ -504,6 +490,20 @@ pub fn parse_views(args: &[String]) -> Result<Operation, String> {
     })
 }
 
+pub fn parse_write(args: &[String]) -> Result<Operation, String> {
+    let mut index = None;
+    let mut path = o!("");
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut index).add_option(&["--index", "-i"], StoreOption, "Index (1 origin)");
+        ap.refer(&mut path).add_argument("path", Store, "Save to").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Write(sh::expand_to_pathbuf(&path), index)
+    })
+}
+
 pub fn parse_args(parser: &mut ArgumentParser, args: &[String]) -> Result<(), String> {
     parser.stop_on_first_argument(true);
     parser.parse(args.to_vec(), &mut sink(), &mut sink()).map_err(|code| s!(code))
@@ -523,6 +523,8 @@ impl FromStr for StdinSource {
                 Ok(StdinSource::Paths),
             "position" | "pos" | "p" =>
                 Ok(StdinSource::Position),
+            "mappings" | "map" | "m" =>
+                Ok(StdinSource::Mappings),
             "session" | "a" =>
                 Ok(StdinSource::Session),
             _ =>

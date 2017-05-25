@@ -8,6 +8,7 @@ use shell_escape;
 use entry::{Entry, EntryContainer};
 use gui::Gui;
 use index_pointer::IndexPointer;
+use mapping::{Mapping, key_mapping as kmap, mouse_mapping as mmap};
 use size::FitTo;
 use state::{States, ScalingMethod};
 use utils::path_to_str;
@@ -15,6 +16,14 @@ use utils::path_to_str;
 
 
 pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
+    fn b2s(b: bool) -> &'static str {
+        if b {
+            "true"
+        } else {
+            "false"
+        }
+    }
+
     sprintln!(out, "@set status-bar {}", b2s(st.status_bar));
     sprintln!(out, "@set auto-paging {}", b2s(st.auto_paging));
     sprintln!(out, "@set reverse {}", b2s(st.auto_paging));
@@ -87,11 +96,51 @@ pub fn write_position(entries: &EntryContainer, pointer: &IndexPointer, out: &mu
     }
 }
 
-fn b2s(b: bool) -> &'static str {
-    if b {
-        "true"
-    } else {
-        "false"
+pub fn write_mappings(mappings: &Mapping, out: &mut String) {
+    write_key_mappings(None, &mappings.key_mapping, out);
+    write_mouse_mappings(&mappings.mouse_mapping, out);
+}
+
+fn write_key_mappings(base: Option<&str>, mappings: &kmap::KeyMapping, out: &mut String) {
+    for (name, entry) in &mappings.table {
+        let name = if let Some(base) = base {
+            format!("{},{}", base, name)
+        } else {
+            o!(name)
+        };
+        write_key_mapping_entry(&name, entry, out);
+    }
+}
+
+fn write_key_mapping_entry(name: &str, entry: &kmap::MappingEntry, out: &mut String) {
+    use self::kmap::MappingEntry::*;
+
+    match *entry {
+        Sub(ref sub) =>
+            write_key_mappings(Some(name), &*sub, out),
+        Code(ref code) => {
+            sprint!(out, "@map key {}", escape(name));
+            for it in code {
+                sprint!(out, " {}", escape(it));
+            }
+            sprintln!(out, "");
+        }
+    }
+}
+
+fn write_mouse_mappings(mappings: &mmap::MouseMapping, out: &mut String) {
+    for (button, entries) in &mappings.table {
+        for entry in entries {
+            sprint!(out, "@map mouse");
+            if let Some(ref area) = entry.area {
+                sprint!(out, " --area {}x{}-{}x{}", area.left, area.top, area.right, area.bottom);
+            }
+            sprint!(out, " {}", button);
+            for it in &entry.operation {
+                sprint!(out, " {}", escape(it));
+            }
+            sprintln!(out, "");
+        }
     }
 }
 

@@ -332,7 +332,7 @@ pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) {
     }
 }
 
-pub fn on_save_session(app: &mut App, path: &Option<PathBuf>, sources: &[StdinSource]) {
+pub fn on_save(app: &mut App, path: &Option<PathBuf>, sources: &[StdinSource]) {
     let default = app_path::config_file(Some(app_path::DEFAULT_SESSION_FILENAME));
     let path = path.as_ref().unwrap_or(&default);
 
@@ -342,13 +342,6 @@ pub fn on_save_session(app: &mut App, path: &Option<PathBuf>, sources: &[StdinSo
 
     if let Err(err) = result {
         puts_error!("at" => "save_session", "reason" => s!(err))
-    }
-}
-
-pub fn on_save_image(app: &mut App, path: &PathBuf, index: &Option<usize>) {
-    let count = index.unwrap_or_else(|| app.pointer.counted()) - 1;
-    if let Err(error) = app.gui.save(path, count) {
-        puts_error!("at" => "save", "reason" => error)
     }
 }
 
@@ -507,6 +500,13 @@ pub fn on_window_resized(app: &mut App, updated: &mut Updated) {
     app.pre_fetch_serial += 1;
 }
 
+pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) {
+    let count = index.unwrap_or_else(|| app.pointer.counted()) - 1;
+    if let Err(error) = app.gui.save(path, count) {
+        puts_error!("at" => "save", "reason" => error)
+    }
+}
+
 
 fn on_update_views(app: &mut App, updated: &mut Updated) {
     updated.image_options = true;
@@ -525,10 +525,12 @@ fn sources_to_string(app: &App, sources: &[StdinSource]) -> String {
             Entries => write_entries(&app.entries, &mut result),
             Paths => write_paths(&app.entries, &mut result),
             Position => write_position(&app.entries, &app.pointer, &mut result),
+            Mappings => write_mappings(&app.mapping, &mut result),
             Session => {
                 write_options(&app.states, &app.gui, &mut result);
                 write_entries(&app.entries, &mut result);
                 write_position(&app.entries, &app.pointer, &mut result);
+                write_mappings(&app.mapping, &mut result);
             }
         }
     }

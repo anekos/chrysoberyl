@@ -7,20 +7,20 @@ use operation::Operation;
 
 
 pub struct MouseMapping {
-    table: HashMap<u32, Vec<WithArea>>
+    pub table: HashMap<u32, Vec<WithArea>>
 }
 
 pub struct WithArea {
-    operation: Vec<String>,
-    area: Option<Area>
+    pub operation: Vec<String>,
+    pub area: Option<Area>
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Area {
-    left: f64,
-    right: f64,
-    top: f64,
-    bottom: f64
+    pub left: f64,
+    pub right: f64,
+    pub top: f64,
+    pub bottom: f64
 }
 
 

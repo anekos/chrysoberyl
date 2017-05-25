@@ -101,25 +101,25 @@ pub fn write_mappings(mappings: &Mapping, out: &mut String) {
     write_mouse_mappings(&mappings.mouse_mapping, out);
 }
 
-fn write_key_mappings(base: Option<String>, mappings: &kmap::KeyMapping, out: &mut String) {
-    for (ref name, ref entry) in &mappings.table {
-        let name: String = if let Some(ref base) = base {
+fn write_key_mappings(base: Option<&str>, mappings: &kmap::KeyMapping, out: &mut String) {
+    for (name, entry) in &mappings.table {
+        let name = if let Some(base) = base {
             format!("{},{}", base, name)
         } else {
-            s!(name)
+            o!(name)
         };
-        write_key_mapping_entry(name, entry, out);
+        write_key_mapping_entry(&name, entry, out);
     }
 }
 
-fn write_key_mapping_entry(name: String, entry: &kmap::MappingEntry, out: &mut String) {
+fn write_key_mapping_entry(name: &str, entry: &kmap::MappingEntry, out: &mut String) {
     use self::kmap::MappingEntry::*;
 
     match *entry {
         Sub(ref sub) =>
             write_key_mappings(Some(name), &*sub, out),
         Code(ref code) => {
-            sprint!(out, "@map key {}", escape(&name));
+            sprint!(out, "@map key {}", escape(name));
             for it in code {
                 sprint!(out, " {}", escape(it));
             }

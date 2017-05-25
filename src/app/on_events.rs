@@ -332,7 +332,7 @@ pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) {
     }
 }
 
-pub fn on_save_session(app: &mut App, path: &Option<PathBuf>, sources: &[StdinSource]) {
+pub fn on_save(app: &mut App, path: &Option<PathBuf>, sources: &[StdinSource]) {
     let default = app_path::config_file(Some(app_path::DEFAULT_SESSION_FILENAME));
     let path = path.as_ref().unwrap_or(&default);
 
@@ -342,13 +342,6 @@ pub fn on_save_session(app: &mut App, path: &Option<PathBuf>, sources: &[StdinSo
 
     if let Err(err) = result {
         puts_error!("at" => "save_session", "reason" => s!(err))
-    }
-}
-
-pub fn on_save_image(app: &mut App, path: &PathBuf, index: &Option<usize>) {
-    let count = index.unwrap_or_else(|| app.pointer.counted()) - 1;
-    if let Err(error) = app.gui.save(path, count) {
-        puts_error!("at" => "save", "reason" => error)
     }
 }
 
@@ -505,6 +498,13 @@ pub fn on_window_resized(app: &mut App, updated: &mut Updated) {
     updated.image_options = true;
     // Ignore followed PreFetch
     app.pre_fetch_serial += 1;
+}
+
+pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) {
+    let count = index.unwrap_or_else(|| app.pointer.counted()) - 1;
+    if let Err(error) = app.gui.save(path, count) {
+        puts_error!("at" => "save", "reason" => error)
+    }
 }
 
 

@@ -321,8 +321,9 @@ pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Op
     push_buffered(app, updated, buffered);
 }
 
-pub fn on_push_url(app: &mut App, url: String, meta: Option<Meta>) {
-    app.http_cache.fetch(url, meta);
+pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Option<Meta>) {
+    let buffered = app.http_cache.fetch(url, meta);
+    push_buffered(app, updated, buffered);
 }
 
 pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) {

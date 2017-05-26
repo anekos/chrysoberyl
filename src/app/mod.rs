@@ -235,7 +235,7 @@ impl App {
                 PushPdf(file, meta) =>
                     on_push_pdf(self, &mut updated, file, meta),
                 PushURL(url, meta) =>
-                    on_push_url(self, url, meta),
+                    on_push_url(self, &mut updated, url, meta),
                 Quit =>
                     termination::execute(),
                 Random =>

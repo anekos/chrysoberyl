@@ -196,6 +196,8 @@ impl App {
                    on_editor(self, editor_command.clone(), config_sources.to_owned()),
                 Expand(recursive, ref base) =>
                     on_expand(self, &mut updated, recursive, base.clone()),
+                Filter(command_line) =>
+                    on_filter(self, command_line),
                 First(count, ignore_views, move_by) =>
                     on_first(self, &mut updated, len, count, ignore_views, move_by),
                 Fragile(ref path) =>

@@ -45,6 +45,7 @@ mod entry;
 mod entry_image;
 mod events;
 mod filer;
+mod filter;
 mod fragile_input;
 mod gtk_utils;
 mod gui;

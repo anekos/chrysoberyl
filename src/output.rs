@@ -1,5 +1,6 @@
 
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::sync::mpsc::{Sender, channel};
 use std::sync::{Arc, Mutex};
 use std::thread::spawn;
@@ -9,41 +10,65 @@ use shell_escape::escape;
 
 
 lazy_static! {
-    static ref OUTPUT_INSTANCE: Arc<Mutex<Output>> = {
-        let mut out = Output { txs: vec![] };
+    pub static ref OUTPUT_INSTANCE: Arc<Mutex<Output>> = {
+        let mut out = Output { txs: HashMap::new(), handle: 0 };
         out.register(run_stdout_output());
         Arc::new(Mutex::new(out))
     };
 }
 
 
+type Handle = u64;
+
 #[derive(Clone)]
 pub struct Output {
-    txs: Vec<Sender<String>>
+    handle: Handle,
+    txs: HashMap<Handle, Sender<String>>,
 }
 
 
 impl Output {
-    pub fn puts(&self, data: &[(String, String)]) {
+    pub fn puts(&mut self, data: &[(String, String)]) {
         self.puts_each_channel(generate_text(data));
     }
 
-    fn puts_each_channel(&self, text: String) {
-        for tx in &self.txs {
-            tx.send(text.clone()).unwrap();
-        }
+    pub fn register(&mut self, tx: Sender<String>) -> Handle {
+        self.handle += 1;
+        self.txs.insert(self.handle, tx);
+        self.handle
     }
 
-    fn register(&mut self, tx: Sender<String>) {
-        self.txs.push(tx);
+    pub fn unregister(&mut self, handle: Handle) {
+        self.txs.remove(&handle);
+    }
+
+    fn puts_each_channel(&mut self, text: String) {
+        let mut removes: Vec<Handle> = vec![];
+        for (handle, tx) in &self.txs {
+            if let Err(_) = tx.send(text.clone()) {
+                removes.push(*handle);
+            }
+        }
+        for handle in removes {
+            self.unregister(handle);
+        }
     }
 }
 
 
-
 pub fn puts(data: &[(String, String)]) {
-    let out = (*OUTPUT_INSTANCE).lock().unwrap();
+    let mut out = (*OUTPUT_INSTANCE).lock().unwrap();
     out.puts(data);
+}
+
+pub fn register(tx: Sender<String>) -> Handle {
+    let mut out = (*OUTPUT_INSTANCE).lock().unwrap();
+    out.register(tx)
+}
+
+pub fn unregister(handle: Handle) {
+    let mut out = (*OUTPUT_INSTANCE).lock().unwrap();
+    out.unregister(handle);
 }
 
 

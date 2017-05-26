@@ -14,6 +14,7 @@ use archive;
 use editor;
 use entry::{Meta, SearchKey};
 use filer;
+use filter;
 use fragile_input::new_fragile_input;
 use gui::Direction;
 use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater, StdinSource};
@@ -138,6 +139,10 @@ pub fn on_first(app: &mut App, updated: &mut Updated, len: usize, count: Option<
 
 pub fn on_fragile(app: &mut App, path: &PathBuf) {
     new_fragile_input(app.tx.clone(), path_to_str(path));
+}
+
+pub fn on_filter(app: &App, command_line: Vec<String>) {
+    filter::start(command_line, app.tx.clone());
 }
 
 pub fn on_initialized(app: &mut App) {

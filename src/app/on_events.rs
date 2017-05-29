@@ -29,7 +29,7 @@ use app::*;
 
 
 pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: &Option<OperationContext>) {
-    use cherenkov::Che;
+    use cherenkov::{Che, CheNova};
 
     if let Some(OperationContext::Input(Input::MouseButton((mx, my), _))) = *context {
         let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
@@ -52,13 +52,13 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
                     app.cache.cherenkov(
                         &entry,
                         &cell_size,
-                        &Che {
+                        &Che::Nova(CheNova {
                             center: center,
                             n_spokes: parameter.n_spokes,
                             radius: parameter.radius,
                             random_hue: parameter.random_hue,
                             color: parameter.color,
-                        },
+                        }),
                         &app.states.drawing);
                     updated.image = true;
                 }

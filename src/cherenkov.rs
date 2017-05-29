@@ -44,7 +44,12 @@ const FERROR: f64 = 0.000001;
 
 
 #[derive(Debug, Clone)]
-pub struct Che {
+pub enum Che {
+    Nova(CheNova)
+}
+
+#[derive(Debug, Clone)]
+pub struct CheNova {
     pub center: (f64, f64),
     pub n_spokes: usize,
     pub random_hue: f64,
@@ -146,16 +151,18 @@ fn cherenkov_static_image_buffer(image_buffer: &StaticImageBuffer, che: &Che) ->
 }
 
 fn cherenkov_pixbuf(pixbuf: Pixbuf, che: &Che) -> Pixbuf {
-    {
-        let (width, height) = (pixbuf.get_width(), pixbuf.get_height());
-        let rowstride = pixbuf.get_rowstride();
-        let channels = pixbuf.get_n_channels();
-        if channels == 4 {
-            let pixels: &mut [u8] = unsafe { pixbuf.get_pixels() };
-            nova(che, pixels, rowstride, width, height);
+    match *che {
+        Che::Nova(ref che) => {
+            let (width, height) = (pixbuf.get_width(), pixbuf.get_height());
+            let rowstride = pixbuf.get_rowstride();
+            let channels = pixbuf.get_n_channels();
+            if channels == 4 {
+                let pixels: &mut [u8] = unsafe { pixbuf.get_pixels() };
+                nova(che, pixels, rowstride, width, height);
+            }
+            pixbuf
         }
     }
-    pixbuf
 }
 
 fn gauss(rng: &mut ThreadRng) -> f64 {
@@ -240,7 +247,7 @@ fn clamp<T: PartialOrd>(v: T, from: T, to: T) -> T {
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
-fn nova(che: &Che, pixels: &mut [u8], rowstride: i32, width: i32, height: i32) {
+fn nova(che: &CheNova, pixels: &mut [u8], rowstride: i32, width: i32, height: i32) {
     let (cx, cy) = che.center;
     let (cx, cy) = ((width as f64 * cx) as i32, (height as f64 * cy) as i32);
     let radius = clamp(((width * width + height * height) as f64).sqrt() * che.radius, 0.00000001, 100.0);

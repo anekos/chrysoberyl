@@ -45,7 +45,8 @@ const FERROR: f64 = 0.000001;
 
 #[derive(Debug, Clone)]
 pub enum Che {
-    Nova(CheNova)
+    Nova(CheNova),
+    Fill(Region),
 }
 
 #[derive(Debug, Clone)]

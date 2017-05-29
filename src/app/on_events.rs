@@ -429,6 +429,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
             PreFetchPageSize => &mut app.states.pre_fetch.page_size,
             HorizontalViews => &mut app.states.view.cols,
             VerticalViews => &mut app.states.view.rows,
+            RegionFunction => &mut app.states.region_function,
             ColorWindowBackground => &mut app.gui.colors.window_background,
             ColorStatusBar => &mut app.gui.colors.status_bar,
             ColorStatusBarBackground => &mut app.gui.colors.status_bar_background,

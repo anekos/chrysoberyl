@@ -18,6 +18,7 @@ pub struct States {
     pub status_format: StatusFormat,
     pub drawing: DrawingState,
     pub pre_fetch: PreFetchState,
+    pub region_function: RegionFunction,
 }
 
 pub struct ViewState {
@@ -46,6 +47,12 @@ pub struct PreFetchState {
 #[derive(Clone, Debug, PartialEq)]
 pub struct StatusFormat(pub String);
 
+#[derive(Clone, Debug, PartialEq, Eq, Copy)]
+pub enum RegionFunction {
+    Clip,
+    Fill,
+}
+
 
 impl Default for States {
     fn default() -> Self {
@@ -59,6 +66,7 @@ impl Default for States {
             show: None,
             drawing: DrawingState::default(),
             pre_fetch: PreFetchState::default(),
+            region_function: RegionFunction::Clip,
         }
     }
 

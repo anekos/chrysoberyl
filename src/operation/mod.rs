@@ -34,6 +34,7 @@ pub enum Operation {
     Editor(Option<String>, Vec<ScriptSource>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool, MoveBy),
+    Fill(Region, usize), /* region, cell index */
     Filter(Vec<String>),
     Fragile(PathBuf),
     Initialized,
@@ -64,6 +65,7 @@ pub enum Operation {
     Show(entry::SearchKey),
     Shuffle(bool), /* Fix current */
     Sort,
+    TellRegion(Region),
     UpdateOption(OptionName, OptionUpdater),
     User(Vec<(String, String)>),
     Unclip,

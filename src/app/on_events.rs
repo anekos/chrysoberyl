@@ -22,6 +22,7 @@ use output;
 use poppler::PopplerDocument;
 use script;
 use shell;
+use state::RegionFunction;
 use utils::path_to_str;
 
 use app::*;
@@ -80,32 +81,10 @@ pub fn on_clear(app: &mut App, updated: &mut Updated) {
     updated.image = true;
 }
 
-pub fn on_clip(app: &mut App, updated: &mut Updated, region: &Region) {
-    let (mx, my) = (region.left as i32, region.top as i32);
+pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region) {
     let current = app.states.drawing.clipping.unwrap_or_default();
-    for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
-        if app.entries.current_with(&app.pointer, index).is_some() {
-            let (x1, y1, w, h) = {
-                let (cx, cy, cw, ch) = cell.get_top_left();
-                if let Some((iw, ih)) = cell.get_image_size() {
-                    (cx + (cw - iw) / 2, cy + (ch - ih) / 2, iw, ih)
-                } else {
-                    continue;
-                }
-            };
-            let (x2, y2) = (x1 + w, y1 + h);
-            if x1 <= mx && mx <= x2 && y1 <= my && my <= y2 {
-                let (w, h) = (w as f64, h as f64);
-                let inner = Region::new(
-                    (mx - x1) as f64 / w,
-                    (my - y1) as f64 / h,
-                    (region.right - x1 as f64) / w,
-                    (region.bottom - y1 as f64) / h);
-                app.states.drawing.clipping = Some(current + inner);
-                updated.image_options = true;
-            }
-        }
-    }
+    app.states.drawing.clipping = Some(current + inner);
+    updated.image_options = true;
 }
 
 pub fn on_editor(app: &mut App, editor_command: Option<String>, script_sources: Vec<script::ScriptSource>) {
@@ -121,6 +100,20 @@ pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Op
         app.entries.expand(&mut app.pointer, base, count as u8, count as u8- 1);
     }
     updated.label = true;
+}
+
+pub fn on_fill(app: &mut App, updated: &mut Updated, region: Region, cell_index: usize) {
+    use cherenkov::Che;
+
+    if let Some(entry) = app.entries.current_with(&app.pointer, cell_index).map(|(entry,_)| entry) {
+        let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
+        app.cache.cherenkov(
+            &entry,
+            &cell_size,
+            &Che::Fill(region),
+            &app.states.drawing);
+        updated.image = true;
+    }
 }
 
 pub fn on_first(app: &mut App, updated: &mut Updated, len: usize, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {
@@ -403,6 +396,39 @@ pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) {
 pub fn on_sort(app: &mut App, updated: &mut Updated) {
     app.entries.sort(&mut app.pointer);
     updated.image = true;
+}
+
+pub fn on_tell_region(app: &mut App, region: &Region) {
+    println!("tell_region: {:?}", region);
+    let (mx, my) = (region.left as i32, region.top as i32);
+    for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
+        if app.entries.current_with(&app.pointer, index).is_some() {
+            let (x1, y1, w, h) = {
+                let (cx, cy, cw, ch) = cell.get_top_left();
+                if let Some((iw, ih)) = cell.get_image_size() {
+                    (cx + (cw - iw) / 2, cy + (ch - ih) / 2, iw, ih)
+                } else {
+                    continue;
+                }
+            };
+            let (x2, y2) = (x1 + w, y1 + h);
+            if x1 <= mx && mx <= x2 && y1 <= my && my <= y2 {
+                let (w, h) = (w as f64, h as f64);
+                let region = Region::new(
+                    (mx - x1) as f64 / w,
+                    (my - y1) as f64 / h,
+                    (region.right - x1 as f64) / w,
+                    (region.bottom - y1 as f64) / h);
+                let op = match app.states.region_function {
+                    RegionFunction::Clip =>
+                        Operation::Clip(region),
+                    RegionFunction::Fill =>
+                        Operation::Fill(region, index),
+                };
+                app.tx.send(op).unwrap();
+            }
+        }
+    }
 }
 
 pub fn on_unclip(app: &mut App, updated: &mut Updated) {

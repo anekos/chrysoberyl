@@ -182,7 +182,7 @@ impl App {
                     on_cherenkov_clear(self, &mut updated),
                 Clear =>
                     on_clear(self, &mut updated),
-                Clip(ref region) =>
+                Clip(region) =>
                     on_clip(self, &mut updated, region),
                 Context(context, op) =>
                     return self.operate_with_context(*op, Some(context)),
@@ -198,6 +198,8 @@ impl App {
                     on_expand(self, &mut updated, recursive, base.clone()),
                 Filter(command_line) =>
                     on_filter(self, command_line),
+                Fill(region, cell_index) =>
+                    on_fill(self, &mut updated, region, cell_index),
                 First(count, ignore_views, move_by) =>
                     on_first(self, &mut updated, len, count, ignore_views, move_by),
                 Fragile(ref path) =>
@@ -258,6 +260,8 @@ impl App {
                     on_shuffle(self, &mut updated, fix_current),
                 Sort =>
                     on_sort(self, &mut updated),
+                TellRegion(ref region) =>
+                    on_tell_region(self, region),
                 Unclip => 
                     on_unclip(self, &mut updated),
                 UpdateOption(ref option_name, ref updater) =>

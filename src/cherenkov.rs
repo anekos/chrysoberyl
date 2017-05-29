@@ -166,9 +166,8 @@ fn cherenkov_pixbuf(pixbuf: Pixbuf, che: &Che) -> Pixbuf {
             }
             pixbuf
         }
-        Che::Fill(ref region) => {
+        Che::Fill(ref region) =>
             fill(region, &pixbuf)
-        }
     }
 }
 
@@ -324,10 +323,19 @@ fn fill(che: &Region, pixbuf: &Pixbuf) -> Pixbuf {
     let (w, h) = (pixbuf.get_width(), pixbuf.get_height());
     let surface = ImageSurface::create(Format::ARgb32, w, h);
     let context = Context::new(&surface);
-    context.set_source_rgba(1.0, 0.0, 0.0, 1.0);
-    context.rectangle(che.left as f64, che.top as f64, che.right as f64, che.bottom as f64);
+
     context.set_source_pixbuf(&pixbuf, 0.0, 0.0);
     context.paint();
+
+    context.set_source_rgba(0.0, 1.0, 0.0, 1.0);
+    let (w, h) = (w as f64, h as f64);
+    context.rectangle(
+        che.left * w,
+        che.top * h,
+        (che.right - che.left) * w,
+        (che.bottom - che.top) * h);
+    context.fill();
+
     new_pixbuf_from_surface(&surface)
 }
 

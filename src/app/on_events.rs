@@ -110,7 +110,7 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, region: Region, cell_index:
         app.cache.cherenkov(
             &entry,
             &cell_size,
-            &Che::Fill(region),
+            &Che::Fill(region, app.states.fill_color),
             &app.states.drawing);
         updated.image = true;
     }
@@ -399,7 +399,6 @@ pub fn on_sort(app: &mut App, updated: &mut Updated) {
 }
 
 pub fn on_tell_region(app: &mut App, region: &Region) {
-    println!("tell_region: {:?}", region);
     let (mx, my) = (region.left as i32, region.top as i32);
     for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
         if app.entries.current_with(&app.pointer, index).is_some() {
@@ -461,6 +460,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
             ColorStatusBarBackground => &mut app.gui.colors.status_bar_background,
             ColorError => &mut app.gui.colors.error,
             ColorErrorBackground => &mut app.gui.colors.error_background,
+            ColorFill => &mut app.states.fill_color,
         };
 
         let result = match updater {

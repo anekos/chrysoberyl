@@ -49,7 +49,7 @@ const FERROR: f64 = 0.000001;
 #[derive(Debug, Clone)]
 pub enum Che {
     Nova(CheNova),
-    Fill(Region),
+    Fill(Region, Color),
 }
 
 #[derive(Debug, Clone)]
@@ -166,8 +166,8 @@ fn cherenkov_pixbuf(pixbuf: Pixbuf, che: &Che) -> Pixbuf {
             }
             pixbuf
         }
-        Che::Fill(ref region) =>
-            fill(region, &pixbuf)
+        Che::Fill(ref region, ref color) =>
+            fill(region, color, &pixbuf)
     }
 }
 
@@ -319,7 +319,7 @@ fn nova(che: &CheNova, pixels: &mut [u8], rowstride: i32, width: i32, height: i3
     }
 }
 
-fn fill(che: &Region, pixbuf: &Pixbuf) -> Pixbuf {
+fn fill(che: &Region, color: &Color, pixbuf: &Pixbuf) -> Pixbuf {
     let (w, h) = (pixbuf.get_width(), pixbuf.get_height());
     let surface = ImageSurface::create(Format::ARgb32, w, h);
     let context = Context::new(&surface);
@@ -327,7 +327,8 @@ fn fill(che: &Region, pixbuf: &Pixbuf) -> Pixbuf {
     context.set_source_pixbuf(&pixbuf, 0.0, 0.0);
     context.paint();
 
-    context.set_source_rgba(0.0, 1.0, 0.0, 1.0);
+    let (r, g, b, a) = color.tupled4();
+    context.set_source_rgba(r, g, b, a);
     let (w, h) = (w as f64, h as f64);
     context.rectangle(
         che.left * w,

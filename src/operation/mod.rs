@@ -139,6 +139,7 @@ pub enum OptionName {
     ColorStatusBarBackground,
     ColorError,
     ColorErrorBackground,
+    ColorFill,
 }
 
 #[derive(Clone, Debug, PartialEq, Copy)]
@@ -193,6 +194,7 @@ impl FromStr for OptionName {
             "color-status-bar-background"          => Ok(ColorStatusBarBackground),
             "color-error"                          => Ok(ColorError),
             "color-error-background"               => Ok(ColorErrorBackground),
+            "color-fill"                           => Ok(ColorFill),
             _ => Err(ParsingError::InvalidOperation(format!("Invalid option name: {}", src)))
         }
     }

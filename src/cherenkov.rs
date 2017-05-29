@@ -24,6 +24,8 @@
 use std::collections::HashMap;
 use std::f64::consts::PI;
 
+use cairo::{Context, ImageSurface, Format};
+use gdk::prelude::ContextExt;
 use gdk_pixbuf::Pixbuf;
 use rand::distributions::{IndependentSample, Range};
 use rand::{self, Rng, ThreadRng};
@@ -31,8 +33,9 @@ use rand::{self, Rng, ThreadRng};
 use color::Color;
 use entry::Entry;
 use entry_image;
+use gtk_utils::new_pixbuf_from_surface;
 use image::{ImageBuffer, StaticImageBuffer};
-use size::Size;
+use size::{Size, Region};
 use state::DrawingState;
 use utils::feq;
 
@@ -162,6 +165,9 @@ fn cherenkov_pixbuf(pixbuf: Pixbuf, che: &Che) -> Pixbuf {
                 nova(che, pixels, rowstride, width, height);
             }
             pixbuf
+        }
+        Che::Fill(ref region) => {
+            fill(region, &pixbuf)
         }
     }
 }
@@ -312,6 +318,17 @@ fn nova(che: &CheNova, pixels: &mut [u8], rowstride: i32, width: i32, height: i3
             }
         }
     }
+}
+
+fn fill(che: &Region, pixbuf: &Pixbuf) -> Pixbuf {
+    let (w, h) = (pixbuf.get_width(), pixbuf.get_height());
+    let surface = ImageSurface::create(Format::ARgb32, w, h);
+    let context = Context::new(&surface);
+    context.set_source_rgba(1.0, 0.0, 0.0, 1.0);
+    context.rectangle(che.left as f64, che.top as f64, che.right as f64, che.bottom as f64);
+    context.set_source_pixbuf(&pixbuf, 0.0, 0.0);
+    context.paint();
+    new_pixbuf_from_surface(&surface)
 }
 
 

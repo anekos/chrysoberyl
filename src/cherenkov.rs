@@ -1,9 +1,6 @@
 /* Medama Cherenkov Maker
  * Copyright (C) 2017 anekos <anekos@snca.net>
  *
- * GIMP - The GNU Image Manipulation Program
- * Copyright (C) 1995 Spencer Kimball and Peter Mattis
- *
  * Supernova plug-in
  * Copyright (C) 1997 Eiichi Takamori <taka@ma1.seikyou.ne.jp>,
  *                    Spencer Kimball, Federico Mena Quintero

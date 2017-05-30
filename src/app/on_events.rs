@@ -5,6 +5,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::thread::spawn;
+use std::time::Duration;
 
 use gtk::prelude::*;
 use rand::distributions::{IndependentSample, Range as RandRange};
@@ -428,6 +429,10 @@ pub fn on_tell_region(app: &mut App, region: &Region) {
             }
         }
     }
+}
+
+pub fn on_timer(app: &mut App, name: String, op: Vec<String>, interval: Duration, repeat: Option<usize>) {
+    app.timers.register(name, op, interval, repeat);
 }
 
 pub fn on_unclip(app: &mut App, updated: &mut Updated) {

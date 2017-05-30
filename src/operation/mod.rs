@@ -3,6 +3,7 @@ use std::collections::VecDeque;
 use std::fmt;
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::time::Duration;
 
 use cmdline_parser::Parser;
 
@@ -66,6 +67,7 @@ pub enum Operation {
     Shuffle(bool), /* Fix current */
     Sort,
     TellRegion(Region),
+    Timer(String, Vec<String>, Duration, Option<usize>),
     UpdateOption(OptionName, OptionUpdater),
     User(Vec<(String, String)>),
     Unclip,
@@ -314,6 +316,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@show"                      => parse_show(whole),
             "@shuffle"                   => Ok(Shuffle(false)),
             "@sort"                      => Ok(Sort),
+            "@timer"                     => parse_timer(whole),
             "@toggle"                    => parse_option_1(whole, OptionUpdater::Toggle),
             "@unclip"                    => Ok(Unclip),
             "@unset"                     => parse_option_1(whole, OptionUpdater::Unset),

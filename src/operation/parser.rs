@@ -205,6 +205,18 @@ pub fn parse_input(args: &[String]) -> Result<Operation, String> {
     })
 }
 
+pub fn parse_kill_timer(args: &[String]) -> Result<Operation, String> {
+    let mut name = o!("");
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut name).add_argument("name", Store, "Name").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::KillTimer(name)
+    })
+}
+
 pub fn parse_load(args: &[String]) -> Result<Operation, String> {
     let mut config_source = ConfigSource::Default;
     let mut path: Option<String> = None;

@@ -40,6 +40,7 @@ pub enum Operation {
     Fragile(PathBuf),
     Initialized,
     Input(mapping::Input),
+    KillTimer(String),
     Last(Option<usize>, bool, MoveBy),
     LazyDraw(u64, bool), /* serial, to_end */
     Load(ScriptSource),
@@ -294,6 +295,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@filter"                    => parse_filter(whole),
             "@fragile"                   => parse_command1(whole, |it| Fragile(sh::expand_to_pathbuf(&it))),
             "@input"                     => parse_input(whole),
+            "@kill-timer"                => parse_kill_timer(whole),
             "@last" | "@l"               => parse_move(whole, Last),
             "@load"                      => parse_load(whole),
             "@map"                       => parse_map(whole),

@@ -211,6 +211,8 @@ impl App {
                     return on_initialized(self),
                 Input(ref input) =>
                     on_input(self, input),
+                KillTimer(ref name) =>
+                    on_kill_timer(self, name),
                 Last(count, ignore_views, move_by) =>
                     on_last(self, &mut updated, len, count, ignore_views, move_by),
                 LazyDraw(serial, new_to_end) =>

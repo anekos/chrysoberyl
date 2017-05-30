@@ -43,6 +43,17 @@ impl TimerManager {
             }
         }
     }
+
+    pub fn unregister(&mut self, name: &str) {
+        match self.table.remove(name) {
+            Some(timer) => {
+                timer.tx.send(TimerOperation::Kill).unwrap();
+            }
+            None => {
+                puts_error!("at" => "timer/kill", "reason" => format!("timer `{}` is not found", name));
+            }
+        }
+    }
 }
 
 
@@ -90,6 +101,6 @@ impl Timer {
 fn sleep_and_fire(duration: Duration, tx: &Sender<TimerOperation>) {
     spawn(clone_army!([tx] move || {
         sleep(duration);
-        tx.send(TimerOperation::Fire).unwrap();
+        let _ = tx.send(TimerOperation::Fire);
     }));
 }

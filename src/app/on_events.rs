@@ -160,6 +160,10 @@ pub fn on_input(app: &mut App, input: &Input) {
     }
 }
 
+pub fn on_kill_timer(app: &mut App, name: &str) {
+    app.timers.unregister(name);
+}
+
 pub fn on_last(app: &mut App, updated: &mut Updated, len: usize, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {
     match move_by {
         MoveBy::Page =>

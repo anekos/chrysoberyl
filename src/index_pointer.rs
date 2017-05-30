@@ -126,11 +126,11 @@ impl IndexPointer {
             let m_cur = current / m;
 
             if counted <= m_cur {
-                if wrap {
-                    return self.update((m_cur - counted) * m);
-                }
+                return self.update((m_cur - counted) * m);
             } else {
-                return self.update((m_cont - (counted - m_cur) % m_cont) * m);
+                if wrap {
+                    return self.update((m_cont - (counted - m_cur) % m_cont) * m);
+                }
             }
         }
 

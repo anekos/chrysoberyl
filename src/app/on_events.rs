@@ -5,6 +5,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::thread::spawn;
+use std::time::Duration;
 
 use gtk::prelude::*;
 use rand::distributions::{IndependentSample, Range as RandRange};
@@ -157,6 +158,10 @@ pub fn on_input(app: &mut App, input: &Input) {
     } else {
         puts_event!("input", "type" => input.type_name(), "name" => input.text());
     }
+}
+
+pub fn on_kill_timer(app: &mut App, name: &str) {
+    app.timers.unregister(name);
 }
 
 pub fn on_last(app: &mut App, updated: &mut Updated, len: usize, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {
@@ -428,6 +433,10 @@ pub fn on_tell_region(app: &mut App, region: &Region) {
             }
         }
     }
+}
+
+pub fn on_timer(app: &mut App, name: String, op: Vec<String>, interval: Duration, repeat: Option<usize>) {
+    app.timers.register(name, op, interval, repeat);
 }
 
 pub fn on_unclip(app: &mut App, updated: &mut Updated) {

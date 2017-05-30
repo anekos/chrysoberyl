@@ -31,6 +31,7 @@ use size::{Size, FitTo, Region};
 use sorting_buffer::SortingBuffer;
 use state::{States, PreFetchState};
 use termination;
+use timer::TimerManager;
 use utils::path_to_str;
 
 
@@ -51,6 +52,7 @@ pub struct App {
     cache: ImageCache,
     fetcher: ImageFetcher,
     sorting_buffer: SortingBuffer<QueuedOperation>,
+    timers: TimerManager,
     pub tx: Sender<Operation>,
     pub states: States
 }
@@ -115,6 +117,7 @@ impl App {
             cache: cache.clone(),
             fetcher: ImageFetcher::new(cache),
             sorting_buffer: sorting_buffer,
+            timers: TimerManager::new(tx.clone())
         };
 
         app.reset_view();
@@ -208,6 +211,8 @@ impl App {
                     return on_initialized(self),
                 Input(ref input) =>
                     on_input(self, input),
+                KillTimer(ref name) =>
+                    on_kill_timer(self, name),
                 Last(count, ignore_views, move_by) =>
                     on_last(self, &mut updated, len, count, ignore_views, move_by),
                 LazyDraw(serial, new_to_end) =>
@@ -262,6 +267,8 @@ impl App {
                     on_sort(self, &mut updated),
                 TellRegion(ref region) =>
                     on_tell_region(self, region),
+                Timer(name, op, interval, repeat) =>
+                    on_timer(self, name, op, interval, repeat),
                 Unclip => 
                     on_unclip(self, &mut updated),
                 UpdateOption(ref option_name, ref updater) =>

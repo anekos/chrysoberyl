@@ -69,6 +69,7 @@ mod sorting_buffer;
 mod state;
 mod stringer;
 mod termination;
+mod timer;
 mod utils;
 mod validation;
 

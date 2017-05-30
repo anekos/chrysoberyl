@@ -2,6 +2,7 @@
 use std::io::sink;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::time::Duration;
 
 use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse, StoreOption, List};
 
@@ -201,6 +202,18 @@ pub fn parse_input(args: &[String]) -> Result<Operation, String> {
         input_type.input_from_text(&input).map(|input| {
             Operation::Input(input)
         })
+    })
+}
+
+pub fn parse_kill_timer(args: &[String]) -> Result<Operation, String> {
+    let mut name = o!("");
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut name).add_argument("name", Store, "Name").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::KillTimer(name)
     })
 }
 
@@ -470,6 +483,26 @@ pub fn parse_show(args: &[String]) -> Result<Operation, String> {
             *index -= 1;
         }
         Ok(Operation::Show(key))
+    })
+}
+
+pub fn parse_timer(args: &[String]) -> Result<Operation, String> {
+    let mut interval_seconds = 1;
+    let mut name = o!("");
+    let mut op = Vec::<String>::new();
+    let mut repeat = Some(1);
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut repeat)
+            .add_option(&["--repeat", "-r"], StoreOption, "Repeat (0 means infinitely)")
+            .add_option(&["--infinity", "-i"], StoreConst(None), "Repeat infinitely");
+        ap.refer(&mut name).add_argument("name", Store, "Name").required();
+        ap.refer(&mut interval_seconds).add_argument("interval", Store, "Interval");
+        ap.refer(&mut op).add_argument("operation", Collect, "Operation").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Timer(name, op, Duration::from_secs(interval_seconds), repeat)
     })
 }
 

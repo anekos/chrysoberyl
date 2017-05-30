@@ -10,7 +10,7 @@ use gui::Gui;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, key_mapping as kmap, mouse_mapping as mmap};
 use size::FitTo;
-use state::{States, ScalingMethod};
+use state::{States, ScalingMethod, RegionFunction};
 use utils::path_to_str;
 
 
@@ -33,6 +33,7 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
     sprintln!(out, "@set pre-render-pages {}", st.pre_fetch.page_size);
     sprintln!(out, "@set fit-to {}", st.drawing.fit_to);
     sprintln!(out, "@set scaling {}", st.drawing.scaling);
+    sprintln!(out, "@set region-function {}", st.region_function);
     // sprintln!(out, "@set horizontal-views {}", gui.cols());
     // sprintln!(out, "@set vertical-views {}", gui.rows());
     sprintln!(out, "@views {} {}", gui.cols(), gui.rows());
@@ -173,6 +174,21 @@ impl fmt::Display for ScalingMethod {
             Bilinear => "bilinear",
             Hyper => "hyper",
         };
+        write!(f, "{}", result)
+    }
+}
+
+
+impl fmt::Display for RegionFunction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::RegionFunction::*;
+
+        let result =
+            match *self {
+                Clip => "clip",
+                Fill => "fill",
+            };
+
         write!(f, "{}", result)
     }
 }

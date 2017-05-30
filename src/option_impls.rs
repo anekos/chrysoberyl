@@ -6,7 +6,7 @@ use gdk_pixbuf::InterpType;
 use color::Color;
 use option::*;
 use size::FitTo;
-use state::{ScalingMethod, StatusFormat};
+use state::{ScalingMethod, StatusFormat, RegionFunction};
 
 
 
@@ -147,6 +147,36 @@ impl OptionValue for StatusFormat {
 
     fn unset(&mut self) -> Result {
         *self = StatusFormat::default();
+        Ok(())
+    }
+}
+
+
+impl FromStr for RegionFunction {
+    type Err = String;
+
+    fn from_str(src: &str) -> StdResult<Self, String> {
+        use self::RegionFunction::*;
+
+        match src {
+            "c" | "clip" => Ok(Clip),
+            "f" | "fill" => Ok(Fill),
+            _ => Err(format!("Invalid region function name: {}", src))
+        }
+    }
+}
+
+impl OptionValue for RegionFunction {
+    fn set(&mut self, value: &str) -> Result {
+        value.parse().map(|value| {
+            *self = value;
+            ()
+        })
+    }
+
+    fn cycle(&mut self, reverse: bool) -> Result {
+        use self::RegionFunction::*;
+        *self = cycled(*self, &[Clip, Fill], reverse);
         Ok(())
     }
 }

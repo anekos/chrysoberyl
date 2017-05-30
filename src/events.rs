@@ -58,7 +58,7 @@ fn on_button_release(tx: &Sender<Operation>, button: &EventButton, pressed_at: A
             Operation::Input(
                 Input::mouse_button(x as i32, y as i32, button.get_button()))).unwrap();
     } else {
-        tx.send( Operation::Clip(Region::new(px, py, x, y))).unwrap();
+        tx.send( Operation::TellRegion(Region::new(px, py, x, y))).unwrap();
     }
     Inhibit(true)
 }

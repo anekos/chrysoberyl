@@ -21,17 +21,25 @@ impl Color {
         Color { r: r, g: g, b: b, a: 255 }
     }
 
+    pub fn new4(r: u8, g: u8, b: u8, a: u8) -> Color {
+        Color { r: r, g: g, b: b, a: a }
+    }
+
     pub fn new_random() -> Color {
         let mut rng = thread_rng();
         Color::new(rng.gen(), rng.gen(), rng.gen())
     }
 
     pub fn new_from_css_color(css_color: CssColor) -> Color {
-        Color::new(css_color.r, css_color.g, css_color.b)
+        Color::new4(css_color.r, css_color.g, css_color.b, min!(css_color.a * 255.0, 255.0) as u8)
     }
 
     pub fn tupled3(&self) -> (f64, f64, f64) {
         (to_f(self.r), to_f(self.g), to_f(self.b))
+    }
+
+    pub fn tupled4(&self) -> (f64, f64, f64, f64) {
+        (to_f(self.r), to_f(self.g), to_f(self.b), to_f(self.a))
     }
 
     pub fn gdk_rgba(&self) -> RGBA {

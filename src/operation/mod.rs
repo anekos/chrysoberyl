@@ -34,6 +34,7 @@ pub enum Operation {
     Editor(Option<String>, Vec<ScriptSource>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool, MoveBy),
+    Fill(Region, usize), /* region, cell index */
     Filter(Vec<String>),
     Fragile(PathBuf),
     Initialized,
@@ -64,6 +65,7 @@ pub enum Operation {
     Show(entry::SearchKey),
     Shuffle(bool), /* Fix current */
     Sort,
+    TellRegion(Region),
     UpdateOption(OptionName, OptionUpdater),
     User(Vec<(String, String)>),
     Unclip,
@@ -131,11 +133,13 @@ pub enum OptionName {
     PreFetchPageSize,
     VerticalViews,
     HorizontalViews,
+    RegionFunction,
     ColorWindowBackground,
     ColorStatusBar,
     ColorStatusBarBackground,
     ColorError,
     ColorErrorBackground,
+    ColorFill,
 }
 
 #[derive(Clone, Debug, PartialEq, Copy)]
@@ -184,11 +188,13 @@ impl FromStr for OptionName {
             "pre-render-pages"                     => Ok(PreFetchPageSize),
             "vertical-views"                       => Ok(VerticalViews),
             "horizontal-views"                     => Ok(HorizontalViews),
+            "region-function" | "region-func"      => Ok(RegionFunction),
             "color-window-background"              => Ok(ColorWindowBackground),
             "color-status-bar"                     => Ok(ColorStatusBar),
             "color-status-bar-background"          => Ok(ColorStatusBarBackground),
             "color-error"                          => Ok(ColorError),
             "color-error-background"               => Ok(ColorErrorBackground),
+            "color-fill"                           => Ok(ColorFill),
             _ => Err(ParsingError::InvalidOperation(format!("Invalid option name: {}", src)))
         }
     }

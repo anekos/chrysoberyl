@@ -24,6 +24,8 @@
 use std::collections::HashMap;
 use std::f64::consts::PI;
 
+use cairo::{Context, ImageSurface, Format};
+use gdk::prelude::ContextExt;
 use gdk_pixbuf::Pixbuf;
 use rand::distributions::{IndependentSample, Range};
 use rand::{self, Rng, ThreadRng};
@@ -31,8 +33,9 @@ use rand::{self, Rng, ThreadRng};
 use color::Color;
 use entry::Entry;
 use entry_image;
+use gtk_utils::new_pixbuf_from_surface;
 use image::{ImageBuffer, StaticImageBuffer};
-use size::Size;
+use size::{Size, Region};
 use state::DrawingState;
 use utils::feq;
 
@@ -44,7 +47,13 @@ const FERROR: f64 = 0.000001;
 
 
 #[derive(Debug, Clone)]
-pub struct Che {
+pub enum Che {
+    Nova(CheNova),
+    Fill(Region, Color),
+}
+
+#[derive(Debug, Clone)]
+pub struct CheNova {
     pub center: (f64, f64),
     pub n_spokes: usize,
     pub random_hue: f64,
@@ -146,16 +155,20 @@ fn cherenkov_static_image_buffer(image_buffer: &StaticImageBuffer, che: &Che) ->
 }
 
 fn cherenkov_pixbuf(pixbuf: Pixbuf, che: &Che) -> Pixbuf {
-    {
-        let (width, height) = (pixbuf.get_width(), pixbuf.get_height());
-        let rowstride = pixbuf.get_rowstride();
-        let channels = pixbuf.get_n_channels();
-        if channels == 4 {
-            let pixels: &mut [u8] = unsafe { pixbuf.get_pixels() };
-            nova(che, pixels, rowstride, width, height);
+    match *che {
+        Che::Nova(ref che) => {
+            let (width, height) = (pixbuf.get_width(), pixbuf.get_height());
+            let rowstride = pixbuf.get_rowstride();
+            let channels = pixbuf.get_n_channels();
+            if channels == 4 {
+                let pixels: &mut [u8] = unsafe { pixbuf.get_pixels() };
+                nova(che, pixels, rowstride, width, height);
+            }
+            pixbuf
         }
+        Che::Fill(ref region, ref color) =>
+            fill(region, color, &pixbuf)
     }
-    pixbuf
 }
 
 fn gauss(rng: &mut ThreadRng) -> f64 {
@@ -240,7 +253,7 @@ fn clamp<T: PartialOrd>(v: T, from: T, to: T) -> T {
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
-fn nova(che: &Che, pixels: &mut [u8], rowstride: i32, width: i32, height: i32) {
+fn nova(che: &CheNova, pixels: &mut [u8], rowstride: i32, width: i32, height: i32) {
     let (cx, cy) = che.center;
     let (cx, cy) = ((width as f64 * cx) as i32, (height as f64 * cy) as i32);
     let radius = clamp(((width * width + height * height) as f64).sqrt() * che.radius, 0.00000001, 100.0);
@@ -304,6 +317,27 @@ fn nova(che: &Che, pixels: &mut [u8], rowstride: i32, width: i32, height: i32) {
             }
         }
     }
+}
+
+fn fill(che: &Region, color: &Color, pixbuf: &Pixbuf) -> Pixbuf {
+    let (w, h) = (pixbuf.get_width(), pixbuf.get_height());
+    let surface = ImageSurface::create(Format::ARgb32, w, h);
+    let context = Context::new(&surface);
+
+    context.set_source_pixbuf(&pixbuf, 0.0, 0.0);
+    context.paint();
+
+    let (r, g, b, a) = color.tupled4();
+    context.set_source_rgba(r, g, b, a);
+    let (w, h) = (w as f64, h as f64);
+    context.rectangle(
+        che.left * w,
+        che.top * h,
+        (che.right - che.left) * w,
+        (che.bottom - che.top) * h);
+    context.fill();
+
+    new_pixbuf_from_surface(&surface)
 }
 
 

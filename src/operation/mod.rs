@@ -192,12 +192,12 @@ impl FromStr for OptionName {
             "vertical-views"                       => Ok(VerticalViews),
             "horizontal-views"                     => Ok(HorizontalViews),
             "region-function" | "region-func"      => Ok(RegionFunction),
-            "color-window-background"              => Ok(ColorWindowBackground),
-            "color-status-bar"                     => Ok(ColorStatusBar),
-            "color-status-bar-background"          => Ok(ColorStatusBarBackground),
-            "color-error"                          => Ok(ColorError),
-            "color-error-background"               => Ok(ColorErrorBackground),
-            "color-fill"                           => Ok(ColorFill),
+            "window-background-color"              => Ok(ColorWindowBackground),
+            "status-bar-color"                     => Ok(ColorStatusBar),
+            "status-bar-background-color"          => Ok(ColorStatusBarBackground),
+            "error-color"                          => Ok(ColorError),
+            "error-background-color"               => Ok(ColorErrorBackground),
+            "fill-color"                           => Ok(ColorFill),
             _ => Err(ParsingError::InvalidOperation(format!("Invalid option name: {}", src)))
         }
     }

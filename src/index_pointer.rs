@@ -67,14 +67,15 @@ impl IndexPointer {
             return false
         }
 
-        let counted = self.counted();
-        let delta = self.fix(counted - 1, multiply);
-        let result = if delta < container_size {
-            delta
+        let position = self.counted() - 1;
+        let m = self.fix(1, multiply);
+        let m_cont = (container_size + (m - 1)) / m;
+
+        if position < m_cont {
+            self.update(position * m)
         } else {
-            container_size - 1
-        };
-        self.update(result)
+            self.update((m_cont - 1) * m)
+        }
     }
 
     pub fn last(&mut self, container_size: usize, multiply: bool) -> bool {
@@ -82,51 +83,58 @@ impl IndexPointer {
             return false
         }
 
-        let counted = self.counted();
-        let delta = self.fix(counted, multiply);
-        let result = if delta <= container_size {
-            container_size - delta
+        let counted = self.counted() - 1;
+        let m = self.fix(1, multiply);
+        let m_cont = (container_size + (m - 1)) / m;
+
+        if counted < m_cont {
+            self.update((m_cont - counted - 1) * m)
         } else {
-            0
-        };
-        self.update(result)
+            self.update(0)
+        }
     }
 
-    pub fn next(&mut self, container_size: usize, multiply: bool) -> bool {
+    pub fn next(&mut self, container_size: usize, multiply: bool, wrap: bool) -> bool {
         if container_size < self.multiplier {
             return false
         }
 
         if let Some(current) = self.current {
             let counted = self.counted();
-            let mut result = current + self.fix(counted, multiply);
-            if container_size <= result {
-                result = if multiply { 
-                    let d = current % self.multiplier;
-                    let result = (container_size - d) / self.multiplier * self.multiplier + d;
-                    if container_size <= result { container_size - self.multiplier } else { result }
-                } else { container_size - 1 }
+            let m = self.fix(1, multiply);
+            let m_cont = (container_size + (m - 1)) / m;
+            let m_cur = current / m;
+
+            let position = m_cur + counted;
+            if m_cont <= position {
+                if wrap {
+                    return self.update((position - m_cont) % m_cont * m);
+                }
+            } else {
+                return self.update(position * m);
             }
-            self.update(result)
-        } else {
-            false
         }
+
+        false
     }
 
-    pub fn previous(&mut self, multiply: bool) -> bool {
+    pub fn previous(&mut self, container_size: usize, multiply: bool, wrap: bool) -> bool {
         if let Some(current) = self.current {
             let counted = self.counted();
-            let delta = self.fix(counted, multiply);
+            let m = self.fix(1, multiply);
+            let m_cont = (container_size + (m - 1)) / m;
+            let m_cur = current / m;
 
-            let result = if delta <= current {
-                current - delta
+            if counted <= m_cur {
+                if wrap {
+                    return self.update((m_cur - counted) * m);
+                }
             } else {
-                0
-            };
-            self.update(result)
-        } else {
-            false
+                return self.update((m_cont - (counted - m_cur) % m_cont) * m);
+            }
         }
+
+        false
     }
 
     pub fn counted(&mut self) -> usize {

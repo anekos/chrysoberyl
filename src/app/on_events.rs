@@ -217,10 +217,10 @@ pub fn on_multi(app: &mut App, mut operations: VecDeque<Operation>, async: bool)
     }
 }
 
-pub fn on_next(app: &mut App, updated: &mut Updated, len: usize, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {
+pub fn on_next(app: &mut App, updated: &mut Updated, len: usize, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) {
     match move_by {
         MoveBy::Page =>
-            updated.pointer = app.pointer.with_count(count).next(len, !ignore_views),
+            updated.pointer = app.pointer.with_count(count).next(len, !ignore_views, wrap),
         MoveBy::Archive => {
             let count = app.pointer.with_count(count).counted();
             if let Some(next) = app.entries.find_next_archive(&app.pointer, count) {
@@ -260,10 +260,10 @@ pub fn on_pre_fetch(app: &mut App, serial: u64) {
     }
 }
 
-pub fn on_previous(app: &mut App, updated: &mut Updated, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {
+pub fn on_previous(app: &mut App, updated: &mut Updated, len: usize, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) {
     match move_by {
         MoveBy::Page => {
-            updated.pointer = app.pointer.with_count(count).previous(!ignore_views);
+            updated.pointer = app.pointer.with_count(count).previous(len, !ignore_views, wrap);
             *to_end = count.is_none() && !ignore_views;
         }
         MoveBy::Archive => {

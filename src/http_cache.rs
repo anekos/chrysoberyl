@@ -112,6 +112,8 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                     waiting.push(thread_id);
                     buffer.skip(request.ticket);
 
+                    app_tx.send(Operation::Pull).unwrap();
+
                     puts_error!("at" => "http/get", "thread_id" => s!(thread_id), "reason" => err, "url" => o!(request.url), "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
 
                     if let Some(next) = queued.pop_front() {

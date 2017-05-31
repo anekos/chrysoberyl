@@ -458,6 +458,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
             Scaling => &mut app.states.drawing.scaling,
             StatusBar => &mut app.states.status_bar,
             StatusFormat => &mut app.states.status_format,
+            TitleFormat => &mut app.states.title_format,
             PreFetchEnabled => &mut app.states.pre_fetch.enabled,
             PreFetchLimit => &mut app.states.pre_fetch.limit_of_items,
             PreFetchPageSize => &mut app.states.pre_fetch.page_size,

@@ -17,6 +17,7 @@ pub struct States {
     pub view: ViewState,
     pub show: Option<SearchKey>,
     pub status_format: StatusFormat,
+    pub title_format: TitleFormat,
     pub drawing: DrawingState,
     pub pre_fetch: PreFetchState,
     pub region_function: RegionFunction,
@@ -49,6 +50,9 @@ pub struct PreFetchState {
 #[derive(Clone, Debug, PartialEq)]
 pub struct StatusFormat(pub String);
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct TitleFormat(pub String);
+
 #[derive(Clone, Debug, PartialEq, Eq, Copy)]
 pub enum RegionFunction {
     Clip,
@@ -64,6 +68,7 @@ impl Default for States {
             reverse: false,
             auto_paging: false,
             status_format: StatusFormat::default(),
+            title_format: TitleFormat::default(),
             view: ViewState::default(),
             show: None,
             drawing: DrawingState::default(),
@@ -119,5 +124,11 @@ impl Default for ViewState {
 impl Default for StatusFormat {
     fn default() -> Self {
         StatusFormat(o!("<span background=\"#005050\"> $CHRYSOBERYL_PAGING/$CHRYSOBERYL_COUNT </span> $CHRYSOBERYL_PATH <span foreground=\"grey\">$CHRYSOBERYL_FLAGS</span>"))
+    }
+}
+
+impl Default for TitleFormat {
+    fn default() -> Self {
+        TitleFormat(o!("[$CHRYSOBERYL_PAGING/$CHRYSOBERYL_COUNT] $CHRYSOBERYL_PATH"))
     }
 }

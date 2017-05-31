@@ -508,17 +508,24 @@ impl App {
     fn update_label(&self, update_title: bool) {
         env::set_var(constant::env_name("count"), s!(self.entries.len()));
 
-        let text =
-            if self.entries.current(&self.pointer).is_some() {
-                sh::expand(&self.states.status_format.0)
-            } else {
-                o!(constant::DEFAULT_INFORMATION)
-            };
 
         if update_title {
+            let text =
+                if self.entries.current(&self.pointer).is_some() {
+                    sh::expand(&self.states.title_format.0)
+                } else {
+                    o!(constant::DEFAULT_INFORMATION)
+                };
             self.gui.window.set_title(&text);
         }
+
         if self.states.status_bar {
+            let text =
+                if self.entries.current(&self.pointer).is_some() {
+                    sh::expand(&self.states.status_format.0)
+                } else {
+                    o!(constant::DEFAULT_INFORMATION)
+                };
             self.gui.label.set_markup(&text);
         }
     }

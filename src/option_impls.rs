@@ -6,7 +6,7 @@ use gdk_pixbuf::InterpType;
 use color::Color;
 use option::*;
 use size::FitTo;
-use state::{ScalingMethod, StatusFormat, RegionFunction};
+use state::{ScalingMethod, StatusFormat, TitleFormat, RegionFunction};
 
 
 
@@ -147,6 +147,19 @@ impl OptionValue for StatusFormat {
 
     fn unset(&mut self) -> Result {
         *self = StatusFormat::default();
+        Ok(())
+    }
+}
+
+
+impl OptionValue for TitleFormat {
+    fn set(&mut self, value: &str) -> Result {
+        *self = TitleFormat(o!(value));
+        Ok(())
+    }
+
+    fn unset(&mut self) -> Result {
+        *self = TitleFormat::default();
         Ok(())
     }
 }

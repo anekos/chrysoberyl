@@ -489,7 +489,7 @@ pub fn parse_show(args: &[String]) -> Result<Operation, String> {
 }
 
 pub fn parse_timer(args: &[String]) -> Result<Operation, String> {
-    let mut interval_seconds = 1;
+    let mut interval_seconds = 1.0;
     let mut name = o!("");
     let mut op = Vec::<String>::new();
     let mut repeat = Some(1);
@@ -504,7 +504,7 @@ pub fn parse_timer(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut op).add_argument("operation", Collect, "Operation").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Timer(name, op, Duration::from_secs(interval_seconds), repeat)
+        Operation::Timer(name, op, Duration::from_millis((interval_seconds * 1000.0) as u64), repeat)
     })
 }
 

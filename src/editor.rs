@@ -1,10 +1,10 @@
 
 use std::env;
+use std::fs::{File, remove_file};
 use std::io::Write;
 use std::io::{BufReader, BufRead};
 use std::process::Command;
 use std::sync::mpsc:: Sender;
-use std::fs::File;
 
 use cmdline_parser::Parser;
 use mkstemp::TempFile;
@@ -17,7 +17,7 @@ pub fn start_edit(tx: &Sender<Operation>, editor_command: Option<String>, script
     let mut temp_file = {
         let mut temp = env::temp_dir();
         temp.push("chrysoberyl.XXXXXX");
-        TempFile::new(temp.to_str().unwrap(), true).unwrap()
+        TempFile::new(temp.to_str().unwrap(), false).unwrap()
     };
 
     {
@@ -50,12 +50,16 @@ pub fn start_edit(tx: &Sender<Operation>, editor_command: Option<String>, script
     command.arg(temp_file.path());
     command.status().expect("Failed to execute process");
 
-    let file = BufReader::new(File::open(&temp_file.path()).unwrap());
-    for line in file.lines() {
-        let line = line.unwrap();
-        match Operation::parse_fuzziness(&line) {
-            Ok(op) => tx.send(op).unwrap(),
-            Err(err) => puts_error!("at" => "editor", "reason" => err, "for" => &line)
+    {
+        let file = BufReader::new(File::open(&temp_file.path()).unwrap());
+        for line in file.lines() {
+            let line = line.unwrap();
+            match Operation::parse_fuzziness(&line) {
+                Ok(op) => tx.send(op).unwrap(),
+                Err(err) => puts_error!("at" => "editor", "reason" => err, "for" => &line)
+            }
         }
     }
+
+    remove_file(temp_file.path()).expect(&format!("Could not remove temporary file: {:?}", temp_file.path()));
 }

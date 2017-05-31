@@ -27,19 +27,21 @@ where T: FnOnce(String) -> Operation {
 }
 
 pub fn parse_move<T>(args: &[String], op: T) -> Result<Operation, String>
-where T: FnOnce(Option<usize>, bool, MoveBy) -> Operation {
+where T: FnOnce(Option<usize>, bool, MoveBy, bool) -> Operation {
     let mut ignore_views = false;
     let mut count = None;
     let mut move_by = MoveBy::Page;
+    let mut wrap = false;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut ignore_views).add_option(&["--ignore-views", "-i"], StoreTrue, "Ignore the number of views");
+        ap.refer(&mut wrap).add_option(&["--wrap", "-w"], StoreTrue, "First/Last page to Last/First page");
         ap.refer(&mut move_by).add_option(&["--archive", "-a"], StoreConst(MoveBy::Archive), "Set move unit to `archive`");
         ap.refer(&mut count).add_argument("count", StoreOption, "Count");
         parse_args(&mut ap, args)
     } .map(|_| {
-        op(count, ignore_views, move_by)
+        op(count, ignore_views, move_by, wrap)
     })
 }
 

@@ -203,7 +203,7 @@ impl App {
                     on_filter(self, command_line),
                 Fill(region, cell_index) =>
                     on_fill(self, &mut updated, region, cell_index),
-                First(count, ignore_views, move_by) =>
+                First(count, ignore_views, move_by, _) =>
                     on_first(self, &mut updated, len, count, ignore_views, move_by),
                 Fragile(ref path) =>
                     on_fragile(self, path),
@@ -213,7 +213,7 @@ impl App {
                     on_input(self, input),
                 KillTimer(ref name) =>
                     on_kill_timer(self, name),
-                Last(count, ignore_views, move_by) =>
+                Last(count, ignore_views, move_by, _) =>
                     on_last(self, &mut updated, len, count, ignore_views, move_by),
                 LazyDraw(serial, new_to_end) =>
                     on_lazy_draw(self, &mut updated, &mut to_end, serial, new_to_end),
@@ -223,16 +223,16 @@ impl App {
                     on_map(self, target, mapped_operation.to_vec()),
                 Multi(ops, async) =>
                     on_multi(self, ops, async),
-                Next(count, ignore_views, move_by) =>
-                    on_next(self, &mut updated, len, count, ignore_views, move_by),
+                Next(count, ignore_views, move_by, wrap) =>
+                    on_next(self, &mut updated, len, count, ignore_views, move_by, wrap),
                 Nop =>
                     (),
                 OperateFile(ref file_operation) =>
                     on_operate_file(self, file_operation),
                 PreFetch(pre_fetch_serial) =>
                     on_pre_fetch(self, pre_fetch_serial),
-                Previous(count, ignore_views, move_by) =>
-                    on_previous(self, &mut updated, &mut to_end, count, ignore_views, move_by),
+                Previous(count, ignore_views, move_by, wrap) =>
+                    on_previous(self, &mut updated, len, &mut to_end, count, ignore_views, move_by, wrap),
                 PrintEntries =>
                     on_print_entries(self),
                 Pull =>
@@ -296,7 +296,7 @@ impl App {
                 if current < len && len < current + gui_len {
                     updated.image = true;
                 } else if self.states.auto_paging && gui_len <= len && len - gui_len == current {
-                    self.operate(Operation::Next(None, false, MoveBy::Page));
+                    self.operate(Operation::Next(None, false, MoveBy::Page, false));
                     return
                 }
             }

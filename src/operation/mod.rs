@@ -34,23 +34,23 @@ pub enum Operation {
     Draw,
     Editor(Option<String>, Vec<ScriptSource>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
-    First(Option<usize>, bool, MoveBy),
+    First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Fill(Region, usize), /* region, cell index */
     Filter(Vec<String>),
     Fragile(PathBuf),
     Initialized,
     Input(mapping::Input),
     KillTimer(String),
-    Last(Option<usize>, bool, MoveBy),
+    Last(Option<usize>, bool, MoveBy, bool),
     LazyDraw(u64, bool), /* serial, to_end */
     Load(ScriptSource),
     Map(MappingTarget, Vec<String>),
     Multi(VecDeque<Operation>, bool), /* operations, async */
-    Next(Option<usize>, bool, MoveBy),
+    Next(Option<usize>, bool, MoveBy, bool),
     Nop,
     OperateFile(filer::FileOperation),
     PreFetch(u64),
-    Previous(Option<usize>, bool, MoveBy),
+    Previous(Option<usize>, bool, MoveBy, bool),
     PrintEntries,
     Pull,
     Push(String, Option<Meta>),

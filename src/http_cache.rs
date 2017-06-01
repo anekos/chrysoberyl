@@ -53,7 +53,7 @@ impl HttpCache {
         let filepath = generate_temporary_filename(&url);
 
         if filepath.exists() {
-            self.sorting_buffer.push_without_reserve(
+            self.sorting_buffer.push_with_reserve(
                 QueuedOperation::PushHttpCache(filepath, url, meta))
         } else {
             self.main_tx.send(Getter::Queue(url, filepath, meta)).unwrap();

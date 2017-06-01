@@ -310,7 +310,7 @@ pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<
 }
 
 pub fn on_push_path(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>) {
-    let buffered = app.sorting_buffer.push_without_reserve(
+    let buffered = app.sorting_buffer.push_with_reserve(
         QueuedOperation::PushPath(file, meta));
     push_buffered(app, updated, buffered);
 }
@@ -319,7 +319,7 @@ pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Op
     let document = PopplerDocument::new_from_file(&file);
     let n_pages = document.n_pages();
 
-    let buffered = app.sorting_buffer.push_without_reserve(
+    let buffered = app.sorting_buffer.push_with_reserve(
         QueuedOperation::PushPdfEntries(file, n_pages, meta));
     push_buffered(app, updated, buffered);
 }

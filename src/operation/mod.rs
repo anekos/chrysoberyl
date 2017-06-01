@@ -122,7 +122,7 @@ pub enum OptionUpdater {
     Cycle(bool), /* reverse */
 }
 
-#[derive(Clone, Debug, PartialEq, Copy)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum OptionName {
     AutoPaging,
     CenterAlignment,
@@ -144,6 +144,7 @@ pub enum OptionName {
     ColorError,
     ColorErrorBackground,
     ColorFill,
+    User(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Copy)]
@@ -200,7 +201,7 @@ impl FromStr for OptionName {
             "error-color"                          => Ok(ColorError),
             "error-background-color"               => Ok(ColorErrorBackground),
             "fill-color"                           => Ok(ColorFill),
-            _ => Err(ParsingError::InvalidOperation(format!("Invalid option name: {}", src)))
+            user => Ok(User(o!(user)))
         }
     }
 }

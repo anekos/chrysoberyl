@@ -19,6 +19,7 @@ use filter;
 use fragile_input::new_fragile_input;
 use gui::Direction;
 use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater, StdinSource};
+use option::user::DummySwtich;
 use output;
 use poppler::PopplerDocument;
 use script;
@@ -449,6 +450,8 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
     use operation::OptionName::*;
     use operation::OptionUpdater::*;
 
+    let mut dummy_switch = DummySwtich::new();
+
     {
         let value: &mut OptionValue = match *option_name {
             AutoPaging => &mut app.states.auto_paging,
@@ -471,6 +474,14 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
             ColorError => &mut app.gui.colors.error,
             ColorErrorBackground => &mut app.gui.colors.error_background,
             ColorFill => &mut app.states.fill_color,
+            User(ref name) => {
+                if let Some(switch) = app.user_switches.get(name) {
+                    switch
+                } else {
+                    dummy_switch.rename(o!(name));
+                    &mut dummy_switch
+                }
+            }
         };
 
         let result = match updater {

@@ -25,6 +25,7 @@ use image_fetcher::ImageFetcher;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
 use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy};
+use option::user::UserSwitchManager;
 use output;
 use shellexpand_wrapper as sh;
 use size::{Size, FitTo, Region};
@@ -53,6 +54,7 @@ pub struct App {
     fetcher: ImageFetcher,
     sorting_buffer: SortingBuffer<QueuedOperation>,
     timers: TimerManager,
+    user_switches: UserSwitchManager,
     pub tx: Sender<Operation>,
     pub states: States
 }
@@ -117,7 +119,8 @@ impl App {
             cache: cache.clone(),
             fetcher: ImageFetcher::new(cache),
             sorting_buffer: sorting_buffer,
-            timers: TimerManager::new(tx.clone())
+            timers: TimerManager::new(tx.clone()),
+            user_switches: UserSwitchManager::new(tx.clone()),
         };
 
         app.reset_view();

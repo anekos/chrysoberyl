@@ -146,7 +146,7 @@ pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Opera
                             break;
                         }
                     } else {
-                        buffer.skip(serial);
+                        buffer.skip(ticket + serial);
                         break;
                     }
                 }

@@ -72,25 +72,21 @@ fn reserve_n(reserved: &AtomicUsize, n: usize) -> Ticket {
     reserved.fetch_add(n, Ordering::Relaxed) + 1
 }
 
-fn pull<T>(buffer: &mut HashMap<Ticket, Option<T>>, shipped: &mut Ticket) -> Option<T> {
-    while !buffer.is_empty() {
-        let result = buffer.remove(&*shipped);
-        if result.is_none() {
-            return None
-        }
-        *shipped += 1;
-        if let Some(result) = result {
-            return result
-        }
-    }
-
-    None
-}
-
 fn pull_all<T>(buffer: &mut HashMap<Ticket, Option<T>>, shipped: &mut Ticket) -> Vec<T> {
     let mut result = vec![];
-    while let Some(it) = pull(buffer, shipped) {
-        result.push(it);
+
+    while !buffer.is_empty() {
+        match buffer.remove(&*shipped) {
+            None =>
+                return result,
+            Some(next) => {
+                *shipped += 1;
+                if let Some(next) = next {
+                    result.push(next);
+                }
+            },
+        }
     }
+
     result
 }

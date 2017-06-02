@@ -26,7 +26,7 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
 
     sprintln!(out, "@set status-bar {}", b2s(st.status_bar));
     sprintln!(out, "@set auto-paging {}", b2s(st.auto_paging));
-    sprintln!(out, "@set reverse {}", b2s(st.auto_paging));
+    sprintln!(out, "@set reverse {}", b2s(st.reverse));
     sprintln!(out, "@set status-format {}", escape(&st.status_format.0));
     sprintln!(out, "@set pre-render {}", b2s(st.pre_fetch.enabled));
     sprintln!(out, "@set pre-render-limit {}", st.pre_fetch.limit_of_items);

@@ -319,12 +319,13 @@ fn nova(che: &CheNova, pixels: &mut [u8], rowstride: i32, width: i32, height: i3
     }
 }
 
+#[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
 fn fill(che: &Region, color: &Color, pixbuf: &Pixbuf) -> Pixbuf {
     let (w, h) = (pixbuf.get_width(), pixbuf.get_height());
     let surface = ImageSurface::create(Format::ARgb32, w, h);
     let context = Context::new(&surface);
 
-    context.set_source_pixbuf(&pixbuf, 0.0, 0.0);
+    context.set_source_pixbuf(pixbuf, 0.0, 0.0);
     context.paint();
 
     let (r, g, b, a) = color.tupled4();

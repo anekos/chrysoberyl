@@ -127,10 +127,8 @@ impl IndexPointer {
 
             if counted <= m_cur {
                 return self.update((m_cur - counted) * m);
-            } else {
-                if wrap {
-                    return self.update((m_cont - (counted - m_cur) % m_cont) * m);
-                }
+            } else if wrap {
+                return self.update((m_cont - (counted - m_cur) % m_cont) * m);
             }
         }
 

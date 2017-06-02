@@ -45,7 +45,7 @@ impl Output {
     fn puts_each_channel(&mut self, text: String) {
         let mut removes: Vec<Handle> = vec![];
         for (handle, tx) in &self.txs {
-            if let Err(_) = tx.send(text.clone()) {
+            if tx.send(text.clone()).is_err() {
                 removes.push(*handle);
             }
         }

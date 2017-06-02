@@ -267,6 +267,7 @@ pub fn on_pre_fetch(app: &mut App, serial: u64) {
     }
 }
 
+#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 pub fn on_previous(app: &mut App, updated: &mut Updated, len: usize, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) {
     match move_by {
         MoveBy::Page => {

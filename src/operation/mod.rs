@@ -347,6 +347,12 @@ fn test_parse() {
     use self::Operation::*;
     use mapping::mouse_mapping::Area;
 
+    macro_rules! vecs {
+        ($($args:expr),*) => {
+            vec![$(s!($args)),*]
+        }
+    }
+
     fn p(s: &str) -> Operation {
         Operation::parse_fuzziness(s).unwrap()
     }
@@ -367,19 +373,19 @@ fn test_parse() {
     assert_eq!(p("@editor"), Editor(None, vec![]));
 
     // Move
-    assert_eq!(p("@First"), First(None, false, MoveBy::Page));
-    assert_eq!(p("@Next"), Next(None, false, MoveBy::Page));
-    assert_eq!(p("@Previous"), Previous(None, false, MoveBy::Page));
-    assert_eq!(p("@Prev"), Previous(None, false, MoveBy::Page));
-    assert_eq!(p("@Last"), Last(None, false, MoveBy::Page));
-    assert_eq!(p("@First 1"), First(Some(1), false, MoveBy::Page));
-    assert_eq!(p("@Next 2"), Next(Some(2), false, MoveBy::Page));
-    assert_eq!(p("@Previous 3"), Previous(Some(3), false, MoveBy::Page));
-    assert_eq!(p("@Prev 4"), Previous(Some(4), false, MoveBy::Page));
-    assert_eq!(p("@Last 5"), Last(Some(5), false, MoveBy::Page));
-    assert_eq!(p("@Last -i 5"), Last(Some(5), true, MoveBy::Page));
-    assert_eq!(p("@Last --ignore-views 5"), Last(Some(5), true, MoveBy::Page));
-    assert_eq!(p("@Last --ignore-views --archive 5"), Last(Some(5), true, MoveBy::Archive));
+    assert_eq!(p("@First"), First(None, false, MoveBy::Page, false));
+    assert_eq!(p("@Next"), Next(None, false, MoveBy::Page, false));
+    assert_eq!(p("@Previous"), Previous(None, false, MoveBy::Page, false));
+    assert_eq!(p("@Prev"), Previous(None, false, MoveBy::Page, false));
+    assert_eq!(p("@Last"), Last(None, false, MoveBy::Page, false));
+    assert_eq!(p("@First 1"), First(Some(1), false, MoveBy::Page, false));
+    assert_eq!(p("@Next 2"), Next(Some(2), false, MoveBy::Page, false));
+    assert_eq!(p("@Previous 3"), Previous(Some(3), false, MoveBy::Page, false));
+    assert_eq!(p("@Prev 4"), Previous(Some(4), false, MoveBy::Page, false));
+    assert_eq!(p("@Last 5"), Last(Some(5), false, MoveBy::Page, false));
+    assert_eq!(p("@Last -i 5"), Last(Some(5), true, MoveBy::Page, false));
+    assert_eq!(p("@Last --ignore-views 5"), Last(Some(5), true, MoveBy::Page, false));
+    assert_eq!(p("@Last --ignore-views --archive 5"), Last(Some(5), true, MoveBy::Archive, false));
 
     // @push*
     assert_eq!(p("@push http://example.com/moge.jpg"), Push(o!("http://example.com/moge.jpg"), None));
@@ -408,8 +414,8 @@ fn test_parse() {
     assert_eq!(p("@disable fit"), UpdateOption(OptionName::FitTo, OptionUpdater::Disable));
 
     // Multi
-    assert_eq!(p("; @first ; @next"), Multi(vec![First(None, false, MoveBy::Page), Next(None, false, MoveBy::Page)]));
-    assert_eq!(p("@multi / @first / @next"), Multi(vec![First(None, false, MoveBy::Page), Next(None, false, MoveBy::Page)]));
+    assert_eq!(p("; @first ; @next"), Multi(VecDeque::from(vec![First(None, false, MoveBy::Page, false), Next(None, false, MoveBy::Page, false)]), true));
+    assert_eq!(p("@multi / @first / @next"), Multi(VecDeque::from(vec![First(None, false, MoveBy::Page, false), Next(None, false, MoveBy::Page, false)]), true));
 
     // Shell
     assert_eq!(p("@shell ls -l -a"), Shell(true, false, vec![o!("ls"), o!("-l"), o!("-a")], vec![]));

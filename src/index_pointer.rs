@@ -100,18 +100,8 @@ impl IndexPointer {
         }
 
         if let Some(current) = self.current {
-            let counted = self.counted();
-            let m = self.fix(1, multiply);
-            let m_cont = (container_size + (m - 1)) / m;
-            let m_cur = current / m;
-
-            let position = m_cur + counted;
-            if m_cont <= position {
-                if wrap {
-                    return self.update((position - m_cont) % m_cont * m);
-                }
-            } else {
-                return self.update(position * m);
+            if let Some(position) = calculate_next(current, container_size, self.fix(1, multiply), self.counted(), wrap) {
+                return self.update(position);
             }
         }
 
@@ -120,15 +110,8 @@ impl IndexPointer {
 
     pub fn previous(&mut self, container_size: usize, multiply: bool, wrap: bool) -> bool {
         if let Some(current) = self.current {
-            let counted = self.counted();
-            let m = self.fix(1, multiply);
-            let m_cont = (container_size + (m - 1)) / m;
-            let m_cur = current / m;
-
-            if counted <= m_cur {
-                return self.update((m_cur - counted) * m);
-            } else if wrap {
-                return self.update((m_cont - (counted - m_cur) % m_cont) * m);
+            if let Some(position) = calculate_previous(current, container_size, self.fix(1, multiply), self.counted(), wrap) {
+                return self.update(position);
             }
         }
 
@@ -157,4 +140,94 @@ impl IndexPointer {
             true
         }
     }
+}
+
+
+fn calculate_previous(current: usize, container_size: usize, multiply: usize, counted: usize, wrap: bool) -> Option<usize> {
+    if container_size <= 1 {
+        return None
+    }
+
+    let m_cont = (container_size + (multiply - 1)) / multiply;
+    let m_cur = current / multiply;
+    let m_pad = current % multiply;
+
+    if counted <= m_cur {
+        return Some(m_pad + (m_cur - counted) * multiply);
+    } else if wrap {
+        let delta = (counted - m_cur) % m_cont;
+        // println!("");
+        // println!("current: {}, container_size: {}, multiply: {}, counted: {}, wrap: {}", current, container_size, multiply, counted, wrap);
+        // println!("m_cont: {}, m_cur: {}, m_pad: {}, counted: {}, delta: {}", m_cont, m_cur, m_pad, counted, delta);
+        return if delta == 0 {
+            None
+        } else {
+            Some((m_cont - delta) * multiply)
+        };
+    }
+
+    None
+}
+
+fn calculate_next(current: usize, container_size: usize, multiply: usize, counted: usize, wrap: bool) -> Option<usize> {
+    if container_size <= 1 {
+        return None
+    }
+
+    let m_cont = (container_size + (multiply - 1)) / multiply;
+    let m_cur = current / multiply;
+    let m_pad = current % multiply;
+
+    let m_position = m_cur + counted;
+    let position = m_pad + m_position * multiply;
+    if container_size <= m_pad + position * multiply {
+        if wrap {
+            return Some((m_cur + counted - m_cont) % m_cont * multiply);
+        }
+    } else {
+        return Some(position);
+    }
+
+    None
+}
+
+
+#[cfg(test)]#[test]
+fn test_calculate_next() {
+    // current, container_size, multiply, counted, wrap
+
+    assert_eq!(calculate_next(0, 2, 1, 1, false), Some(1));
+    // Empty or Just 1
+    assert_eq!(calculate_next(0, 0, 1, 1, false), None);
+    assert_eq!(calculate_next(0, 1, 1, 1, false), None);
+    // wrap
+    assert_eq!(calculate_next(1, 2, 1, 1, true), Some(0));
+    assert_eq!(calculate_next(5, 10, 1, 5, true), Some(0));
+    assert_eq!(calculate_next(7, 10, 1, 5, true), Some(2));
+    assert_eq!(calculate_next(7, 10, 1, 15, true), Some(2));
+    // wrap and multiply
+    assert_eq!(calculate_next(9, 11, 3, 1, true), Some(0));
+    assert_eq!(calculate_next(9, 11, 4, 1, true), Some(0));
+}
+
+#[cfg(test)]#[test]
+fn test_calculate_previous() {
+    // current, container_size, multiply, counted, wrap
+
+    assert_eq!(calculate_previous(0, 1, 1, 1, false), None);
+    assert_eq!(calculate_previous(1, 2, 1, 1, false), Some(0));
+    assert_eq!(calculate_previous(1, 20, 1, 1, false), Some(0));
+    // Empty or Just 1
+    assert_eq!(calculate_previous(0, 0, 1, 1, false), None);
+    assert_eq!(calculate_previous(0, 1, 1, 1, true), None);
+    // wrap
+    assert_eq!(calculate_previous(0, 2, 1, 1, true), Some(1));
+    assert_eq!(calculate_previous(0, 2, 1, 2, true), None);
+    assert_eq!(calculate_previous(5, 10, 1, 5, true), Some(0));
+    assert_eq!(calculate_previous(5, 10, 1, 6, true), Some(9));
+    assert_eq!(calculate_previous(5, 10, 1, 8, true), Some(7));
+    // wrap and multiply
+    assert_eq!(calculate_previous(0, 10, 3, 1, true), Some(9));
+    assert_eq!(calculate_previous(1, 10, 3, 1, true), Some(9));
+    assert_eq!(calculate_previous(1, 10, 3, 2, true), Some(6));
 }

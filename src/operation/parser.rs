@@ -311,6 +311,44 @@ pub fn parse_map(args: &[String]) -> Result<Operation, String> {
     }
 }
 
+pub fn parse_move_entry(args: &[String]) -> Result<Operation, String> {
+    use self::entry::Position::*;
+
+    impl FromStr for entry::Position {
+        type Err = String;
+
+        fn from_str(src: &str) -> Result<Self, String> {
+            match src {
+                "first" => Ok(FromFirst(0)),
+                "current" => Ok(Current),
+                "last" => Ok(FromLast(0)),
+                src =>
+                src.parse().map(|n: i64| {
+                    if n == 0 {
+                        Current
+                    } else if n < 0 {
+                        FromLast(n.abs() as usize - 1)
+                    } else {
+                        FromFirst(n.abs() as usize - 1)
+                    }
+                }).map_err(|it| s!(it)),
+            }
+        }
+    }
+
+    let mut from = Current;
+    let mut to = Current;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut from).add_argument("from", Store, "From").required();
+        ap.refer(&mut to).add_argument("to", Store, "To").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::MoveEntry(from, to)
+    })
+}
+
 pub fn parse_multi(args: &[String]) -> Result<Operation, String> {
     let mut separator = "".to_owned();
     let mut commands: Vec<String> = vec![];

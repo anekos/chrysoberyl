@@ -226,6 +226,8 @@ impl App {
                     on_load(self, script_source),
                 Map(ref target, ref mapped_operation) =>
                     on_map(self, target, mapped_operation.to_vec()),
+                MoveEntry(ref from, ref to) =>
+                    on_move_entry(self, &mut updated, from, to),
                 Multi(ops, async) =>
                     on_multi(self, ops, async),
                 Next(count, ignore_views, move_by, wrap) =>

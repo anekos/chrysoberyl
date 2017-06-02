@@ -46,6 +46,7 @@ pub enum Operation {
     LazyDraw(u64, bool), /* serial, to_end */
     Load(ScriptSource),
     Map(MappingTarget, Vec<String>),
+    MoveEntry(entry::Position, entry::Position),
     Multi(VecDeque<Operation>, bool), /* operations, async */
     Next(Option<usize>, bool, MoveBy, bool),
     Nop,
@@ -306,6 +307,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@map"                       => parse_map(whole),
             "@multi"                     => parse_multi(whole),
             "@move"                      => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Move(path, if_exist))),
+            "@move-entry"                => parse_move_entry(whole),
             "@next" | "@n"               => parse_move(whole, Next),
             "@prev" | "@p" | "@previous" => parse_move(whole, Previous),
             "@push"                      => parse_push(whole, |it, meta| Push(sh::expand(&it), meta)),

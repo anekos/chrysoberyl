@@ -66,6 +66,13 @@ pub struct SearchKey {
 
 pub type Key = (char, String, usize);
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Position {
+    FromFirst(usize),
+    FromLast(usize),
+    Current
+}
+
 
 impl Entry {
     pub fn new(content: EntryContent, meta: Option<Meta>) -> Entry {
@@ -227,6 +234,32 @@ impl EntryContainer {
                 pointer.first(1, false);
             }
         }
+    }
+
+    pub fn move_entry(&mut self, pointer: &IndexPointer, from: &Position, to: &Position) -> bool {
+        match (self.get_index(pointer, from), self.get_index(pointer, to)) {
+            (Some(from), Some(to)) if from == to =>
+                false,
+            (Some(from), Some(to)) => {
+                let removed = self.files.remove(from);
+                self.files.insert(to, removed);
+                true
+            }
+            _ =>
+                false
+        }
+    }
+
+    fn get_index(&mut self, pointer: &IndexPointer, position: &Position) -> Option<usize> {
+        use self::Position::*;
+
+        match *position {
+            FromLast(d) => Some(self.len() - d - 1),
+            FromFirst(d) => Some(d),
+            Current => pointer.current
+        } .and_then(|index| {
+            if self.len() <= index { None } else { Some(index) }
+        })
     }
 
     pub fn shuffle(&mut self, pointer: &mut IndexPointer, fix_current: bool) {

@@ -13,7 +13,7 @@ use rand::distributions::{IndependentSample, Range as RandRange};
 use app_path;
 use archive;
 use editor;
-use entry::{Meta, SearchKey};
+use entry::{self, Meta, SearchKey};
 use filer;
 use filter;
 use fragile_input::new_fragile_input;
@@ -207,6 +207,10 @@ pub fn on_map(app: &mut App, target: &MappingTarget, operation: Vec<String>) {
         Mouse(ref button, ref area) =>
             app.mapping.register_mouse(*button, area.clone(), operation)
     }
+}
+
+pub fn on_move_entry(app: &mut App, updated: &mut Updated, from: &entry::Position, to: &entry::Position) {
+    updated.image = app.entries.move_entry(&app.pointer, from, to);
 }
 
 pub fn on_multi(app: &mut App, mut operations: VecDeque<Operation>, async: bool) {

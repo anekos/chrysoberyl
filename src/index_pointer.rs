@@ -180,7 +180,7 @@ fn calculate_next(current: usize, container_size: usize, multiply: usize, counte
 
     let m_position = m_cur + counted;
     let position = m_pad + m_position * multiply;
-    if container_size <= m_pad + position * multiply {
+    if container_size <= position {
         if wrap {
             return Some((m_cur + counted - m_cont) % m_cont * multiply);
         }
@@ -197,6 +197,10 @@ fn test_calculate_next() {
     // current, container_size, multiply, counted, wrap
 
     assert_eq!(calculate_next(0, 2, 1, 1, false), Some(1));
+    assert_eq!(calculate_next(97, 195, 2, 1, false), Some(99));
+    assert_eq!(calculate_next(98, 195, 2, 1, false), Some(100));
+    assert_eq!(calculate_next(98, 195, 3, 1, false), Some(101));
+    assert_eq!(calculate_next(98, 195, 3, 2, false), Some(104));
     // Empty or Just 1
     assert_eq!(calculate_next(0, 0, 1, 1, false), None);
     assert_eq!(calculate_next(0, 1, 1, 1, false), None);

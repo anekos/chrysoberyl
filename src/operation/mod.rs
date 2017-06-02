@@ -31,6 +31,7 @@ pub enum Operation {
     Context(OperationContext, Box<Operation>),
     Count(Option<usize>),
     CountDigit(u8),
+    DefineUserSwitch(String, Vec<Vec<String>>),
     Draw,
     Editor(Option<String>, Vec<ScriptSource>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
@@ -122,7 +123,7 @@ pub enum OptionUpdater {
     Cycle(bool), /* reverse */
 }
 
-#[derive(Clone, Debug, PartialEq, Copy)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum OptionName {
     AutoPaging,
     CenterAlignment,
@@ -144,6 +145,7 @@ pub enum OptionName {
     ColorError,
     ColorErrorBackground,
     ColorFill,
+    User(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Copy)]
@@ -200,7 +202,7 @@ impl FromStr for OptionName {
             "error-color"                          => Ok(ColorError),
             "error-background-color"               => Ok(ColorErrorBackground),
             "fill-color"                           => Ok(ColorFill),
-            _ => Err(ParsingError::InvalidOperation(format!("Invalid option name: {}", src)))
+            user => Ok(User(o!(user)))
         }
     }
 }
@@ -287,6 +289,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@clip"                      => parse_clip(whole),
             "@count"                     => parse_count(whole),
             "@cycle"                     => parse_option_cycle(whole),
+            "@define-switch"             => parse_define_switch(whole),
             "@disable"                   => parse_option_1(whole, OptionUpdater::Disable),
             "@draw"                      => Ok(Draw),
             "@editor"                    => parse_editor(whole),

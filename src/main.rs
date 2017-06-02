@@ -59,7 +59,6 @@ mod mapping;
 mod operation;
 mod operation_utils;
 mod option;
-mod option_impls;
 mod poppler;
 mod script;
 mod shell;

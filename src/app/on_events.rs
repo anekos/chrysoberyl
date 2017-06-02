@@ -104,6 +104,12 @@ pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Op
     updated.label = true;
 }
 
+pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) {
+    if let Err(error) = app.user_switches.register(name, values) {
+        puts_error!("at" => "on_define_switch", "reason" => error);
+    }
+}
+
 pub fn on_fill(app: &mut App, updated: &mut Updated, region: Region, cell_index: usize) {
     use cherenkov::Che;
 

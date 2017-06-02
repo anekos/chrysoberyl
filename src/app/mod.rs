@@ -196,6 +196,8 @@ impl App {
                     self.pointer.set_count(count),
                 CountDigit(digit) =>
                     self.pointer.push_count_digit(digit),
+                DefineUserSwitch(name, values) =>
+                    on_define_switch(self, name, values),
                 Draw =>
                     updated.image = true,
                 Editor(ref editor_command, ref config_sources) =>

@@ -125,6 +125,36 @@ pub fn parse_count(args: &[String]) -> Result<Operation, String> {
     })
 }
 
+pub fn parse_define_switch(args: &[String]) -> Result<Operation, String> {
+    let mut name: String = o!("");
+    let mut values_source = Vec::<String>::new();
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut name).add_argument("switch-name", Store, "Switch name").required();
+        ap.refer(&mut values_source).add_argument("values", Collect, "Values").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        let mut values = vec![];
+        let mut value = vec![];
+
+        for it in values_source {
+            if it == "--" {
+                values.push(value);
+                value = vec![];
+            } else {
+                value.push(o!(it));
+            }
+        }
+
+        if !value.is_empty() {
+            values.push(value);
+        }
+
+        Operation::DefineUserSwitch(name, values)
+    })
+}
+
 pub fn parse_editor(args: &[String]) -> Result<Operation, String> {
     let mut config_sources: Vec<ConfigSource> = vec![];
     let mut files: Vec<String> = vec![];

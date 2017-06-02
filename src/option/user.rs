@@ -32,8 +32,11 @@ impl UserSwitchManager {
         }
     }
 
-    pub fn register(&mut self, name: String, values: Vec<Vec<String>>) {
-        self.table.insert(name, UserSwitch::new(self.app_tx.clone(), values));
+    pub fn register(&mut self, name: String, values: Vec<Vec<String>>) -> Result {
+        let switch = UserSwitch::new(self.app_tx.clone(), values);
+        let result = switch.send();
+        self.table.insert(name, switch);
+        result
     }
 
     pub fn get(&mut self, name: &str) -> Option<&mut UserSwitch> {
@@ -49,11 +52,11 @@ impl OptionValue for UserSwitch {
 
     fn cycle(&mut self, reverse: bool) -> Result {
         if reverse {
-            let front = self.values.pop_front().expect(NO_VALUE_ERROR);
-            self.values.push_back(front);
-        } else {
             let back = self.values.pop_back().expect(NO_VALUE_ERROR);
             self.values.push_front(back);
+        } else {
+            let front = self.values.pop_front().expect(NO_VALUE_ERROR);
+            self.values.push_back(front);
         }
         self.send()
     }
@@ -72,7 +75,9 @@ impl UserSwitch {
     }
 
     pub fn send(&self) -> Result {
-        Ok(())
+        Operation::parse_from_vec(&self.current()).map(|op| {
+            self.app_tx.send(op).unwrap()
+        })
     }
 }
 

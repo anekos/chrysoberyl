@@ -31,6 +31,7 @@ pub enum Operation {
     Context(OperationContext, Box<Operation>),
     Count(Option<usize>),
     CountDigit(u8),
+    DefineUserSwitch(String, Vec<Vec<String>>),
     Draw,
     Editor(Option<String>, Vec<ScriptSource>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
@@ -288,6 +289,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@clip"                      => parse_clip(whole),
             "@count"                     => parse_count(whole),
             "@cycle"                     => parse_option_cycle(whole),
+            "@define-switch"             => parse_define_switch(whole),
             "@disable"                   => parse_option_1(whole, OptionUpdater::Disable),
             "@draw"                      => Ok(Draw),
             "@editor"                    => parse_editor(whole),

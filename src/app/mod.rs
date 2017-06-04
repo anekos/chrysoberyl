@@ -248,10 +248,10 @@ impl App {
                     on_push(self, &mut updated, path, meta, force),
                 PushPath(file, meta, force) =>
                     on_push_path(self, &mut updated, file, meta, force),
-                PushPdf(file, meta) =>
-                    on_push_pdf(self, &mut updated, file, meta),
-                PushURL(url, meta) =>
-                    on_push_url(self, &mut updated, url, meta),
+                PushPdf(file, meta, force) =>
+                    on_push_pdf(self, &mut updated, file, meta, force),
+                PushURL(url, meta, force) =>
+                    on_push_url(self, &mut updated, url, meta, force),
                 Quit =>
                     termination::execute(),
                 Random =>

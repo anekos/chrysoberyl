@@ -31,13 +31,14 @@ struct Request {
     ticket: usize,
     url: String,
     cache_filepath: PathBuf,
-    meta: Option<Meta>
+    meta: Option<Meta>,
+    force: bool
 }
 
 
 #[derive(Clone)]
 enum Getter {
-    Queue(String, PathBuf, Option<Meta>),
+    Queue(String, PathBuf, Option<Meta>, bool),
     Done(usize, Request),
     Fail(usize, String, Request),
 }
@@ -49,14 +50,14 @@ impl HttpCache {
         HttpCache { app_tx: app_tx, main_tx: main_tx, sorting_buffer: sorting_buffer  }
     }
 
-    pub fn fetch(&mut self, url: String, meta: Option<Meta>) -> Vec<QueuedOperation> {
+    pub fn fetch(&mut self, url: String, meta: Option<Meta>, force: bool) -> Vec<QueuedOperation> {
         let filepath = generate_temporary_filename(&url);
 
         if filepath.exists() {
             self.sorting_buffer.push_with_reserve(
-                QueuedOperation::PushHttpCache(filepath, url, meta))
+                QueuedOperation::PushHttpCache(filepath, url, meta, force))
         } else {
-            self.main_tx.send(Getter::Queue(url, filepath, meta)).unwrap();
+            self.main_tx.send(Getter::Queue(url, filepath, meta, force)).unwrap();
             vec![]
         }
     }
@@ -80,10 +81,10 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
 
         while let Ok(it) = main_rx.recv() {
             match it {
-                Queue(url, cache_filepath, meta) => {
+                Queue(url, cache_filepath, meta, force) => {
                     let ticket = buffer.reserve();
 
-                    let request = Request { ticket: ticket, url: url.clone(), cache_filepath: cache_filepath, meta: meta };
+                    let request = Request { ticket: ticket, url: url.clone(), cache_filepath: cache_filepath, meta: meta, force: force };
 
                     if let Some(worker) = waiting.pop() {
                         threads[worker].send(request).unwrap();
@@ -96,7 +97,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                 Done(thread_id, request) => {
                     buffer.push(
                         request.ticket,
-                        QueuedOperation::PushHttpCache(request.cache_filepath, request.url, request.meta));
+                        QueuedOperation::PushHttpCache(request.cache_filepath, request.url, request.meta, request.force));
 
                     app_tx.send(Operation::Pull).unwrap();
 

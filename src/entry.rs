@@ -404,26 +404,26 @@ impl EntryContainer {
         }
     }
 
-    pub fn push_http_cache(&mut self, pointer: &mut IndexPointer, file: &PathBuf, url: String, meta: Option<Meta>) -> bool {
+    pub fn push_http_cache(&mut self, pointer: &mut IndexPointer, file: &PathBuf, url: String, meta: Option<Meta>, force: bool) -> bool {
         let path = file.canonicalize().expect("canonicalize");
         self.push_entry(
             pointer,
             Entry::new(EntryContent::Http(path, url.to_owned()), meta),
-            false)
+            force)
     }
 
-    pub fn push_archive_entry(&mut self, pointer: &mut IndexPointer, archive_path: &PathBuf, entry: &ArchiveEntry) -> bool {
+    pub fn push_archive_entry(&mut self, pointer: &mut IndexPointer, archive_path: &PathBuf, entry: &ArchiveEntry, force: bool) -> bool {
         self.push_entry(
             pointer,
             Entry::new(
                 EntryContent::Archive(Arc::new(archive_path.clone()), entry.clone()),
                 None),
-                false)
+                force)
     }
 
-    pub fn push_pdf_entry(&mut self, pointer: &mut IndexPointer, pdf_path: Arc<PathBuf>, index: usize, meta: Option<Meta>) -> bool {
+    pub fn push_pdf_entry(&mut self, pointer: &mut IndexPointer, pdf_path: Arc<PathBuf>, index: usize, meta: Option<Meta>, force: bool) -> bool {
         let content = EntryContent::Pdf(pdf_path.clone(), index);
-        self.push_entry(pointer, Entry::new(content, meta), false)
+        self.push_entry(pointer, Entry::new(content, meta), force)
     }
 
     pub fn search(&self, key: &SearchKey) -> Option<usize> {

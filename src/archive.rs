@@ -52,7 +52,7 @@ impl Hash for ArchiveEntry {
 }
 
 
-pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Operation>, mut sorting_buffer: SortingBuffer<QueuedOperation>) {
+pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Operation>, mut sorting_buffer: SortingBuffer<QueuedOperation>, force: bool) {
     let from_index: HashMap<usize, (usize, String)> = {
         #[derive(Clone, Debug)]
         struct IndexWithName {
@@ -142,7 +142,8 @@ pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Opera
                                 ticket + serial,
                                 QueuedOperation::PushArchiveEntry(
                                     path.clone(),
-                                    ArchiveEntry { name: (*name).to_owned(), index: index, content: Arc::new(content) }));
+                                    ArchiveEntry { name: (*name).to_owned(), index: index, content: Arc::new(content) },
+                                    force));
                             break;
                         }
                     } else {

@@ -57,8 +57,8 @@ pub enum Operation {
     Pull,
     Push(String, Option<Meta>, bool), /* path, meta, force */
     PushPath(PathBuf, Option<Meta>, bool),
-    PushPdf(PathBuf, Option<Meta>),
-    PushURL(String, Option<Meta>),
+    PushPdf(PathBuf, Option<Meta>, bool),
+    PushURL(String, Option<Meta>, bool),
     Quit,
     Random,
     Refresh,
@@ -162,9 +162,9 @@ pub enum StdinSource {
 #[derive(Clone, Debug, PartialEq)]
 pub enum QueuedOperation {
     PushPath(PathBuf, Option<Meta>, bool), /* path, meta, force */
-    PushHttpCache(PathBuf, String, Option<Meta>),
-    PushArchiveEntry(PathBuf, ArchiveEntry),
-    PushPdfEntries(PathBuf, usize, Option<Meta>), /* path, pages, meta */
+    PushHttpCache(PathBuf, String, Option<Meta>, bool),
+    PushArchiveEntry(PathBuf, ArchiveEntry, bool),
+    PushPdfEntries(PathBuf, usize, Option<Meta>, bool), /* path, pages, meta, force */
 }
 
 
@@ -311,9 +311,9 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@next" | "@n"               => parse_move(whole, Next),
             "@prev" | "@p" | "@previous" => parse_move(whole, Previous),
             "@push"                      => parse_push(whole, |it, meta, force| Push(sh::expand(&it), meta, force)),
-            "@push-pdf"                  => parse_push(whole, |it, meta, _| PushPdf(sh::expand_to_pathbuf(&it), meta)),
+            "@push-pdf"                  => parse_push(whole, |it, meta, force| PushPdf(sh::expand_to_pathbuf(&it), meta, force)),
             "@push-path" | "@push-file"  => parse_push(whole, |it, meta, force| PushPath(sh::expand_to_pathbuf(&it), meta, force)),
-            "@push-url"                  => parse_push(whole, |it, meta, _| PushURL(it, meta)),
+            "@push-url"                  => parse_push(whole, |it, meta, force| PushURL(it, meta, force)),
             "@quit"                      => Ok(Quit),
             "@random" | "@rand"          => Ok(Random),
             "@refresh" | "@r"            => Ok(Refresh),

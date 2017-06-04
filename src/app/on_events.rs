@@ -302,7 +302,7 @@ pub fn on_pull(app: &mut App, updated: &mut Updated) {
 
 pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<Meta>, force: bool) {
     if path.starts_with("http://") || path.starts_with("https://") {
-        app.tx.send(Operation::PushURL(path, meta)).unwrap();
+        app.tx.send(Operation::PushURL(path, meta, force)).unwrap();
         return;
     }
 
@@ -310,9 +310,9 @@ pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<
         if let Some(ext) = path.extension() {
             match &*ext.to_str().unwrap().to_lowercase() {
                 "zip" | "rar" | "tar.gz" | "lzh" | "lha" =>
-                    return archive::fetch_entries(&path, &app.encodings, app.tx.clone(), app.sorting_buffer.clone()),
+                    return archive::fetch_entries(&path, &app.encodings, app.tx.clone(), app.sorting_buffer.clone(), force),
                 "pdf" =>
-                    return on_push_pdf(app, updated, path.to_path_buf(), meta),
+                    return on_push_pdf(app, updated, path.to_path_buf(), meta, force),
                 _ => ()
             }
         }
@@ -327,17 +327,17 @@ pub fn on_push_path(app: &mut App, updated: &mut Updated, file: PathBuf, meta: O
     push_buffered(app, updated, buffered);
 }
 
-pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>) {
+pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) {
     let document = PopplerDocument::new_from_file(&file);
     let n_pages = document.n_pages();
 
     let buffered = app.sorting_buffer.push_with_reserve(
-        QueuedOperation::PushPdfEntries(file, n_pages, meta));
+        QueuedOperation::PushPdfEntries(file, n_pages, meta, force));
     push_buffered(app, updated, buffered);
 }
 
-pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Option<Meta>) {
-    let buffered = app.http_cache.fetch(url, meta);
+pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Option<Meta>, force: bool) {
+    let buffered = app.http_cache.fetch(url, meta, force);
     push_buffered(app, updated, buffered);
 }
 
@@ -609,14 +609,14 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
         match op {
             PushPath(path, meta, force) =>
                 updated.pointer = app.entries.push_path(&mut app.pointer, &path, meta, force),
-            PushHttpCache(file, url, meta) =>
-                updated.pointer |= app.entries.push_http_cache(&mut app.pointer, &file, url, meta),
-            PushArchiveEntry(ref archive_path, ref entry) =>
-                updated.pointer |= app.entries.push_archive_entry(&mut app.pointer, archive_path, entry),
-            PushPdfEntries(pdf_path, pages, meta) => {
+            PushHttpCache(file, url, meta, force) =>
+                updated.pointer |= app.entries.push_http_cache(&mut app.pointer, &file, url, meta, force),
+            PushArchiveEntry(ref archive_path, ref entry, force) =>
+                updated.pointer |= app.entries.push_archive_entry(&mut app.pointer, archive_path, entry, force),
+            PushPdfEntries(pdf_path, pages, meta, force) => {
                 let pdf_path = Arc::new(pdf_path.clone());
                 for index in 0 .. pages {
-                    updated.pointer |= app.entries.push_pdf_entry(&mut app.pointer, pdf_path.clone(), index, meta.clone())
+                    updated.pointer |= app.entries.push_pdf_entry(&mut app.pointer, pdf_path.clone(), index, meta.clone(), force)
                 }
             }
         }

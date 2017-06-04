@@ -435,7 +435,7 @@ pub fn parse_option_1(args: &[String], updater: OptionUpdater) -> Result<Operati
 }
 
 pub fn parse_push<T>(args: &[String], op: T) -> Result<Operation, String>
-where T: FnOnce(String, Option<Meta>) -> Operation {
+where T: FnOnce(String, Option<Meta>, bool) -> Operation {
     impl FromStr for MetaEntry {
         type Err = String;
 
@@ -453,14 +453,16 @@ where T: FnOnce(String, Option<Meta>) -> Operation {
 
     let mut meta: Vec<MetaEntry> = vec![];
     let mut path: String = o!("");
+    let mut force = false;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut meta).add_option(&["--meta", "-m"], Collect, "Meta data");
+        ap.refer(&mut force).add_option(&["--force", "-f"], StoreTrue, "Meta data");
         ap.refer(&mut path).add_argument("Path", Store, "Path to resource").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        op(sh::expand(&path), new_opt_meta(meta))
+        op(sh::expand(&path), new_opt_meta(meta), force)
     })
 }
 

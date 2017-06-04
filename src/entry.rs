@@ -381,10 +381,10 @@ impl EntryContainer {
         }
     }
 
-    fn push_entry(&mut self, pointer: &mut IndexPointer, entry: Entry) -> bool {
+    fn push_entry(&mut self, pointer: &mut IndexPointer, entry: Entry, force: bool) -> bool {
         let entry = Rc::new(entry);
 
-        if self.is_valid_image(&entry) && !self.is_duplicated(&entry) {
+        if self.is_valid_image(&entry) && (force || !self.is_duplicated(&entry)) {
             self.file_indices.insert(entry.clone(), self.files.len());
             self.files.push(entry);
             self.files.len() == 1 && pointer.first(1, false)
@@ -393,11 +393,11 @@ impl EntryContainer {
         }
     }
 
-    pub fn push_path(&mut self, pointer: &mut IndexPointer, file: &PathBuf, meta: Option<Meta>) -> bool {
+    pub fn push_path(&mut self, pointer: &mut IndexPointer, file: &PathBuf, meta: Option<Meta>, force: bool) -> bool {
         if file.is_dir() {
-            self.push_directory(pointer, file, meta)
+            self.push_directory(pointer, file, meta, force)
         } else if file.is_file() {
-            self.push_file(pointer, file, meta)
+            self.push_file(pointer, file, meta, force)
         } else {
             puts_error!("at" => "push", "reason" => "Invalid path", "for" => path_to_str(file));
             false
@@ -408,7 +408,8 @@ impl EntryContainer {
         let path = file.canonicalize().expect("canonicalize");
         self.push_entry(
             pointer,
-            Entry::new(EntryContent::Http(path, url.to_owned()), meta))
+            Entry::new(EntryContent::Http(path, url.to_owned()), meta),
+            false)
     }
 
     pub fn push_archive_entry(&mut self, pointer: &mut IndexPointer, archive_path: &PathBuf, entry: &ArchiveEntry) -> bool {
@@ -416,33 +417,35 @@ impl EntryContainer {
             pointer,
             Entry::new(
                 EntryContent::Archive(Arc::new(archive_path.clone()), entry.clone()),
-                None))
+                None),
+                false)
     }
 
     pub fn push_pdf_entry(&mut self, pointer: &mut IndexPointer, pdf_path: Arc<PathBuf>, index: usize, meta: Option<Meta>) -> bool {
         let content = EntryContent::Pdf(pdf_path.clone(), index);
-        self.push_entry(pointer, Entry::new(content, meta))
+        self.push_entry(pointer, Entry::new(content, meta), false)
     }
 
     pub fn search(&self, key: &SearchKey) -> Option<usize> {
         self.files.iter().position(|it| key.matches(it))
     }
 
-    fn push_file(&mut self, pointer: &mut IndexPointer, file: &PathBuf, meta: Option<Meta>) -> bool {
+    fn push_file(&mut self, pointer: &mut IndexPointer, file: &PathBuf, meta: Option<Meta>, force: bool) -> bool {
         let path = file.canonicalize().expect("canonicalize");
         self.push_entry(
             pointer,
-            Entry::new(EntryContent::File(path), meta))
+            Entry::new(EntryContent::File(path), meta),
+            force)
     }
 
-    fn push_directory(&mut self, pointer: &mut IndexPointer, dir: &PathBuf, meta: Option<Meta>) -> bool {
+    fn push_directory(&mut self, pointer: &mut IndexPointer, dir: &PathBuf, meta: Option<Meta>, force: bool) -> bool {
         let mut changed = false;
 
         through!([expanded = expand(dir, <u8>::max_value())] {
             let mut expanded = expanded;
             expanded.sort_by(|a, b| natord::compare(path_to_str(a), path_to_str(b)));
             for file in expanded {
-                changed |= self.push_file(pointer, &file, meta.clone());
+                changed |= self.push_file(pointer, &file, meta.clone(), force);
             }
         });
 

@@ -55,8 +55,8 @@ pub enum Operation {
     Previous(Option<usize>, bool, MoveBy, bool),
     PrintEntries,
     Pull,
-    Push(String, Option<Meta>),
-    PushPath(PathBuf, Option<Meta>),
+    Push(String, Option<Meta>, bool), /* path, meta, force */
+    PushPath(PathBuf, Option<Meta>, bool),
     PushPdf(PathBuf, Option<Meta>),
     PushURL(String, Option<Meta>),
     Quit,
@@ -161,7 +161,7 @@ pub enum StdinSource {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum QueuedOperation {
-    PushPath(PathBuf, Option<Meta>),
+    PushPath(PathBuf, Option<Meta>, bool), /* path, meta, force */
     PushHttpCache(PathBuf, String, Option<Meta>),
     PushArchiveEntry(PathBuf, ArchiveEntry),
     PushPdfEntries(PathBuf, usize, Option<Meta>), /* path, pages, meta */
@@ -228,7 +228,7 @@ impl Operation {
     pub fn parse_fuzziness(s: &str) -> Result<Operation, String> {
         match Operation::parse(s) {
             Err(ParsingError::InvalidOperation(err)) => Err(err),
-            Err(ParsingError::NotOperation) => Ok(Operation::Push(sh::expand(s), None)),
+            Err(ParsingError::NotOperation) => Ok(Operation::Push(sh::expand(s), None, false)),
             Ok(op) => Ok(op)
         }
     }
@@ -310,10 +310,10 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@move-entry"                => parse_move_entry(whole),
             "@next" | "@n"               => parse_move(whole, Next),
             "@prev" | "@p" | "@previous" => parse_move(whole, Previous),
-            "@push"                      => parse_push(whole, |it, meta| Push(sh::expand(&it), meta)),
-            "@push-pdf"                  => parse_push(whole, |it, meta| PushPdf(sh::expand_to_pathbuf(&it), meta)),
-            "@push-path" | "@push-file"  => parse_push(whole, |it, meta| PushPath(sh::expand_to_pathbuf(&it), meta)),
-            "@push-url"                  => parse_push(whole, PushURL),
+            "@push"                      => parse_push(whole, |it, meta, force| Push(sh::expand(&it), meta, force)),
+            "@push-pdf"                  => parse_push(whole, |it, meta, _| PushPdf(sh::expand_to_pathbuf(&it), meta)),
+            "@push-path" | "@push-file"  => parse_push(whole, |it, meta, force| PushPath(sh::expand_to_pathbuf(&it), meta, force)),
+            "@push-url"                  => parse_push(whole, |it, meta, _| PushURL(it, meta)),
             "@quit"                      => Ok(Quit),
             "@random" | "@rand"          => Ok(Random),
             "@refresh" | "@r"            => Ok(Refresh),

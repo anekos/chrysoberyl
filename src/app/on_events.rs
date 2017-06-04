@@ -300,7 +300,7 @@ pub fn on_pull(app: &mut App, updated: &mut Updated) {
     push_buffered(app, updated, buffered);
 }
 
-pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<Meta>) {
+pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<Meta>, force: bool) {
     if path.starts_with("http://") || path.starts_with("https://") {
         app.tx.send(Operation::PushURL(path, meta)).unwrap();
         return;
@@ -318,12 +318,12 @@ pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<
         }
     }
 
-    app.operate(Operation::PushPath(Path::new(&path).to_path_buf(), meta));
+    app.operate(Operation::PushPath(Path::new(&path).to_path_buf(), meta, force));
 }
 
-pub fn on_push_path(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>) {
+pub fn on_push_path(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) {
     let buffered = app.sorting_buffer.push_with_reserve(
-        QueuedOperation::PushPath(file, meta));
+        QueuedOperation::PushPath(file, meta, force));
     push_buffered(app, updated, buffered);
 }
 
@@ -607,8 +607,8 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
 
     for op in ops {
         match op {
-            PushPath(path, meta) =>
-                updated.pointer = app.entries.push_path(&mut app.pointer, &path, meta),
+            PushPath(path, meta, force) =>
+                updated.pointer = app.entries.push_path(&mut app.pointer, &path, meta, force),
             PushHttpCache(file, url, meta) =>
                 updated.pointer |= app.entries.push_http_cache(&mut app.pointer, &file, url, meta),
             PushArchiveEntry(ref archive_path, ref entry) =>

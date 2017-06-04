@@ -140,7 +140,7 @@ impl App {
         {
             let mut updated = Updated::default();
             for file in &initial.files {
-                on_events::on_push(&mut app, &mut updated, file.clone(), None);
+                on_events::on_push(&mut app, &mut updated, file.clone(), None, false);
             }
         }
 
@@ -244,10 +244,10 @@ impl App {
                     on_print_entries(self),
                 Pull =>
                     on_pull(self, &mut updated),
-                Push(path, meta) =>
-                    on_push(self, &mut updated, path, meta),
-                PushPath(file, meta) =>
-                    on_push_path(self, &mut updated, file, meta),
+                Push(path, meta, force) =>
+                    on_push(self, &mut updated, path, meta, force),
+                PushPath(file, meta, force) =>
+                    on_push_path(self, &mut updated, file, meta, force),
                 PushPdf(file, meta) =>
                     on_push_pdf(self, &mut updated, file, meta),
                 PushURL(url, meta) =>

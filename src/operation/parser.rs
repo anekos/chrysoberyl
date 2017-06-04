@@ -336,16 +336,14 @@ pub fn parse_move_entry(args: &[String]) -> Result<Operation, String> {
         }
     }
 
-    let mut from = Current;
-    let mut to = Current;
+    if args.len() != 3 {
+        return Err(format!("Invalid number of arguments: {}", args.len() - 1));
+    }
 
-    {
-        let mut ap = ArgumentParser::new();
-        ap.refer(&mut from).add_argument("from", Store, "From").required();
-        ap.refer(&mut to).add_argument("to", Store, "To").required();
-        parse_args(&mut ap, args)
-    } .map(|_| {
-        Operation::MoveEntry(from, to)
+    args[1].parse().and_then(|from: entry::Position| {
+        args[2].parse().map(|to: entry::Position| {
+            Operation::MoveEntry(from, to)
+        })
     })
 }
 

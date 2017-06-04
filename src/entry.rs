@@ -64,7 +64,16 @@ pub struct SearchKey {
     pub index: Option<usize>
 }
 
-pub type Key = (char, String, usize);
+pub type Key = (KeyType, String, usize);
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum KeyType {
+    Invalid,
+    PDF,
+    File,
+    Archive,
+    HttpURL,
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Position {
@@ -116,13 +125,13 @@ impl EntryContent {
 
         match *self {
             File(ref path) =>
-                ('f', path_to_str(path).to_owned(), 1),
+                (KeyType::File, path_to_str(path).to_owned(), 1),
             Http(_, ref url) =>
-                ('h', url.clone(), 1),
+                (KeyType::HttpURL, url.clone(), 1),
             Archive(ref path, ref entry) =>
-                ('a', path_to_str(path).to_owned(), entry.index),
+                (KeyType::Archive, path_to_str(path).to_owned(), entry.index),
             Pdf(ref path, index) =>
-                ('p', path_to_str(path).to_owned(), index),
+                (KeyType::PDF, path_to_str(path).to_owned(), index),
         }
     }
 }
@@ -575,6 +584,18 @@ impl SearchKey {
                 Path::new(key_path) == **path && key_index == entry.index,
             Pdf(ref path, index) =>
                 Path::new(key_path) == **path && key_index == index,
+        }
+    }
+}
+
+
+impl KeyType {
+    pub fn is_container(&self) -> bool {
+        use self::KeyType::*;
+
+        match *self {
+            PDF | Archive => true,
+            _ => false,
         }
     }
 }

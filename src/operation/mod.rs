@@ -313,7 +313,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@push"                      => parse_push(whole, |it, meta, force| Push(sh::expand(&it), meta, force)),
             "@push-pdf"                  => parse_push(whole, |it, meta, force| PushPdf(sh::expand_to_pathbuf(&it), meta, force)),
             "@push-path" | "@push-file"  => parse_push(whole, |it, meta, force| PushPath(sh::expand_to_pathbuf(&it), meta, force)),
-            "@push-url"                  => parse_push(whole, |it, meta, force| PushURL(it, meta, force)),
+            "@push-url"                  => parse_push(whole, PushURL),
             "@quit"                      => Ok(Quit),
             "@random" | "@rand"          => Ok(Random),
             "@refresh" | "@r"            => Ok(Refresh),

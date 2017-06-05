@@ -250,6 +250,8 @@ impl App {
                     on_push_path(self, &mut updated, file, meta, force),
                 PushPdf(file, meta, force) =>
                     on_push_pdf(self, &mut updated, file, meta, force),
+                PushSiblling(next) =>
+                    self.entries.push_siblling(&mut self.pointer, next),
                 PushURL(url, meta, force) =>
                     on_push_url(self, &mut updated, url, meta, force),
                 Quit =>

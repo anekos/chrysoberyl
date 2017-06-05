@@ -236,6 +236,22 @@ impl EntryContainer {
         }
     }
 
+    pub fn push_siblling(&mut self, pointer: &mut IndexPointer, next: bool) {
+        use self::EntryContent::*;
+
+        let found = self.current(pointer).and_then(|(entry, _)| {
+            match entry.content {
+                File(ref path) | Http(ref path, _) =>
+                    find_siblling(path, next),
+                Archive(ref path, _) | Pdf(ref path, _) =>
+                    find_siblling(&*path, next),
+            }
+        });
+        if let Some(found) = found {
+            self.push_path(pointer, &found, None, false);
+        }
+    }
+
     pub fn move_entry(&mut self, pointer: &IndexPointer, from: &Position, to: &Position) -> bool {
         match (self.get_index(pointer, from), self.get_index(pointer, to)) {
             (Some(from), Some(to)) if from == to =>
@@ -609,6 +625,24 @@ fn expand(dir: &PathBuf, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
     });
 
     Ok(result)
+}
+
+fn find_siblling(base: &PathBuf, next: bool) -> Option<PathBuf> {
+    base.parent().and_then(|dir| {
+        dir.read_dir().ok().and_then(|dir| {
+            let mut entries: Vec<PathBuf> = dir.filter_map(|it| it.ok().map(|it| it.path())).collect();
+            entries.sort();
+            entries.iter().position(|it| it == base).and_then(|found| {
+                if next {
+                    entries.get(found + 1).cloned()
+                } else if found > 0 {
+                    entries.get(found - 1).cloned()
+                } else {
+                    None
+                }
+            })
+        })
+    })
 }
 
 fn compare_key(a: &Key, b: &Key) -> Ordering {

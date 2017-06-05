@@ -56,7 +56,7 @@ pub enum Operation {
     PrintEntries,
     Pull,
     Push(String, Option<Meta>, bool), /* path, meta, force */
-    PushPath(PathBuf, Option<Meta>, bool),
+    PushImage(PathBuf, Option<Meta>, bool),
     PushPdf(PathBuf, Option<Meta>, bool),
     PushSiblling(bool),
     PushURL(String, Option<Meta>, bool),
@@ -162,7 +162,7 @@ pub enum StdinSource {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum QueuedOperation {
-    PushPath(PathBuf, Option<Meta>, bool), /* path, meta, force */
+    PushImage(PathBuf, Option<Meta>, bool), /* path, meta, force */
     PushHttpCache(PathBuf, String, Option<Meta>, bool),
     PushArchiveEntry(PathBuf, ArchiveEntry, bool),
     PushPdfEntries(PathBuf, usize, Option<Meta>, bool), /* path, pages, meta, force */
@@ -313,7 +313,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@prev" | "@p" | "@previous"    => parse_move(whole, Previous),
             "@push"                         => parse_push(whole, |it, meta, force| Push(sh::expand(&it), meta, force)),
             "@push-next"                    => Ok(PushSiblling(true)),
-            "@push-path" | "@push-file"     => parse_push(whole, |it, meta, force| PushPath(sh::expand_to_pathbuf(&it), meta, force)),
+            "@push-image"                   => parse_push(whole, |it, meta, force| PushImage(sh::expand_to_pathbuf(&it), meta, force)),
             "@push-pdf"                     => parse_push(whole, |it, meta, force| PushPdf(sh::expand_to_pathbuf(&it), meta, force)),
             "@push-previous" | "@push-prev" => Ok(PushSiblling(false)),
             "@push-url"                     => parse_push(whole, PushURL),
@@ -394,7 +394,7 @@ fn test_parse() {
 
     // @push*
     assert_eq!(p("@push http://example.com/moge.jpg"), Push(o!("http://example.com/moge.jpg"), None));
-    assert_eq!(p("@push-file /hoge/moge.jpg"), PushPath(pathbuf("/hoge/moge.jpg"), None));
+    assert_eq!(p("@push-image /hoge/moge.jpg"), PushImage(pathbuf("/hoge/moge.jpg"), None));
     assert_eq!(p("@push-url http://example.com/moge.jpg"), PushURL(o!("http://example.com/moge.jpg"), None));
 
     // @map

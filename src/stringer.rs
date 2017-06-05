@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use shell_escape;
 
-use entry::{Entry, EntryContainer};
+use entry::{Entry, EntryContainer, KeyType, Key};
 use gui::Gui;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, key_mapping as kmap, mouse_mapping as mmap};
@@ -45,25 +45,33 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
 }
 
 pub fn write_entries(entries: &EntryContainer, out: &mut String) {
+    let mut previous = (KeyType::Invalid, o!(""), 0);
     for entry in entries.iter() {
-        write_entry(entry, out);
+        write_entry(entry, out, &mut previous);
     }
 }
 
-fn write_entry(entry: &Entry, out: &mut String) {
+fn write_entry(entry: &Entry, out: &mut String, previous: &mut Key) {
     use entry::EntryContent::*;
+
+    let path_changed = previous.1 != entry.key.1;
 
     match entry.content {
         File(ref path) =>
             sprintln!(out, "@push-file {}", escape_pathbuf(path)),
         Http(_, ref url) =>
             sprintln!(out, "@push-url {}", escape(url)),
-        Archive(ref path, ref entry) if entry.index == 0 =>
+        Archive(ref path, _) if path_changed =>
             sprintln!(out, "@push {}", escape_pathbuf(&*path)),
-        Pdf(ref path, index) if index == 0 =>
+        Pdf(ref path, _) if path_changed =>
             sprintln!(out, "@push-pdf {}", escape_pathbuf(&*path)),
         Archive(_, _) | Pdf(_, _) =>
             (),
+    }
+
+    // To cut down the number of clone.
+    if (previous.0.is_container() != entry.key.0.is_container()) || *previous.1 != entry.key.1 {
+        *previous = entry.key.clone();
     }
 }
 

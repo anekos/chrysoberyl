@@ -6,7 +6,7 @@ use app_dirs::*;
 
 
 const APP_INFO: AppInfo = AppInfo { name: "chrysoberyl", author: "anekos" };
-pub const DEFAULT_SESSION_FILENAME: &'static str = "session.conf";
+pub const DEFAULT_SESSION_FILENAME: &'static str = "default";
 
 
 

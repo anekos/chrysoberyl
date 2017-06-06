@@ -8,6 +8,7 @@ use std::thread::spawn;
 use std::time::Duration;
 
 use gtk::prelude::*;
+use natord;
 use rand::distributions::{IndependentSample, Range as RandRange};
 
 use app_path;
@@ -345,7 +346,7 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
         base.parent().and_then(|dir| {
             dir.read_dir().ok().and_then(|dir| {
                 let mut entries: Vec<PathBuf> = dir.filter_map(|it| it.ok()).filter(|it| it.file_type().map(|it| it.is_file()).unwrap_or(false)).map(|it| it.path()).collect();
-                entries.sort();
+                entries.sort_by(|ref a, ref b| natord::compare(path_to_str(a), path_to_str(b)));
                 entries.iter().position(|it| it == base).and_then(|found| {
                     if next {
                         entries.get(found + 1).cloned()

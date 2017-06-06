@@ -224,6 +224,8 @@ impl App {
                     on_lazy_draw(self, &mut updated, &mut to_end, serial, new_to_end),
                 Load(ref file) =>
                     on_load(self, file),
+                LoadDefault =>
+                    on_load_default(self),
                 Map(ref target, ref mapped_operation) =>
                     on_map(self, target, mapped_operation.to_vec()),
                 MoveEntry(ref from, ref to) =>

@@ -45,6 +45,7 @@ pub enum Operation {
     Last(Option<usize>, bool, MoveBy, bool),
     LazyDraw(u64, bool), /* serial, to_end */
     Load(PathBuf),
+    LoadDefault,
     Map(MappingTarget, Vec<String>),
     MoveEntry(entry::Position, entry::Position),
     Multi(VecDeque<Operation>, bool), /* operations, async */
@@ -281,6 +282,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@copy"                         => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Copy(path, if_exist))),
             "@count"                        => parse_count(whole),
             "@cycle"                        => parse_option_cycle(whole),
+            "@default"                      => Ok(LoadDefault),
             "@define-switch"                => parse_define_switch(whole),
             "@disable"                      => parse_option_1(whole, OptionUpdater::Disable),
             "@draw"                         => Ok(Draw),

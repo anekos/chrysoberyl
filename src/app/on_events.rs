@@ -13,6 +13,7 @@ use rand::distributions::{IndependentSample, Range as RandRange};
 
 use app_path;
 use archive;
+use config::DEFAULT_CONFIG;
 use editor;
 use entry::{self, Meta, SearchKey};
 use filer;
@@ -205,6 +206,10 @@ pub fn on_lazy_draw(app: &mut App, updated: &mut Updated, to_end: &mut bool, ser
 
 pub fn on_load(app: &mut App, file: &Path) {
     script::load_from_file(&app.tx, file);
+}
+
+pub fn on_load_default(app: &mut App) {
+    script::load(&app.tx, DEFAULT_CONFIG);
 }
 
 pub fn on_map(app: &mut App, target: &MappingTarget, operation: Vec<String>) {

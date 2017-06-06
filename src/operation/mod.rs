@@ -58,7 +58,7 @@ pub enum Operation {
     Push(String, Option<Meta>, bool), /* path, meta, force */
     PushImage(PathBuf, Option<Meta>, bool),
     PushPdf(PathBuf, Option<Meta>, bool),
-    PushSiblling(bool),
+    PushSiblling(bool, Option<Meta>, bool, bool), /* next?, meta, force, show */
     PushURL(String, Option<Meta>, bool),
     Quit,
     Random,
@@ -312,10 +312,10 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@next" | "@n"                  => parse_move(whole, Next),
             "@prev" | "@p" | "@previous"    => parse_move(whole, Previous),
             "@push"                         => parse_push(whole, |it, meta, force| Push(sh::expand(&it), meta, force)),
-            "@push-next"                    => Ok(PushSiblling(true)),
+            "@push-next"                    => parse_push_sibling(whole, true),
             "@push-image"                   => parse_push(whole, |it, meta, force| PushImage(sh::expand_to_pathbuf(&it), meta, force)),
             "@push-pdf"                     => parse_push(whole, |it, meta, force| PushPdf(sh::expand_to_pathbuf(&it), meta, force)),
-            "@push-previous" | "@push-prev" => Ok(PushSiblling(false)),
+            "@push-previous" | "@push-prev" => parse_push_sibling(whole, false),
             "@push-url"                     => parse_push(whole, PushURL),
             "@quit"                         => Ok(Quit),
             "@random" | "@rand"             => Ok(Random),

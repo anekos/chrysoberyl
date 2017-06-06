@@ -340,7 +340,7 @@ pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Op
     push_buffered(app, updated, buffered);
 }
 
-pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool) {
+pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: Option<Meta>, force: bool, show: bool) {
     fn find_siblling(base: &PathBuf, next: bool) -> Option<PathBuf> {
         base.parent().and_then(|dir| {
             dir.read_dir().ok().and_then(|dir| {
@@ -371,7 +371,10 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool) {
     });
 
     if let Some(found) = found {
-        on_push_local_file(app, updated, found, None, false);
+        if show {
+            on_show(app, updated, &SearchKey { path: o!(path_to_str(&found)), index: None});
+        }
+        on_push_local_file(app, updated, found, meta, force);
     }
 }
 

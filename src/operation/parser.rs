@@ -436,21 +436,6 @@ pub fn parse_option_1(args: &[String], updater: OptionUpdater) -> Result<Operati
 
 pub fn parse_push<T>(args: &[String], op: T) -> Result<Operation, String>
 where T: FnOnce(String, Option<Meta>, bool) -> Operation {
-    impl FromStr for MetaEntry {
-        type Err = String;
-
-        fn from_str(src: &str) -> Result<MetaEntry, String> {
-            Ok({
-                if let Some(sep) = src.find('=') {
-                    let (key, value) = src.split_at(sep);
-                    MetaEntry { key: o!(key), value: o!(value[1..]) }
-                } else {
-                    MetaEntry::new_without_value(o!(src))
-                }
-            })
-        }
-    }
-
     let mut meta: Vec<MetaEntry> = vec![];
     let mut path: String = o!("");
     let mut force = false;
@@ -463,6 +448,22 @@ where T: FnOnce(String, Option<Meta>, bool) -> Operation {
         parse_args(&mut ap, args)
     } .map(|_| {
         op(sh::expand(&path), new_opt_meta(meta), force)
+    })
+}
+
+pub fn parse_push_sibling(args: &[String], next: bool) -> Result<Operation, String> {
+    let mut meta: Vec<MetaEntry> = vec![];
+    let mut force = false;
+    let mut show = false;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut meta).add_option(&["--meta", "-m"], Collect, "Meta data");
+        ap.refer(&mut force).add_option(&["--force", "-f"], StoreTrue, "Meta data");
+        ap.refer(&mut show).add_option(&["--show", "-s"], StoreTrue, "Show the found entry");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::PushSiblling(next, new_opt_meta(meta), force, show)
     })
 }
 
@@ -664,5 +665,20 @@ impl FromStr for ConfigSource {
             _ =>
                 Err(format!("Invalid config source: {}", src))
         }
+    }
+}
+
+impl FromStr for MetaEntry {
+    type Err = String;
+
+    fn from_str(src: &str) -> Result<MetaEntry, String> {
+        Ok({
+            if let Some(sep) = src.find('=') {
+                let (key, value) = src.split_at(sep);
+                MetaEntry { key: o!(key), value: o!(value[1..]) }
+            } else {
+                MetaEntry::new_without_value(o!(src))
+            }
+        })
     }
 }

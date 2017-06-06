@@ -463,7 +463,7 @@ pub fn parse_push_sibling(args: &[String], next: bool) -> Result<Operation, Stri
         ap.refer(&mut show).add_option(&["--show", "-s"], StoreTrue, "Show the found entry");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::PushSiblling(next, new_opt_meta(meta), force, show)
+        Operation::PushSibling(next, new_opt_meta(meta), force, show)
     })
 }
 

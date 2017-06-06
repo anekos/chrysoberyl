@@ -250,7 +250,7 @@ impl App {
                     on_push_image(self, &mut updated, file, meta, force),
                 PushPdf(file, meta, force) =>
                     on_push_pdf(self, &mut updated, file, meta, force),
-                PushSiblling(next, meta, force, show) =>
+                PushSibling(next, meta, force, show) =>
                     on_push_sibling(self, &mut updated, next, meta, force, show),
                 PushURL(url, meta, force) =>
                     on_push_url(self, &mut updated, url, meta, force),

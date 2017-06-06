@@ -58,7 +58,7 @@ pub enum Operation {
     Push(String, Option<Meta>, bool), /* path, meta, force */
     PushImage(PathBuf, Option<Meta>, bool),
     PushPdf(PathBuf, Option<Meta>, bool),
-    PushSiblling(bool, Option<Meta>, bool, bool), /* next?, meta, force, show */
+    PushSibling(bool, Option<Meta>, bool, bool), /* next?, meta, force, show */
     PushURL(String, Option<Meta>, bool),
     Quit,
     Random,

@@ -14,9 +14,9 @@ use entry;
 use filer;
 use gui::Direction;
 use mapping::{self, mouse_mapping};
-use script::ScriptSource;
 use shellexpand_wrapper as sh;
 use size::Region;
+use stringer::Session;
 
 mod parser;
 
@@ -33,7 +33,7 @@ pub enum Operation {
     CountDigit(u8),
     DefineUserSwitch(String, Vec<Vec<String>>),
     Draw,
-    Editor(Option<String>, Vec<ScriptSource>),
+    Editor(Option<String>, Vec<PathBuf>, Vec<Session>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Fill(Region, usize), /* region, cell index */
@@ -44,7 +44,8 @@ pub enum Operation {
     KillTimer(String),
     Last(Option<usize>, bool, MoveBy, bool),
     LazyDraw(u64, bool), /* serial, to_end */
-    Load(ScriptSource),
+    Load(PathBuf),
+    LoadDefault,
     Map(MappingTarget, Vec<String>),
     MoveEntry(entry::Position, entry::Position),
     Multi(VecDeque<Operation>, bool), /* operations, async */
@@ -63,10 +64,10 @@ pub enum Operation {
     Quit,
     Random,
     Refresh,
-    Save(Option<PathBuf>, Vec<StdinSource>),
+    Save(Option<PathBuf>, Vec<Session>),
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     SetEnv(String, Option<String>),
-    Shell(bool, bool, Vec<String>, Vec<StdinSource>), /* async, operation, command_line, stdin */
+    Shell(bool, bool, Vec<String>, Vec<Session>), /* async, operation, command_line, session */
     Show(entry::SearchKey),
     Shuffle(bool), /* Fix current */
     Sort,
@@ -148,16 +149,6 @@ pub enum OptionName {
     ColorErrorBackground,
     ColorFill,
     User(String),
-}
-
-#[derive(Clone, Debug, PartialEq, Copy)]
-pub enum StdinSource {
-    Options,
-    Entries,
-    Position,
-    Paths,
-    Mappings,
-    Session,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -291,6 +282,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@copy"                         => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Copy(path, if_exist))),
             "@count"                        => parse_count(whole),
             "@cycle"                        => parse_option_cycle(whole),
+            "@default"                      => Ok(LoadDefault),
             "@define-switch"                => parse_define_switch(whole),
             "@disable"                      => parse_option_1(whole, OptionUpdater::Disable),
             "@draw"                         => Ok(Draw),

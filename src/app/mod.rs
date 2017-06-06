@@ -40,21 +40,21 @@ mod on_events;
 
 
 pub struct App {
-    entries: EntryContainer,
-    mapping: Mapping,
     http_cache: HttpCache,
     encodings: Vec<EncodingRef>,
-    gui: Gui,
     draw_serial: u64,
     pre_fetch_serial: u64,
     rng: ThreadRng,
-    pointer: IndexPointer,
     current_env_keys: HashSet<String>,
     cache: ImageCache,
     fetcher: ImageFetcher,
     sorting_buffer: SortingBuffer<QueuedOperation>,
     timers: TimerManager,
     user_switches: UserSwitchManager,
+    pub mapping: Mapping,
+    pub pointer: IndexPointer,
+    pub entries: EntryContainer,
+    pub gui: Gui,
     pub tx: Sender<Operation>,
     pub states: States
 }
@@ -200,8 +200,8 @@ impl App {
                     on_define_switch(self, name, values),
                 Draw =>
                     updated.image = true,
-                Editor(ref editor_command, ref config_sources) =>
-                   on_editor(self, editor_command.clone(), config_sources.to_owned()),
+                Editor(ref editor_command, ref files, ref sessions) =>
+                   on_editor(self, editor_command.clone(), files, sessions),
                 Expand(recursive, ref base) =>
                     on_expand(self, &mut updated, recursive, base.clone()),
                 Filter(command_line) =>
@@ -222,8 +222,10 @@ impl App {
                     on_last(self, &mut updated, len, count, ignore_views, move_by),
                 LazyDraw(serial, new_to_end) =>
                     on_lazy_draw(self, &mut updated, &mut to_end, serial, new_to_end),
-                Load(ref script_source) =>
-                    on_load(self, script_source),
+                Load(ref file) =>
+                    on_load(self, file),
+                LoadDefault =>
+                    on_load_default(self),
                 Map(ref target, ref mapped_operation) =>
                     on_map(self, target, mapped_operation.to_vec()),
                 MoveEntry(ref from, ref to) =>

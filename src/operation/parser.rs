@@ -10,7 +10,6 @@ use color::Color;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
 use filer;
 use mapping::{Input, InputType, mouse_mapping};
-use script::{ConfigSource, ScriptSource};
 use shellexpand_wrapper as sh;
 
 use operation::*;
@@ -156,25 +155,19 @@ pub fn parse_define_switch(args: &[String]) -> Result<Operation, String> {
 }
 
 pub fn parse_editor(args: &[String]) -> Result<Operation, String> {
-    let mut config_sources: Vec<ConfigSource> = vec![];
+    let mut sessions: Vec<Session> = vec![];
     let mut files: Vec<String> = vec![];
     let mut command_line: Option<String> = None;
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut config_sources).add_option(&["--config", "-c"], Collect, "Insert config");
         ap.refer(&mut files).add_option(&["--file", "-f"], Collect, "Insert the given file");
+        ap.refer(&mut sessions).add_option(&["--session", "-S"], Collect, "Sessions");
         ap.refer(&mut command_line).add_argument("command-line", StoreOption, "Command line to open editor");
         parse_args(&mut ap, args)
     } .map(|_| {
-        let mut script_sources = vec![];
-        for source in config_sources {
-            script_sources.push(ScriptSource::Config(source))
-        }
-        for file in files {
-            script_sources.push(ScriptSource::File(sh::expand_to_pathbuf(&file)))
-        }
-        Operation::Editor(command_line, script_sources)
+        let files = files.iter().map(|it| Path::new(it).to_path_buf()).collect();
+        Operation::Editor(command_line, files, sessions)
     })
 }
 
@@ -250,22 +243,14 @@ pub fn parse_kill_timer(args: &[String]) -> Result<Operation, String> {
 }
 
 pub fn parse_load(args: &[String]) -> Result<Operation, String> {
-    let mut config_source = ConfigSource::Default;
-    let mut path: Option<String> = None;
+    let mut file: String = o!("");
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut config_source).add_option(&["--config", "-c"], Store, "Load config");
-        ap.refer(&mut path).add_argument("file-path", StoreOption, "File path");
+        ap.refer(&mut file).add_argument("file-path", Store, "File path").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Load({
-            if let Some(ref path) = path {
-                ScriptSource::File(sh::expand_to_pathbuf(path))
-            } else {
-                ScriptSource::Config(config_source)
-            }
-        })
+        Operation::Load(Path::new(&file).to_path_buf())
     })
 }
 
@@ -469,7 +454,7 @@ pub fn parse_push_sibling(args: &[String], next: bool) -> Result<Operation, Stri
 
 pub fn parse_save(args: &[String]) -> Result<Operation, String> {
     let mut path: Option<String> = None;
-    let mut sources: Vec<StdinSource> = vec![];
+    let mut sources: Vec<Session> = vec![];
 
     {
         let mut ap = ArgumentParser::new();
@@ -478,7 +463,7 @@ pub fn parse_save(args: &[String]) -> Result<Operation, String> {
         parse_args(&mut ap, args)
     } .and_then(|_| {
         if sources.is_empty() {
-            sources.push(StdinSource::Session);
+            sources.push(Session::All);
         }
         Ok(Operation::Save(path.map(|it| sh::expand_to_pathbuf(&it)), sources))
     })
@@ -518,14 +503,14 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
     let mut async = true;
     let mut read_operations = false;
     let mut command_line: Vec<String> = vec![];
-    let mut stdin_sources: Vec<StdinSource> = vec![];
+    let mut sessions: Vec<Session> = vec![];
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut async)
             .add_option(&["--async", "-a"], StoreTrue, "Async (Non-blocking)")
             .add_option(&["--sync", "-s"], StoreFalse, "Sync (Blocking)");
-        ap.refer(&mut stdin_sources).add_option(&["--stdin", "-i"], Collect, "STDIN source");
+        ap.refer(&mut sessions).add_option(&["--session", "-S"], Collect, "Sessions");
         ap.refer(&mut read_operations).add_option(&["--operation", "-o"], StoreTrue, "Read operations form stdout");
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
@@ -534,7 +519,7 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
         for it in command_line {
             cl.push(sh::expand(&it));
         }
-        Ok(Operation::Shell(async, read_operations, cl, stdin_sources))
+        Ok(Operation::Shell(async, read_operations, cl, sessions))
     })
 }
 
@@ -626,47 +611,29 @@ pub fn parse_args(parser: &mut ArgumentParser, args: &[String]) -> Result<(), St
 }
 
 
-impl FromStr for StdinSource {
+impl FromStr for Session {
     type Err = String;
 
     fn from_str(src: &str) -> Result<Self, String> {
         match src {
             "options" | "option" | "o" =>
-                Ok(StdinSource::Options),
+                Ok(Session::Options),
             "entries" | "entry" | "e" =>
-                Ok(StdinSource::Entries),
+                Ok(Session::Entries),
             "paths" | "path" | "P" =>
-                Ok(StdinSource::Paths),
+                Ok(Session::Paths),
             "position" | "pos" | "p" =>
-                Ok(StdinSource::Position),
+                Ok(Session::Position),
             "mappings" | "map" | "m" =>
-                Ok(StdinSource::Mappings),
-            "session" | "a" =>
-                Ok(StdinSource::Session),
+                Ok(Session::Mappings),
+            "all" | "a" =>
+                Ok(Session::All),
             _ =>
                 Err(format!("Invalid stdin source: {}", src))
         }
     }
 }
 
-impl FromStr for ConfigSource {
-    type Err = String;
-
-    fn from_str(src: &str) -> Result<Self, String> {
-        use self::ConfigSource::*;
-
-        match src {
-            "user" | "u" =>
-                Ok(User),
-            "default" | "d" =>
-                Ok(Default),
-            "session" | "s" =>
-                Ok(DefaultSession),
-            _ =>
-                Err(format!("Invalid config source: {}", src))
-        }
-    }
-}
 
 impl FromStr for MetaEntry {
     type Err = String;

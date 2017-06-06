@@ -5,6 +5,7 @@ use std::path::PathBuf;
 
 use shell_escape;
 
+use app::App;
 use entry::{Entry, EntryContainer, KeyType, Key};
 use gui::Gui;
 use index_pointer::IndexPointer;
@@ -14,6 +15,41 @@ use state::{States, ScalingMethod, RegionFunction};
 use utils::path_to_str;
 
 
+
+#[derive(Clone, Debug, PartialEq, Copy)]
+pub enum Session {
+    Options,
+    Entries,
+    Position,
+    Paths,
+    Mappings,
+    All,
+}
+
+
+pub fn write_sessions(app: &App, sessions: &[Session], out: &mut String) {
+    for session in sessions {
+        write_session(app, session, out);
+    }
+}
+
+pub fn write_session(app: &App, session: &Session, out: &mut String) {
+    use self::Session::*;
+
+    match *session {
+        Options => write_options(&app.states, &app.gui, out),
+        Entries => write_entries(&app.entries, out),
+        Paths => write_paths(&app.entries, out),
+        Position => write_position(&app.entries, &app.pointer, out),
+        Mappings => write_mappings(&app.mapping, out),
+        All => {
+            write_options(&app.states, &app.gui, out);
+            write_entries(&app.entries, out);
+            write_position(&app.entries, &app.pointer, out);
+            write_mappings(&app.mapping, out);
+        }
+    }
+}
 
 pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
     fn b2s(b: bool) -> &'static str {

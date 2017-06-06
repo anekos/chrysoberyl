@@ -9,32 +9,17 @@ use std::sync::mpsc:: Sender;
 use cmdline_parser::Parser;
 use mkstemp::TempFile;
 use operation::Operation;
-use script::{ScriptSource, script_lines};
 
 
 
-pub fn start_edit(tx: &Sender<Operation>, editor_command: Option<String>, script_sources: Vec<ScriptSource>) {
+pub fn start_edit(tx: &Sender<Operation>, editor_command: Option<String>, default_text: &str) {
     let mut temp_file = {
         let mut temp = env::temp_dir();
         temp.push("chrysoberyl.XXXXXX");
         TempFile::new(temp.to_str().unwrap(), false).unwrap()
     };
 
-    {
-        for source in script_sources {
-            match script_lines(&source) {
-                Ok(lines) => {
-                    for line in lines {
-                        temp_file.write_all(format!("# {}\n", line).as_bytes()).unwrap();
-                    }
-                }
-                Err(err) => {
-                    puts_error!("at" => "editor", "reason" => err);
-                    return
-                }
-            }
-        }
-    }
+    temp_file.write_all(default_text.as_bytes()).unwrap();
 
     let (command_name, args) = {
         let editor = editor_command.unwrap_or_else(|| {

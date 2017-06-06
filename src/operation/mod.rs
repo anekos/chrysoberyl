@@ -63,10 +63,10 @@ pub enum Operation {
     Quit,
     Random,
     Refresh,
-    Save(Option<PathBuf>, Vec<StdinSource>),
+    Save(Option<PathBuf>, Vec<Session>),
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     SetEnv(String, Option<String>),
-    Shell(bool, bool, Vec<String>, Vec<StdinSource>), /* async, operation, command_line, stdin */
+    Shell(bool, bool, Vec<String>, Vec<Session>), /* async, operation, command_line, session */
     Show(entry::SearchKey),
     Shuffle(bool), /* Fix current */
     Sort,
@@ -151,13 +151,13 @@ pub enum OptionName {
 }
 
 #[derive(Clone, Debug, PartialEq, Copy)]
-pub enum StdinSource {
+pub enum Session {
     Options,
     Entries,
     Position,
     Paths,
     Mappings,
-    Session,
+    All,
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -469,7 +469,7 @@ pub fn parse_push_sibling(args: &[String], next: bool) -> Result<Operation, Stri
 
 pub fn parse_save(args: &[String]) -> Result<Operation, String> {
     let mut path: Option<String> = None;
-    let mut sources: Vec<StdinSource> = vec![];
+    let mut sources: Vec<Session> = vec![];
 
     {
         let mut ap = ArgumentParser::new();
@@ -478,7 +478,7 @@ pub fn parse_save(args: &[String]) -> Result<Operation, String> {
         parse_args(&mut ap, args)
     } .and_then(|_| {
         if sources.is_empty() {
-            sources.push(StdinSource::Session);
+            sources.push(Session::All);
         }
         Ok(Operation::Save(path.map(|it| sh::expand_to_pathbuf(&it)), sources))
     })
@@ -518,14 +518,14 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
     let mut async = true;
     let mut read_operations = false;
     let mut command_line: Vec<String> = vec![];
-    let mut stdin_sources: Vec<StdinSource> = vec![];
+    let mut sessions: Vec<Session> = vec![];
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut async)
             .add_option(&["--async", "-a"], StoreTrue, "Async (Non-blocking)")
             .add_option(&["--sync", "-s"], StoreFalse, "Sync (Blocking)");
-        ap.refer(&mut stdin_sources).add_option(&["--stdin", "-i"], Collect, "STDIN source");
+        ap.refer(&mut sessions).add_option(&["--session", "-S"], Collect, "Sessions");
         ap.refer(&mut read_operations).add_option(&["--operation", "-o"], StoreTrue, "Read operations form stdout");
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
@@ -534,7 +534,7 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
         for it in command_line {
             cl.push(sh::expand(&it));
         }
-        Ok(Operation::Shell(async, read_operations, cl, stdin_sources))
+        Ok(Operation::Shell(async, read_operations, cl, sessions))
     })
 }
 
@@ -626,23 +626,23 @@ pub fn parse_args(parser: &mut ArgumentParser, args: &[String]) -> Result<(), St
 }
 
 
-impl FromStr for StdinSource {
+impl FromStr for Session {
     type Err = String;
 
     fn from_str(src: &str) -> Result<Self, String> {
         match src {
             "options" | "option" | "o" =>
-                Ok(StdinSource::Options),
+                Ok(Session::Options),
             "entries" | "entry" | "e" =>
-                Ok(StdinSource::Entries),
+                Ok(Session::Entries),
             "paths" | "path" | "P" =>
-                Ok(StdinSource::Paths),
+                Ok(Session::Paths),
             "position" | "pos" | "p" =>
-                Ok(StdinSource::Position),
+                Ok(Session::Position),
             "mappings" | "map" | "m" =>
-                Ok(StdinSource::Mappings),
-            "session" | "a" =>
-                Ok(StdinSource::Session),
+                Ok(Session::Mappings),
+            "all" | "a" =>
+                Ok(Session::All),
             _ =>
                 Err(format!("Invalid stdin source: {}", src))
         }

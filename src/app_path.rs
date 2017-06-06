@@ -19,7 +19,7 @@ pub fn cache_dir(path: &str) -> PathBuf {
 }
 
 pub fn config_file(filename: Option<&str>) -> PathBuf {
-    let file = get_app_dir(AppDataType::UserConfig, &APP_INFO, filename.unwrap_or("rc.conf")).unwrap();
+    let file = get_app_dir(AppDataType::UserConfig, &APP_INFO, filename.unwrap_or("config.chry")).unwrap();
     {
         let dir = file.parent().unwrap();
         if !dir.exists() {

@@ -8,6 +8,7 @@ use std::thread::spawn;
 use std::time::Duration;
 
 use gtk::prelude::*;
+use natord;
 use rand::distributions::{IndependentSample, Range as RandRange};
 
 use app_path;
@@ -306,24 +307,28 @@ pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<
         return;
     }
 
-    if let Ok(path) = Path::new(&path).canonicalize() {
-        if let Some(ext) = path.extension() {
+    on_push_local_file(app, updated, Path::new(&path).to_path_buf(), meta, force)
+}
+
+pub fn on_push_local_file(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) {
+    if let Ok(file) = file.canonicalize() {
+        if let Some(ext) = file.extension() {
             match &*ext.to_str().unwrap().to_lowercase() {
                 "zip" | "rar" | "tar.gz" | "lzh" | "lha" =>
-                    return archive::fetch_entries(&path, &app.encodings, app.tx.clone(), app.sorting_buffer.clone(), force),
+                    return archive::fetch_entries(&file, &app.encodings, app.tx.clone(), app.sorting_buffer.clone(), force),
                 "pdf" =>
-                    return on_push_pdf(app, updated, path.to_path_buf(), meta, force),
+                    return on_push_pdf(app, updated, file.to_path_buf(), meta, force),
                 _ => ()
             }
         }
     }
 
-    app.operate(Operation::PushPath(Path::new(&path).to_path_buf(), meta, force));
+    app.operate(Operation::PushImage(file, meta, force));
 }
 
-pub fn on_push_path(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) {
+pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) {
     let buffered = app.sorting_buffer.push_with_reserve(
-        QueuedOperation::PushPath(file, meta, force));
+        QueuedOperation::PushImage(file, meta, force));
     push_buffered(app, updated, buffered);
 }
 
@@ -334,6 +339,44 @@ pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Op
     let buffered = app.sorting_buffer.push_with_reserve(
         QueuedOperation::PushPdfEntries(file, n_pages, meta, force));
     push_buffered(app, updated, buffered);
+}
+
+pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: Option<Meta>, force: bool, show: bool) {
+    fn find_sibling(base: &PathBuf, next: bool) -> Option<PathBuf> {
+        base.parent().and_then(|dir| {
+            dir.read_dir().ok().and_then(|dir| {
+                let mut entries: Vec<PathBuf> = dir.filter_map(|it| it.ok()).filter(|it| it.file_type().map(|it| it.is_file()).unwrap_or(false)).map(|it| it.path()).collect();
+                entries.sort_by(|ref a, ref b| natord::compare(path_to_str(a), path_to_str(b)));
+                entries.iter().position(|it| it == base).and_then(|found| {
+                    if next {
+                        entries.get(found + 1).cloned()
+                    } else if found > 0 {
+                        entries.get(found - 1).cloned()
+                    } else {
+                        None
+                    }
+                })
+            })
+        })
+    }
+
+    use entry::EntryContent::*;
+
+    let found = app.entries.current(&app.pointer).and_then(|(entry, _)| {
+        match entry.content {
+            File(ref path) | Http(ref path, _) =>
+                find_sibling(path, next),
+                Archive(ref path, _) | Pdf(ref path, _) =>
+                    find_sibling(&*path, next),
+        }
+    });
+
+    if let Some(found) = found {
+        if show {
+            on_show(app, updated, &SearchKey { path: o!(path_to_str(&found)), index: None});
+        }
+        on_push_local_file(app, updated, found, meta, force);
+    }
 }
 
 pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Option<Meta>, force: bool) {
@@ -607,7 +650,7 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
 
     for op in ops {
         match op {
-            PushPath(path, meta, force) =>
+            PushImage(path, meta, force) =>
                 updated.pointer = app.entries.push_path(&mut app.pointer, &path, meta, force),
             PushHttpCache(file, url, meta, force) =>
                 updated.pointer |= app.entries.push_http_cache(&mut app.pointer, &file, url, meta, force),

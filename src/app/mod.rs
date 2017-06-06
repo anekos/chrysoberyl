@@ -246,12 +246,12 @@ impl App {
                     on_pull(self, &mut updated),
                 Push(path, meta, force) =>
                     on_push(self, &mut updated, path, meta, force),
-                PushPath(file, meta, force) =>
-                    on_push_path(self, &mut updated, file, meta, force),
+                PushImage(file, meta, force) =>
+                    on_push_image(self, &mut updated, file, meta, force),
                 PushPdf(file, meta, force) =>
                     on_push_pdf(self, &mut updated, file, meta, force),
-                PushSiblling(next) =>
-                    self.entries.push_siblling(&mut self.pointer, next),
+                PushSibling(next, meta, force, show) =>
+                    on_push_sibling(self, &mut updated, next, meta, force, show),
                 PushURL(url, meta, force) =>
                     on_push_url(self, &mut updated, url, meta, force),
                 Quit =>

@@ -107,3 +107,16 @@ macro_rules! sprint {
         $name.push_str(&format!($fmt $(,$args)*));
     }
 }
+
+macro_rules! with_ouput_string {
+    ($name:ident,  $body:expr) => {
+        {
+            let mut result: String = o!("");
+            {
+                let $name = &mut result;
+                $body;
+            }
+            result
+        }
+    }
+}

@@ -1,7 +1,7 @@
 
 use std::env;
 use std::fs::File;
-use std::io::Write;
+use std::io::{Write, Read};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::thread::spawn;
@@ -19,13 +19,14 @@ use filer;
 use filter;
 use fragile_input::new_fragile_input;
 use gui::Direction;
-use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater, Session};
+use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater};
 use option::user::DummySwtich;
 use output;
 use poppler::PopplerDocument;
 use script;
 use shell;
 use state::RegionFunction;
+use stringer::{Session, write_sessions};
 use utils::path_to_str;
 
 use app::*;
@@ -90,9 +91,17 @@ pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region) {
     updated.image_options = true;
 }
 
-pub fn on_editor(app: &mut App, editor_command: Option<String>, script_sources: Vec<script::ScriptSource>) {
+pub fn on_editor(app: &mut App, editor_command: Option<String>, files: &[PathBuf], sessions: &[Session]) {
     let tx = app.tx.clone();
-    spawn(move || editor::start_edit(&tx, editor_command, script_sources));
+    let source = with_ouput_string!(out, {
+        for file in files {
+            if let Err(err) = File::open(file).and_then(|mut file| file.read_to_string(out)) {
+                puts_error!("at" => o!("on_load"), "reason" => s!(err));
+            }
+        }
+        write_sessions(app, sessions, out);
+    });
+    spawn(move || editor::start_edit(&tx, editor_command, &source));
 }
 
 pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Option<PathBuf>) {
@@ -194,8 +203,8 @@ pub fn on_lazy_draw(app: &mut App, updated: &mut Updated, to_end: &mut bool, ser
     }
 }
 
-pub fn on_load(app: &mut App, script_source: &script::ScriptSource) {
-    script::load(&app.tx, script_source);
+pub fn on_load(app: &mut App, file: &Path) {
+    script::load_from_file(&app.tx, file);
 }
 
 pub fn on_map(app: &mut App, target: &MappingTarget, operation: Vec<String>) {
@@ -346,7 +355,7 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
         base.parent().and_then(|dir| {
             dir.read_dir().ok().and_then(|dir| {
                 let mut entries: Vec<PathBuf> = dir.filter_map(|it| it.ok()).filter(|it| it.file_type().map(|it| it.is_file()).unwrap_or(false)).map(|it| it.path()).collect();
-                entries.sort_by(|ref a, ref b| natord::compare(path_to_str(a), path_to_str(b)));
+                entries.sort_by(|a, b| natord::compare(path_to_str(a), path_to_str(b)));
                 entries.iter().position(|it| it == base).and_then(|found| {
                     if next {
                         entries.get(found + 1).cloned()
@@ -396,7 +405,7 @@ pub fn on_save(app: &mut App, path: &Option<PathBuf>, sessions: &[Session]) {
     let path = path.as_ref().unwrap_or(&default);
 
     let result = File::create(path).map(|mut file| {
-        file.write_all(sessions_to_string(app, sessions).as_bytes())
+        file.write_all(with_ouput_string!(out, write_sessions(app, sessions, out)).as_str().as_bytes())
     });
 
     if let Err(err) = result {
@@ -427,7 +436,7 @@ pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scr
 
 pub fn on_shell(app: &App, async: bool, read_operations: bool, command_line: &[String], tx: Sender<Operation>, sessions: &[Session]) {
     let stdin = if !sessions.is_empty() {
-        Some(sessions_to_string(app, sessions))
+        Some(with_ouput_string!(out, write_sessions(app, sessions, out)))
     } else {
         None
     };
@@ -620,29 +629,6 @@ fn on_update_views(app: &mut App, updated: &mut Updated) {
     updated.image_options = true;
     app.reset_view();
     app.pointer.set_multiplier(app.gui.len());
-}
-
-fn sessions_to_string(app: &App, sessions: &[Session]) -> String {
-    use stringer::*;
-    use operation::Session::*;
-
-    let mut result = o!("");
-    for session in sessions {
-        match *session {
-            Options => write_options(&app.states, &app.gui, &mut result),
-            Entries => write_entries(&app.entries, &mut result),
-            Paths => write_paths(&app.entries, &mut result),
-            Position => write_position(&app.entries, &app.pointer, &mut result),
-            Mappings => write_mappings(&app.mapping, &mut result),
-            All => {
-                write_options(&app.states, &app.gui, &mut result);
-                write_entries(&app.entries, &mut result);
-                write_position(&app.entries, &app.pointer, &mut result);
-                write_mappings(&app.mapping, &mut result);
-            }
-        }
-    }
-    result
 }
 
 fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>) {

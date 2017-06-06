@@ -10,7 +10,6 @@ use color::Color;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
 use filer;
 use mapping::{Input, InputType, mouse_mapping};
-use script::{ConfigSource, ScriptSource};
 use shellexpand_wrapper as sh;
 
 use operation::*;
@@ -156,25 +155,19 @@ pub fn parse_define_switch(args: &[String]) -> Result<Operation, String> {
 }
 
 pub fn parse_editor(args: &[String]) -> Result<Operation, String> {
-    let mut config_sources: Vec<ConfigSource> = vec![];
+    let mut sessions: Vec<Session> = vec![];
     let mut files: Vec<String> = vec![];
     let mut command_line: Option<String> = None;
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut config_sources).add_option(&["--config", "-c"], Collect, "Insert config");
         ap.refer(&mut files).add_option(&["--file", "-f"], Collect, "Insert the given file");
+        ap.refer(&mut sessions).add_option(&["--session", "-S"], Collect, "Sessions");
         ap.refer(&mut command_line).add_argument("command-line", StoreOption, "Command line to open editor");
         parse_args(&mut ap, args)
     } .map(|_| {
-        let mut script_sources = vec![];
-        for source in config_sources {
-            script_sources.push(ScriptSource::Config(source))
-        }
-        for file in files {
-            script_sources.push(ScriptSource::File(sh::expand_to_pathbuf(&file)))
-        }
-        Operation::Editor(command_line, script_sources)
+        let files = files.iter().map(|it| Path::new(it).to_path_buf()).collect();
+        Operation::Editor(command_line, files, sessions)
     })
 }
 
@@ -250,22 +243,14 @@ pub fn parse_kill_timer(args: &[String]) -> Result<Operation, String> {
 }
 
 pub fn parse_load(args: &[String]) -> Result<Operation, String> {
-    let mut config_source = ConfigSource::Default;
-    let mut path: Option<String> = None;
+    let mut file: String = o!("");
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut config_source).add_option(&["--config", "-c"], Store, "Load config");
-        ap.refer(&mut path).add_argument("file-path", StoreOption, "File path");
+        ap.refer(&mut file).add_argument("file-path", Store, "File path").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Load({
-            if let Some(ref path) = path {
-                ScriptSource::File(sh::expand_to_pathbuf(path))
-            } else {
-                ScriptSource::Config(config_source)
-            }
-        })
+        Operation::Load(Path::new(&file).to_path_buf())
     })
 }
 
@@ -649,24 +634,6 @@ impl FromStr for Session {
     }
 }
 
-impl FromStr for ConfigSource {
-    type Err = String;
-
-    fn from_str(src: &str) -> Result<Self, String> {
-        use self::ConfigSource::*;
-
-        match src {
-            "user" | "u" =>
-                Ok(User),
-            "default" | "d" =>
-                Ok(Default),
-            "session" | "s" =>
-                Ok(DefaultSession),
-            _ =>
-                Err(format!("Invalid config source: {}", src))
-        }
-    }
-}
 
 impl FromStr for MetaEntry {
     type Err = String;

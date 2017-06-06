@@ -14,9 +14,9 @@ use entry;
 use filer;
 use gui::Direction;
 use mapping::{self, mouse_mapping};
-use script::ScriptSource;
 use shellexpand_wrapper as sh;
 use size::Region;
+use stringer::Session;
 
 mod parser;
 
@@ -33,7 +33,7 @@ pub enum Operation {
     CountDigit(u8),
     DefineUserSwitch(String, Vec<Vec<String>>),
     Draw,
-    Editor(Option<String>, Vec<ScriptSource>),
+    Editor(Option<String>, Vec<PathBuf>, Vec<Session>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Fill(Region, usize), /* region, cell index */
@@ -44,7 +44,7 @@ pub enum Operation {
     KillTimer(String),
     Last(Option<usize>, bool, MoveBy, bool),
     LazyDraw(u64, bool), /* serial, to_end */
-    Load(ScriptSource),
+    Load(PathBuf),
     Map(MappingTarget, Vec<String>),
     MoveEntry(entry::Position, entry::Position),
     Multi(VecDeque<Operation>, bool), /* operations, async */
@@ -148,16 +148,6 @@ pub enum OptionName {
     ColorErrorBackground,
     ColorFill,
     User(String),
-}
-
-#[derive(Clone, Debug, PartialEq, Copy)]
-pub enum Session {
-    Options,
-    Entries,
-    Position,
-    Paths,
-    Mappings,
-    All,
 }
 
 #[derive(Clone, Debug, PartialEq)]

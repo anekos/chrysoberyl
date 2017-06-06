@@ -250,7 +250,7 @@ pub fn parse_load(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut file).add_argument("file-path", Store, "File path").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Load(Path::new(&file).to_path_buf())
+        Operation::Load(sh::expand_to_pathbuf(&file))
     })
 }
 

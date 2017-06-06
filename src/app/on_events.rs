@@ -341,7 +341,7 @@ pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Op
 }
 
 pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: Option<Meta>, force: bool, show: bool) {
-    fn find_siblling(base: &PathBuf, next: bool) -> Option<PathBuf> {
+    fn find_sibling(base: &PathBuf, next: bool) -> Option<PathBuf> {
         base.parent().and_then(|dir| {
             dir.read_dir().ok().and_then(|dir| {
                 let mut entries: Vec<PathBuf> = dir.filter_map(|it| it.ok().map(|it| it.path())).collect();
@@ -364,9 +364,9 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
     let found = app.entries.current(&app.pointer).and_then(|(entry, _)| {
         match entry.content {
             File(ref path) | Http(ref path, _) =>
-                find_siblling(path, next),
+                find_sibling(path, next),
                 Archive(ref path, _) | Pdf(ref path, _) =>
-                    find_siblling(&*path, next),
+                    find_sibling(&*path, next),
         }
     });
 

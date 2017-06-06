@@ -4,6 +4,7 @@ use std::io:: Read;
 use std::path::Path;
 use std::sync::mpsc::Sender;
 
+use config::DEFAULT_CONFIG;
 use operation::Operation;
 
 
@@ -14,10 +15,10 @@ pub fn load(tx: &Sender<Operation>, source: &str) {
     puts_event!("input/script/open");
     for line in lines {
         match Operation::parse(line) {
-            Ok(Operation::Load(ref file)) => 
+            Ok(Operation::Load(ref file)) =>
                 load_from_file(tx, file),
-            // Ok(Operation::LoadDefault) =>
-            //     load(tx, file),
+            Ok(Operation::LoadDefault) =>
+                load(tx, DEFAULT_CONFIG),
             Ok(op) =>
                 tx.send(op).unwrap(),
             Err(err) =>

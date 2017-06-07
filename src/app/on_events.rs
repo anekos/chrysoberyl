@@ -29,7 +29,7 @@ use poppler::PopplerDocument;
 use script;
 use shell;
 use state::RegionFunction;
-use stringer::{Session, write_sessions};
+use session::{Session, write_sessions};
 use utils::path_to_str;
 
 use app::*;

@@ -17,7 +17,7 @@ use gui::Direction;
 use mapping::{self, mouse_mapping};
 use shellexpand_wrapper as sh;
 use size::Region;
-use stringer::Session;
+use session::Session;
 
 mod parser;
 

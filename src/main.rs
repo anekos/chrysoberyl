@@ -44,7 +44,6 @@ mod controller;
 mod editor;
 mod entry;
 mod entry_image;
-mod events;
 mod filer;
 mod filter;
 mod fragile_input;
@@ -70,6 +69,7 @@ mod state;
 mod stringer;
 mod termination;
 mod timer;
+mod ui_event;
 mod utils;
 mod validation;
 

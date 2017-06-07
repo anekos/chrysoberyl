@@ -15,12 +15,8 @@ pub fn load(tx: &Sender<Operation>, source: &str) {
     puts_event!("input/script/open");
     for line in lines {
         match Operation::parse(line) {
-            Ok(Operation::Load(ref file)) =>
-                load_from_file(tx, file),
-            Ok(Operation::LoadDefault) =>
-                load(tx, DEFAULT_CONFIG),
             Ok(op) =>
-                tx.send(op).unwrap(),
+                process(tx, op),
             Err(err) =>
                 puts_error!("at" => "input/script", "reason" => s!(err), "for" => o!(line)),
         }
@@ -33,5 +29,16 @@ pub fn load_from_file(tx: &Sender<Operation>, file: &Path) {
     match File::open(file).and_then(|mut file| file.read_to_string(&mut source)) {
         Ok(_) => load(tx, &source),
         Err(err) => puts_error!("at" => o!("on_load"), "reason" => s!(err)),
+    }
+}
+
+fn process(tx: &Sender<Operation>, operation: Operation) {
+    match operation {
+        Operation::Load(ref file) =>
+            load_from_file(tx, file),
+        Operation::LoadDefault =>
+            load(tx, DEFAULT_CONFIG),
+        op =>
+            tx.send(op).unwrap(),
     }
 }

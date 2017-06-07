@@ -20,6 +20,7 @@ use filer;
 use filter;
 use fragile_input::new_fragile_input;
 use gui::Direction;
+use mapping;
 use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater};
 use option::user::DummySwtich;
 use output;
@@ -162,19 +163,25 @@ pub fn on_initialized(app: &mut App) {
     app.gui.update_colors();
     app.tx.send(Operation::Draw).unwrap();
     puts_event!("initialized");
+    fire_event(app, "initialize");
 }
 
 pub fn on_input(app: &mut App, input: &Input) {
     let (width, height) = app.gui.window.get_size();
-    if let Some(op) = app.mapping.matched(input, width, height) {
-        match op {
+    let operations = app.mapping.matched(input, width, height);
+
+    if operations.is_empty() {
+        puts_event!("input", "type" => input.type_name(), "name" => input.text());
+        return;
+    }
+
+    for op in operations {
+        match Operation::parse_from_vec(&op) {
             Ok(op) =>
                 app.operate(Operation::Context(OperationContext::Input(input.clone()), Box::new(op))),
             Err(err) =>
                 puts_error!("at" => "input", "reason" => err)
         }
-    } else {
-        puts_event!("input", "type" => input.type_name(), "name" => input.text());
     }
 }
 
@@ -212,15 +219,17 @@ pub fn on_load_default(app: &mut App) {
     script::load(&app.tx, DEFAULT_CONFIG);
 }
 
-pub fn on_map(app: &mut App, target: &MappingTarget, operation: Vec<String>) {
+pub fn on_map(app: &mut App, target: MappingTarget, operation: Vec<String>) {
     use app::MappingTarget::*;
 
     // puts_event!("map", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
-    match *target {
-        Key(ref key_sequence) =>
-            app.mapping.register_key(key_sequence.clone(), operation),
-        Mouse(ref button, ref area) =>
-            app.mapping.register_mouse(*button, area.clone(), operation)
+    match target {
+        Key(key_sequence) =>
+            app.mapping.register_key(key_sequence, operation),
+        Mouse(button, area) =>
+            app.mapping.register_mouse(button, area, operation),
+        Event(event_name, id) =>
+            app.mapping.register_event(event_name, id, operation),
     }
 }
 
@@ -396,6 +405,11 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
 pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Option<Meta>, force: bool) {
     let buffered = app.http_cache.fetch(url, meta, force);
     push_buffered(app, updated, buffered);
+}
+
+pub fn on_quit(app: &mut App) {
+    fire_event(app, "quit");
+    termination::execute();
 }
 
 pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) {
@@ -657,4 +671,8 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
         updated.label = true;
     }
     app.do_show(updated);
+}
+
+fn fire_event(app: &mut App, event_name: &str) {
+    app.operate(Operation::Input(mapping::Input::Event(o!(event_name))));
 }

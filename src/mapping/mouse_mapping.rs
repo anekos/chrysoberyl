@@ -2,8 +2,6 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use operation::Operation;
-
 
 
 pub struct MouseMapping {
@@ -41,18 +39,18 @@ impl MouseMapping {
         self.table.insert(button, vec![entry]);
     }
 
-    pub fn matched(&self, button: u32, x: i32, y: i32, width: i32, height: i32) -> Option<Result<Operation, String>> {
+    pub fn matched(&self, button: u32, x: i32, y: i32, width: i32, height: i32) -> Option<Vec<String>> {
         self.table.get(&button).and_then(|entries| {
             let mut found = None;
 
             for entry in entries.iter() {
                 if let Some(area) = entry.area.clone() {
                     if area.contains(x, y, width, height) {
-                        found = Some(Operation::parse_from_vec(&entry.operation));
+                        found = Some(entry.operation.clone());
                         break;
                     }
                 } else if found.is_none() {
-                    found = Some(Operation::parse_from_vec(&entry.operation));
+                    found = Some(entry.operation.clone());
                 }
             }
 

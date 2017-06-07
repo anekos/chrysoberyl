@@ -17,7 +17,7 @@ use rand::{self, ThreadRng};
 use constant;
 use controller;
 use entry::{EntryContainer, EntryContainerOptions};
-use events;
+use ui_event;
 use gui::Gui;
 use http_cache::HttpCache;
 use image_cache::ImageCache;
@@ -132,7 +132,7 @@ impl App {
             }
         }
 
-        events::register(&gui, &primary_tx);
+        ui_event::register(&gui, &primary_tx);
         controller::register(&tx, &initial.controllers);
 
         app.update_label_visibility();
@@ -226,8 +226,8 @@ impl App {
                     on_load(self, file),
                 LoadDefault =>
                     on_load_default(self),
-                Map(ref target, ref mapped_operation) =>
-                    on_map(self, target, mapped_operation.to_vec()),
+                Map(target, mapped_operation) =>
+                    on_map(self, target, mapped_operation),
                 MoveEntry(ref from, ref to) =>
                     on_move_entry(self, &mut updated, from, to),
                 Multi(ops, async) =>
@@ -257,7 +257,7 @@ impl App {
                 PushURL(url, meta, force) =>
                     on_push_url(self, &mut updated, url, meta, force),
                 Quit =>
-                    termination::execute(),
+                    on_quit(self),
                 Random =>
                     on_random(self, &mut updated, len),
                 Refresh =>

@@ -17,7 +17,7 @@ use rand::{self, ThreadRng};
 use constant;
 use controller;
 use entry::{EntryContainer, EntryContainerOptions};
-use events;
+use ui_event;
 use gui::Gui;
 use http_cache::HttpCache;
 use image_cache::ImageCache;
@@ -132,7 +132,7 @@ impl App {
             }
         }
 
-        events::register(&gui, &primary_tx);
+        ui_event::register(&gui, &primary_tx);
         controller::register(&tx, &initial.controllers);
 
         app.update_label_visibility();

@@ -453,7 +453,7 @@ where T: FnOnce(String, Option<Meta>, bool) -> Operation {
         ap.refer(&mut path).add_argument("Path", Store, "Path to resource").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        op(sh::expand(&path), new_opt_meta(meta), force)
+        op(path, new_opt_meta(meta), force)
     })
 }
 
@@ -500,7 +500,7 @@ pub fn parse_set_env(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut value).add_argument("env-value", StoreOption, "Value");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::SetEnv(name, value.map(|it| sh::expand(&it)))
+        Operation::SetEnv(name, value.map(Expandable))
     })
 }
 

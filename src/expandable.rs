@@ -1,4 +1,5 @@
 
+use std::path::PathBuf;
 use std::string::ToString;
 
 use shellexpand_wrapper as sh;
@@ -14,6 +15,13 @@ impl ToString for Expandable {
         sh::expand(&self.0)
     }
 }
+
+impl Expandable {
+    pub fn to_path_buf(&self) -> PathBuf {
+        sh::expand_to_pathbuf(&self.0)
+    }
+}
+
 
 pub fn expand_all(xs: &[Expandable]) -> Vec<String> {
     xs.iter().map(|it| it.to_string()).collect()

@@ -347,7 +347,7 @@ pub fn on_push_local_file(app: &mut App, updated: &mut Updated, file: PathBuf, m
         }
     }
 
-    app.operate(Operation::PushImage(file, meta, force));
+    on_push_image(app, updated, file.to_path_buf(), meta, force)
 }
 
 pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) {

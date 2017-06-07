@@ -247,11 +247,11 @@ impl App {
                 Pull =>
                     on_pull(self, &mut updated),
                 Push(path, meta, force) =>
-                    on_push(self, &mut updated, path, meta, force),
+                    on_push(self, &mut updated, path.to_string(), meta, force),
                 PushImage(file, meta, force) =>
-                    on_push_image(self, &mut updated, file, meta, force),
+                    on_push_image(self, &mut updated, file.to_path_buf(), meta, force),
                 PushPdf(file, meta, force) =>
-                    on_push_pdf(self, &mut updated, file, meta, force),
+                    on_push_pdf(self, &mut updated, file.to_path_buf(), meta, force),
                 PushSibling(next, meta, force, show) =>
                     on_push_sibling(self, &mut updated, next, meta, force, show),
                 PushURL(url, meta, force) =>
@@ -264,8 +264,8 @@ impl App {
                     updated.pointer = true,
                 Save(ref path, ref sources) =>
                     on_save(self, path, sources),
-                SetEnv(ref name, ref value) =>
-                    on_set_env(self, name, value),
+                SetEnv(name, value) =>
+                    on_set_env(self, &name, &value.map(|it| it.to_string())),
                 Scroll(ref direction, ref operation, scroll_size) =>
                     on_scroll(self, direction, operation, scroll_size),
                 Shell(async, read_operations, ref command_line, ref stdin_sources) =>

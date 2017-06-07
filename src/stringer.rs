@@ -94,7 +94,7 @@ fn write_entry(entry: &Entry, out: &mut String, previous: &mut Key) {
 
     match entry.content {
         File(ref path) =>
-            sprintln!(out, "@push-file {}", escape_pathbuf(path)),
+            sprintln!(out, "@push-image {}", escape_pathbuf(path)),
         Http(_, ref url) =>
             sprintln!(out, "@push-url {}", escape(url)),
         Archive(ref path, _) if path_changed =>

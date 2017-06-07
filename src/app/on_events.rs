@@ -163,12 +163,13 @@ pub fn on_initialized(app: &mut App) {
     app.gui.update_colors();
     app.tx.send(Operation::Draw).unwrap();
     puts_event!("initialized");
+    fire_event(app, "initialize");
 }
 
 pub fn on_input(app: &mut App, input: &Input) {
     let (width, height) = app.gui.window.get_size();
     let operations = app.mapping.matched(input, width, height);
-    
+
     if operations.is_empty() {
         puts_event!("input", "type" => input.type_name(), "name" => input.text());
         return;
@@ -407,7 +408,7 @@ pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Opti
 }
 
 pub fn on_quit(app: &mut App) {
-    app.operate(Operation::Input(mapping::Input::Event(o!("quit"))));
+    fire_event(app, "quit");
     termination::execute();
 }
 
@@ -670,4 +671,8 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
         updated.label = true;
     }
     app.do_show(updated);
+}
+
+fn fire_event(app: &mut App, event_name: &str) {
+    app.operate(Operation::Input(mapping::Input::Event(o!(event_name))));
 }

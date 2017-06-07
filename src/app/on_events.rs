@@ -155,8 +155,8 @@ pub fn on_fragile(app: &mut App, path: &PathBuf) {
     new_fragile_input(app.tx.clone(), path_to_str(path));
 }
 
-pub fn on_filter(app: &App, command_line: Vec<Expandable>) {
-    filter::start(expand_all(&command_line), app.tx.clone());
+pub fn on_filter(app: &App, command_line: &[Expandable]) {
+    filter::start(expand_all(command_line), app.tx.clone());
 }
 
 pub fn on_initialized(app: &mut App) {
@@ -331,10 +331,10 @@ pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<
         return;
     }
 
-    on_push_local_file(app, updated, Path::new(&path).to_path_buf(), meta, force)
+    on_push_local_file(app, updated, &Path::new(&path).to_path_buf(), meta, force)
 }
 
-pub fn on_push_local_file(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) {
+pub fn on_push_local_file(app: &mut App, updated: &mut Updated, file: &PathBuf, meta: Option<Meta>, force: bool) {
     if let Ok(file) = file.canonicalize() {
         if let Some(ext) = file.extension() {
             match &*ext.to_str().unwrap().to_lowercase() {
@@ -347,7 +347,7 @@ pub fn on_push_local_file(app: &mut App, updated: &mut Updated, file: PathBuf, m
         }
     }
 
-    on_push_image(app, updated, file.to_path_buf(), meta, force)
+    on_push_image(app, updated, file.clone(), meta, force)
 }
 
 pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) {
@@ -399,7 +399,7 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
         if show {
             on_show(app, updated, &SearchKey { path: o!(path_to_str(&found)), index: None});
         }
-        on_push_local_file(app, updated, found, meta, force);
+        on_push_local_file(app, updated, &found, meta, force);
     }
 }
 

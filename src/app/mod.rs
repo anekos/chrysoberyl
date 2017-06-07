@@ -204,7 +204,7 @@ impl App {
                    on_editor(self, editor_command.clone(), files, sessions),
                 Expand(recursive, ref base) =>
                     on_expand(self, &mut updated, recursive, base.clone()),
-                Filter(command_line) =>
+                Filter(ref command_line) =>
                     on_filter(self, command_line),
                 Fill(region, cell_index) =>
                     on_fill(self, &mut updated, region, cell_index),

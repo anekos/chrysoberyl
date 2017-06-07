@@ -11,6 +11,7 @@ use archive::ArchiveEntry;
 use color::Color;
 use entry::Meta;
 use entry;
+use expandable::Expandable;
 use filer;
 use gui::Direction;
 use mapping::{self, mouse_mapping};
@@ -67,7 +68,7 @@ pub enum Operation {
     Save(Option<PathBuf>, Vec<Session>),
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     SetEnv(String, Option<String>),
-    Shell(bool, bool, Vec<String>, Vec<Session>), /* async, operation, command_line, session */
+    Shell(bool, bool, Vec<Expandable>, Vec<Session>), /* async, operation, command_line, session */
     Show(entry::SearchKey),
     Shuffle(bool), /* Fix current */
     Sort,
@@ -81,7 +82,6 @@ pub enum Operation {
     WindowResized,
     Write(PathBuf, Option<usize>),
 }
-
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CherenkovParameter {

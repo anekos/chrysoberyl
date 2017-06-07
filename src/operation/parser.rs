@@ -8,6 +8,7 @@ use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse
 
 use color::Color;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
+use expandable::Expandable;
 use filer;
 use mapping::{Input, InputType, mouse_mapping};
 use shellexpand_wrapper as sh;
@@ -535,11 +536,8 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
     } .and_then(|_| {
-        let mut cl: Vec<String> = vec![];
-        for it in command_line {
-            cl.push(sh::expand(&it));
-        }
-        Ok(Operation::Shell(async, read_operations, cl, sessions))
+        let command_line = command_line.into_iter().map(Expandable).collect();
+        Ok(Operation::Shell(async, read_operations, command_line, sessions))
     })
 }
 

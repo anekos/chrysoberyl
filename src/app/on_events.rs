@@ -16,6 +16,7 @@ use archive;
 use config::DEFAULT_CONFIG;
 use editor;
 use entry::{self, Meta, SearchKey};
+use expandable::{Expandable, expand_all};
 use filer;
 use filter;
 use fragile_input::new_fragile_input;
@@ -453,14 +454,14 @@ pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scr
     }
 }
 
-pub fn on_shell(app: &App, async: bool, read_operations: bool, command_line: &[String], tx: Sender<Operation>, sessions: &[Session]) {
+pub fn on_shell(app: &App, async: bool, read_operations: bool, command_line: &[Expandable], tx: Sender<Operation>, sessions: &[Session]) {
     let stdin = if !sessions.is_empty() {
         Some(with_ouput_string!(out, write_sessions(app, sessions, out)))
     } else {
         None
     };
 
-    shell::call(async, command_line, stdin, option!(read_operations, tx));
+    shell::call(async, &expand_all(command_line), stdin, option!(read_operations, tx));
 }
 
 pub fn on_show(app: &mut App, updated: &mut Updated, key: &SearchKey) {

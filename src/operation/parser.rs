@@ -157,8 +157,8 @@ pub fn parse_define_switch(args: &[String]) -> Result<Operation, String> {
 
 pub fn parse_editor(args: &[String]) -> Result<Operation, String> {
     let mut sessions: Vec<Session> = vec![];
-    let mut files: Vec<String> = vec![];
-    let mut command_line: Option<String> = None;
+    let mut files: Vec<Expandable> = vec![];
+    let mut command_line: Option<Expandable> = None;
 
     {
         let mut ap = ArgumentParser::new();
@@ -167,7 +167,6 @@ pub fn parse_editor(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut command_line).add_argument("command-line", StoreOption, "Command line to open editor");
         parse_args(&mut ap, args)
     } .map(|_| {
-        let files = files.iter().map(|it| Path::new(it).to_path_buf()).collect();
         Operation::Editor(command_line, files, sessions)
     })
 }
@@ -187,7 +186,7 @@ pub fn parse_expand(args: &[String]) -> Result<Operation, String> {
 }
 
 pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
-    let mut command_line: Vec<String> = vec![];
+    let mut command_line: Vec<Expandable> = vec![];
 
     {
         let mut ap = ArgumentParser::new();

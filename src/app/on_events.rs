@@ -94,17 +94,17 @@ pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region) {
     updated.image_options = true;
 }
 
-pub fn on_editor(app: &mut App, editor_command: Option<String>, files: &[PathBuf], sessions: &[Session]) {
+pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Expandable], sessions: &[Session]) {
     let tx = app.tx.clone();
     let source = with_ouput_string!(out, {
         for file in files {
-            if let Err(err) = File::open(file).and_then(|mut file| file.read_to_string(out)) {
+            if let Err(err) = File::open(file.to_path_buf()).and_then(|mut file| file.read_to_string(out)) {
                 puts_error!("at" => o!("on_load"), "reason" => s!(err));
             }
         }
         write_sessions(app, sessions, out);
     });
-    spawn(move || editor::start_edit(&tx, editor_command, &source));
+    spawn(move || editor::start_edit(&tx, editor_command.map(|it| it.to_string()), &source));
 }
 
 pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Option<PathBuf>) {
@@ -155,8 +155,8 @@ pub fn on_fragile(app: &mut App, path: &PathBuf) {
     new_fragile_input(app.tx.clone(), path_to_str(path));
 }
 
-pub fn on_filter(app: &App, command_line: Vec<String>) {
-    filter::start(command_line, app.tx.clone());
+pub fn on_filter(app: &App, command_line: Vec<Expandable>) {
+    filter::start(expand_all(&command_line), app.tx.clone());
 }
 
 pub fn on_initialized(app: &mut App) {

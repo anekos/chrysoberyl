@@ -1,5 +1,6 @@
 
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::string::ToString;
 
 use shellexpand_wrapper as sh;
@@ -13,6 +14,14 @@ pub struct Expandable(pub String);
 impl ToString for Expandable {
     fn to_string(&self) -> String {
         sh::expand(&self.0)
+    }
+}
+
+impl FromStr for Expandable {
+    type Err = String;
+
+    fn from_str(src: &str) -> Result<Self, String> {
+        Ok(Expandable(o!(src)))
     }
 }
 

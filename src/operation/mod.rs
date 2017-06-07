@@ -34,11 +34,11 @@ pub enum Operation {
     CountDigit(u8),
     DefineUserSwitch(String, Vec<Vec<String>>),
     Draw,
-    Editor(Option<String>, Vec<PathBuf>, Vec<Session>),
+    Editor(Option<Expandable>, Vec<Expandable>, Vec<Session>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Fill(Region, usize), /* region, cell index */
-    Filter(Vec<String>),
+    Filter(Vec<Expandable>),
     Fragile(PathBuf),
     Initialized,
     Input(mapping::Input),

@@ -166,15 +166,20 @@ pub fn on_initialized(app: &mut App) {
 
 pub fn on_input(app: &mut App, input: &Input) {
     let (width, height) = app.gui.window.get_size();
-    if let Some(op) = app.mapping.matched(input, width, height) {
-        match op {
+    let operations = app.mapping.matched(input, width, height);
+    
+    if operations.is_empty() {
+        puts_event!("input", "type" => input.type_name(), "name" => input.text());
+        return;
+    }
+
+    for op in operations {
+        match Operation::parse_from_vec(&op) {
             Ok(op) =>
                 app.operate(Operation::Context(OperationContext::Input(input.clone()), Box::new(op))),
             Err(err) =>
                 puts_error!("at" => "input", "reason" => err)
         }
-    } else {
-        puts_event!("input", "type" => input.type_name(), "name" => input.text());
     }
 }
 
@@ -212,15 +217,17 @@ pub fn on_load_default(app: &mut App) {
     script::load(&app.tx, DEFAULT_CONFIG);
 }
 
-pub fn on_map(app: &mut App, target: &MappingTarget, operation: Vec<String>) {
+pub fn on_map(app: &mut App, target: MappingTarget, operation: Vec<String>) {
     use app::MappingTarget::*;
 
     // puts_event!("map", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
-    match *target {
-        Key(ref key_sequence) =>
-            app.mapping.register_key(key_sequence.clone(), operation),
-        Mouse(ref button, ref area) =>
-            app.mapping.register_mouse(*button, area.clone(), operation)
+    match target {
+        Key(key_sequence) =>
+            app.mapping.register_key(key_sequence, operation),
+        Mouse(button, area) =>
+            app.mapping.register_mouse(button, area, operation),
+        Event(event_name, id) =>
+            app.mapping.register_event(event_name, id, operation),
     }
 }
 

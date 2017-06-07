@@ -226,8 +226,8 @@ impl App {
                     on_load(self, file),
                 LoadDefault =>
                     on_load_default(self),
-                Map(ref target, ref mapped_operation) =>
-                    on_map(self, target, mapped_operation.to_vec()),
+                Map(target, mapped_operation) =>
+                    on_map(self, target, mapped_operation),
                 MoveEntry(ref from, ref to) =>
                     on_move_entry(self, &mut updated, from, to),
                 Multi(ops, async) =>

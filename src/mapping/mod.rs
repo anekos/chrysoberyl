@@ -1,23 +1,25 @@
 
 use gdk;
 
-use operation::Operation;
-
 
 pub mod key_mapping;
 pub mod mouse_mapping;
+pub mod event_mapping;
+
 
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Input {
     Key(String),
-    MouseButton((i32, i32), u32) // (X, Y), Button
+    MouseButton((i32, i32), u32), // (X, Y), Button
+    Event(String), // event name
 }
 
 #[derive(Clone, Copy)]
 pub enum InputType {
     Key,
-    MouseButton
+    MouseButton,
+    Event,
 }
 
 
@@ -25,6 +27,7 @@ pub struct Mapping {
     key_input_history: key_mapping::KeyInputHistory,
     pub key_mapping: key_mapping::KeyMapping,
     pub mouse_mapping: mouse_mapping::MouseMapping,
+    pub event_mapping: event_mapping::EventMapping,
 }
 
 
@@ -34,6 +37,7 @@ impl Mapping {
             key_input_history: key_mapping::KeyInputHistory::new(),
             key_mapping: key_mapping::KeyMapping::new(),
             mouse_mapping: mouse_mapping::MouseMapping::new(),
+            event_mapping: event_mapping::EventMapping::new(),
         }
     }
 
@@ -45,14 +49,20 @@ impl Mapping {
         self.mouse_mapping.register(button, area, operation);
     }
 
-    pub fn matched(&mut self, input: &Input, width: i32, height: i32) -> Option<Result<Operation, String>> {
+    pub fn register_event(&mut self, event_name: String, id: Option<String>, operation: Vec<String>) {
+        self.event_mapping.register(event_name, id, operation);
+    }
+
+    pub fn matched(&mut self, input: &Input, width: i32, height: i32) -> Vec<Vec<String>> {
         match *input {
             Input::Key(ref key) => {
                 self.key_input_history.push(key.clone(), self.key_mapping.depth);
-                self.key_mapping.matched(&self.key_input_history)
+                self.key_mapping.matched(&self.key_input_history).into_iter().collect()
             }
             Input::MouseButton((x, y), ref button) =>
-                self.mouse_mapping.matched(*button, x, y, width, height),
+                self.mouse_mapping.matched(*button, x, y, width, height).into_iter().collect(),
+            Input::Event(ref event_name) =>
+                self.event_mapping.matched(event_name),
         }
     }
 }
@@ -89,14 +99,16 @@ impl Input {
     pub fn text(&self) -> String {
         match *self {
             Input::Key(ref name) => o!(name),
-            Input::MouseButton(ref position, ref button) => format!("{:?}, {}", position, button)
+            Input::MouseButton(ref position, ref button) => format!("{:?}, {}", position, button),
+            Input::Event(ref event_name) => o!(event_name),
         }
     }
 
     pub fn type_name(&self) -> &str {
         match *self {
             Input::Key(_) => "key",
-            Input::MouseButton(_, _) => "mouse_button"
+            Input::MouseButton(_, _) => "mouse_button",
+            Input::Event(_) => "event"
         }
     }
 }

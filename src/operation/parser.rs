@@ -209,6 +209,8 @@ pub fn parse_input(args: &[String]) -> Result<Operation, String> {
                         Err(err) => Err(s!(err)),
                     }
                 }
+                InputType::Event =>
+                    Ok(Input::Event(o!(text))),
             }
         }
     }
@@ -219,8 +221,9 @@ pub fn parse_input(args: &[String]) -> Result<Operation, String> {
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut input_type)
-            .add_option(&["--key", "-k"], StoreConst(InputType::Key), "For keyboard (default)")
-            .add_option(&["--mouse-button", "-m"], StoreConst(InputType::MouseButton), "For mouse button");
+            .add_option(&["--key", "-k"], StoreConst(InputType::Key), "Keyboard")
+            .add_option(&["--mouse-button", "-m"], StoreConst(InputType::MouseButton), "Mouse button")
+            .add_option(&["--event", "-e"], StoreConst(InputType::Event), "Event");
         ap.refer(&mut input).add_argument("input", Store, "Input").required();
         parse_args(&mut ap, args)
     } .and_then(|_| {
@@ -284,11 +287,28 @@ pub fn parse_map(args: &[String]) -> Result<Operation, String> {
         })
     }
 
+    fn parse_map_event(args: &[String]) -> Result<Operation, String> {
+        let mut event_name = o!("");
+        let mut group: Option<String> = None;
+        let mut to: Vec<String> = vec![];
+
+        {
+            let mut ap = ArgumentParser::new();
+            ap.refer(&mut group).add_option(&["--group", "-g"], StoreOption, "Event group");
+            ap.refer(&mut event_name).add_argument("event-name", Store, "Event name").required();
+            ap.refer(&mut to).add_argument("to", List, "Command").required();
+            parse_args(&mut ap, args)
+        } .map(|_| {
+            Operation::Map(MappingTarget::Event(event_name, group), to)
+        })
+    }
+
     if let Some(target) = args.get(1) {
         let args = &args[1..];
         match &**target {
             "k" | "key" => parse_map_key(args),
             "m" | "button" | "mouse" | "mouse-button" => parse_map_mouse(args),
+            "e" | "event" => parse_map_event(args),
             _ => Err(format!("Invalid mapping target: {}", target))
         }
     } else {

@@ -1,8 +1,6 @@
 
 use std::collections::{HashMap, VecDeque};
 
-use operation::Operation;
-
 
 
 type KeySequence = Vec<String>;
@@ -66,7 +64,7 @@ impl KeyMapping {
         }
     }
 
-    pub fn matched(&self, history: &KeyInputHistory) -> Option<Result<Operation, String>> {
+    pub fn matched(&self, history: &KeyInputHistory) -> Option<Vec<String>> {
         let entries = &history.entries;
         let len = entries.len();
         for i in 0..len {
@@ -77,7 +75,7 @@ impl KeyMapping {
                         MappingEntry::Sub(ref sub) =>
                             mapping = sub,
                         MappingEntry::Code(ref code) if j == len - 1 =>
-                            return Some(Operation::parse_from_vec(code)),
+                            return Some(code.clone()),
                         _ =>
                             ()
                     }

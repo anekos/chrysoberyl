@@ -8,6 +8,7 @@ use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse
 
 use color::Color;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
+use expandable::Expandable;
 use filer;
 use mapping::{Input, InputType, mouse_mapping};
 use shellexpand_wrapper as sh;
@@ -156,8 +157,8 @@ pub fn parse_define_switch(args: &[String]) -> Result<Operation, String> {
 
 pub fn parse_editor(args: &[String]) -> Result<Operation, String> {
     let mut sessions: Vec<Session> = vec![];
-    let mut files: Vec<String> = vec![];
-    let mut command_line: Option<String> = None;
+    let mut files: Vec<Expandable> = vec![];
+    let mut command_line: Option<Expandable> = None;
 
     {
         let mut ap = ArgumentParser::new();
@@ -166,7 +167,6 @@ pub fn parse_editor(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut command_line).add_argument("command-line", StoreOption, "Command line to open editor");
         parse_args(&mut ap, args)
     } .map(|_| {
-        let files = files.iter().map(|it| Path::new(it).to_path_buf()).collect();
         Operation::Editor(command_line, files, sessions)
     })
 }
@@ -186,7 +186,7 @@ pub fn parse_expand(args: &[String]) -> Result<Operation, String> {
 }
 
 pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
-    let mut command_line: Vec<String> = vec![];
+    let mut command_line: Vec<Expandable> = vec![];
 
     {
         let mut ap = ArgumentParser::new();
@@ -452,7 +452,7 @@ where T: FnOnce(String, Option<Meta>, bool) -> Operation {
         ap.refer(&mut path).add_argument("Path", Store, "Path to resource").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        op(sh::expand(&path), new_opt_meta(meta), force)
+        op(path, new_opt_meta(meta), force)
     })
 }
 
@@ -499,7 +499,7 @@ pub fn parse_set_env(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut value).add_argument("env-value", StoreOption, "Value");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::SetEnv(name, value.map(|it| sh::expand(&it)))
+        Operation::SetEnv(name, value.map(Expandable))
     })
 }
 
@@ -535,11 +535,8 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
     } .and_then(|_| {
-        let mut cl: Vec<String> = vec![];
-        for it in command_line {
-            cl.push(sh::expand(&it));
-        }
-        Ok(Operation::Shell(async, read_operations, cl, sessions))
+        let command_line = command_line.into_iter().map(Expandable).collect();
+        Ok(Operation::Shell(async, read_operations, command_line, sessions))
     })
 }
 

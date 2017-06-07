@@ -11,6 +11,7 @@ use archive::ArchiveEntry;
 use color::Color;
 use entry::Meta;
 use entry;
+use expandable::Expandable;
 use filer;
 use gui::Direction;
 use mapping::{self, mouse_mapping};
@@ -33,11 +34,11 @@ pub enum Operation {
     CountDigit(u8),
     DefineUserSwitch(String, Vec<Vec<String>>),
     Draw,
-    Editor(Option<String>, Vec<PathBuf>, Vec<Session>),
+    Editor(Option<Expandable>, Vec<Expandable>, Vec<Session>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Fill(Region, usize), /* region, cell index */
-    Filter(Vec<String>),
+    Filter(Vec<Expandable>),
     Fragile(PathBuf),
     Initialized,
     Input(mapping::Input),
@@ -56,9 +57,9 @@ pub enum Operation {
     Previous(Option<usize>, bool, MoveBy, bool),
     PrintEntries,
     Pull,
-    Push(String, Option<Meta>, bool), /* path, meta, force */
-    PushImage(PathBuf, Option<Meta>, bool),
-    PushPdf(PathBuf, Option<Meta>, bool),
+    Push(Expandable, Option<Meta>, bool), /* path, meta, force */
+    PushImage(Expandable, Option<Meta>, bool),
+    PushPdf(Expandable, Option<Meta>, bool),
     PushSibling(bool, Option<Meta>, bool, bool), /* next?, meta, force, show */
     PushURL(String, Option<Meta>, bool),
     Quit,
@@ -66,8 +67,8 @@ pub enum Operation {
     Refresh,
     Save(Option<PathBuf>, Vec<Session>),
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
-    SetEnv(String, Option<String>),
-    Shell(bool, bool, Vec<String>, Vec<Session>), /* async, operation, command_line, session */
+    SetEnv(String, Option<Expandable>),
+    Shell(bool, bool, Vec<Expandable>, Vec<Session>), /* async, operation, command_line, session */
     Show(entry::SearchKey),
     Shuffle(bool), /* Fix current */
     Sort,
@@ -81,7 +82,6 @@ pub enum Operation {
     WindowResized,
     Write(PathBuf, Option<usize>),
 }
-
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CherenkovParameter {
@@ -221,7 +221,7 @@ impl Operation {
     pub fn parse_fuzziness(s: &str) -> Result<Operation, String> {
         match Operation::parse(s) {
             Err(ParsingError::InvalidOperation(err)) => Err(err),
-            Err(ParsingError::NotOperation) => Ok(Operation::Push(sh::expand(s), None, false)),
+            Err(ParsingError::NotOperation) => Ok(Operation::Push(Expandable(o!(s)), None, false)),
             Ok(op) => Ok(op)
         }
     }
@@ -304,10 +304,10 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@multi"                        => parse_multi(whole),
             "@next" | "@n"                  => parse_move(whole, Next),
             "@prev" | "@p" | "@previous"    => parse_move(whole, Previous),
-            "@push"                         => parse_push(whole, |it, meta, force| Push(sh::expand(&it), meta, force)),
+            "@push"                         => parse_push(whole, |it, meta, force| Push(Expandable(it), meta, force)),
             "@push-next"                    => parse_push_sibling(whole, true),
-            "@push-image"                   => parse_push(whole, |it, meta, force| PushImage(sh::expand_to_pathbuf(&it), meta, force)),
-            "@push-pdf"                     => parse_push(whole, |it, meta, force| PushPdf(sh::expand_to_pathbuf(&it), meta, force)),
+            "@push-image"                   => parse_push(whole, |it, meta, force| PushImage(Expandable(it), meta, force)),
+            "@push-pdf"                     => parse_push(whole, |it, meta, force| PushPdf(Expandable(it), meta, force)),
             "@push-previous" | "@push-prev" => parse_push_sibling(whole, false),
             "@push-url"                     => parse_push(whole, PushURL),
             "@quit"                         => Ok(Quit),

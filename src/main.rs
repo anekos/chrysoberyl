@@ -44,6 +44,7 @@ mod controller;
 mod editor;
 mod entry;
 mod entry_image;
+mod expandable;
 mod filer;
 mod filter;
 mod fragile_input;

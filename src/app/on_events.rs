@@ -16,6 +16,7 @@ use archive;
 use config::DEFAULT_CONFIG;
 use editor;
 use entry::{self, Meta, SearchKey};
+use expandable::{Expandable, expand_all};
 use filer;
 use filter;
 use fragile_input::new_fragile_input;
@@ -93,17 +94,17 @@ pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region) {
     updated.image_options = true;
 }
 
-pub fn on_editor(app: &mut App, editor_command: Option<String>, files: &[PathBuf], sessions: &[Session]) {
+pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Expandable], sessions: &[Session]) {
     let tx = app.tx.clone();
     let source = with_ouput_string!(out, {
         for file in files {
-            if let Err(err) = File::open(file).and_then(|mut file| file.read_to_string(out)) {
+            if let Err(err) = File::open(file.to_path_buf()).and_then(|mut file| file.read_to_string(out)) {
                 puts_error!("at" => o!("on_load"), "reason" => s!(err));
             }
         }
         write_sessions(app, sessions, out);
     });
-    spawn(move || editor::start_edit(&tx, editor_command, &source));
+    spawn(move || editor::start_edit(&tx, editor_command.map(|it| it.to_string()), &source));
 }
 
 pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Option<PathBuf>) {
@@ -154,8 +155,8 @@ pub fn on_fragile(app: &mut App, path: &PathBuf) {
     new_fragile_input(app.tx.clone(), path_to_str(path));
 }
 
-pub fn on_filter(app: &App, command_line: Vec<String>) {
-    filter::start(command_line, app.tx.clone());
+pub fn on_filter(app: &App, command_line: &[Expandable]) {
+    filter::start(expand_all(command_line), app.tx.clone());
 }
 
 pub fn on_initialized(app: &mut App) {
@@ -330,10 +331,10 @@ pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<
         return;
     }
 
-    on_push_local_file(app, updated, Path::new(&path).to_path_buf(), meta, force)
+    on_push_local_file(app, updated, &Path::new(&path).to_path_buf(), meta, force)
 }
 
-pub fn on_push_local_file(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) {
+pub fn on_push_local_file(app: &mut App, updated: &mut Updated, file: &PathBuf, meta: Option<Meta>, force: bool) {
     if let Ok(file) = file.canonicalize() {
         if let Some(ext) = file.extension() {
             match &*ext.to_str().unwrap().to_lowercase() {
@@ -346,7 +347,7 @@ pub fn on_push_local_file(app: &mut App, updated: &mut Updated, file: PathBuf, m
         }
     }
 
-    app.operate(Operation::PushImage(file, meta, force));
+    on_push_image(app, updated, file.clone(), meta, force)
 }
 
 pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) {
@@ -398,7 +399,7 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
         if show {
             on_show(app, updated, &SearchKey { path: o!(path_to_str(&found)), index: None});
         }
-        on_push_local_file(app, updated, found, meta, force);
+        on_push_local_file(app, updated, &found, meta, force);
     }
 }
 
@@ -453,14 +454,14 @@ pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scr
     }
 }
 
-pub fn on_shell(app: &App, async: bool, read_operations: bool, command_line: &[String], tx: Sender<Operation>, sessions: &[Session]) {
+pub fn on_shell(app: &App, async: bool, read_operations: bool, command_line: &[Expandable], tx: Sender<Operation>, sessions: &[Session]) {
     let stdin = if !sessions.is_empty() {
         Some(with_ouput_string!(out, write_sessions(app, sessions, out)))
     } else {
         None
     };
 
-    shell::call(async, command_line, stdin, option!(read_operations, tx));
+    shell::call(async, &expand_all(command_line), stdin, option!(read_operations, tx));
 }
 
 pub fn on_show(app: &mut App, updated: &mut Updated, key: &SearchKey) {

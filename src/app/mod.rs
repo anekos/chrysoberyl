@@ -418,6 +418,8 @@ impl App {
             });
         }
 
+        on_events::fire_event(self, "show-image");
+
         image_size
     }
 

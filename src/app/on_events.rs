@@ -634,6 +634,7 @@ pub fn on_window_resized(app: &mut App, updated: &mut Updated) {
     updated.image_options = true;
     // Ignore followed PreFetch
     app.pre_fetch_serial += 1;
+    fire_event(app, "resize-window");
 }
 
 pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) {
@@ -643,6 +644,9 @@ pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) {
     }
 }
 
+pub fn fire_event(app: &mut App, event_name: &str) {
+    app.operate(Operation::Input(mapping::Input::Event(o!(event_name))));
+}
 
 fn on_update_views(app: &mut App, updated: &mut Updated) {
     updated.image_options = true;
@@ -671,8 +675,4 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
         updated.label = true;
     }
     app.do_show(updated);
-}
-
-fn fire_event(app: &mut App, event_name: &str) {
-    app.operate(Operation::Input(mapping::Input::Event(o!(event_name))));
 }

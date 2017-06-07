@@ -257,7 +257,7 @@ impl App {
                 PushURL(url, meta, force) =>
                     on_push_url(self, &mut updated, url, meta, force),
                 Quit =>
-                    termination::execute(),
+                    on_quit(self),
                 Random =>
                     on_random(self, &mut updated, len),
                 Refresh =>

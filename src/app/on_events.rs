@@ -20,6 +20,7 @@ use filer;
 use filter;
 use fragile_input::new_fragile_input;
 use gui::Direction;
+use mapping;
 use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater};
 use option::user::DummySwtich;
 use output;
@@ -403,6 +404,11 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
 pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Option<Meta>, force: bool) {
     let buffered = app.http_cache.fetch(url, meta, force);
     push_buffered(app, updated, buffered);
+}
+
+pub fn on_quit(app: &mut App) {
+    app.operate(Operation::Input(mapping::Input::Event(o!("quit"))));
+    termination::execute();
 }
 
 pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) {

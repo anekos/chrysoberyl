@@ -7,7 +7,6 @@ use std::time::Duration;
 use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse, StoreOption, List};
 
 use color::Color;
-use constant;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
 use expandable::Expandable;
 use filer;
@@ -511,21 +510,22 @@ pub fn parse_save(args: &[String]) -> Result<Operation, String> {
 }
 
 pub fn parse_set_env(args: &[String]) -> Result<Operation, String> {
+    use constant::*;
+
     let mut name = o!("");
     let mut value: Option<String> = None;
-    let mut prefix = false;
+    let mut prefix: &str = "";
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut name).add_argument("env-name", Store, "Env name").required();
         ap.refer(&mut value).add_argument("env-value", StoreOption, "Value");
-        ap.refer(&mut prefix).add_option(&["--prefix", "-p"], StoreTrue, "Insert the prefix `CHRYSOBERYL_` to env name");
+        ap.refer(&mut prefix)
+            .add_option(&["--prefix", "-p"], StoreConst(USER_VARIABLE_PREFIX), "Insert the user prefix `CHRYSOBERYL_X_` to env name")
+            .add_option(&["--system-prefix", "-P"], StoreConst(VARIABLE_PREFIX), "Insert the system prefix `CHRYSOBERYL_` to env name");
         parse_args(&mut ap, args)
     } .map(|_| {
-        if prefix {
-            name = format!("{}{}", constant::VARIABLE_PREFIX, name);
-        }
-        Operation::SetEnv(name, value.map(Expandable))
+        Operation::SetEnv(format!("{}{}", prefix, name), value.map(Expandable))
     })
 }
 
@@ -669,6 +669,8 @@ impl FromStr for Session {
                 Ok(Session::Position),
             "mappings" | "map" | "m" =>
                 Ok(Session::Mappings),
+            "envs" | "env" | "E" =>
+                Ok(Session::Envs),
             "all" | "a" =>
                 Ok(Session::All),
             _ =>

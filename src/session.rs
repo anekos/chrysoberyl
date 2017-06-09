@@ -2,10 +2,12 @@
 use std::borrow::Cow;
 use std::fmt;
 use std::path::PathBuf;
+use std::env;
 
 use shell_escape;
 
 use app::App;
+use constant;
 use entry::{Entry, EntryContainer, KeyType, Key};
 use gui::Gui;
 use index_pointer::IndexPointer;
@@ -23,6 +25,7 @@ pub enum Session {
     Position,
     Paths,
     Mappings,
+    Envs,
     All,
 }
 
@@ -42,11 +45,13 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
         Paths => write_paths(&app.entries, out),
         Position => write_position(&app.entries, &app.pointer, out),
         Mappings => write_mappings(&app.mapping, out),
+        Envs => write_envs(out),
         All => {
             write_options(&app.states, &app.gui, out);
             write_entries(&app.entries, out);
             write_position(&app.entries, &app.pointer, out);
             write_mappings(&app.mapping, out);
+            write_envs(out);
         }
     }
 }
@@ -185,6 +190,16 @@ fn write_mouse_mappings(mappings: &mmap::MouseMapping, out: &mut String) {
                 sprint!(out, " {}", escape(it));
             }
             sprintln!(out, "");
+        }
+    }
+}
+
+fn write_envs(out: &mut String) {
+    for (key, value) in env::vars_os() {
+        if let (Ok(ref key), Ok(ref value)) = (key.into_string(), value.into_string()) {
+            if key.starts_with(constant::USER_VARIABLE_PREFIX) {
+                sprintln!(out, "@set-env {} {}", escape(key), escape(value));
+            }
         }
     }
 }

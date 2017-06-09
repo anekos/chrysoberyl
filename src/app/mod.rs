@@ -507,6 +507,7 @@ impl App {
                     Original => 'O',
                     OriginalOrCell => 'o',
                     Width => 'W',
+                    Fixed(_, _) => 'F',
                 });
                 text.push(if self.states.reverse { 'R' } else { 'r' });
                 text.push(if self.states.auto_paging { 'A' } else { 'a' });

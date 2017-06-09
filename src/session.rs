@@ -216,6 +216,7 @@ impl fmt::Display for FitTo {
                 Width => "width",
                 Height => "height",
                 Cell => "cell",
+                Fixed(w, h) => return write!(f, "{}x{}", w, h),
             };
 
         write!(f, "{}", result)

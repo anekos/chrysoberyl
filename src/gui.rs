@@ -302,7 +302,7 @@ impl Cell {
                 self.window.set_size_request(cell_size.width, ci_height),
             FitTo::Height =>
                 self.window.set_size_request(ci_width, cell_size.height),
-            FitTo::Cell | FitTo::Original | FitTo::OriginalOrCell =>
+            FitTo::Cell | FitTo::Original | FitTo::OriginalOrCell | FitTo::Fixed(_, _) =>
                 self.window.set_size_request(ci_width, ci_height),
         }
     }

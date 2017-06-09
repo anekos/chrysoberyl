@@ -117,7 +117,15 @@ impl FromStr for FitTo {
             "cell" => Cell,
             "width" => Width,
             "height" => Height,
-            _ => return Err(format!("Invalid target name: {}", src))
+            _ => {
+                let size: Vec<&str> = src.split_terminator('x').collect();
+                if size.len() == 2 {
+                    if let (Ok(w), Ok(h)) = (size[0].parse(), size[1].parse()) {
+                        return Ok(Fixed(w, h))
+                    }
+                }
+                return Err(format!("Invalid target name: {}", src))
+            }
         };
         Ok(result)
     }

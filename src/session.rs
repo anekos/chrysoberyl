@@ -7,6 +7,7 @@ use std::env;
 use shell_escape;
 
 use app::App;
+use color::Color;
 use constant;
 use entry::{Entry, EntryContainer, KeyType, Key};
 use gui::Gui;
@@ -65,17 +66,28 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
         }
     }
 
-    sprintln!(out, "@set status-bar {}", b2s(st.status_bar));
+    fn c2s(c: &Color) -> String {
+        escape(&format!("{}", c))
+    }
+
     sprintln!(out, "@set auto-paging {}", b2s(st.auto_paging));
-    sprintln!(out, "@set reverse {}", b2s(st.reverse));
-    sprintln!(out, "@set status-format {}", escape(&st.status_format.0));
-    sprintln!(out, "@set title-format {}", escape(&st.title_format.0));
+    sprintln!(out, "@set center-alignment {}", b2s(st.view.center_alignment));
+    sprintln!(out, "@set fit-to {}", st.drawing.fit_to);
     sprintln!(out, "@set pre-render {}", b2s(st.pre_fetch.enabled));
     sprintln!(out, "@set pre-render-limit {}", st.pre_fetch.limit_of_items);
     sprintln!(out, "@set pre-render-pages {}", st.pre_fetch.page_size);
-    sprintln!(out, "@set fit-to {}", st.drawing.fit_to);
-    sprintln!(out, "@set scaling {}", st.drawing.scaling);
     sprintln!(out, "@set region-function {}", st.region_function);
+    sprintln!(out, "@set reverse {}", b2s(st.reverse));
+    sprintln!(out, "@set scaling {}", st.drawing.scaling);
+    sprintln!(out, "@set status-bar {}", b2s(st.status_bar));
+    sprintln!(out, "@set status-format {}", escape(&st.status_format.0));
+    sprintln!(out, "@set title-format {}", escape(&st.title_format.0));
+    sprintln!(out, "@set window-background-color {}", c2s(&gui.colors.window_background));
+    sprintln!(out, "@set status-bar-color {}", c2s(&gui.colors.status_bar));
+    sprintln!(out, "@set status-bar-background-color {}", c2s(&gui.colors.status_bar_background));
+    sprintln!(out, "@set error-color {}", c2s(&gui.colors.error));
+    sprintln!(out, "@set error-background-color {}", c2s(&gui.colors.error_background));
+    sprintln!(out, "@set fill-color {}", c2s(&st.fill_color));
     // sprintln!(out, "@set horizontal-views {}", gui.cols());
     // sprintln!(out, "@set vertical-views {}", gui.rows());
     sprintln!(out, "@views {} {}", gui.cols(), gui.rows());

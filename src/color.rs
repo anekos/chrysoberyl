@@ -1,4 +1,5 @@
 
+use std::fmt;
 use std::str::FromStr;
 
 use css_color_parser::Color as CssColor;
@@ -61,6 +62,12 @@ impl FromStr for Color {
             "random" => Ok(Color::new_random()),
             _ => src.parse().map_err(|it| s!(it)).map(Color::new_from_css_color)
         }
+    }
+}
+
+impl fmt::Display for Color {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "rgba({}, {}, {}, {})", self.r, self.g, self.b, self.a as f32 / 255.0 )
     }
 }
 

@@ -248,8 +248,10 @@ impl App {
                     on_pull(self, &mut updated),
                 Push(path, meta, force) =>
                     on_push(self, &mut updated, path.to_string(), meta, force),
-                PushImage(file, meta, force) =>
-                    on_push_image(self, &mut updated, file.to_path_buf(), meta, force),
+                PushDirectory(file, meta, force) =>
+                    on_push_directory(self, &mut updated, file.to_path_buf(), meta, force),
+                PushImage(file, meta, force, expand_level) =>
+                    on_push_image(self, &mut updated, file.to_path_buf(), meta, force, expand_level),
                 PushPdf(file, meta, force) =>
                     on_push_pdf(self, &mut updated, file.to_path_buf(), meta, force),
                 PushSibling(next, meta, force, show) =>

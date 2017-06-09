@@ -457,6 +457,26 @@ where T: FnOnce(String, Option<Meta>, bool) -> Operation {
     })
 }
 
+pub fn parse_push_image(args: &[String]) -> Result<Operation, String> {
+    let mut meta: Vec<MetaEntry> = vec![];
+    let mut path: String = o!("");
+    let mut expand_level = None;
+    let mut force = false;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut meta).add_option(&["--meta", "-m"], Collect, "Meta data");
+        ap.refer(&mut force).add_option(&["--force", "-f"], StoreTrue, "Meta data");
+        ap.refer(&mut expand_level)
+            .add_option(&["--expand", "-e"], StoreConst(Some(0)), "Push and expand")
+            .add_option(&["--expand-recursive", "-E"], StoreOption, "Push and expand recursive");
+        ap.refer(&mut path).add_argument("Path", Store, "Path to resource").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::PushImage(Expandable(path), new_opt_meta(meta), force, expand_level)
+    })
+}
+
 pub fn parse_push_sibling(args: &[String], next: bool) -> Result<Operation, String> {
     let mut meta: Vec<MetaEntry> = vec![];
     let mut force = false;

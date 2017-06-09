@@ -331,28 +331,38 @@ pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<
         return;
     }
 
-    on_push_local_file(app, updated, &Path::new(&path).to_path_buf(), meta, force)
+    on_push_path(app, updated, &Path::new(&path).to_path_buf(), meta, force)
 }
 
-pub fn on_push_local_file(app: &mut App, updated: &mut Updated, file: &PathBuf, meta: Option<Meta>, force: bool) {
-    if let Ok(file) = file.canonicalize() {
-        if let Some(ext) = file.extension() {
+pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: Option<Meta>, force: bool) {
+    if let Ok(path) = path.canonicalize() {
+        if let Some(ext) = path.extension() {
             match &*ext.to_str().unwrap().to_lowercase() {
                 "zip" | "rar" | "tar.gz" | "lzh" | "lha" =>
-                    return archive::fetch_entries(&file, &app.encodings, app.tx.clone(), app.sorting_buffer.clone(), force),
+                    return archive::fetch_entries(&path, &app.encodings, app.tx.clone(), app.sorting_buffer.clone(), force),
                 "pdf" =>
-                    return on_push_pdf(app, updated, file.to_path_buf(), meta, force),
+                    return on_push_pdf(app, updated, path.to_path_buf(), meta, force),
                 _ => ()
             }
         }
     }
 
-    on_push_image(app, updated, file.clone(), meta, force)
+    if path.is_dir() {
+        on_push_image(app, updated, path.clone(), meta, force, None)
+    } else {
+        on_push_directory(app, updated, path.clone(), meta, force)
+    }
 }
 
-pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) {
+pub fn on_push_directory(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) {
     let buffered = app.sorting_buffer.push_with_reserve(
-        QueuedOperation::PushImage(file, meta, force));
+        QueuedOperation::PushDirectory(file, meta, force));
+    push_buffered(app, updated, buffered);
+}
+
+pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>) {
+    let buffered = app.sorting_buffer.push_with_reserve(
+        QueuedOperation::PushImage(file, meta, force, expand_level));
     push_buffered(app, updated, buffered);
 }
 
@@ -399,7 +409,7 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
         if show {
             on_show(app, updated, &SearchKey { path: o!(path_to_str(&found)), index: None});
         }
-        on_push_local_file(app, updated, &found, meta, force);
+        on_push_path(app, updated, &found, meta, force);
     }
 }
 
@@ -660,8 +670,10 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
 
     for op in ops {
         match op {
-            PushImage(path, meta, force) =>
-                updated.pointer = app.entries.push_path(&mut app.pointer, &path, meta, force),
+            PushImage(path, meta, force, expand_level) =>
+                updated.pointer = app.entries.push_image(&mut app.pointer, &path, meta, force, expand_level),
+            PushDirectory(path, meta, force) =>
+                updated.pointer = app.entries.push_directory(&mut app.pointer, &path, meta, force),
             PushHttpCache(file, url, meta, force) =>
                 updated.pointer |= app.entries.push_http_cache(&mut app.pointer, &file, url, meta, force),
             PushArchiveEntry(ref archive_path, ref entry, force) =>

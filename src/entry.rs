@@ -402,17 +402,6 @@ impl EntryContainer {
         }
     }
 
-    pub fn push_path(&mut self, pointer: &mut IndexPointer, file: &PathBuf, meta: Option<Meta>, force: bool) -> bool {
-        if file.is_dir() {
-            self.push_directory(pointer, file, meta, force)
-        } else if file.is_file() {
-            self.push_file(pointer, file, meta, force)
-        } else {
-            puts_error!("at" => "push", "reason" => "Invalid path", "for" => path_to_str(file));
-            false
-        }
-    }
-
     pub fn push_http_cache(&mut self, pointer: &mut IndexPointer, file: &PathBuf, url: String, meta: Option<Meta>, force: bool) -> bool {
         let path = file.canonicalize().expect("canonicalize");
         self.push_entry(
@@ -439,11 +428,30 @@ impl EntryContainer {
         self.files.iter().position(|it| key.matches(it))
     }
 
-    pub fn push_file(&mut self, pointer: &mut IndexPointer, file: &PathBuf, meta: Option<Meta>, force: bool) -> bool {
-        let path = file.canonicalize().expect("canonicalize");
+    pub fn push_image(&mut self, pointer: &mut IndexPointer, file: &PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>) -> bool {
+        let file = file.canonicalize().expect("canonicalize");
+
+        if let Some(expand_level) = expand_level {
+            if let Some(dir) = file.parent() {
+                match expand(dir, expand_level) {
+                    Ok(files) => {
+                        let mut result = false;
+                        for file in files {
+                            result |= self.push_image(pointer, &file, meta.clone(), force, None);
+                        }
+                        return result;
+                    },
+                    Err(err) => {
+                        puts_error!("at" => "push_image", "reason" => s!(err), "for" => path_to_str(&file));
+                        return false;
+                    }
+                }
+            }
+        }
+
         self.push_entry(
             pointer,
-            Entry::new(EntryContent::File(path), meta),
+            Entry::new(EntryContent::File(file), meta),
             force)
     }
 
@@ -454,7 +462,7 @@ impl EntryContainer {
             let mut expanded = expanded;
             expanded.sort_by(|a, b| natord::compare(path_to_str(a), path_to_str(b)));
             for file in expanded {
-                changed |= self.push_file(pointer, &file, meta.clone(), force);
+                changed |= self.push_image(pointer, &file, meta.clone(), force, None);
             }
         });
 
@@ -611,14 +619,14 @@ fn n_parents(path: PathBuf, n: u8) -> PathBuf {
     path
 }
 
-fn expand(dir: &PathBuf, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
+fn expand(dir: &Path, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
     let mut result = vec![];
 
     through!([dir = dir.read_dir()] {
         for entry in dir {
             through!([entry = entry] {
                 let path = entry.path();
-                if path.is_file() {
+                if path.is_file() && is_valid_image_filename(&path) {
                     result.push(path)
                 } else if recursive > 0 && path.is_dir() {
                     through!([expanded = expand(&path, recursive - 1)] {

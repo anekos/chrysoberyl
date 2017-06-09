@@ -58,7 +58,8 @@ pub enum Operation {
     PrintEntries,
     Pull,
     Push(Expandable, Option<Meta>, bool), /* path, meta, force */
-    PushImage(Expandable, Option<Meta>, bool),
+    PushDirectory(Expandable, Option<Meta>, bool), /* path, meta, force */
+    PushImage(Expandable, Option<Meta>, bool, Option<u8>), /* path, meta, force, expand-level */
     PushPdf(Expandable, Option<Meta>, bool),
     PushSibling(bool, Option<Meta>, bool, bool), /* next?, meta, force, show */
     PushURL(String, Option<Meta>, bool),
@@ -154,7 +155,8 @@ pub enum OptionName {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum QueuedOperation {
-    PushImage(PathBuf, Option<Meta>, bool), /* path, meta, force */
+    PushImage(PathBuf, Option<Meta>, bool, Option<u8>), /* path, meta, force, expand-level */
+    PushDirectory(PathBuf, Option<Meta>, bool), /* path, meta, force */
     PushHttpCache(PathBuf, String, Option<Meta>, bool),
     PushArchiveEntry(PathBuf, ArchiveEntry, bool),
     PushPdfEntries(PathBuf, usize, Option<Meta>, bool), /* path, pages, meta, force */
@@ -306,7 +308,8 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@prev" | "@p" | "@previous"    => parse_move(whole, Previous),
             "@push"                         => parse_push(whole, |it, meta, force| Push(Expandable(it), meta, force)),
             "@push-next"                    => parse_push_sibling(whole, true),
-            "@push-image"                   => parse_push(whole, |it, meta, force| PushImage(Expandable(it), meta, force)),
+            "@push-image"                   => parse_push_image(whole),
+            "@push-directory" | "@push-dir" => parse_push(whole, |it, meta, force| PushDirectory(Expandable(it), meta, force)),
             "@push-pdf"                     => parse_push(whole, |it, meta, force| PushPdf(Expandable(it), meta, force)),
             "@push-previous" | "@push-prev" => parse_push_sibling(whole, false),
             "@push-url"                     => parse_push(whole, PushURL),

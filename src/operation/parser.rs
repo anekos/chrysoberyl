@@ -185,18 +185,6 @@ pub fn parse_expand(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
-    let mut command_line: Vec<Expandable> = vec![];
-
-    {
-        let mut ap = ArgumentParser::new();
-        ap.refer(&mut command_line).add_argument("command_line", List, "Command line");
-        parse_args(&mut ap, args)
-    } .and_then(|_| {
-        Ok(Operation::Filter(command_line))
-    })
-}
-
 pub fn parse_input(args: &[String]) -> Result<Operation, String> {
     impl InputType {
         pub fn input_from_text(&self, text: &str) -> Result<Input, String> {

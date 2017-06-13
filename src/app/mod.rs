@@ -204,8 +204,6 @@ impl App {
                    on_editor(self, editor_command.clone(), files, sessions),
                 Expand(recursive, ref base) =>
                     on_expand(self, &mut updated, recursive, base.clone()),
-                Filter(ref command_line) =>
-                    on_filter(self, command_line),
                 Fill(region, cell_index) =>
                     on_fill(self, &mut updated, region, cell_index),
                 First(count, ignore_views, move_by, _) =>
@@ -272,6 +270,8 @@ impl App {
                     on_scroll(self, direction, operation, scroll_size),
                 Shell(async, read_operations, ref command_line, ref stdin_sources) =>
                     on_shell(self, async, read_operations, command_line, self.tx.clone(), stdin_sources),
+                ShellFilter(ref command_line) =>
+                    on_shell_filter(self, command_line),
                 Show(ref key) =>
                     on_show(self, &mut updated, key),
                 Shuffle(fix_current) =>

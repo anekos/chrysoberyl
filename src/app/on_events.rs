@@ -18,7 +18,6 @@ use editor;
 use entry::{self, Meta, SearchKey};
 use expandable::{Expandable, expand_all};
 use filer;
-use filter;
 use fragile_input::new_fragile_input;
 use gui::Direction;
 use mapping;
@@ -27,9 +26,10 @@ use option::user::DummySwtich;
 use output;
 use poppler::PopplerDocument;
 use script;
-use shell;
-use state::RegionFunction;
 use session::{Session, write_sessions};
+use shell;
+use shell_filter;
+use state::RegionFunction;
 use utils::path_to_str;
 
 use app::*;
@@ -153,10 +153,6 @@ pub fn on_first(app: &mut App, updated: &mut Updated, len: usize, count: Option<
 
 pub fn on_fragile(app: &mut App, path: &PathBuf) {
     new_fragile_input(app.tx.clone(), path_to_str(path));
-}
-
-pub fn on_filter(app: &App, command_line: &[Expandable]) {
-    filter::start(expand_all(command_line), app.tx.clone());
 }
 
 pub fn on_initialized(app: &mut App) {
@@ -472,6 +468,10 @@ pub fn on_shell(app: &App, async: bool, read_operations: bool, command_line: &[E
     };
 
     shell::call(async, &expand_all(command_line), stdin, option!(read_operations, tx));
+}
+
+pub fn on_shell_filter(app: &App, command_line: &[Expandable]) {
+    shell_filter::start(expand_all(command_line), app.tx.clone());
 }
 
 pub fn on_show(app: &mut App, updated: &mut Updated, key: &SearchKey) {

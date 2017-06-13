@@ -38,7 +38,6 @@ pub enum Operation {
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Fill(Region, usize), /* region, cell index */
-    Filter(Vec<Expandable>),
     Fragile(PathBuf),
     Initialized,
     Input(mapping::Input),
@@ -70,6 +69,7 @@ pub enum Operation {
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     SetEnv(String, Option<Expandable>),
     Shell(bool, bool, Vec<Expandable>, Vec<Session>), /* async, operation, command_line, session */
+    ShellFilter(Vec<Expandable>),
     Show(entry::SearchKey),
     Shuffle(bool), /* Fix current */
     Sort,
@@ -293,7 +293,6 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@enable"                       => parse_option_1(whole, OptionUpdater::Enable),
             "@entries"                      => Ok(PrintEntries),
             "@expand"                       => parse_expand(whole),
-            "@filter"                       => parse_filter(whole),
             "@first" | "@f"                 => parse_move(whole, First),
             "@fragile"                      => parse_command1(whole, |it| Fragile(sh::expand_to_pathbuf(&it))),
             "@input"                        => parse_input(whole),
@@ -321,6 +320,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@set"                          => parse_option_set(whole),
             "@set-env"                      => parse_set_env(whole),
             "@shell"                        => parse_shell(whole),
+            "@shell-filter"                 => Ok(ShellFilter(whole.iter().map(|it| Expandable(it.clone())).collect())),
             "@show"                         => parse_show(whole),
             "@shuffle"                      => Ok(Shuffle(false)),
             "@sort"                         => Ok(Sort),

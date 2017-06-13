@@ -348,9 +348,9 @@ pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: 
     }
 
     if path.is_dir() {
-        on_push_image(app, updated, path.clone(), meta, force, None)
-    } else {
         on_push_directory(app, updated, path.clone(), meta, force)
+    } else {
+        on_push_image(app, updated, path.clone(), meta, force, None)
     }
 }
 

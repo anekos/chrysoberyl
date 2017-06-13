@@ -1,5 +1,5 @@
 
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex, Condvar};
 
 use cache::Cache;
@@ -16,7 +16,7 @@ use state::DrawingState;
 pub struct ImageCache {
     cherenkoved: Arc<Mutex<Cherenkoved>>,
     cache: Cache<Key, Result<ImageBuffer, String>>,
-    fetching: Arc<(Mutex<HashSet<Key>>, Condvar)>,
+    fetching: Arc<(Mutex<HashMap<Key, bool>>, Condvar)>,
 }
 
 
@@ -25,7 +25,7 @@ impl ImageCache {
         ImageCache {
             cherenkoved: Arc::new(Mutex::new(Cherenkoved::new())),
             cache: Cache::new(limit),
-            fetching: Arc::new((Mutex::new(HashSet::new()), Condvar::new())),
+            fetching: Arc::new((Mutex::new(HashMap::new()), Condvar::new())),
         }
     }
 
@@ -35,18 +35,25 @@ impl ImageCache {
 
     pub fn clear(&mut self) {
         self.cache.clear();
-        // TODO Remove current fetchings
+
+        // Cancel current fetchings
+        let &(ref fetching, ref cond) = &*self.fetching;
+        let mut fetching = fetching.lock().unwrap();
+        for it in fetching.values_mut() {
+            *it = false;
+        }
+        cond.notify_all();
     }
 
-    pub fn fetching(&mut self, key: Key) -> bool {
+    pub fn mark_fetching(&mut self, key: Key) -> bool {
         trace!("image_cache/fetching: key={:?}", key);
 
         let &(ref fetching, _) = &*self.fetching;
         let mut fetching = fetching.lock().unwrap();
-        if self.cache.contains(&key) || fetching.contains(&key) {
+        if self.cache.contains(&key) || fetching.contains_key(&key) {
             false
         } else {
-            fetching.insert(key);
+            fetching.insert(key, true);
             true
         }
     }
@@ -60,12 +67,12 @@ impl ImageCache {
 
         let image = time!("image_cache/fetcher" => fetcher(entry));
 
-        self.cache.push(key.clone(), image);
-
         {
             trace!("image_cache/finished/static: key={:?}", key);
             let mut fetching = fetching.lock().unwrap();
-            fetching.remove(&key);
+            if fetching.remove(&key) == Some(true) {
+                self.cache.push(key.clone(), image);
+            }
             cond.notify_all();
         }
     }
@@ -76,7 +83,7 @@ impl ImageCache {
             cherenkoved.get_image_buffer(entry, cell_size, drawing)
         }.unwrap_or_else(|| {
             self.wait(&entry.key);
-            self.cache.get(&entry.key).unwrap_or_else(|| {
+            self.cache.get_or_update(entry.key.clone(), move |_| {
                 entry_image::get_image_buffer(entry, cell_size, drawing)
             })
         })
@@ -97,7 +104,7 @@ impl ImageCache {
 
         let &(ref fetching, ref cond) = &*self.fetching;
         let mut fetching = fetching.lock().unwrap();
-        while fetching.contains(key) {
+        while fetching.get(key) == Some(&true) {
             fetching = cond.wait(fetching).unwrap();
         }
         trace!("image_cache/wait/end: key={:?}", key);

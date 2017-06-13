@@ -96,7 +96,7 @@ fn main(target: ArcTarget, cache: ImageCache) -> Sender<FetcherOperation> {
 pub fn start(tx: &Sender<FetcherOperation>, mut cache: ImageCache, idles: &mut usize, target: &mut FetchTarget) {
     for _ in 0..*idles {
         if let Some(entry) = target.entries.pop_front() {
-            if cache.fetching(entry.key.clone()) {
+            if cache.mark_fetching(entry.key.clone()) {
                 *idles -= 1;
                 fetch(tx.clone(), cache.clone(), entry, target.cell_size, target.drawing.clone());
             }

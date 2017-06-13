@@ -42,6 +42,17 @@ impl<K, V> Cache<K, V> where K: Hash + Eq, V: Clone {
         entries.get_mut(key).map(|it| it.clone())
     }
 
+    pub fn get_or_update<F>(&self, key: K, updater: F) -> V
+    where F: FnOnce(&K) -> V {
+        let mut entries = self.entries.lock().unwrap();
+        if let Some(found) = entries.get_mut(&key) {
+            return found.clone()
+        }
+        let new = updater(&key);
+        entries.insert(key, new.clone());
+        new
+    }
+
     pub fn contains(&self, key: &K) -> bool {
         let mut entries = self.entries.lock().unwrap();
         entries.contains_key(key)

@@ -92,12 +92,14 @@ fn main(mut cache: ImageCache) -> Sender<FetcherOperation> {
 
 
 pub fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mut VecDeque<Entry>, idles: &mut usize, cell_size: Size, drawing: &DrawingState) {
-    for _ in 0..*idles {
+    while 0 < *idles {
         if let Some(entry) = entries.pop_front() {
             if cache.mark_fetching(entry.key.clone()) {
                 *idles -= 1;
                 fetch(tx.clone(), entry, cell_size, drawing.clone());
             }
+        } else {
+            return;
         }
     }
 }

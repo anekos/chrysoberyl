@@ -203,6 +203,11 @@ pub fn on_last(app: &mut App, updated: &mut Updated, len: usize, count: Option<u
 pub fn on_lazy_draw(app: &mut App, updated: &mut Updated, to_end: &mut bool, serial: u64, new_to_end: bool) {
     trace!("on_lazy_draw: draw_serial={} serial={}", app.draw_serial, serial);
     if app.draw_serial == serial {
+        if app.do_clear_cache {
+            puts_event!("on_lazy_draw/clear_cache");
+            app.cache.clear();
+            app.do_clear_cache = false;
+        }
         updated.image = true;
         *to_end = new_to_end;
     }

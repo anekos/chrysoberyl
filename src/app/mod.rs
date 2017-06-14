@@ -51,6 +51,7 @@ pub struct App {
     sorting_buffer: SortingBuffer<QueuedOperation>,
     timers: TimerManager,
     user_switches: UserSwitchManager,
+    do_clear_cache: bool,
     pub mapping: Mapping,
     pub pointer: IndexPointer,
     pub entries: EntryContainer,
@@ -121,6 +122,7 @@ impl App {
             sorting_buffer: sorting_buffer,
             timers: TimerManager::new(tx.clone()),
             user_switches: UserSwitchManager::new(tx.clone()),
+            do_clear_cache: false,
         };
 
         app.reset_view();
@@ -320,8 +322,7 @@ impl App {
         }
 
         if updated.image_options {
-            puts_event!("pre_fetch_cache/clear");
-            self.cache.clear();
+            self.do_clear_cache = true;
             // FIXME Re-draw just after UI updated
             self.send_lazy_draw(Some(100), to_end);
             return;

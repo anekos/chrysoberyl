@@ -54,6 +54,7 @@ mod image;
 mod image_cache;
 mod image_fetcher;
 mod index_pointer;
+mod lazy;
 mod lazy_sender;
 mod mapping;
 mod operation;

@@ -15,6 +15,8 @@ use rand::{thread_rng, Rng, ThreadRng};
 
 use archive::ArchiveEntry;
 use index_pointer::IndexPointer;
+use lazy::Lazy;
+use size::Size;
 use utils::path_to_str;
 use validation::is_valid_image_filename;
 
@@ -39,7 +41,8 @@ pub struct EntryContainerOptions {
 pub struct Entry {
     pub key: Key,
     pub content: EntryContent,
-    pub meta: Option<Meta>
+    pub meta: Option<Meta>,
+    pub info: Lazy<EntryInfo>,
 }
 
 #[derive(Clone)]
@@ -48,6 +51,11 @@ pub enum EntryContent {
     Http(PathBuf, String),
     Archive(Arc<PathBuf>, ArchiveEntry),
     Pdf(Arc<PathBuf>, usize)
+}
+
+#[derive(Clone)]
+pub struct EntryInfo {
+    pub size: Option<Size>, // PDF makes None
 }
 
 pub type Meta = Arc<Vec<MetaEntry>>;
@@ -85,7 +93,12 @@ pub enum Position {
 
 impl Entry {
     pub fn new(content: EntryContent, meta: Option<Meta>) -> Entry {
-        Entry { key: content.key(), content: content, meta: meta }
+        Entry {
+            key: content.key(),
+            content: content,
+            meta: meta,
+            info: Lazy::default(),
+        }
     }
 
     pub fn archive_name(&self) -> &str {

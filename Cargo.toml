@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["anekos <anekos@snca.net>"]
 build = "build.rs"
 
+[features]
+# default = ["poppler_lock"]
+
 [dependencies]
 app_dirs = "*"
 argparse = "*"

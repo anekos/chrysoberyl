@@ -3,11 +3,11 @@ extern crate gdk_sys;
 extern crate glib;
 extern crate gobject_sys;
 
+#[cfg(feature = "poppler_lock")] use std::sync::{Arc, Mutex};
 use std::ffi::CString;
 use std::mem::transmute;
 use std::path::Path;
 use std::ptr::{null, null_mut};
-use std::sync::{Arc, Mutex};
 
 use cairo::{Context, ImageSurface, Format};
 use cairo;
@@ -22,7 +22,7 @@ use state::DrawingState;
 mod sys;
 
 
-
+#[cfg(feature = "poppler_lock")]
 lazy_static! {
     static ref LOCK: Arc<Mutex<usize>> = {
         #[cfg_attr(feature = "cargo-clippy", allow(mutex_atomic))]
@@ -73,12 +73,19 @@ impl Drop for PopplerDocument {
 
 impl PopplerPage {
     pub fn render(&self, context: &cairo::Context) {
+        #[cfg(feature = "poppler_lock")]
         let mut count = (*LOCK).lock().unwrap();
+        #[cfg(feature = "poppler_lock")]
         trace!("render/start: {:?}", *count);
+
         let context = context.as_ref().to_glib_none().0;
         unsafe { sys::poppler_page_render(self.0, context) };
-        trace!("render/end: {:?}", *count);
-        *count += 1;
+
+        #[cfg(feature = "poppler_lock")]
+        {
+            trace!("render/end: {:?}", *count);
+            *count += 1;
+        }
     }
 
     pub fn get_size(&self) -> Size {

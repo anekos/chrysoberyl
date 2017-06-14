@@ -374,7 +374,7 @@ impl App {
         for n in range {
             for index in 0..len {
                 let index = index + len * n;
-                if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
+                if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry, _)| entry) {
                     entries.push_back(entry);
                 }
             }

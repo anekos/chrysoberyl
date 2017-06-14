@@ -58,23 +58,15 @@ impl ImageCache {
         }
     }
 
-    pub fn push<F>(&mut self, entry: Entry, fetcher: F)
-    where F: FnOnce(Entry) -> Result<ImageBuffer, String> {
-        trace!("image_cache/push: key={:?}", entry.key);
+    pub fn push(&mut self, key: Key, image_buffer: Result<ImageBuffer, String>) {
+        trace!("image_cache/push: key={:?}", key);
 
-        let key = entry.key.clone();
         let &(ref fetching, ref cond) = &*self.fetching;
-
-        let image = time!("image_cache/fetcher" => fetcher(entry));
-
-        {
-            trace!("image_cache/finished/static: key={:?}", key);
-            let mut fetching = fetching.lock().unwrap();
-            if fetching.remove(&key) == Some(true) {
-                self.cache.push(key.clone(), image);
-            }
-            cond.notify_all();
+        let mut fetching = fetching.lock().unwrap();
+        if fetching.remove(&key) == Some(true) {
+            self.cache.push(key.clone(), image_buffer);
         }
+        cond.notify_all();
     }
 
     pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: &Size, drawing: &DrawingState) -> Result<ImageBuffer, String> {

@@ -2,6 +2,9 @@
 release:
 	cargo build --release
 
+release-without-lock:
+	cargo build --release --features poppler_lock
+
 test:
 	cargo test
 

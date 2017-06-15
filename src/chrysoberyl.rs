@@ -22,6 +22,11 @@ use operation::Operation;
 pub fn main() {
     env_logger::init().unwrap();
 
+    #[cfg(feature = "poppler_lock")]
+    info!("main: +poppler_lock");
+    #[not(cfg(feature = "poppler_lock"))]
+    info!("main: -poppler_lock");
+
     // {
     //     use poppler_sys::*;
     //

@@ -27,21 +27,6 @@ pub fn main() {
     #[not(cfg(feature = "poppler_lock"))]
     info!("main: -poppler_lock");
 
-    // {
-    //     use poppler_sys::*;
-    //
-    //     use std::ptr::{null, null_mut};
-    //     use std::ffi::CString;
-    //
-    //     println!("test");
-    //
-    //     let p = CString::new("file://tmp/xmosh/foo.pdf").unwrap();
-    //     unsafe {
-    //         let res = poppler_document_new_from_file(p.as_ptr(), null(), null_mut());
-    //         println!("{:?}", res);
-    //     }
-    // }
-
     let gui = Gui::new();
 
     let (mut app, primary_rx, secondary_rx) = parse_arguments(gui.clone());

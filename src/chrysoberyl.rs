@@ -22,10 +22,7 @@ use operation::Operation;
 pub fn main() {
     env_logger::init().unwrap();
 
-    #[cfg(feature = "poppler_lock")]
-    info!("main: +poppler_lock");
-    #[not(cfg(feature = "poppler_lock"))]
-    info!("main: -poppler_lock");
+    put_features();
 
     let gui = Gui::new();
 
@@ -165,4 +162,12 @@ fn parse_encodings(names: &[String]) -> Vec<EncodingRef> {
     }
 
     result
+}
+
+fn put_features() {
+    if cfg!(feature = "poppler_lock") {
+        info!("main: features=[+poppler_lock]");
+    } else {
+        info!("main: features=[-poppler_lock]");
+    }
 }

@@ -5,7 +5,7 @@ authors = ["anekos <anekos@snca.net>"]
 build = "build.rs"
 
 [features]
-# default = ["poppler_lock"]
+poppler_lock = []
 
 [dependencies]
 app_dirs = "*"

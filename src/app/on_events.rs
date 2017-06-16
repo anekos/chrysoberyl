@@ -17,6 +17,7 @@ use color::Color;
 use config::DEFAULT_CONFIG;
 use editor;
 use entry::{self, Meta, SearchKey};
+use entry_filter;
 use expandable::{Expandable, expand_all};
 use filer;
 use fragile_input::new_fragile_input;
@@ -132,6 +133,15 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, region: Option<Region>, col
             &app.states.drawing);
         updated.image = true;
     }
+}
+
+pub fn on_filter(app: &mut App, updated: &mut Updated, condition: Option<entry_filter::Condition>) {
+    if let Some(condition) = condition {
+        app.entries.update_filter(Some(Box::new(move |ref mut entry| condition.is_valid(entry))));
+    } else {
+        app.entries.update_filter(None);
+    }
+    updated.image = true;
 }
 
 pub fn on_first(app: &mut App, updated: &mut Updated, len: usize, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {
@@ -629,10 +639,12 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
     }
 }
 
-pub fn on_user(_: &App, data: &[(String, String)]) {
+pub fn on_user(app: &mut App, data: &[(String, String)]) {
     let mut pairs = vec![(o!("event"), o!("user"))];
     pairs.extend_from_slice(data);
     output::puts(&pairs);
+
+    app.entries.update_filter(Some(Box::new(|entry| entry.key.2 % 2 == 0)));
 }
 
 pub fn on_views(app: &mut App, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>) {

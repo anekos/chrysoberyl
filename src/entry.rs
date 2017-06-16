@@ -1,19 +1,18 @@
 
 use std::cmp::{PartialEq, PartialOrd, Ord, Ordering};
-use std::collections::HashMap;
+use std::default::Default;
 use std::hash::{Hash, Hasher};
 use std::io;
 use std::path::{PathBuf, Path};
 use std::rc::Rc;
-use std::sync::Arc;
 use std::slice;
-
+use std::sync::Arc;
 
 use immeta;
 use natord;
-use rand::{thread_rng, Rng, ThreadRng};
 
 use archive::ArchiveEntry;
+use filterable_vec::FilterableVec;
 use index_pointer::IndexPointer;
 use lazy::Lazy;
 use size::Size;
@@ -23,10 +22,8 @@ use validation::is_valid_image_filename;
 
 
 pub struct EntryContainer {
-    entries: Vec<Rc<Entry>>,
-    file_indices: HashMap<Rc<Entry>, usize>,
+    entries: FilterableVec<Entry>,
     options: EntryContainerOptions,
-    rng: ThreadRng,
 }
 
 pub struct EntryContainerOptions {
@@ -153,9 +150,7 @@ impl EntryContent {
 impl EntryContainer {
     pub fn new(options: EntryContainerOptions) -> EntryContainer {
         EntryContainer {
-            entries: vec![],
-            file_indices: HashMap::new(),
-            rng: thread_rng(),
+            entries: FilterableVec::new(),
             options: options
         }
     }
@@ -166,7 +161,6 @@ impl EntryContainer {
 
     pub fn clear(&mut self, pointer: &mut IndexPointer) {
         self.entries.clear();
-        self.reset_indices();
         pointer.current = None;
     }
 
@@ -232,7 +226,7 @@ impl EntryContainer {
             } else if let Some(dir) = dir {
                 let dir = n_parents(dir, n - 1);
                 expand(&dir.to_path_buf(), recursive).ok().map(|files| {
-                    let mut result = self.entries.clone();
+                    let mut result = self.entries.clone_filtered();
                     let mut tail: Vec<Rc<Entry>> = files.into_iter().map(|it| {
                         Entry::new(EntryContent::File(it), None)
                     }).filter(|entry| {
@@ -249,7 +243,6 @@ impl EntryContainer {
         if let Some((expanded, file)) = result {
             self.entries.clear();
             self.entries.extend_from_slice(expanded.as_slice());
-            self.reset_indices();
             if let Some(file) = file {
                 self.set_current(pointer, file);
             } else  {
@@ -286,13 +279,7 @@ impl EntryContainer {
 
     pub fn shuffle(&mut self, pointer: &mut IndexPointer, fix_current: bool) {
         let current_entry = self.current_entry(pointer);
-        let mut source = self.entries.clone();
-        let mut buffer = source.as_mut_slice();
-        self.rng.shuffle(&mut buffer);
-        self.entries.clear();
-        self.entries.extend_from_slice(buffer);
-        self.reset_indices();
-
+        self.entries.shuffle();
         if fix_current {
             if let Some(current_entry) = current_entry {
                 self.set_current(pointer, current_entry);
@@ -305,7 +292,6 @@ impl EntryContainer {
     pub fn sort(&mut self, pointer: &mut IndexPointer) {
         let current_entry = self.current_entry(pointer);
         self.entries.sort();
-        self.reset_indices();
         if let Some(current_entry) = current_entry {
             self.set_current(pointer, current_entry);
         }
@@ -390,16 +376,9 @@ impl EntryContainer {
         })
     }
 
-    fn reset_indices(&mut self) {
-        self.file_indices.clear();
-        for (index, file) in self.entries.iter().enumerate() {
-            self.file_indices.insert(file.clone(), index);
-        }
-    }
-
     fn set_current(&mut self, pointer: &mut IndexPointer, entry: Entry) {
-        if let Some(index) = self.file_indices.get(&entry) {
-            pointer.current = Some(*index);
+        if let Some(index) = self.entries.get_index(&entry) {
+            pointer.current = Some(index);
         }
     }
 
@@ -407,7 +386,6 @@ impl EntryContainer {
         let entry = Rc::new(entry);
 
         if self.is_valid_image(&entry) && (force || !self.is_duplicated(&entry)) {
-            self.file_indices.insert(entry.clone(), self.entries.len());
             self.entries.push(entry);
             self.entries.len() == 1 && pointer.first(1, false)
         } else {
@@ -484,7 +462,7 @@ impl EntryContainer {
     }
 
     fn is_duplicated(&self, entry: &Entry) -> bool {
-        self.file_indices.contains_key(entry)
+        self.entries.contains(entry)
     }
 
     fn is_valid_image(&self, entry: &Entry) -> bool {
@@ -519,6 +497,10 @@ impl EntryContainer {
             false
         }
     }
+
+    pub fn update_filter(&mut self, pred: Option<Box<FnMut(&mut Entry) -> bool>>) {
+        self.entries.update_filter(pred);
+    }
 }
 
 
@@ -551,6 +533,13 @@ impl Entry {
             Archive(ref archive_path, ref entry) => format!("{}@{}", entry.name, path_to_str(&**archive_path)),
             Pdf(ref pdf_path, ref index) => format!("{}@{}", index, path_to_str(&**pdf_path)),
         }
+    }
+}
+
+
+impl Default for EntryInfo {
+    fn default() -> Self {
+        EntryInfo { size: None }
     }
 }
 

@@ -6,7 +6,7 @@ pub struct Lazy<T> {
 
 
 impl<T> Lazy<T> {
-    fn get<F>(&mut self, generate: F) -> &T
+    pub fn get<F>(&mut self, generate: F) -> &T
     where F: FnOnce() -> T {
         if self.item.is_none() {
             self.item = Some(generate());

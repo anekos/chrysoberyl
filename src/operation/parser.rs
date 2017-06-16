@@ -8,6 +8,7 @@ use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse
 
 use color::Color;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
+use entry_filter;
 use expandable::Expandable;
 use filer;
 use mapping::{Input, InputType};
@@ -193,6 +194,19 @@ pub fn parse_fill(args: &[String]) -> Result<Operation, String> {
         parse_args(&mut ap, args)
     } .map(|_| {
         Operation::Fill(region, color, max!(cell_index, 1) - 1)
+    })
+}
+
+pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
+    let mut condition = entry_filter::Condition::default();
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut condition.min_width).add_option(&["--min-width", "-w"], StoreOption, "Minimum width");
+        ap.refer(&mut condition.min_height).add_option(&["--min-height", "-h"], StoreOption, "Minimum height");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Filter(condition.optionize())
     })
 }
 

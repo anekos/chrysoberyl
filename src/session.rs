@@ -140,13 +140,13 @@ fn write_path(entry: &Entry, out: &mut String) {
 
     match entry.content {
         File(ref path) =>
-            out.push_str(path_to_str(path)),
+            out.push_str(path_to_str(&*path)),
         Http(_, ref url) =>
             out.push_str(url),
         Archive(ref path, ref entry) if entry.index == 0 =>
-            out.push_str(path_to_str(&*path)),
+            out.push_str(path_to_str(&**path)),
         Pdf(ref path, index) if index == 0 =>
-            out.push_str(path_to_str(&*path)),
+            out.push_str(path_to_str(&**path)),
         Archive(_, _) | Pdf(_, _) =>
             (),
     }

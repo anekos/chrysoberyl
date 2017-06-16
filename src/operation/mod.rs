@@ -15,7 +15,6 @@ use expandable::Expandable;
 use filer;
 use gui::Direction;
 use mapping::{self, mouse_mapping};
-use shellexpand_wrapper as sh;
 use size::Region;
 use session::Session;
 
@@ -38,7 +37,7 @@ pub enum Operation {
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Fill(Region, usize), /* region, cell index */
-    Fragile(PathBuf),
+    Fragile(Expandable),
     Initialized,
     Input(mapping::Input),
     KillTimer(String),
@@ -294,7 +293,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@entries"                      => Ok(PrintEntries),
             "@expand"                       => parse_expand(whole),
             "@first" | "@f"                 => parse_move(whole, First),
-            "@fragile"                      => parse_command1(whole, |it| Fragile(sh::expand_to_pathbuf(&it))),
+            "@fragile"                      => parse_command1(whole, |it| Fragile(Expandable(it))),
             "@input"                        => parse_input(whole),
             "@kill-timer"                   => parse_kill_timer(whole),
             "@last" | "@l"                  => parse_move(whole, Last),

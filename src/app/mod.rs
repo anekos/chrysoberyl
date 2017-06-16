@@ -456,7 +456,7 @@ impl App {
             // Path means local file path, url, or pdf file path
             match entry.content {
                 File(ref path) => {
-                    envs.push((o!("file"), o!(path_to_str(path))));
+                    envs.push((o!("file"), d!(path_to_str(path))));
                     envs_sub.push((o!("path"), o!(path_to_str(path))));
                 }
                 Http(ref path, ref url) => {
@@ -466,13 +466,13 @@ impl App {
                 }
                 Archive(ref archive_file, ref entry) => {
                     envs.push((o!("file"), entry.name.clone()));
-                    envs.push((o!("archive_file"), o!(path_to_str(archive_file))));
+                    envs.push((o!("archive_file"), o!(path_to_str(&**archive_file))));
                     envs_sub.push((o!("path"), entry.name.clone()));
                 },
                 Pdf(ref pdf_file, index) => {
-                    envs.push((o!("file"), o!(path_to_str(pdf_file))));
+                    envs.push((o!("file"), o!(path_to_str(&**pdf_file))));
                     envs.push((o!("pdf_page"), s!(index)));
-                    envs_sub.push((o!("path"), o!(path_to_str(pdf_file))));
+                    envs_sub.push((o!("path"), o!(path_to_str(&**pdf_file))));
                 }
             }
 

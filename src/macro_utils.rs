@@ -59,6 +59,12 @@ macro_rules! s {
     }
 }
 
+macro_rules! d {
+    ( $expr:expr ) => {
+        format!("{:?}", $expr)
+    }
+}
+
 macro_rules! through {
     ( [] $body:expr )  => {
         {

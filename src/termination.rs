@@ -1,5 +1,6 @@
 
 use std::fs::remove_file;
+use std::path::PathBuf;
 use std::process::exit;
 use std::sync::{Arc, Mutex};
 
@@ -11,7 +12,7 @@ use libc;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Process {
     Kill(u32),
-    Delete(String)
+    Delete(PathBuf)
 }
 
 

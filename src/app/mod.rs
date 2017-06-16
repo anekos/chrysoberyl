@@ -456,7 +456,7 @@ impl App {
             // Path means local file path, url, or pdf file path
             match entry.content {
                 File(ref path) => {
-                    envs.push((o!("file"), o!(path_to_str(path))));
+                    envs.push((o!("file"), d!(path_to_str(path))));
                     envs_sub.push((o!("path"), o!(path_to_str(path))));
                 }
                 Http(ref path, ref url) => {

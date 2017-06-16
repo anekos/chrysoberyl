@@ -1,5 +1,5 @@
 
-use std::fmt::{Display, Debug};
+use std::fmt::Display;
 use std::path::Path;
 use std::time::Duration;
 
@@ -11,10 +11,6 @@ pub fn path_to_str<T: AsRef<Path>>(path: &T) -> &str {
 
 pub fn s<T: Display>(x: &T) -> String {
     format!("{}", x)
-}
-
-pub fn d<T: Debug>(x: &T) -> String {
-    format!("{:?}", x)
 }
 
 pub fn mangle<T>(_: T) -> () {

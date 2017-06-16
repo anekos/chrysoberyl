@@ -129,9 +129,9 @@ impl EntryContent {
             Http(_, ref url) =>
                 (KeyType::HttpURL, url.clone(), 1),
             Archive(ref path, ref entry) =>
-                (KeyType::Archive, path_to_str(path).to_owned(), entry.index),
+                (KeyType::Archive, path_to_str(&**path).to_owned(), entry.index),
             Pdf(ref path, index) =>
-                (KeyType::PDF, path_to_str(path).to_owned(), index),
+                (KeyType::PDF, path_to_str(&**path).to_owned(), index),
         }
     }
 }
@@ -535,8 +535,8 @@ impl Entry {
         match (*self).content {
             File(ref path) => path_to_str(path).to_owned(),
             Http(_, ref url) => url.clone(),
-            Archive(ref archive_path, ref entry) => format!("{}@{}", entry.name, path_to_str(&*archive_path)),
-            Pdf(ref pdf_path, ref index) => format!("{}@{}", index, path_to_str(&*pdf_path)),
+            Archive(ref archive_path, ref entry) => format!("{}@{}", entry.name, path_to_str(&**archive_path)),
+            Pdf(ref pdf_path, ref index) => format!("{}@{}", index, path_to_str(&**pdf_path)),
         }
     }
 }

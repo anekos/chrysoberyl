@@ -1,6 +1,7 @@
 
 use std::fs::File;
 use std::io::Read;
+use std::path::Path;
 
 use cairo::{Context, ImageSurface, Format};
 use gdk::prelude::ContextExt;
@@ -52,7 +53,7 @@ pub fn get_static_image_buffer(entry: &Entry, cell: &Size, drawing: &DrawingStat
         Archive(_, ref entry) =>
             make_scaled(&*entry.content.as_slice(), cell, drawing),
         Pdf(ref path, index) =>
-            Ok(make_scaled_from_pdf(path_to_str(path), index, cell, drawing))
+            Ok(make_scaled_from_pdf(&**path, index, cell, drawing))
     }
 }
 
@@ -112,7 +113,7 @@ fn make_scaled_from_file(path: &str, cell: &Size, drawing: &DrawingState) -> Res
     })
 }
 
-fn make_scaled_from_pdf(pdf_path: &str, index: usize, cell: &Size, drawing: &DrawingState) -> StaticImageBuffer {
+fn make_scaled_from_pdf<T: AsRef<Path>>(pdf_path: &T, index: usize, cell: &Size, drawing: &DrawingState) -> StaticImageBuffer {
     let document = PopplerDocument::new_from_file(pdf_path);
     StaticImageBuffer::new_from_pixbuf(&document.nth_page(index).get_pixbuf(cell, drawing))
 }

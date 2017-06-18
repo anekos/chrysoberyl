@@ -509,8 +509,8 @@ pub fn parse_set_env(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut name).add_argument("env-name", Store, "Env name").required();
         ap.refer(&mut value).add_argument("env-value", StoreOption, "Value");
         ap.refer(&mut prefix)
-            .add_option(&["--prefix", "-p"], StoreConst(USER_VARIABLE_PREFIX), "Insert the user prefix `CHRYSOBERYL_X_` to env name")
-            .add_option(&["--system-prefix", "-P"], StoreConst(VARIABLE_PREFIX), "Insert the system prefix `CHRYSOBERYL_` to env name");
+            .add_option(&["--prefix", "-p"], StoreConst(USER_VARIABLE_PREFIX), "Insert the user prefix `CHRY_X_` to env name")
+            .add_option(&["--system-prefix", "-P"], StoreConst(VARIABLE_PREFIX), "Insert the system prefix `CHRY_` to env name");
         parse_args(&mut ap, args)
     } .map(|_| {
         Operation::SetEnv(format!("{}{}", prefix, name), value.map(Expandable))

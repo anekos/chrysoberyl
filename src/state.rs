@@ -123,12 +123,12 @@ impl Default for ViewState {
 
 impl Default for StatusFormat {
     fn default() -> Self {
-        StatusFormat(o!("<span background=\"#005050\"> $CHRYSOBERYL_PAGING/$CHRYSOBERYL_COUNT </span> $CHRYSOBERYL_PATH <span foreground=\"grey\">$CHRYSOBERYL_FLAGS</span>"))
+        StatusFormat(o!("<span background=\"#005050\"> $CHRY_PAGING/$CHRY_COUNT </span> $CHRY_PATH <span foreground=\"grey\">$CHRY_FLAGS</span>"))
     }
 }
 
 impl Default for TitleFormat {
     fn default() -> Self {
-        TitleFormat(o!("[$CHRYSOBERYL_PAGING/$CHRYSOBERYL_COUNT] $CHRYSOBERYL_PATH"))
+        TitleFormat(o!("[$CHRY_PAGING/$CHRY_COUNT] $CHRY_PATH"))
     }
 }

@@ -399,6 +399,7 @@ impl App {
         }
 
         let mut invalid_all = true;
+        let mut showed = false;
 
         for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
@@ -412,6 +413,7 @@ impl App {
                     Err(error) =>
                         cell.draw_text(&error, &cell_size, &fg, &bg),
                 }
+                showed = true;
             } else {
                 cell.image.set_from_pixbuf(None);
             }
@@ -427,10 +429,11 @@ impl App {
             });
         }
 
-        on_events::fire_event(self, "show-image");
-
-        if invalid_all {
-            on_events::fire_event(self, "invalid-all");
+        if showed {
+            on_events::fire_event(self, "show-image");
+            if invalid_all {
+                on_events::fire_event(self, "invalid-all");
+            }
         }
 
         image_size

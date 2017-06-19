@@ -6,7 +6,7 @@ use gdk_pixbuf::InterpType;
 use color::Color;
 use option::*;
 use size::FitTo;
-use state::{ScalingMethod, StatusFormat, TitleFormat, RegionFunction};
+use state::{ScalingMethod, StatusFormat, TitleFormat};
 
 
 
@@ -168,36 +168,6 @@ impl OptionValue for TitleFormat {
 
     fn unset(&mut self) -> Result {
         *self = TitleFormat::default();
-        Ok(())
-    }
-}
-
-
-impl FromStr for RegionFunction {
-    type Err = String;
-
-    fn from_str(src: &str) -> StdResult<Self, String> {
-        use self::RegionFunction::*;
-
-        match src {
-            "c" | "clip" => Ok(Clip),
-            "f" | "fill" => Ok(Fill),
-            _ => Err(format!("Invalid region function name: {}", src))
-        }
-    }
-}
-
-impl OptionValue for RegionFunction {
-    fn set(&mut self, value: &str) -> Result {
-        value.parse().map(|value| {
-            *self = value;
-            ()
-        })
-    }
-
-    fn cycle(&mut self, reverse: bool) -> Result {
-        use self::RegionFunction::*;
-        *self = cycled(*self, &[Clip, Fill], reverse);
         Ok(())
     }
 }

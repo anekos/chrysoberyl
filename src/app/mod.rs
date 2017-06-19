@@ -189,7 +189,7 @@ impl App {
                 Clear =>
                     on_clear(self, &mut updated),
                 Clip(region) =>
-                    on_clip(self, &mut updated, region),
+                    on_clip(self, &mut updated, region, &context),
                 Context(context, op) =>
                     return self.operate_with_context(*op, Some(context)),
                 Count(count) =>
@@ -204,8 +204,8 @@ impl App {
                    on_editor(self, editor_command.clone(), files, sessions),
                 Expand(recursive, ref base) =>
                     on_expand(self, &mut updated, recursive, base.clone()),
-                Fill(region, cell_index) =>
-                    on_fill(self, &mut updated, region, cell_index),
+                Fill(region, color, cell_index) =>
+                    on_fill(self, &mut updated, region, color, cell_index, &context),
                 First(count, ignore_views, move_by, _) =>
                     on_first(self, &mut updated, len, count, ignore_views, move_by),
                 Fragile(ref path) =>
@@ -280,8 +280,8 @@ impl App {
                     on_shuffle(self, &mut updated, fix_current),
                 Sort =>
                     on_sort(self, &mut updated),
-                TellRegion(ref region) =>
-                    on_tell_region(self, region),
+                TellRegion(left, top, right, bottom, button) =>
+                    on_tell_region(self, left, top, right, bottom, button),
                 Timer(name, op, interval, repeat) =>
                     on_timer(self, name, op, interval, repeat),
                 Unclip => 

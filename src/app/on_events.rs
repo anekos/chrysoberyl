@@ -75,13 +75,6 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
     }
 }
 
-pub fn on_cherenkov_clear(app: &mut App, updated: &mut Updated) {
-    if let Some(entry) = app.entries.current_entry(&app.pointer) {
-        app.cache.uncherenkov(&entry);
-        updated.image_options = true;
-    }
-}
-
 pub fn on_clear(app: &mut App, updated: &mut Updated) {
     app.entries.clear(&mut app.pointer);
     app.cache.clear();
@@ -428,6 +421,13 @@ pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) {
     if len > 0 {
         app.pointer.current = Some(RandRange::new(0, len).ind_sample(&mut app.rng));
         updated.image = true;
+    }
+}
+
+pub fn on_reset_image(app: &mut App, updated: &mut Updated) {
+    if let Some(entry) = app.entries.current_entry(&app.pointer) {
+        app.cache.uncherenkov(&entry);
+        updated.image_options = true;
     }
 }
 

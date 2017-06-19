@@ -10,7 +10,7 @@ use color::Color;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
 use expandable::Expandable;
 use filer;
-use mapping::{Input, InputType, mouse_mapping};
+use mapping::{Input, InputType};
 use shellexpand_wrapper as sh;
 
 use operation::*;
@@ -52,7 +52,6 @@ pub fn parse_cherenkov(args: &[String]) -> Result<Operation, String> {
     let mut x = None;
     let mut y = None;
     let mut color: Color = "random".parse().unwrap();
-    let mut clear = false;
 
     {
         let mut ap = ArgumentParser::new();
@@ -62,22 +61,17 @@ pub fn parse_cherenkov(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut x).add_option(&["-x"], StoreOption, "X");
         ap.refer(&mut y).add_option(&["-y"], StoreOption, "Y");
         ap.refer(&mut color).add_option(&["-c", "--color"], Store, "CSS Color");
-        ap.refer(&mut clear).add_option(&["--clear"], StoreTrue, "Clear");
         parse_args(&mut ap, args)
     } .map(|_| {
-        if clear {
-            Operation::CherenkovClear
-        } else {
-            Operation::Cherenkov(
-                CherenkovParameter {
-                    radius: radius,
-                    random_hue: random_hue,
-                    n_spokes: n_spokes,
-                    x: x,
-                    y: y,
-                    color: color
-                })
-        }
+        Operation::Cherenkov(
+            CherenkovParameter {
+                radius: radius,
+                random_hue: random_hue,
+                n_spokes: n_spokes,
+                x: x,
+                y: y,
+                color: color
+            })
     })
 }
 
@@ -182,6 +176,20 @@ pub fn parse_expand(args: &[String]) -> Result<Operation, String> {
         parse_args(&mut ap, args)
     } .map(|_| {
         Operation::Expand(recursive, base.map(|it| Path::new(&it).to_path_buf()))
+    })
+}
+
+pub fn parse_fill(args: &[String]) -> Result<Operation, String> {
+    let mut cell_index = 1;
+    let mut region = Region::new(0.0, 0.0, 1.0, 1.0);
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut cell_index).add_option(&["--cell-index", "-i"], Store, "Cell index (1 origin, default = 1)");
+        ap.refer(&mut region).add_argument("fill-region", Store, "Fill target region");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Fill(region, max!(cell_index, 1) - 1)
     })
 }
 

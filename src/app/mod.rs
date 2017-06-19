@@ -186,8 +186,6 @@ impl App {
             match operation {
                 Cherenkov(ref parameter) =>
                     on_cherenkov(self, &mut updated, parameter, &context),
-                CherenkovClear =>
-                    on_cherenkov_clear(self, &mut updated),
                 Clear =>
                     on_clear(self, &mut updated),
                 Clip(region) =>
@@ -264,6 +262,8 @@ impl App {
                     on_random(self, &mut updated, len),
                 Refresh =>
                     updated.pointer = true,
+                ResetImage =>
+                    on_reset_image(self, &mut updated),
                 Save(ref path, ref sources) =>
                     on_save(self, path, sources),
                 SetEnv(name, value) =>

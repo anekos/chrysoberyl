@@ -14,7 +14,7 @@ use entry;
 use expandable::Expandable;
 use filer;
 use gui::Direction;
-use mapping::{self, mouse_mapping};
+use mapping;
 use size::Region;
 use session::Session;
 
@@ -25,7 +25,6 @@ mod parser;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Operation {
     Cherenkov(CherenkovParameter),
-    CherenkovClear,
     Clear,
     Clip(Region),
     Context(OperationContext, Box<Operation>),
@@ -64,6 +63,7 @@ pub enum Operation {
     Quit,
     Random,
     Refresh,
+    ResetImage,
     Save(Option<PathBuf>, Vec<Session>),
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     SetEnv(String, Option<Expandable>),
@@ -292,6 +292,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@enable"                       => parse_option_1(whole, OptionUpdater::Enable),
             "@entries"                      => Ok(PrintEntries),
             "@expand"                       => parse_expand(whole),
+            "@fill"                         => parse_fill(whole),
             "@first" | "@f"                 => parse_move(whole, First),
             "@fragile"                      => parse_command1(whole, |it| Fragile(Expandable(it))),
             "@input"                        => parse_input(whole),
@@ -314,6 +315,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@quit"                         => Ok(Quit),
             "@random" | "@rand"             => Ok(Random),
             "@refresh" | "@r"               => Ok(Refresh),
+            "@reset-image"                  => Ok(ResetImage),
             "@save"                         => parse_save(whole),
             "@scroll"                       => parse_scroll(whole),
             "@set"                          => parse_option_set(whole),

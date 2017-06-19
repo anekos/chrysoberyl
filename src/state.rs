@@ -21,6 +21,7 @@ pub struct States {
     pub drawing: DrawingState,
     pub pre_fetch: PreFetchState,
     pub fill_color: Color,
+    pub last_direction: Direction,
 }
 
 pub struct ViewState {
@@ -52,6 +53,11 @@ pub struct StatusFormat(pub String);
 #[derive(Clone, Debug, PartialEq)]
 pub struct TitleFormat(pub String);
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum Direction {
+    Forward,
+    Backward
+}
 
 
 impl Default for States {
@@ -68,6 +74,7 @@ impl Default for States {
             drawing: DrawingState::default(),
             pre_fetch: PreFetchState::default(),
             fill_color: Color::new(0, 0, 0),
+            last_direction: Direction::Forward,
         }
     }
 

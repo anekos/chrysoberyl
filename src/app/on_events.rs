@@ -30,6 +30,7 @@ use script;
 use session::{Session, write_sessions};
 use shell;
 use shell_filter;
+use state;
 use utils::path_to_str;
 
 use app::*;
@@ -233,6 +234,14 @@ pub fn on_map(app: &mut App, target: MappingTarget, operation: Vec<String>) {
     }
 }
 
+pub fn on_move_again(app: &mut App, updated: &mut Updated, len: usize, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) {
+    if app.states.last_direction == state::Direction::Forward {
+        on_next(app, updated, len, count, ignore_views, move_by, wrap)
+    } else {
+        on_previous(app, updated, len, to_end, count, ignore_views, move_by, wrap)
+    }
+}
+
 pub fn on_move_entry(app: &mut App, updated: &mut Updated, from: &entry::Position, to: &entry::Position) {
     updated.image = app.entries.move_entry(&app.pointer, from, to);
 }
@@ -253,6 +262,7 @@ pub fn on_multi(app: &mut App, mut operations: VecDeque<Operation>, async: bool)
 }
 
 pub fn on_next(app: &mut App, updated: &mut Updated, len: usize, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) {
+    app.states.last_direction = state::Direction::Forward;
     match move_by {
         MoveBy::Page =>
             updated.pointer = app.pointer.with_count(count).next(len, !ignore_views, wrap),
@@ -297,6 +307,7 @@ pub fn on_pre_fetch(app: &mut App, serial: u64) {
 
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 pub fn on_previous(app: &mut App, updated: &mut Updated, len: usize, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) {
+    app.states.last_direction = state::Direction::Backward;
     match move_by {
         MoveBy::Page => {
             updated.pointer = app.pointer.with_count(count).previous(len, !ignore_views, wrap);

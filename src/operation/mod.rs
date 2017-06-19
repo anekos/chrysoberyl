@@ -45,6 +45,7 @@ pub enum Operation {
     Load(PathBuf),
     LoadDefault,
     Map(MappingTarget, Vec<String>),
+    MoveAgain(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     MoveEntry(entry::Position, entry::Position),
     Multi(VecDeque<Operation>, bool), /* operations, async */
     Next(Option<usize>, bool, MoveBy, bool),
@@ -298,6 +299,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@load"                         => parse_load(whole),
             "@map"                          => parse_map(whole),
             "@move"                         => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Move(path, if_exist))),
+            "@move-again"                   => parse_move(whole, MoveAgain),
             "@move-entry"                   => parse_move_entry(whole),
             "@multi"                        => parse_multi(whole),
             "@next" | "@n"                  => parse_move(whole, Next),

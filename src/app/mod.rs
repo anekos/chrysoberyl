@@ -396,15 +396,19 @@ impl App {
             self.pre_fetch(cell_size, 0..1);
         }
 
+        let mut invalid_all = true;
+
         for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
             if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
                 let image_buffer = self.cache.get_image_buffer(&entry, &cell_size, &self.states.drawing);
                 let (fg, bg) = (self.gui.colors.error, self.gui.colors.error_background);
                 match image_buffer {
-                    Ok(image_buffer) =>
-                        cell.draw(&image_buffer, &cell_size, &self.states.drawing.fit_to, &fg, &bg),
+                    Ok(image_buffer) => {
+                        cell.draw(&image_buffer, &cell_size, &self.states.drawing.fit_to, &fg, &bg);
+                        invalid_all = false;
+                    }
                     Err(error) =>
-                        cell.draw_text(&error, &cell_size, &fg, &bg)
+                        cell.draw_text(&error, &cell_size, &fg, &bg),
                 }
             } else {
                 cell.image.set_from_pixbuf(None);
@@ -422,6 +426,10 @@ impl App {
         }
 
         on_events::fire_event(self, "show-image");
+
+        if invalid_all {
+            on_events::fire_event(self, "invalid-all");
+        }
 
         image_size
     }

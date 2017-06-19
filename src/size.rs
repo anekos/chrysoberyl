@@ -1,5 +1,6 @@
 
 use std::ops::Add;
+use std::str::FromStr;
 
 use gdk_pixbuf::Pixbuf;
 
@@ -166,6 +167,14 @@ impl Region {
     pub fn height(&self) -> f64 {
         self.bottom - self.top
     }
+
+    pub fn contains(&self, x: i32, y: i32, width: i32, height: i32) -> bool {
+        let l = (width as f64 * self.left) as i32;
+        let r = (width as f64 * self.right) as i32;
+        let t = (height as f64 * self.top) as i32;
+        let b = (height as f64 * self.bottom) as i32;
+        (l <= x && x <= r && t <= y && y <= b)
+    }
 }
 
 
@@ -191,6 +200,32 @@ impl Default for Region {
 impl PartialEq for Region {
     fn eq(&self, other: &Region) -> bool {
         feq(self.left, other.left, FERROR) && feq(self.top, other.top, FERROR) && feq(self.right, other.right, FERROR) && feq(self.bottom, other.bottom, FERROR)
+    }
+}
+
+impl FromStr for Region {
+    type Err = String;
+
+    fn from_str(src: &str) -> Result<Self, String> {
+        let err = Err(o!("Invalid format (e.g. 0.0x0.0-1.0x1.0)"));
+
+        let hyphen: Vec<&str> = src.split_terminator('-').collect();
+        if hyphen.len() != 2 {
+            return err;
+        }
+
+        let xs_from: Vec<&str> = hyphen[0].split_terminator('x').collect();
+        let xs_to: Vec<&str> = hyphen[1].split_terminator('x').collect();
+
+        if xs_from.len() != 2 || xs_to.len() != 2 {
+            return err
+        }
+
+        if let (Ok(left), Ok(top), Ok(right), Ok(bottom)) = (xs_from[0].parse(), xs_from[1].parse(), xs_to[0].parse(), xs_to[1].parse()) {
+            Ok(Self::new(left, top, right, bottom))
+        } else {
+            err
+        }
     }
 }
 

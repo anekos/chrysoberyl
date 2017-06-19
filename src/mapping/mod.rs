@@ -6,6 +6,8 @@ pub mod key_mapping;
 pub mod mouse_mapping;
 pub mod event_mapping;
 
+use size::Region;
+
 
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -45,8 +47,8 @@ impl Mapping {
         self.key_mapping.register(key, operation);
     }
 
-    pub fn register_mouse(&mut self, button: u32, area: Option<mouse_mapping::Area>, operation: Vec<String>) {
-        self.mouse_mapping.register(button, area, operation);
+    pub fn register_mouse(&mut self, button: u32, region: Option<Region>, operation: Vec<String>) {
+        self.mouse_mapping.register(button, region, operation);
     }
 
     pub fn register_event(&mut self, event_name: String, id: Option<String>, operation: Vec<String>) {

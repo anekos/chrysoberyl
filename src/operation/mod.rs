@@ -101,7 +101,7 @@ pub enum OperationContext {
 #[derive(Clone, Debug, PartialEq)]
 pub enum MappingTarget {
     Key(Vec<String>),
-    Mouse(u32, Option<mouse_mapping::Area>),
+    Mouse(u32, Option<Region>),
     Event(String, Option<String>),
 }
 

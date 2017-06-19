@@ -262,16 +262,16 @@ pub fn parse_map(args: &[String]) -> Result<Operation, String> {
     fn parse_map_mouse(args: &[String]) -> Result<Operation, String> {
         let mut from = 1;
         let mut to: Vec<String> = vec![];
-        let mut area: Option<mouse_mapping::Area> = None;
+        let mut region: Option<Region> = None;
 
         {
             let mut ap = ArgumentParser::new();
             ap.refer(&mut from).add_argument("from", Store, "Target button").required();
-            ap.refer(&mut area).add_option(&["--area", "-a"], StoreOption, "Area");
+            ap.refer(&mut region).add_option(&["--region", "-r"], StoreOption, "Region");
             ap.refer(&mut to).add_argument("to", List, "Command").required();
             parse_args(&mut ap, args)
         } .map(|_| {
-            Operation::Map(MappingTarget::Mouse(from, area), to)
+            Operation::Map(MappingTarget::Mouse(from, region), to)
         })
     }
 

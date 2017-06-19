@@ -195,8 +195,8 @@ fn write_mouse_mappings(mappings: &mmap::MouseMapping, out: &mut String) {
     for (button, entries) in &mappings.table {
         for entry in entries {
             sprint!(out, "@map mouse");
-            if let Some(ref area) = entry.area {
-                sprint!(out, " --area {}x{}-{}x{}", area.left, area.top, area.right, area.bottom);
+            if let Some(ref region) = entry.region {
+                sprint!(out, " --region {}x{}-{}x{}", region.left, region.top, region.right, region.bottom);
             }
             sprint!(out, " {}", button);
             for it in &entry.operation {

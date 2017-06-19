@@ -221,7 +221,8 @@ fn write_envs(out: &mut String) {
     for (key, value) in env::vars_os() {
         if let (Ok(ref key), Ok(ref value)) = (key.into_string(), value.into_string()) {
             if key.starts_with(constant::USER_VARIABLE_PREFIX) {
-                sprintln!(out, "@set-env {} {}", escape(key), escape(value));
+                let key = &key[constant::USER_VARIABLE_PREFIX.len()..];
+                sprintln!(out, "@set-env -p {} {}", escape(key), escape(value));
             }
         }
     }

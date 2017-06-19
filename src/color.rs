@@ -18,6 +18,10 @@ pub struct Color {
 
 
 impl Color {
+    pub fn black() -> Color {
+        Color::new(0, 0, 0)
+    }
+
     pub fn new(r: u8, g: u8, b: u8) -> Color {
         Color { r: r, g: g, b: b, a: 255 }
     }

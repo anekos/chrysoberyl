@@ -93,7 +93,8 @@ pub fn parse_copy_or_move(args: &[String]) -> Result<(PathBuf, filer::IfExist), 
 }
 
 pub fn parse_clip(args: &[String]) -> Result<Operation, String> {
-    let mut region = Region { left: 0.0, top: 0.0, right: 0.0, bottom: 0.0 };
+    let d = 0.05;
+    let mut region = Region { left: d, top: d, right: 1.0 - d, bottom: 1.0 - d };
 
     {
         let mut ap = ArgumentParser::new();
@@ -181,15 +182,17 @@ pub fn parse_expand(args: &[String]) -> Result<Operation, String> {
 
 pub fn parse_fill(args: &[String]) -> Result<Operation, String> {
     let mut cell_index = 1;
-    let mut region = Region::new(0.0, 0.0, 1.0, 1.0);
+    let mut region = None;
+    let mut color = Color::black();
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut cell_index).add_option(&["--cell-index", "-i"], Store, "Cell index (1 origin, default = 1)");
-        ap.refer(&mut region).add_argument("fill-region", Store, "Fill target region");
+        ap.refer(&mut region).add_option(&["--region", "-r"], StoreOption, "Fill target region");
+        ap.refer(&mut color).add_option(&["--color", "-c"], Store, "Fill color");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Fill(region, max!(cell_index, 1) - 1)
+        Operation::Fill(region, color, max!(cell_index, 1) - 1)
     })
 }
 
@@ -299,12 +302,25 @@ pub fn parse_map(args: &[String]) -> Result<Operation, String> {
         })
     }
 
+    fn parse_map_region(args: &[String]) -> Result<Operation, String> {
+        let mut from = 1;
+        let mut to = vec![];
+        {
+            let mut ap = ArgumentParser::new();
+            ap.refer(&mut from).add_argument("from", Store, "Target mouse button").required();
+            ap.refer(&mut to).add_argument("to", List, "Operation").required();
+            parse_args(&mut ap, args)
+        } .map(|_| {
+            Operation::Map(MappingTarget::Region(from), to)
+        })
+    }
     if let Some(target) = args.get(1) {
         let args = &args[1..];
         match &**target {
             "k" | "key" => parse_map_key(args),
             "m" | "button" | "mouse" | "mouse-button" => parse_map_mouse(args),
             "e" | "event" => parse_map_event(args),
+            "r" | "region" => parse_map_region(args),
             _ => Err(format!("Invalid mapping target: {}", target))
         }
     } else {

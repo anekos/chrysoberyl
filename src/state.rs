@@ -20,7 +20,6 @@ pub struct States {
     pub title_format: TitleFormat,
     pub drawing: DrawingState,
     pub pre_fetch: PreFetchState,
-    pub region_function: RegionFunction,
     pub fill_color: Color,
 }
 
@@ -53,11 +52,6 @@ pub struct StatusFormat(pub String);
 #[derive(Clone, Debug, PartialEq)]
 pub struct TitleFormat(pub String);
 
-#[derive(Clone, Debug, PartialEq, Eq, Copy)]
-pub enum RegionFunction {
-    Clip,
-    Fill,
-}
 
 
 impl Default for States {
@@ -73,7 +67,6 @@ impl Default for States {
             show: None,
             drawing: DrawingState::default(),
             pre_fetch: PreFetchState::default(),
-            region_function: RegionFunction::Clip,
             fill_color: Color::new(0, 0, 0),
         }
     }

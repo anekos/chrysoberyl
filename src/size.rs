@@ -1,4 +1,5 @@
 
+use std::fmt;
 use std::ops::Add;
 use std::str::FromStr;
 
@@ -160,6 +161,10 @@ impl Region {
         }
     }
 
+    pub fn full() -> Region {
+        Region::new(0.0, 0.0, 1.0, 1.0)
+    }
+
     pub fn width(&self) -> f64 {
         self.right - self.left
     }
@@ -226,6 +231,12 @@ impl FromStr for Region {
         } else {
             err
         }
+    }
+}
+
+impl fmt::Display for Region {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}x{}-{}x{}", self.left, self.top, self.right, self.bottom)
     }
 }
 

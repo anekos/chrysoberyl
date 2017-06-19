@@ -35,7 +35,7 @@ pub enum Operation {
     Editor(Option<Expandable>, Vec<Expandable>, Vec<Session>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
-    Fill(Region, usize), /* region, cell index */
+    Fill(Option<Region>, Color, usize), /* region, cell index */
     Fragile(Expandable),
     Initialized,
     Input(mapping::Input),
@@ -72,7 +72,7 @@ pub enum Operation {
     Show(entry::SearchKey),
     Shuffle(bool), /* Fix current */
     Sort,
-    TellRegion(Region),
+    TellRegion(f64, f64, f64, f64, u32), /* lef,t top, right, bottom, mousesbutton */
     Timer(String, Vec<String>, Duration, Option<usize>),
     UpdateOption(OptionName, OptionUpdater),
     User(Vec<(String, String)>),
@@ -103,6 +103,7 @@ pub enum MappingTarget {
     Key(Vec<String>),
     Mouse(u32, Option<Region>),
     Event(String, Option<String>),
+    Region(u32),
 }
 
 #[derive(Debug, PartialEq)]
@@ -142,13 +143,11 @@ pub enum OptionName {
     PreFetchPageSize,
     VerticalViews,
     HorizontalViews,
-    RegionFunction,
     ColorWindowBackground,
     ColorStatusBar,
     ColorStatusBarBackground,
     ColorError,
     ColorErrorBackground,
-    ColorFill,
     User(String),
 }
 
@@ -190,13 +189,11 @@ impl FromStr for OptionName {
             "pre-render-pages"                     => Ok(PreFetchPageSize),
             "vertical-views"                       => Ok(VerticalViews),
             "horizontal-views"                     => Ok(HorizontalViews),
-            "region-function" | "region-func"      => Ok(RegionFunction),
             "window-background-color"              => Ok(ColorWindowBackground),
             "status-bar-color"                     => Ok(ColorStatusBar),
             "status-bar-background-color"          => Ok(ColorStatusBarBackground),
             "error-color"                          => Ok(ColorError),
             "error-background-color"               => Ok(ColorErrorBackground),
-            "fill-color"                           => Ok(ColorFill),
             user => Ok(User(o!(user)))
         }
     }

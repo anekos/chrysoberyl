@@ -13,6 +13,7 @@ use rand::distributions::{IndependentSample, Range as RandRange};
 
 use app_path;
 use archive;
+use color::Color;
 use config::DEFAULT_CONFIG;
 use editor;
 use entry::{self, Meta, SearchKey};
@@ -29,7 +30,6 @@ use script;
 use session::{Session, write_sessions};
 use shell;
 use shell_filter;
-use state::RegionFunction;
 use utils::path_to_str;
 
 use app::*;
@@ -81,7 +81,8 @@ pub fn on_clear(app: &mut App, updated: &mut Updated) {
     updated.image = true;
 }
 
-pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region) {
+pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region, context: &Option<OperationContext>) {
+    let inner = extract_region_from_context(context).unwrap_or(inner);
     let current = app.states.drawing.clipping.unwrap_or_default();
     app.states.drawing.clipping = Some(current + inner);
     updated.image_options = true;
@@ -116,15 +117,17 @@ pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) {
     }
 }
 
-pub fn on_fill(app: &mut App, updated: &mut Updated, region: Region, cell_index: usize) {
+pub fn on_fill(app: &mut App, updated: &mut Updated, region: Option<Region>, color: Color, cell_index: usize, context: &Option<OperationContext>) {
     use cherenkov::Che;
+
+    let region = extract_region_from_context(context).or(region).unwrap_or_else(Region::full);
 
     if let Some(entry) = app.entries.current_with(&app.pointer, cell_index).map(|(entry,_)| entry) {
         let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
         app.cache.cherenkov(
             &entry,
             &cell_size,
-            &Che::Fill(region, app.states.fill_color),
+            &Che::Fill(region, color),
             &app.states.drawing);
         updated.image = true;
     }
@@ -225,6 +228,8 @@ pub fn on_map(app: &mut App, target: MappingTarget, operation: Vec<String>) {
             app.mapping.register_mouse(button, area, operation),
         Event(event_name, id) =>
             app.mapping.register_event(event_name, id, operation),
+        Region(button) =>
+            app.mapping.register_region(button, operation),
     }
 }
 
@@ -502,8 +507,8 @@ pub fn on_sort(app: &mut App, updated: &mut Updated) {
     updated.image = true;
 }
 
-pub fn on_tell_region(app: &mut App, region: &Region) {
-    let (mx, my) = (region.left as i32, region.top as i32);
+pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f64, button: u32) {
+    let (mx, my) = (left as i32, top as i32);
     for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
         if app.entries.current_with(&app.pointer, index).is_some() {
             let (x1, y1, w, h) = {
@@ -520,14 +525,9 @@ pub fn on_tell_region(app: &mut App, region: &Region) {
                 let region = Region::new(
                     (mx - x1) as f64 / w,
                     (my - y1) as f64 / h,
-                    (region.right - x1 as f64) / w,
-                    (region.bottom - y1 as f64) / h);
-                let op = match app.states.region_function {
-                    RegionFunction::Clip =>
-                        Operation::Clip(region),
-                    RegionFunction::Fill =>
-                        Operation::Fill(region, index),
-                };
+                    (right - x1 as f64) / w,
+                    (bottom - y1 as f64) / h);
+                let op = Operation::Input(Input::Region(region, button));
                 app.tx.send(op).unwrap();
             }
         }
@@ -565,13 +565,11 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
             PreFetchPageSize => &mut app.states.pre_fetch.page_size,
             HorizontalViews => &mut app.states.view.cols,
             VerticalViews => &mut app.states.view.rows,
-            RegionFunction => &mut app.states.region_function,
             ColorWindowBackground => &mut app.gui.colors.window_background,
             ColorStatusBar => &mut app.gui.colors.status_bar,
             ColorStatusBarBackground => &mut app.gui.colors.status_bar_background,
             ColorError => &mut app.gui.colors.error,
             ColorErrorBackground => &mut app.gui.colors.error_background,
-            ColorFill => &mut app.states.fill_color,
             User(ref name) => {
                 if let Some(switch) = app.user_switches.get(name) {
                     switch
@@ -693,4 +691,13 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
         updated.label = true;
     }
     app.do_show(updated);
+}
+
+fn extract_region_from_context(context: &Option<OperationContext>) -> Option<Region> {
+    if let Some(OperationContext::Input(ref input)) = *context {
+        if let Input::Region(ref region, _) = *input {
+            return Some(*region);
+        }
+    }
+    None
 }

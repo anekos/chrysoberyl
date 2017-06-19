@@ -12,7 +12,6 @@ use lazy_sender::LazySender;
 use gui::Gui;
 use mapping::Input;
 use operation::Operation;
-use size::Region;
 use utils::feq;
 
 
@@ -53,12 +52,13 @@ fn on_button_press(button: &EventButton, pressed_at: ArcPressedAt) -> Inhibit {
 fn on_button_release(tx: &Sender<Operation>, button: &EventButton, pressed_at: ArcPressedAt) -> Inhibit {
     let (x, y) = button.get_position();
     let (px, py) = (*pressed_at).get();
+    let button = button.get_button();
     if feq(x, px, 10.0) && feq(y, py, 10.0) {
         tx.send(
             Operation::Input(
-                Input::mouse_button(x as i32, y as i32, button.get_button()))).unwrap();
+                Input::mouse_button(x as i32, y as i32, button))).unwrap();
     } else {
-        tx.send( Operation::TellRegion(Region::new(px, py, x, y))).unwrap();
+        tx.send(Operation::TellRegion(px, py, x, y, button)).unwrap();
     }
     Inhibit(true)
 }

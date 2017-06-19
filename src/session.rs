@@ -12,9 +12,9 @@ use constant;
 use entry::{Entry, EntryContainer, KeyType, Key};
 use gui::Gui;
 use index_pointer::IndexPointer;
-use mapping::{Mapping, key_mapping as kmap, mouse_mapping as mmap};
+use mapping::{Mapping, key_mapping as kmap, mouse_mapping as mmap, region_mapping as rmap};
 use size::FitTo;
-use state::{States, ScalingMethod, RegionFunction};
+use state::{States, ScalingMethod};
 use utils::path_to_str;
 
 
@@ -76,7 +76,6 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
     sprintln!(out, "@set pre-render {}", b2s(st.pre_fetch.enabled));
     sprintln!(out, "@set pre-render-limit {}", st.pre_fetch.limit_of_items);
     sprintln!(out, "@set pre-render-pages {}", st.pre_fetch.page_size);
-    sprintln!(out, "@set region-function {}", st.region_function);
     sprintln!(out, "@set reverse {}", b2s(st.reverse));
     sprintln!(out, "@set scaling {}", st.drawing.scaling);
     sprintln!(out, "@set status-bar {}", b2s(st.status_bar));
@@ -162,6 +161,7 @@ pub fn write_position(entries: &EntryContainer, pointer: &IndexPointer, out: &mu
 pub fn write_mappings(mappings: &Mapping, out: &mut String) {
     write_key_mappings(None, &mappings.key_mapping, out);
     write_mouse_mappings(&mappings.mouse_mapping, out);
+    write_region_mappings(&mappings.region_mapping, out);
 }
 
 fn write_key_mappings(base: Option<&str>, mappings: &kmap::KeyMapping, out: &mut String) {
@@ -207,6 +207,16 @@ fn write_mouse_mappings(mappings: &mmap::MouseMapping, out: &mut String) {
     }
 }
 
+fn write_region_mappings(mappings: &rmap::RegionMapping, out: &mut String) {
+    for (button, operation) in &mappings.table {
+        sprint!(out, "@map region {} ", button);
+        for it in operation {
+            sprint!(out, " {}", escape(it));
+        }
+        sprintln!(out, "");
+    }
+}
+
 fn write_envs(out: &mut String) {
     for (key, value) in env::vars_os() {
         if let (Ok(ref key), Ok(ref value)) = (key.into_string(), value.into_string()) {
@@ -247,21 +257,6 @@ impl fmt::Display for ScalingMethod {
             Bilinear => "bilinear",
             Hyper => "hyper",
         };
-        write!(f, "{}", result)
-    }
-}
-
-
-impl fmt::Display for RegionFunction {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::RegionFunction::*;
-
-        let result =
-            match *self {
-                Clip => "clip",
-                Fill => "fill",
-            };
-
         write!(f, "{}", result)
     }
 }

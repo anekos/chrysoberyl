@@ -50,6 +50,17 @@ impl Condition {
                         return false;
                     }
                 }
+                let dims = size.height * size.width;
+                if let Some(min_dimensions) = self.min_dimensions {
+                    if dims < min_dimensions {
+                        return false;
+                    }
+                }
+                if let Some(max_dimensions) = self.max_dimensions {
+                    if max_dimensions < dims {
+                        return false;
+                    }
+                }
             }
         }
 
@@ -82,7 +93,9 @@ impl Condition {
           self.max_width.is_some() ||
           self.max_height.is_some() ||
           self.width.is_some() ||
-          self.height.is_some())
+          self.height.is_some() ||
+          self.min_dimensions.is_some() ||
+          self.max_dimensions.is_some())
     }
 
     fn is_empty(&self) -> bool {
@@ -101,6 +114,8 @@ impl Default for Condition {
             max_height: None,
             width: None,
             height: None,
+            min_dimensions: None,
+            max_dimensions: None,
             extensions: vec![],
             path: None,
         }

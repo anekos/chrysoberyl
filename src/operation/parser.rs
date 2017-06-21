@@ -208,6 +208,8 @@ pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut condition.max_height).add_option(&["--max-height", "-H"], StoreOption, "Maximum height");
         ap.refer(&mut condition.width).add_option(&["--width"], StoreOption, "Width");
         ap.refer(&mut condition.height).add_option(&["--height"], StoreOption, "Height");
+        ap.refer(&mut condition.min_dimensions).add_option(&["--min-dimensions", "--min-dims", "-d"], StoreOption, "Minimum dimentions (Width x Height)");
+        ap.refer(&mut condition.max_dimensions).add_option(&["--max-dimensions", "--max-dims", "-D"], StoreOption, "Maximum dimentions (Width x Height)");
         ap.refer(&mut condition.extensions).add_option(&["--extension", "--ext", "-e"], Collect, "Extension");
         ap.refer(&mut condition.path).add_option(&["--path", "-p"], StoreOption, "Path (filename/URL) regex pattern");
         parse_args(&mut ap, args)

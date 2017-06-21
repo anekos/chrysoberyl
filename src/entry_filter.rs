@@ -5,6 +5,7 @@ use std::default::Default;
 use immeta;
 use regex::Regex;
 
+use archive::ArchiveEntry;
 use entry::{Entry, EntryInfo, EntryContent};
 use size::Size;
 
@@ -136,13 +137,26 @@ fn generate_info(content: &EntryContent) -> EntryInfo {
     match *content {
         File(ref path) | Http(ref path, _) =>
             generate_static_image_info(path),
-        _ =>
-            EntryInfo { size: None } // TODO FIXME
+        Archive(_, ref entry) =>
+            generate_archive_image_info(entry),
+        Pdf(_, _) =>
+            EntryInfo { size: None }
     }
 }
 
 fn generate_static_image_info(path: &Path) -> EntryInfo {
     let img = immeta::load_from_file(path).ok();
+    EntryInfo {
+        size: img.map(|img| {
+            let dim = img.dimensions();
+            Size::new(dim.width as i32, dim.height as i32)
+        })
+    }
+}
+
+fn generate_archive_image_info(entry: &ArchiveEntry) -> EntryInfo {
+    let buf = &*entry.content;
+    let img = immeta::load_from_buf(buf.as_slice()).ok();
     EntryInfo {
         size: img.map(|img| {
             let dim = img.dimensions();

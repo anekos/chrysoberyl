@@ -18,13 +18,15 @@ pub struct Condition {
     pub max_height: Option<i32>,
     pub width: Option<i32>,
     pub height: Option<i32>,
+    pub min_dimensions: Option<i32>,
+    pub max_dimensions: Option<i32>,
     pub extensions: Vec<String>,
     pub path: Option<Regex>,
 }
 
 impl Condition {
     pub fn is_valid(&self, entry: &mut Entry) -> bool {
-        if self.is_empty_for_info() {
+        if !self.is_empty_for_info() {
             let info = get_info(entry);
 
             if let Some(size) = info.size {

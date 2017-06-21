@@ -23,7 +23,7 @@ mod parser;
 
 
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum Operation {
     Cherenkov(CherenkovParameter),
     Clear,

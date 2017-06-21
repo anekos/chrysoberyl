@@ -25,6 +25,7 @@ extern crate natord;
 extern crate num_cpus;
 extern crate onig;
 extern crate rand;
+extern crate regex;
 extern crate shell_escape;
 extern crate shellexpand;
 extern crate url;

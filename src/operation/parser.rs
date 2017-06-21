@@ -204,6 +204,12 @@ pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut condition.min_width).add_option(&["--min-width", "-w"], StoreOption, "Minimum width");
         ap.refer(&mut condition.min_height).add_option(&["--min-height", "-h"], StoreOption, "Minimum height");
+        ap.refer(&mut condition.max_width).add_option(&["--max-width", "-W"], StoreOption, "Maximum width");
+        ap.refer(&mut condition.max_height).add_option(&["--max-height", "-H"], StoreOption, "Maximum height");
+        ap.refer(&mut condition.width).add_option(&["--width"], StoreOption, "Width");
+        ap.refer(&mut condition.height).add_option(&["--height"], StoreOption, "Height");
+        ap.refer(&mut condition.extensions).add_option(&["--extension", "--ext", "-e"], Collect, "Extension");
+        ap.refer(&mut condition.path).add_option(&["--path", "-p"], StoreOption, "Path (filename/URL) regex pattern");
         parse_args(&mut ap, args)
     } .map(|_| {
         Operation::Filter(condition.optionize())

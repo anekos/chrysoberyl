@@ -136,6 +136,7 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, region: Option<Region>, col
 }
 
 pub fn on_filter(app: &mut App, updated: &mut Updated, condition: Option<entry_filter::Condition>) {
+    app.states.last_filter = condition.clone();
     if let Some(condition) = condition {
         app.entries.update_filter(Some(Box::new(move |ref mut entry| condition.is_valid(entry))));
     } else {

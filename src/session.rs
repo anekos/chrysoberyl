@@ -10,6 +10,7 @@ use app::App;
 use color::Color;
 use constant;
 use entry::{Entry, EntryContainer, KeyType, Key};
+use entry_filter;
 use gui::Gui;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, key_mapping as kmap, mouse_mapping as mmap, region_mapping as rmap};
@@ -27,6 +28,7 @@ pub enum Session {
     Paths,
     Mappings,
     Envs,
+    Filter,
     All,
 }
 
@@ -47,12 +49,14 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
         Position => write_position(&app.entries, &app.pointer, out),
         Mappings => write_mappings(&app.mapping, out),
         Envs => write_envs(out),
+        Filter => write_filter(&app.states.last_filter, out),
         All => {
             write_options(&app.states, &app.gui, out);
             write_entries(&app.entries, out);
             write_position(&app.entries, &app.pointer, out);
             write_mappings(&app.mapping, out);
             write_envs(out);
+            write_filter(&app.states.last_filter, out);
         }
     }
 }
@@ -224,6 +228,30 @@ fn write_envs(out: &mut String) {
                 sprintln!(out, "@set-env -p {} {}", escape(key), escape(value));
             }
         }
+    }
+}
+
+fn write_filter(condition: &Option<entry_filter::Condition>, out: &mut String) {
+    if let Some(c) = condition.as_ref() {
+        sprint!(out, "@filter");
+        if let Some(it) = c.min_width { sprint!(out, " --min-width {}", it); }
+        if let Some(it) = c.min_height { sprint!(out, " --min-height {}", it); }
+        if let Some(it) = c.max_width { sprint!(out, " --max-width {}", it); }
+        if let Some(it) = c.max_height { sprint!(out, " --max-height {}", it); }
+        if let Some(it) = c.width { sprint!(out, " --width {}", it); }
+        if let Some(it) = c.height { sprint!(out, " --height {}", it); }
+        if let Some(it) = c.min_width { sprint!(out, " --min-width {}", it); }
+        if let Some(it) = c.min_dimensions { sprint!(out, " --min-dimensions {}", it); }
+        if let Some(it) = c.max_dimensions { sprint!(out, " --max-dimensions {}", it); }
+        for extension in &c.extensions {
+            sprint!(out, " --extension {}", extension);
+        }
+        for extension in &c.ignore_extensions {
+            sprint!(out, " --ignore-extension {}", extension);
+        }
+        if let Some(ref it) = c.path.as_ref() { sprint!(out, " --path {}", it); }
+        if let Some(ref it) = c.ignore_path.as_ref() { sprint!(out, " --ignore-path {}", it); }
+        sprintln!(out, "");
     }
 }
 

@@ -22,7 +22,9 @@ pub struct Condition {
     pub min_dimensions: Option<i32>,
     pub max_dimensions: Option<i32>,
     pub extensions: Vec<String>,
+    pub ignore_extensions: Vec<String>,
     pub path: Option<Regex>,
+    pub ignore_path: Option<Regex>,
 }
 
 impl Condition {
@@ -66,13 +68,25 @@ impl Condition {
         }
 
         if 0 < self.extensions.len() {
-            if !is_valid_extension(&entry.key.1, &self.extensions) {
+            if !match_extensions(&entry.key.1, &self.extensions) {
+                return false;
+            }
+        }
+
+        if 0 < self.ignore_extensions.len() {
+            if match_extensions(&entry.key.1, &self.ignore_extensions) {
                 return false;
             }
         }
 
         if let Some(ref path) = self.path {
             if !path.is_match(&entry.key.1) {
+                return false;
+            }
+        }
+
+        if let Some(ref ignore_path) = self.ignore_path {
+            if ignore_path.is_match(&entry.key.1) {
                 return false;
             }
         }
@@ -101,7 +115,8 @@ impl Condition {
 
     fn is_empty(&self) -> bool {
         !(!self.extensions.is_empty() ||
-          self.path.is_some()) &&
+          self.path.is_some() ||
+          self.ignore_path.is_some()) &&
             self.is_empty_for_info()
     }
 }
@@ -118,7 +133,9 @@ impl Default for Condition {
             min_dimensions: None,
             max_dimensions: None,
             extensions: vec![],
+            ignore_extensions: vec![],
             path: None,
+            ignore_path: None,
         }
     }
 }
@@ -165,7 +182,7 @@ fn generate_archive_image_info(entry: &ArchiveEntry) -> EntryInfo {
     }
 }
 
-fn is_valid_extension(path: &str, extensions: &[String]) -> bool {
+fn match_extensions(path: &str, extensions: &[String]) -> bool {
     if_let_some!(ext = Path::new(path).extension(), true);
     let ext = ext.to_str().unwrap().to_lowercase();
 

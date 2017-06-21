@@ -212,6 +212,7 @@ pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut condition.max_dimensions).add_option(&["--max-dimensions", "--max-dims", "-D"], StoreOption, "Maximum dimentions (Width x Height)");
         ap.refer(&mut condition.extensions).add_option(&["--extension", "--ext", "-e"], Collect, "Extension");
         ap.refer(&mut condition.path).add_option(&["--path", "-p"], StoreOption, "Path (filename/URL) regex pattern");
+        ap.refer(&mut condition.ignore_path).add_option(&["--ignore-path", "-P"], StoreOption, "Ignore the path (filename/URL) regex pattern");
         parse_args(&mut ap, args)
     } .map(|_| {
         Operation::Filter(condition.optionize())
@@ -705,6 +706,8 @@ impl FromStr for Session {
                 Ok(Session::Mappings),
             "envs" | "env" | "E" =>
                 Ok(Session::Envs),
+            "filter" | "f" =>
+                Ok(Session::Filter),
             "all" | "a" =>
                 Ok(Session::All),
             _ =>

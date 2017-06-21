@@ -3,7 +3,6 @@ use std::default::Default;
 
 use gdk_pixbuf::InterpType;
 
-use color::Color;
 use entry::SearchKey;
 use size::{FitTo, Region};
 
@@ -20,7 +19,6 @@ pub struct States {
     pub title_format: TitleFormat,
     pub drawing: DrawingState,
     pub pre_fetch: PreFetchState,
-    pub fill_color: Color,
     pub last_direction: Direction,
 }
 
@@ -73,7 +71,6 @@ impl Default for States {
             show: None,
             drawing: DrawingState::default(),
             pre_fetch: PreFetchState::default(),
-            fill_color: Color::new(0, 0, 0),
             last_direction: Direction::Forward,
         }
     }

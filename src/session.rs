@@ -86,7 +86,6 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
     sprintln!(out, "@set status-bar-background-color {}", c2s(&gui.colors.status_bar_background));
     sprintln!(out, "@set error-color {}", c2s(&gui.colors.error));
     sprintln!(out, "@set error-background-color {}", c2s(&gui.colors.error_background));
-    sprintln!(out, "@set fill-color {}", c2s(&st.fill_color));
     // sprintln!(out, "@set horizontal-views {}", gui.cols());
     // sprintln!(out, "@set vertical-views {}", gui.rows());
     sprintln!(out, "@views {} {}", gui.cols(), gui.rows());

@@ -249,8 +249,8 @@ fn write_filter(condition: &Option<entry_filter::Condition>, out: &mut String) {
         for extension in &c.ignore_extensions {
             sprint!(out, " --ignore-extension {}", extension);
         }
-        if let Some(ref it) = c.path.as_ref() { sprint!(out, " --path {}", it); }
-        if let Some(ref it) = c.ignore_path.as_ref() { sprint!(out, " --ignore-path {}", it); }
+        if let Some(ref it) = c.path { sprint!(out, " --path {}", it); }
+        if let Some(ref it) = c.ignore_path { sprint!(out, " --ignore-path {}", it); }
         sprintln!(out, "");
     }
 }

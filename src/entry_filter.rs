@@ -67,16 +67,12 @@ impl Condition {
             }
         }
 
-        if 0 < self.extensions.len() {
-            if !match_extensions(&entry.key.1, &self.extensions) {
-                return false;
-            }
+        if 0 < self.extensions.len() && !match_extensions(&entry.key.1, &self.extensions){
+            return false;
         }
 
-        if 0 < self.ignore_extensions.len() {
-            if match_extensions(&entry.key.1, &self.ignore_extensions) {
-                return false;
-            }
+        if 0 < self.ignore_extensions.len() && match_extensions(&entry.key.1, &self.ignore_extensions){
+            return false;
         }
 
         if let Some(ref path) = self.path {
@@ -145,7 +141,7 @@ pub fn get_info(entry: &mut Entry) -> &EntryInfo {
     let info = &mut entry.info;
     let content = &entry.content;
 
-    info.get(|| generate_info(&content))
+    info.get(|| generate_info(content))
 }
 
 fn generate_info(content: &EntryContent) -> EntryInfo {

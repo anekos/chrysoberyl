@@ -37,7 +37,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
     }
 
     pub fn get_index(&self, entry: &T) -> Option<usize> {
-        self.indices.get(entry).map(|it| *it)
+        self.indices.get(entry).cloned()
     }
 
     pub fn iter(&self) -> slice::Iter<Rc<T>> {
@@ -93,7 +93,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
         let targets = if let Some(ref mut pred) = self.pred {
             let mut entries = entries.to_vec();
             let mut targets = vec![];
-            for mut entry in entries.iter_mut() {
+            for mut entry in &mut entries {
                 if (pred)(Rc::make_mut(&mut entry)) {
                     targets.push(entry.clone());
                 }
@@ -137,7 +137,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
     pub fn filter(&mut self) {
         if let Some(ref mut pred) = self.pred {
             self.filtered = vec![];
-            for mut entry in self.original.iter_mut() {
+            for mut entry in &mut self.original {
                 if (pred)(Rc::make_mut(&mut entry)) {
                      self.filtered.push(entry.clone());
                 }

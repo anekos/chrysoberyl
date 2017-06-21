@@ -215,7 +215,7 @@ pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut condition.ignore_path).add_option(&["--ignore-path", "-P"], StoreOption, "Ignore the path (filename/URL) regex pattern");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Filter(condition.optionize())
+        Operation::Filter(Box::new(condition.optionize()))
     })
 }
 

@@ -135,7 +135,8 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, region: Option<Region>, col
     }
 }
 
-pub fn on_filter(app: &mut App, updated: &mut Updated, condition: Option<entry_filter::Condition>) {
+pub fn on_filter(app: &mut App, updated: &mut Updated, condition: Box<Option<entry_filter::Condition>>) {
+    let condition = *condition;
     app.states.last_filter = condition.clone();
     if let Some(condition) = condition {
         app.entries.update_filter(Some(Box::new(move |ref mut entry| condition.is_valid(entry))));
@@ -245,6 +246,7 @@ pub fn on_map(app: &mut App, target: MappingTarget, operation: Vec<String>) {
     }
 }
 
+#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 pub fn on_move_again(app: &mut App, updated: &mut Updated, len: usize, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) {
     if app.states.last_direction == state::Direction::Forward {
         on_next(app, updated, len, count, ignore_views, move_by, wrap)

@@ -4,16 +4,10 @@ use std::io::Read;
 use std::path::Path;
 
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, Colorspace, PixbufLoader};
+use immeta;
 
 use size::Size;
 
-
-
-#[derive(Clone)]
-pub struct ImageData {
-    pub size: Size,
-    pub buffer: ImageBuffer,
-}
 
 
 #[derive(Clone)]
@@ -25,7 +19,6 @@ pub enum ImageBuffer {
 
 #[derive(Clone)]
 pub struct StaticImageBuffer {
-    original_size: Size,
     pixels: Vec<u8>,
     colorspace: Colorspace,
     has_alpha: bool,
@@ -33,6 +26,7 @@ pub struct StaticImageBuffer {
     width: i32,
     height: i32,
     rowstride: i32,
+    pub original_size: Option<Size>,
 }
 
 #[derive(Clone)]
@@ -41,10 +35,27 @@ pub struct AnimationBuffer {
 }
 
 
+impl ImageBuffer {
+    pub fn get_original_size(&self) -> Option<Size> {
+        use self::ImageBuffer::*;
+
+        match *self {
+            Static(ref image) =>
+                image.original_size,
+            Animation(ref image) =>
+                immeta::load_from_buf(&image.source).ok().map(|img| {
+                    let dim = img.dimensions();
+                    Size::new(dim.width as i32, dim.height as i32)
+                })
+        }
+    }
+}
+
+
 impl StaticImageBuffer {
-    pub fn new_from_pixbuf(pixbuf: &Pixbuf) -> StaticImageBuffer {
+    pub fn new_from_pixbuf(pixbuf: &Pixbuf, original_size: Option<Size>) -> StaticImageBuffer {
         StaticImageBuffer {
-            original_size: Size::from_pixbuf(pixbuf),
+            original_size: original_size,
             pixels: unsafe { pixbuf.get_pixels().to_vec() },
             colorspace: pixbuf.get_colorspace(),
             bits_per_sample: pixbuf.get_bits_per_sample(),

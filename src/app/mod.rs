@@ -387,7 +387,7 @@ impl App {
     }
 
     fn show_image(&mut self, to_end: bool) -> Option<Size> {
-        let image_size = None;
+        let mut image_size = None;
         let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
 
         if self.states.drawing.fit_to.is_scrollable() {
@@ -409,6 +409,9 @@ impl App {
                     Ok(image_buffer) => {
                         cell.draw(&image_buffer, &cell_size, &self.states.drawing.fit_to, &fg, &bg);
                         invalid_all = false;
+                        if index == 0 {
+                            image_size = image_buffer.get_original_size();
+                        }
                     }
                     Err(error) =>
                         cell.draw_text(&error, &cell_size, &fg, &bg),

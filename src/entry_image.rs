@@ -97,7 +97,7 @@ fn make_scaled(buffer: &[u8], cell: &Size, drawing: &DrawingState) -> Result<Sta
                     scaled
                 };
 
-            Ok(StaticImageBuffer::new_from_pixbuf(&result))
+            Ok(StaticImageBuffer::new_from_pixbuf(&result, Some(original)))
         } else {
             Err(o!("Invalid image"))
         }
@@ -115,7 +115,7 @@ fn make_scaled_from_file(path: &str, cell: &Size, drawing: &DrawingState) -> Res
 
 fn make_scaled_from_pdf<T: AsRef<Path>>(pdf_path: &T, index: usize, cell: &Size, drawing: &DrawingState) -> StaticImageBuffer {
     let document = PopplerDocument::new_from_file(pdf_path);
-    StaticImageBuffer::new_from_pixbuf(&document.nth_page(index).get_pixbuf(cell, drawing))
+    StaticImageBuffer::new_from_pixbuf(&document.nth_page(index).get_pixbuf(cell, drawing), None)
 }
 
 fn get_meta(entry: &Entry) -> Option<Result<GenericMetadata, immeta::Error>> {

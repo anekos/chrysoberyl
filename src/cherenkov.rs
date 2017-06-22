@@ -134,7 +134,7 @@ impl Cherenkoved {
                 for che in modifiers {
                     pixbuf = cherenkov_pixbuf(pixbuf, che);
                 }
-                Ok(StaticImageBuffer::new_from_pixbuf(&pixbuf))
+                Ok(StaticImageBuffer::new_from_pixbuf(&pixbuf, buf.original_size))
             } else {
                 Err(o!("Not static image"))
             }
@@ -151,7 +151,7 @@ impl CacheEntry {
 
 
 fn cherenkov_static_image_buffer(image_buffer: &StaticImageBuffer, che: &Che) -> StaticImageBuffer {
-    StaticImageBuffer::new_from_pixbuf(&cherenkov_pixbuf(image_buffer.get_pixbuf(), che))
+    StaticImageBuffer::new_from_pixbuf(&cherenkov_pixbuf(image_buffer.get_pixbuf(), che), image_buffer.original_size)
 }
 
 fn cherenkov_pixbuf(pixbuf: Pixbuf, che: &Che) -> Pixbuf {

@@ -33,6 +33,9 @@ impl Condition {
             let info = get_info(entry);
 
             if let Some(size) = info.size {
+                println!("condition: {:?}", self);
+                println!("size: {:?}", size);
+
                 if let Some(min_width) = self.min_width {
                     if size.width < min_width {
                         return false;
@@ -173,6 +176,8 @@ fn generate_archive_image_info(entry: &ArchiveEntry) -> EntryInfo {
     EntryInfo {
         size: img.map(|img| {
             let dim = img.dimensions();
+            println!("dim: {:?}", dim);
+            println!("mime: {:?}", img.mime_type());
             Size::new(dim.width as i32, dim.height as i32)
         })
     }

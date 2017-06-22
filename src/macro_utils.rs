@@ -136,3 +136,9 @@ macro_rules! if_let_some {
         };
     }
 }
+
+macro_rules! constant {
+    ($value:expr) => {
+        |_| $value
+    }
+}

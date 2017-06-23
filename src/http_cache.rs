@@ -140,6 +140,7 @@ fn processor(thread_id: usize, main_tx: Sender<Getter>) -> Sender<Request> {
         curl.low_speed_time(Duration::from_secs(10)).unwrap(); // CURLOPT_LOW_SPEED_TIME=10sec
         curl.low_speed_limit(1024).unwrap(); // CURLOPT_LOW_SPEED_LIMIT=1024
         // curl.timeout(Duration::from_secs(60)); // CURLOPT_TIMEOUT=60
+        curl.follow_location(true).unwrap(); // Follow Redirection
 
         while let Ok(request) = getter_rx.recv() {
             let request: Request = request;

@@ -19,6 +19,8 @@ use size::Size;
 use utils::path_to_str;
 use validation::is_valid_image_filename;
 
+pub mod image;
+pub mod filter;
 
 
 pub struct EntryContainer {

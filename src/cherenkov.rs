@@ -31,8 +31,7 @@ use rand::distributions::{IndependentSample, Range};
 use rand::{self, Rng, ThreadRng};
 
 use color::Color;
-use entry::Entry;
-use entry_image;
+use entry::{Entry, self};
 use gtk_utils::new_pixbuf_from_surface;
 use image::{ImageBuffer, StaticImageBuffer};
 use size::{Size, Region};
@@ -112,7 +111,7 @@ impl Cherenkoved {
             return;
         }
 
-        let image_buffer = self.get_image_buffer(entry, cell_size, drawing).unwrap_or_else(|| entry_image::get_image_buffer(entry, cell_size, drawing));
+        let image_buffer = self.get_image_buffer(entry, cell_size, drawing).unwrap_or_else(|| entry::image::get_image_buffer(entry, cell_size, drawing));
         if let Ok(image_buffer) =  image_buffer {
             if let ImageBuffer::Static(image_buffer) = image_buffer {
                 self.cache.insert(
@@ -128,7 +127,7 @@ impl Cherenkoved {
     }
 
     fn re_cherenkov(&self, entry: &Entry, cell_size: &Size, drawing: &DrawingState, modifiers: &[Che]) -> Result<StaticImageBuffer, String> {
-        entry_image::get_image_buffer(entry, cell_size, drawing).and_then(|image_buffer| {
+        entry::image::get_image_buffer(entry, cell_size, drawing).and_then(|image_buffer| {
             if let ImageBuffer::Static(buf) = image_buffer {
                 let mut pixbuf = buf.get_pixbuf();
                 for che in modifiers {

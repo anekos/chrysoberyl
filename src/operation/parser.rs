@@ -8,11 +8,11 @@ use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse
 
 use color::Color;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
-use entry_filter;
 use expandable::Expandable;
 use filer;
 use mapping::{Input, InputType};
 use shellexpand_wrapper as sh;
+use utils::join;
 
 use operation::*;
 
@@ -198,24 +198,18 @@ pub fn parse_fill(args: &[String]) -> Result<Operation, String> {
 }
 
 pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
-    let mut condition = entry_filter::Condition::default();
+    let mut expr = vec![];
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut condition.min_width).add_option(&["--min-width", "-w"], StoreOption, "Minimum width");
-        ap.refer(&mut condition.min_height).add_option(&["--min-height", "-h"], StoreOption, "Minimum height");
-        ap.refer(&mut condition.max_width).add_option(&["--max-width", "-W"], StoreOption, "Maximum width");
-        ap.refer(&mut condition.max_height).add_option(&["--max-height", "-H"], StoreOption, "Maximum height");
-        ap.refer(&mut condition.width).add_option(&["--width"], StoreOption, "Width");
-        ap.refer(&mut condition.height).add_option(&["--height"], StoreOption, "Height");
-        ap.refer(&mut condition.min_dimensions).add_option(&["--min-dimensions", "--min-dims", "-d"], StoreOption, "Minimum dimentions (Width x Height)");
-        ap.refer(&mut condition.max_dimensions).add_option(&["--max-dimensions", "--max-dims", "-D"], StoreOption, "Maximum dimentions (Width x Height)");
-        ap.refer(&mut condition.extensions).add_option(&["--extension", "--ext", "-e"], Collect, "Extension");
-        ap.refer(&mut condition.path).add_option(&["--path", "-p"], StoreOption, "Path (filename/URL) regex pattern");
-        ap.refer(&mut condition.ignore_path).add_option(&["--ignore-path", "-P"], StoreOption, "Ignore the path (filename/URL) regex pattern");
+        ap.refer(&mut expr).add_argument("expression", Collect, "Filter expression");
         parse_args(&mut ap, args)
-    } .map(|_| {
-        Operation::Filter(Box::new(condition.optionize()))
+    } .and_then(|_| {
+        if expr.is_empty() {
+            Ok(Operation::Filter(Box::new(None)))
+        } else {
+            join(&expr, ' ').parse().map(|it| Operation::Filter(Box::new(Some(it))))
+        }
     })
 }
 

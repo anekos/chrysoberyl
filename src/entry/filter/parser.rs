@@ -5,45 +5,8 @@ use pom::parser::*;
 use std::str::FromStr;
 
 
+use entry::filter::expression::*;
 
-#[derive(Debug, PartialEq)]
-pub enum Expr {
-    Logic(Box<Expr>, ELogicOp, Box<Expr>),
-    Boolean(EBool),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum EBool {
-    Compare(EValue, ECompOp, EValue),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum ECompOp {
-    Eq,
-    Lt,
-    Le,
-    Gt,
-    Ge,
-    Ne,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum ELogicOp {
-    And,
-    Or,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum EValue {
-    Integer(i64),
-    Variable(EVariable),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum EVariable {
-    Width,
-    Height
-}
 
 /**
  * example:
@@ -51,9 +14,19 @@ pub enum EVariable {
  * width <= 400 and height <= 400 and filename matches <foo/bar>
  */
 pub fn parse(input: &str) -> Result<Expr, String> {
+    println!("input: {}", input);
     let mut input = DataInput::new(input.as_bytes());
     exp().parse(&mut input).map_err(|it| s!(it))
 }
+
+impl FromStr for Expr {
+    type Err = String;
+
+    fn from_str(src: &str) -> Result<Self, String> {
+        parse(src)
+    }
+}
+
 
 /**
  * Expr ← Logic | Bool
@@ -117,7 +90,7 @@ fn logic() -> Parser<u8, Expr> {
 
 
 fn exp() -> Parser<u8, Expr> {
-    logic() | boolean()
+    spaces() * (logic() | boolean()) - spaces()
 }
 
 

@@ -6,8 +6,7 @@ use std::thread::spawn;
 
 use num_cpus;
 
-use entry::{Entry, Key};
-use entry_image::get_image_buffer;
+use entry::{Entry, Key, self};
 use image::ImageBuffer;
 use image_cache::ImageCache;
 use size::Size;
@@ -107,7 +106,7 @@ pub fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mu
 
 pub fn fetch(tx: Sender<FetcherOperation>, entry: Entry, cell_size: Size, drawing: DrawingState) {
     spawn(move || {
-        let image = get_image_buffer(&entry, &cell_size, &drawing);
+        let image = entry::image::get_image_buffer(&entry, &cell_size, &drawing);
         tx.send(FetcherOperation::Done(entry.key, image)).unwrap();
     });
 }

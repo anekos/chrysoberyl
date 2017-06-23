@@ -17,7 +17,7 @@ use color::Color;
 use config::DEFAULT_CONFIG;
 use editor;
 use entry::{self, Meta, SearchKey};
-use entry_filter;
+use entry::filter::expression::Expr as FilterExpr;
 use expandable::{Expandable, expand_all};
 use filer;
 use fragile_input::new_fragile_input;
@@ -135,11 +135,11 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, region: Option<Region>, col
     }
 }
 
-pub fn on_filter(app: &mut App, updated: &mut Updated, condition: Box<Option<entry_filter::Condition>>) {
-    let condition = *condition;
-    app.states.last_filter = condition.clone();
-    if let Some(condition) = condition {
-        app.entries.update_filter(Some(Box::new(move |ref mut entry| condition.is_valid(entry))));
+pub fn on_filter(app: &mut App, updated: &mut Updated, expr: Box<Option<FilterExpr>>) {
+    let expr = *expr;
+    app.states.last_filter = expr.clone();
+    if let Some(expr) = expr {
+        app.entries.update_filter(Some(Box::new(move |ref mut entry| expr.evaluate(entry))));
     } else {
         app.entries.update_filter(None);
     }

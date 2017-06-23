@@ -9,8 +9,9 @@ use shell_escape;
 use app::App;
 use color::Color;
 use constant;
+use entry::filter::expression::Expr as FilterExpr;
+use entry::filter::writer::write as write_expr;
 use entry::{Entry, EntryContainer, KeyType, Key};
-use entry_filter;
 use gui::Gui;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, key_mapping as kmap, mouse_mapping as mmap, region_mapping as rmap};
@@ -231,28 +232,13 @@ fn write_envs(out: &mut String) {
     }
 }
 
-fn write_filter(condition: &Option<entry_filter::Condition>, out: &mut String) {
-    if let Some(c) = condition.as_ref() {
-        sprint!(out, "@filter");
-        if let Some(it) = c.min_width { sprint!(out, " --min-width {}", it); }
-        if let Some(it) = c.min_height { sprint!(out, " --min-height {}", it); }
-        if let Some(it) = c.max_width { sprint!(out, " --max-width {}", it); }
-        if let Some(it) = c.max_height { sprint!(out, " --max-height {}", it); }
-        if let Some(it) = c.width { sprint!(out, " --width {}", it); }
-        if let Some(it) = c.height { sprint!(out, " --height {}", it); }
-        if let Some(it) = c.min_width { sprint!(out, " --min-width {}", it); }
-        if let Some(it) = c.min_dimensions { sprint!(out, " --min-dimensions {}", it); }
-        if let Some(it) = c.max_dimensions { sprint!(out, " --max-dimensions {}", it); }
-        for extension in &c.extensions {
-            sprint!(out, " --extension {}", extension);
-        }
-        for extension in &c.ignore_extensions {
-            sprint!(out, " --ignore-extension {}", extension);
-        }
-        if let Some(ref it) = c.path { sprint!(out, " --path {}", it); }
-        if let Some(ref it) = c.ignore_path { sprint!(out, " --ignore-path {}", it); }
-        sprintln!(out, "");
+fn write_filter(expr: &Option<FilterExpr>, out: &mut String) {
+    sprint!(out, "@filter");
+    if let Some(ref expr) = *expr {
+        sprint!(out, " ");
+        write_expr(expr, out);
     }
+    sprintln!(out, "");
 }
 
 

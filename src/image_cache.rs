@@ -4,8 +4,7 @@ use std::sync::{Arc, Mutex, Condvar};
 
 use cache::Cache;
 use cherenkov::{Cherenkoved, Che};
-use entry::{Entry, Key};
-use entry_image;
+use entry::{Entry, Key, self};
 use image::{ImageBuffer};
 use size::Size;
 use state::DrawingState;
@@ -76,7 +75,7 @@ impl ImageCache {
         }.unwrap_or_else(|| {
             self.wait(&entry.key);
             self.cache.get_or_update(entry.key.clone(), move |_| {
-                entry_image::get_image_buffer(entry, cell_size, drawing)
+                entry::image::get_image_buffer(entry, cell_size, drawing)
             })
         })
     }

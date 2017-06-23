@@ -11,7 +11,6 @@ use archive::ArchiveEntry;
 use color::Color;
 use entry::Meta;
 use entry;
-use entry_filter;
 use expandable::Expandable;
 use filer;
 use gui::Direction;
@@ -37,7 +36,7 @@ pub enum Operation {
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Fill(Option<Region>, Color, usize), /* region, cell index */
-    Filter(Box<Option<entry_filter::Condition>>),
+    Filter(Box<Option<entry::filter::expression::Expr>>),
     Fragile(Expandable),
     Initialized,
     Input(mapping::Input),

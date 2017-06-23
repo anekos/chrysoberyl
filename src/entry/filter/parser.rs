@@ -36,7 +36,7 @@ impl FromStr for Expr {
  * Compare ← Value CmpOp Value
  * CmpOp ← '<' | '<=' | '>' | '>=' | '=' | '=~'
  * Value ← Glob | Integer | Variable
- * Variable ← 'width' | 'height'
+ * Variable ← 'width' | 'height' | 'path' | 'ext' | 'extension'
  * Glob ← '<' string '>'
  */
 
@@ -57,7 +57,7 @@ fn variable() -> Parser<u8, EValue> {
         seq(name).map(constant!(EValue::Variable(var)))
     }
 
-    gen(b"width", Width) | gen(b"height", Height) | gen(b"path", Path)
+    gen(b"width", Width) | gen(b"height", Height) | gen(b"path", Path) | gen(b"ext", Extension) | gen(b"extension", Extension)
 }
 
 fn value() -> Parser<u8, EValue> {
@@ -71,10 +71,11 @@ fn comp_op() -> Parser<u8, ECompOp> {
     let lt = seq(b"<").map(constant!(EICompOp::Lt));
     let ge = seq(b">=").map(constant!(EICompOp::Ge));
     let gt = seq(b">").map(constant!(EICompOp::Gt));
-    let match_ = seq(b"=~").map(constant!(ECompOp::Match));
+    let glob = seq(b"=*").map(constant!(ECompOp::GlobMatch(false)));
+    let glob_not = seq(b"!*").map(constant!(ECompOp::GlobMatch(true)));
 
     let i = (eq | ne | lt | le | gt | ge).map(ECompOp::ForInt);
-    match_ | i
+    glob | glob_not | i
 }
 
 fn boolean() -> Parser<u8, Expr> {
@@ -97,12 +98,19 @@ fn logic() -> Parser<u8, Expr> {
 }
 
 fn glob() -> Parser<u8, EValue> {
-    (sym(b'<') * none_of(b">").repeat(0..) - sym(b'>')).convert(String::from_utf8).convert(|src| {
+    (sym(b'<') * list(call(glob_entry), sym(b',')) - sym(b'>')).map(|entries| {
+        EValue::Glob(entries.into_iter().map(|(m, src)| (m, src)).collect())
+    })
+}
+
+fn glob_entry() -> Parser<u8, (globset::GlobMatcher, String)> {
+    none_of(b",>").repeat(0..).convert(String::from_utf8).convert(|src| {
         globset::Glob::new(&src).map(|it| {
-            EValue::Glob(it.compile_matcher(), src)
+            (it.compile_matcher(), src)
         })
     })
 }
+
 
 
 fn exp() -> Parser<u8, Expr> {

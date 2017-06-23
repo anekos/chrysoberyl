@@ -56,6 +56,7 @@ pub enum EntryContent {
 pub struct EntryInfo {
     pub size: Option<Size>, // PDF makes None
     pub path: String, // local filepath or archive filepath or url
+    pub extension: Option<String>,
 }
 
 pub type Meta = Arc<Vec<MetaEntry>>;

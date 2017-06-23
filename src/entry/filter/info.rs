@@ -29,9 +29,12 @@ fn generate_info(content: &EntryContent, path: String) -> EntryInfo {
             None,
     };
 
+    let extension = Path::new(&path).extension().and_then(|it| it.to_str().map(|it| it.to_owned()));
+
     EntryInfo {
         size: size,
         path: path,
+        extension: extension
     }
 }
 

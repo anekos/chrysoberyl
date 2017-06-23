@@ -17,10 +17,10 @@ pub enum EBool {
 #[derive(Clone, Debug)]
 pub enum ECompOp {
     ForInt(EICompOp),
-    Match,
+    GlobMatch(bool),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum EICompOp {
     Lt,
     Le,
@@ -40,7 +40,7 @@ pub enum ELogicOp {
 pub enum EValue {
     Integer(i64),
     Variable(EVariable),
-    Glob(GlobMatcher, String),
+    Glob(Vec<(GlobMatcher, String)>),
 }
 
 #[derive(Clone, Debug, Copy)]
@@ -48,4 +48,5 @@ pub enum EVariable {
     Width,
     Height,
     Path,
+    Extension,
 }

@@ -1,6 +1,4 @@
 
-use std::path::Path;
-
 use globset::GlobMatcher;
 
 use entry::{Entry, EntryInfo};
@@ -51,11 +49,14 @@ fn eval_bool(info: &EntryInfo, b: &EBool) -> bool {
                             Ge => l >= r,
                             Ne => l != r,
                         };
+                    } else if *op == Eq || *op == Ne {
+                        let b = Compare(l.clone(), GlobMatch(*op == Ne), r.clone());
+                        return eval_bool(info, &b);
                     }
                 }
-                Match => {
-                    if let (Some(l), Some(r)) = (eval_value_as_s(info, l), eval_value_as_g(r)) {
-                        return r.is_match(&l);
+                GlobMatch(inverse) => {
+                    if let (Some(ref l), Some(ref rs)) = (eval_value_as_s(info, l), eval_value_as_g(r)) {
+                        return rs.iter().any(|r| r.is_match(l)) ^ inverse;
                     }
                 }
             }
@@ -85,19 +86,19 @@ fn eval_value_as_i(info: &EntryInfo, v: &EValue) -> Option<i64> {
             Some(v),
         Variable(ref v) =>
             eval_variable(info, v),
-        Glob(_, _) =>
+        Glob(_) =>
             None,
     }
 }
 
-fn eval_value_as_g(v: &EValue) -> Option<GlobMatcher> {
+fn eval_value_as_g(v: &EValue) -> Option<Vec<GlobMatcher>> {
     use self::EValue::*;
 
     match *v {
         Integer(_) | Variable(_) =>
             None,
-        Glob(ref glob, _) =>
-            Some(glob.clone()),
+        Glob(ref globs) =>
+            Some(globs.iter().map(|it| it.0.clone()).collect()),
     }
 }
 
@@ -105,7 +106,7 @@ fn eval_value_as_s(info: &EntryInfo, v: &EValue) -> Option<String> {
     use self::EValue::*;
 
     match *v {
-        Integer(_) | Glob(_, _) =>
+        Integer(_) | Glob(_) =>
             None,
         Variable(ref v) =>
             eval_variable_as_s(info, v)
@@ -127,20 +128,7 @@ fn eval_variable_as_s(info: &EntryInfo, v: &EVariable) -> Option<String> {
 
     match *v {
         Path => Some(info.path.clone()),
+        Extension => info.extension.clone(),
         _ => None,
     }
-}
-
-#[allow(dead_code)]
-fn match_extensions(path: &str, extensions: &[String]) -> bool {
-    if_let_some!(ext = Path::new(path).extension(), true);
-    let ext = ext.to_str().unwrap().to_lowercase();
-
-    for extension in extensions {
-        if &ext == extension {
-            return true
-        }
-    }
-
-    false
 }

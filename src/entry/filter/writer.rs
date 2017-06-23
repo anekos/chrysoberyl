@@ -46,9 +46,8 @@ fn write_bool(b: &EBool, out: &mut String) {
                         Ne => sprint!(out, "!="),
                     }
                 },
-                Match => {
-                    sprint!(out, "=~");
-                },
+                GlobMatch(false) => sprint!(out, "=*"),
+                GlobMatch(true) => sprint!(out, "!*"),
             }
             write_space(out);
             write_value(r, out);
@@ -66,8 +65,18 @@ fn write_value(v: &EValue, out: &mut String) {
             Width => sprint!(out, "width"),
             Height => sprint!(out, "height"),
             Path => sprint!(out, "path"),
+            Extension => sprint!(out, "extension"),
         },
-        Glob(_, ref src) => sprint!(out, "<{}>", src),
+        Glob(ref rs) => {
+            sprint!(out, "<");
+            for (index, r) in rs.iter().enumerate() {
+                if 0 < index {
+                    sprint!(out, ",");
+                }
+                sprint!(out, "{}", r.1);
+            }
+            sprint!(out, ">");
+        }
     }
 }
 

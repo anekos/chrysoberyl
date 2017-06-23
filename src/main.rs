@@ -14,6 +14,7 @@ extern crate env_logger;
 extern crate gdk;
 extern crate gdk_pixbuf;
 extern crate glib;
+extern crate globset;
 extern crate gtk;
 extern crate immeta;
 extern crate libarchive3_sys;

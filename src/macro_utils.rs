@@ -139,6 +139,6 @@ macro_rules! if_let_some {
 
 macro_rules! constant {
     ($value:expr) => {
-        |_| $value
+        move |_| $value
     }
 }

@@ -29,18 +29,26 @@ fn write_logic(l: &Expr, op: &ELogicOp, r: &Expr, out: &mut String) {
 fn write_bool(b: &EBool, out: &mut String) {
     use self::EBool::*;
     use self::ECompOp::*;
+    use self::EICompOp::*;
 
     match *b {
         Compare(ref l, ref op, ref r) => {
             write_value(l, out);
             write_space(out);
             match *op {
-                Eq => sprint!(out, "=="),
-                Lt => sprint!(out, "<"),
-                Le => sprint!(out, "<="),
-                Gt => sprint!(out, ">"),
-                Ge => sprint!(out, ">="),
-                Ne => sprint!(out, "!="),
+                ForInt(ref op) => {
+                    match *op {
+                        Eq => sprint!(out, "=="),
+                        Lt => sprint!(out, "<"),
+                        Le => sprint!(out, "<="),
+                        Gt => sprint!(out, ">"),
+                        Ge => sprint!(out, ">="),
+                        Ne => sprint!(out, "!="),
+                    }
+                },
+                Match => {
+                    sprint!(out, "=~");
+                },
             }
             write_space(out);
             write_value(r, out);
@@ -57,7 +65,9 @@ fn write_value(v: &EValue, out: &mut String) {
         Variable(ref v) => match *v {
             Width => sprint!(out, "width"),
             Height => sprint!(out, "height"),
-        }
+            Path => sprint!(out, "path"),
+        },
+        Glob(_, ref src) => sprint!(out, "<{}>", src),
     }
 }
 

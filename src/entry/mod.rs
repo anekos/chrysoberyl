@@ -55,6 +55,7 @@ pub enum EntryContent {
 #[derive(Clone)]
 pub struct EntryInfo {
     pub size: Option<Size>, // PDF makes None
+    pub path: String, // local filepath or archive filepath or url
 }
 
 pub type Meta = Arc<Vec<MetaEntry>>;
@@ -535,13 +536,6 @@ impl Entry {
             Archive(ref archive_path, ref entry) => format!("{}@{}", entry.name, path_to_str(&**archive_path)),
             Pdf(ref pdf_path, ref index) => format!("{}@{}", index, path_to_str(&**pdf_path)),
         }
-    }
-}
-
-
-impl Default for EntryInfo {
-    fn default() -> Self {
-        EntryInfo { size: None }
     }
 }
 

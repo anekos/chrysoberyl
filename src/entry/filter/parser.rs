@@ -1,11 +1,12 @@
 
-use pom::{Parser, DataInput};
-use pom::parser::*;
-
 use std::str::FromStr;
 
+use globset;
+use pom::parser::*;
+use pom::{Parser, DataInput};
 
 use entry::filter::expression::*;
+
 
 
 /**
@@ -14,7 +15,6 @@ use entry::filter::expression::*;
  * width <= 400 and height <= 400 and filename matches <foo/bar>
  */
 pub fn parse(input: &str) -> Result<Expr, String> {
-    println!("input: {}", input);
     let mut input = DataInput::new(input.as_bytes());
     exp().parse(&mut input).map_err(|it| s!(it))
 }
@@ -34,7 +34,10 @@ impl FromStr for Expr {
  * Bool ← Compare
  * BoolOp ← 'and' | 'or'
  * Compare ← Value CmpOp Value
- * CmpOp ← '<' | '<=' | '>' | '>=' | '='
+ * CmpOp ← '<' | '<=' | '>' | '>=' | '=' | '=~'
+ * Value ← Glob | Integer | Variable
+ * Variable ← 'width' | 'height'
+ * Glob ← '<' string '>'
  */
 
 fn spaces() -> Parser<u8, ()> {
@@ -48,25 +51,30 @@ fn number() -> Parser<u8, EValue> {
 }
 
 fn variable() -> Parser<u8, EValue> {
-    let width: Parser<u8, EVariable> = seq(b"width").map(constant!(EVariable::Width));
-    let height: Parser<u8, EVariable> = seq(b"height").map(constant!(EVariable::Height));
+    use self::EVariable::*;
 
-    (width | height).map(|it| EValue::Variable(it))
+    fn gen(name: &'static [u8], var: EVariable) -> Parser<u8, EValue> {
+        seq(name).map(constant!(EValue::Variable(var)))
+    }
+
+    gen(b"width", Width) | gen(b"height", Height) | gen(b"path", Path)
 }
 
 fn value() -> Parser<u8, EValue> {
-     variable() | number()
+     variable() | number() | glob()
 }
 
 fn comp_op() -> Parser<u8, ECompOp> {
-    let eq = (seq(b"==") | seq(b"=")).map(constant!(ECompOp::Eq));
-    let ne = seq(b"!=").map(constant!(ECompOp::Ne));
-    let le = seq(b"<=").map(constant!(ECompOp::Le));
-    let lt = seq(b"<").map(constant!(ECompOp::Lt));
-    let ge = seq(b">=").map(constant!(ECompOp::Ge));
-    let gt = seq(b">").map(constant!(ECompOp::Gt));
+    let eq = (seq(b"==") | seq(b"=")).map(constant!(EICompOp::Eq));
+    let ne = seq(b"!=").map(constant!(EICompOp::Ne));
+    let le = seq(b"<=").map(constant!(EICompOp::Le));
+    let lt = seq(b"<").map(constant!(EICompOp::Lt));
+    let ge = seq(b">=").map(constant!(EICompOp::Ge));
+    let gt = seq(b">").map(constant!(EICompOp::Gt));
+    let match_ = seq(b"=~").map(constant!(ECompOp::Match));
 
-    eq | ne | lt | le | gt | ge
+    let i = (eq | ne | lt | le | gt | ge).map(ECompOp::ForInt);
+    match_ | i
 }
 
 fn boolean() -> Parser<u8, Expr> {
@@ -85,6 +93,14 @@ fn logic_op() -> Parser<u8, ELogicOp> {
 fn logic() -> Parser<u8, Expr> {
     (boolean() + (spaces() * logic_op() - spaces()) + boolean()).map(|((l, op), r)| {
         Expr::Logic(Box::new(l), op, Box::new(r))
+    })
+}
+
+fn glob() -> Parser<u8, EValue> {
+    (sym(b'<') * none_of(b">").repeat(0..) - sym(b'>')).convert(String::from_utf8).convert(|src| {
+        globset::Glob::new(&src).map(|it| {
+            EValue::Glob(it.compile_matcher(), src)
+        })
     })
 }
 

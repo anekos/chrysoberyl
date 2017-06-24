@@ -248,7 +248,7 @@ impl EntryContainer {
             self.entries.clear();
             self.entries.extend_from_slice(expanded.as_slice());
             if let Some(file) = file {
-                self.set_current(pointer, file);
+                self.set_current(pointer, &file);
             } else  {
                 pointer.first(1, false);
             }
@@ -286,7 +286,7 @@ impl EntryContainer {
         self.entries.shuffle();
         if fix_current {
             if let Some(current_entry) = current_entry {
-                self.set_current(pointer, current_entry);
+                self.set_current(pointer, &current_entry);
                 return
             }
         }
@@ -297,7 +297,7 @@ impl EntryContainer {
         let current_entry = self.current_entry(pointer);
         self.entries.sort();
         if let Some(current_entry) = current_entry {
-            self.set_current(pointer, current_entry);
+            self.set_current(pointer, &current_entry);
         }
     }
 
@@ -380,8 +380,8 @@ impl EntryContainer {
         })
     }
 
-    fn set_current(&mut self, pointer: &mut IndexPointer, entry: Entry) -> bool {
-        if let Some(index) = self.entries.get_index(&entry) {
+    fn set_current(&mut self, pointer: &mut IndexPointer, entry: &Entry) -> bool {
+        if let Some(index) = self.entries.get_index(entry) {
             pointer.current = Some(index);
             true
         } else {
@@ -511,7 +511,7 @@ impl EntryContainer {
         self.entries.update_filter(pred);
 
         if let Some(current_entry) = current_entry {
-            if self.set_current(pointer, current_entry) {
+            if self.set_current(pointer, &current_entry) {
                 return
             }
         }

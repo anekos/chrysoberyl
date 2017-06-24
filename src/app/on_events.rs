@@ -643,12 +643,10 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
     }
 }
 
-pub fn on_user(app: &mut App, data: &[(String, String)]) {
+pub fn on_user(_: &mut App, data: &[(String, String)]) {
     let mut pairs = vec![(o!("event"), o!("user"))];
     pairs.extend_from_slice(data);
     output::puts(&pairs);
-
-    app.entries.update_filter(Some(Box::new(|entry| entry.key.2 % 2 == 0)));
 }
 
 pub fn on_views(app: &mut App, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>) {

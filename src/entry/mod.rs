@@ -502,8 +502,16 @@ impl EntryContainer {
         }
     }
 
-    pub fn update_filter(&mut self, pred: Option<Box<FnMut(&mut Entry) -> bool>>) {
+    pub fn update_filter(&mut self, pointer: &mut IndexPointer, pred: Option<Box<FnMut(&mut Entry) -> bool>>) {
+        let current_entry = self.current_entry(pointer);
+
         self.entries.update_filter(pred);
+
+        if let Some(current_entry) = current_entry {
+            self.set_current(pointer, current_entry);
+            return
+        }
+        pointer.first(1, false);
     }
 }
 

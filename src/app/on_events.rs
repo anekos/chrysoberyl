@@ -139,10 +139,11 @@ pub fn on_filter(app: &mut App, updated: &mut Updated, expr: Box<Option<FilterEx
     let expr = *expr;
     app.states.last_filter = expr.clone();
     if let Some(expr) = expr {
-        app.entries.update_filter(Some(Box::new(move |ref mut entry| expr.evaluate(entry))));
+        app.entries.update_filter(&mut app.pointer, Some(Box::new(move |ref mut entry| expr.evaluate(entry))));
     } else {
-        app.entries.update_filter(None);
+        app.entries.update_filter(&mut app.pointer, None);
     }
+    updated.pointer = true;
     updated.image = true;
 }
 

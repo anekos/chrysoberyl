@@ -154,6 +154,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
     }
 
     fn reset_indices(&mut self) {
+        self.indices.clear();
         for (index, entry) in self.filtered.iter().enumerate() {
             self.indices.insert(entry.clone(), index);
         }

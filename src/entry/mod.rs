@@ -380,9 +380,12 @@ impl EntryContainer {
         })
     }
 
-    fn set_current(&mut self, pointer: &mut IndexPointer, entry: Entry) {
+    fn set_current(&mut self, pointer: &mut IndexPointer, entry: Entry) -> bool {
         if let Some(index) = self.entries.get_index(&entry) {
             pointer.current = Some(index);
+            true
+        } else {
+            false
         }
     }
 
@@ -508,8 +511,9 @@ impl EntryContainer {
         self.entries.update_filter(pred);
 
         if let Some(current_entry) = current_entry {
-            self.set_current(pointer, current_entry);
-            return
+            if self.set_current(pointer, current_entry) {
+                return
+            }
         }
         pointer.first(1, false);
     }

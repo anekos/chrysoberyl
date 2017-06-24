@@ -11,7 +11,8 @@ use rand::{thread_rng, Rng, ThreadRng};
 pub struct FilterableVec<T: Clone + Hash + Eq + Sized> {
     original: Vec<Rc<T>>,
     filtered: Vec<Rc<T>>,
-    indices: HashMap<Rc<T>, usize>,
+    original_indices: HashMap<Rc<T>, usize>,
+    filtered_indices: HashMap<Rc<T>, usize>,
     rng: ThreadRng,
     pred: Option<Box<FnMut(&mut T) -> bool>>,
 }
@@ -22,7 +23,8 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
         FilterableVec {
             original: vec![],
             filtered: vec![],
-            indices: HashMap::new(),
+            original_indices: HashMap::new(),
+            filtered_indices: HashMap::new(),
             rng: thread_rng(),
             pred: None,
         }
@@ -37,7 +39,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
     }
 
     pub fn get_index(&self, entry: &T) -> Option<usize> {
-        self.indices.get(entry).cloned()
+        self.filtered_indices.get(entry).cloned()
     }
 
     pub fn iter(&self) -> slice::Iter<Rc<T>> {
@@ -59,24 +61,24 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
     pub fn clear(&mut self) {
         self.original.clear();
         self.filtered.clear();
-        self.indices.clear();
+        self.filtered_indices.clear();
+        self.original_indices.clear();
     }
 
-    pub fn sort(&mut self) {
+    pub fn sort(&mut self, before_filtered_index: Option<usize>) -> Option<usize> {
         self.original.sort();
-        self.filter();
-        self.reset_indices();
+        self.filter(before_filtered_index)
     }
 
     // Shuffle **original** entries
-    pub fn shuffle(&mut self) {
+    pub fn shuffle(&mut self, before_filtered_index: Option<usize>) -> Option<usize> {
         let mut source = self.original.clone();
         let mut buffer = source.as_mut_slice();
         self.rng.shuffle(&mut buffer);
         self.original = buffer.to_vec();
 
-        self.filter();
-        self.reset_indices();
+        // FIXME Optimize
+        self.filter(before_filtered_index)
     }
 
     // FIXME
@@ -89,12 +91,16 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
     }
 
     pub fn extend_from_slice(&mut self, entries: &[Rc<T>]) {
+        let len = self.original.len();
+
+
         self.original.extend_from_slice(entries);
         let targets = if let Some(ref mut pred) = self.pred {
-            let mut entries = entries.to_vec();
+            let entries = entries.to_vec();
             let mut targets = vec![];
-            for mut entry in &mut entries {
+            for (index, mut entry) in &mut entries.into_iter().enumerate() {
                 if (pred)(Rc::make_mut(&mut entry)) {
+                    self.original_indices.insert(entry.clone(), len + index);
                     targets.push(entry.clone());
                 }
             }
@@ -118,7 +124,9 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
     }
 
     pub fn push(&mut self, mut entry: Rc<T>) {
+        self.original_indices.insert(entry.clone(), self.original.len());
         self.original.push(entry.clone());
+
         let ok = if let Some(ref mut pred) = self.pred {
             (pred)(Rc::make_mut(&mut entry))
         } else {
@@ -129,34 +137,68 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
         }
     }
 
-    pub fn update_filter(&mut self, pred: Option<Box<FnMut(&mut T) -> bool>>) {
+    pub fn update_filter(&mut self, before_filtered_index: Option<usize>, pred: Option<Box<FnMut(&mut T) -> bool>>) -> Option<usize> {
         self.pred = pred;
-        self.filter();
+        self.filter(before_filtered_index)
     }
 
-    pub fn filter(&mut self) {
+    pub fn filter(&mut self, before_filtered_index: Option<usize>) -> Option<usize> {
+        let before_index: Option<usize> = before_filtered_index.and_then(|bi| {
+            self.filtered.get(bi).and_then(|entry| {
+                self.original_indices.get(entry).cloned()
+            })
+        });
+
+        let (mut after_index_left, mut after_index_right) = (None, None);
+
         if let Some(ref mut pred) = self.pred {
             self.filtered = vec![];
+            let mut index = 0;
             for mut entry in &mut self.original {
                 if (pred)(Rc::make_mut(&mut entry)) {
                      self.filtered.push(entry.clone());
+
+                     if let Some(before_index) = before_index {
+                         if index == before_index {
+                             after_index_right = Some(index);
+                         } else if index < before_index {
+                             after_index_left = Some(index);
+                         } else if after_index_right.is_none() {
+                             if let Some(after_index_left) = after_index_left {
+                                 if index - before_index < before_index - after_index_left {
+                                     after_index_right = Some(index);
+                                 }
+                             } else {
+                                 after_index_right = Some(index);
+                             }
+                         }
+                     }
                 }
+                index += 1;
             }
         } else {
             self.filtered = self.original.clone();
         }
         self.reset_indices();
+
+        after_index_right.or(after_index_left).map(|index| {
+            self.filtered_indices.get(&self.original[index]).unwrap().clone()
+        })
     }
 
     fn push_filtered(&mut self, entry: Rc<T>) {
-        self.indices.insert(entry.clone(), self.filtered.len());
+        self.filtered_indices.insert(entry.clone(), self.filtered.len());
         self.filtered.push(entry);
     }
 
     fn reset_indices(&mut self) {
-        self.indices.clear();
+        self.filtered_indices.clear();
         for (index, entry) in self.filtered.iter().enumerate() {
-            self.indices.insert(entry.clone(), index);
+            self.filtered_indices.insert(entry.clone(), index);
+        }
+        self.original_indices.clear();
+        for (index, entry) in self.original.iter().enumerate() {
+            self.original_indices.insert(entry.clone(), index);
         }
     }
 }

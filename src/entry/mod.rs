@@ -282,22 +282,20 @@ impl EntryContainer {
     }
 
     pub fn shuffle(&mut self, pointer: &mut IndexPointer, fix_current: bool) {
-        let current_entry = self.current_entry(pointer);
-        self.entries.shuffle();
-        if fix_current {
-            if let Some(current_entry) = current_entry {
-                self.set_current(pointer, &current_entry);
-                return
+        if let Some(after_index) = self.entries.shuffle(pointer.current) {
+            if fix_current {
+                pointer.current = Some(after_index);
+                return;
             }
         }
         pointer.first(1, false);
     }
 
     pub fn sort(&mut self, pointer: &mut IndexPointer) {
-        let current_entry = self.current_entry(pointer);
-        self.entries.sort();
-        if let Some(current_entry) = current_entry {
-            self.set_current(pointer, &current_entry);
+        if let Some(after_index) = self.entries.sort(pointer.current) {
+            pointer.current = Some(after_index);
+        } else {
+            pointer.first(1, false);
         }
     }
 
@@ -506,16 +504,11 @@ impl EntryContainer {
     }
 
     pub fn update_filter(&mut self, pointer: &mut IndexPointer, pred: Option<Box<FnMut(&mut Entry) -> bool>>) {
-        let current_entry = self.current_entry(pointer);
-
-        self.entries.update_filter(pred);
-
-        if let Some(current_entry) = current_entry {
-            if self.set_current(pointer, &current_entry) {
-                return
-            }
+        if let Some(after_index) = self.entries.update_filter(pointer.current, pred) {
+            pointer.current = Some(after_index)
+        } else {
+            pointer.first(1, false);
         }
-        pointer.first(1, false);
     }
 }
 

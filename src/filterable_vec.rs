@@ -153,8 +153,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
 
         if let Some(ref mut pred) = self.pred {
             self.filtered = vec![];
-            let mut index = 0;
-            for mut entry in &mut self.original {
+            for (index, mut entry) in &mut self.original.iter_mut().enumerate() {
                 if (pred)(Rc::make_mut(&mut entry)) {
                      self.filtered.push(entry.clone());
 
@@ -174,7 +173,6 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
                          }
                      }
                 }
-                index += 1;
             }
         } else {
             self.filtered = self.original.clone();
@@ -182,7 +180,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
         self.reset_indices();
 
         after_index_right.or(after_index_left).map(|index| {
-            self.filtered_indices.get(&self.original[index]).unwrap().clone()
+            self.filtered_indices[&self.original[index]]
         })
     }
 

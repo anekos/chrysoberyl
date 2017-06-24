@@ -207,7 +207,7 @@ impl App {
                 Fill(region, color, cell_index) =>
                     on_fill(self, &mut updated, region, color, cell_index, &context),
                 Filter(expr) =>
-                    on_filter(self, &mut updated, expr),
+                    on_filter(self, &mut updated, *expr),
                 First(count, ignore_views, move_by, _) =>
                     on_first(self, &mut updated, len, count, ignore_views, move_by),
                 Fragile(ref path) =>

@@ -28,6 +28,7 @@ impl FromStr for Expr {
 }
 
 
+#[cfg_attr(feature = "cargo-clippy", allow(doc_markdown))]
 /**
  * Expr ← Logic | Bool
  * Logic ← Bool LogicOp Bool

@@ -135,8 +135,7 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, region: Option<Region>, col
     }
 }
 
-pub fn on_filter(app: &mut App, updated: &mut Updated, expr: Box<Option<FilterExpr>>) {
-    let expr = *expr;
+pub fn on_filter(app: &mut App, updated: &mut Updated, expr: Option<FilterExpr>) {
     app.states.last_filter = expr.clone();
     if let Some(expr) = expr {
         app.entries.update_filter(&mut app.pointer, Some(Box::new(move |ref mut entry| expr.evaluate(entry))));

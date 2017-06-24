@@ -73,7 +73,7 @@ fn write_value(v: &EValue, out: &mut String) {
                 if 0 < index {
                     sprint!(out, ",");
                 }
-                sprint!(out, "{}", r.1);
+                sprint!(out, &r.1);
             }
             sprint!(out, ">");
         }

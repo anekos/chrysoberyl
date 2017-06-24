@@ -54,7 +54,7 @@ fn variable() -> Parser<u8, EValue> {
     use self::EVariable::*;
 
     fn gen(name: &'static [u8], var: EVariable) -> Parser<u8, EValue> {
-        seq(name).map(constant!(EValue::Variable(var)))
+        seq(name).map(move |_| EValue::Variable(var))
     }
 
     gen(b"width", Width) | gen(b"height", Height) | gen(b"path", Path) | gen(b"ext", Extension) | gen(b"extension", Extension)
@@ -65,17 +65,36 @@ fn value() -> Parser<u8, EValue> {
 }
 
 fn comp_op() -> Parser<u8, ECompOp> {
-    let eq = (seq(b"==") | seq(b"=")).map(constant!(EICompOp::Eq));
-    let ne = seq(b"!=").map(constant!(EICompOp::Ne));
-    let le = seq(b"<=").map(constant!(EICompOp::Le));
-    let lt = seq(b"<").map(constant!(EICompOp::Lt));
-    let ge = seq(b">=").map(constant!(EICompOp::Ge));
-    let gt = seq(b">").map(constant!(EICompOp::Gt));
-    let glob = seq(b"=*").map(constant!(ECompOp::GlobMatch(false)));
-    let glob_not = seq(b"!*").map(constant!(ECompOp::GlobMatch(true)));
+    fn i(v: EICompOp) -> ECompOp {
+        ECompOp::ForInt(v)
+    }
 
-    let i = (eq | ne | lt | le | gt | ge).map(ECompOp::ForInt);
-    glob | glob_not | i
+    let eq = sym(b'=') * {
+        let eq2 = sym(b'=').map(|_| i(EICompOp::Eq));
+        let eq1 = empty().map(|_| i(EICompOp::Eq));
+        let glob = sym(b'*').map(|_| ECompOp::GlobMatch(false));
+        eq2 | eq1 | glob
+    };
+
+    let lt = sym(b'<') * {
+        let le = sym(b'=').map(|_| i(EICompOp::Le));
+        let lt = empty().map(|_| i(EICompOp::Lt));
+        le | lt
+    };
+
+    let gt = sym(b'>') * {
+        let ge = sym(b'=').map(|_| i(EICompOp::Ge));
+        let gt = empty().map(|_| i(EICompOp::Gt));
+        ge | gt
+    };
+
+    let not = sym(b'!') * {
+        let ne = sym(b'=').map(|_| i(EICompOp::Ne));
+        let glob_not = sym(b'*').map(|_| ECompOp::GlobMatch(true));
+        ne | glob_not
+    };
+
+    eq | lt | gt | not
 }
 
 fn boolean() -> Parser<u8, Expr> {
@@ -85,8 +104,8 @@ fn boolean() -> Parser<u8, Expr> {
 }
 
 fn logic_op() -> Parser<u8, ELogicOp> {
-    let and = seq(b"and").map(constant!(ELogicOp::And));
-    let or = seq(b"or").map(constant!(ELogicOp::Or));
+    let and = seq(b"and").map(|_| (ELogicOp::And));
+    let or = seq(b"or").map(|_| (ELogicOp::Or));
 
     and | or
 }

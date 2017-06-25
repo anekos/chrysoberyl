@@ -429,7 +429,10 @@ impl EntryContainer {
     }
 
     pub fn push_image(&mut self, pointer: &mut IndexPointer, file: &PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>) -> bool {
-        let file = file.canonicalize().expect("canonicalize");
+        if_let_some!(file = file.canonicalize().ok(), {
+            puts_error!("at" => "push_image", "reason" => o!("Failed to canonicalize"), "for" => path_to_str(&file));
+            false
+        });
 
         if let Some(expand_level) = expand_level {
             if let Some(dir) = file.parent() {

@@ -4,6 +4,7 @@ use std::default::Default;
 use gdk_pixbuf::InterpType;
 
 use entry::SearchKey;
+use entry::filter::expression::Expr as FilterExpr;
 use size::{FitTo, Region};
 
 
@@ -20,6 +21,7 @@ pub struct States {
     pub drawing: DrawingState,
     pub pre_fetch: PreFetchState,
     pub last_direction: Direction,
+    pub last_filter: Option<FilterExpr>,
 }
 
 pub struct ViewState {
@@ -72,6 +74,7 @@ impl Default for States {
             drawing: DrawingState::default(),
             pre_fetch: PreFetchState::default(),
             last_direction: Direction::Forward,
+            last_filter: None,
         }
     }
 

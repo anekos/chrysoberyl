@@ -17,6 +17,7 @@ use color::Color;
 use config::DEFAULT_CONFIG;
 use editor;
 use entry::{self, Meta, SearchKey};
+use entry::filter::expression::Expr as FilterExpr;
 use expandable::{Expandable, expand_all};
 use filer;
 use fragile_input::new_fragile_input;
@@ -134,6 +135,17 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, region: Option<Region>, col
     }
 }
 
+pub fn on_filter(app: &mut App, updated: &mut Updated, expr: Option<FilterExpr>) {
+    app.states.last_filter = expr.clone();
+    if let Some(expr) = expr {
+        app.entries.update_filter(&mut app.pointer, Some(Box::new(move |ref mut entry| expr.evaluate(entry))));
+    } else {
+        app.entries.update_filter(&mut app.pointer, None);
+    }
+    updated.pointer = true;
+    updated.image = true;
+}
+
 pub fn on_first(app: &mut App, updated: &mut Updated, len: usize, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {
     match move_by {
         MoveBy::Page =>
@@ -234,6 +246,7 @@ pub fn on_map(app: &mut App, target: MappingTarget, operation: Vec<String>) {
     }
 }
 
+#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 pub fn on_move_again(app: &mut App, updated: &mut Updated, len: usize, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) {
     if app.states.last_direction == state::Direction::Forward {
         on_next(app, updated, len, count, ignore_views, move_by, wrap)
@@ -629,7 +642,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
     }
 }
 
-pub fn on_user(_: &App, data: &[(String, String)]) {
+pub fn on_user(_: &mut App, data: &[(String, String)]) {
     let mut pairs = vec![(o!("event"), o!("user"))];
     pairs.extend_from_slice(data);
     output::puts(&pairs);

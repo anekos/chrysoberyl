@@ -9,6 +9,8 @@ use shell_escape;
 use app::App;
 use color::Color;
 use constant;
+use entry::filter::expression::Expr as FilterExpr;
+use entry::filter::writer::write as write_expr;
 use entry::{Entry, EntryContainer, KeyType, Key};
 use gui::Gui;
 use index_pointer::IndexPointer;
@@ -27,6 +29,7 @@ pub enum Session {
     Paths,
     Mappings,
     Envs,
+    Filter,
     All,
 }
 
@@ -47,12 +50,14 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
         Position => write_position(&app.entries, &app.pointer, out),
         Mappings => write_mappings(&app.mapping, out),
         Envs => write_envs(out),
+        Filter => write_filter(&app.states.last_filter, out),
         All => {
             write_options(&app.states, &app.gui, out);
             write_entries(&app.entries, out);
             write_position(&app.entries, &app.pointer, out);
             write_mappings(&app.mapping, out);
             write_envs(out);
+            write_filter(&app.states.last_filter, out);
         }
     }
 }
@@ -225,6 +230,15 @@ fn write_envs(out: &mut String) {
             }
         }
     }
+}
+
+fn write_filter(expr: &Option<FilterExpr>, out: &mut String) {
+    sprint!(out, "@filter");
+    if let Some(ref expr) = *expr {
+        sprint!(out, " ");
+        write_expr(expr, out);
+    }
+    sprintln!(out, "");
 }
 
 

@@ -1,5 +1,5 @@
 
-use std::fmt::Display;
+use std::fmt::{Display, Write};
 use std::path::Path;
 use std::time::Duration;
 
@@ -30,4 +30,13 @@ pub fn duration_to_string(t: Duration) -> String {
 #[inline]
 pub fn feq(x: f64, y: f64, error: f64) -> bool {
     (x - y).abs() < error
+}
+
+pub fn join(xs: &[String], sep: char) -> String {
+    let mut result = o!("");
+    for x in xs {
+        write!(result, "{}{}", x, sep).unwrap();
+    }
+    result.pop();
+    result
 }

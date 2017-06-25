@@ -15,14 +15,14 @@ use expandable::Expandable;
 use filer;
 use gui::Direction;
 use mapping;
-use size::Region;
 use session::Session;
+use size::Region;
 
 mod parser;
 
 
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum Operation {
     Cherenkov(CherenkovParameter),
     Clear,
@@ -36,6 +36,7 @@ pub enum Operation {
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Fill(Option<Region>, Color, usize), /* region, cell index */
+    Filter(Box<Option<entry::filter::expression::Expr>>),
     Fragile(Expandable),
     Initialized,
     Input(mapping::Input),
@@ -291,6 +292,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@entries"                      => Ok(PrintEntries),
             "@expand"                       => parse_expand(whole),
             "@fill"                         => parse_fill(whole),
+            "@filter"                       => parse_filter(whole),
             "@first" | "@f"                 => parse_move(whole, First),
             "@fragile"                      => parse_command1(whole, |it| Fragile(Expandable(it))),
             "@input"                        => parse_input(whole),

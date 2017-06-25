@@ -1,5 +1,4 @@
 
-use std::fmt::Write;
 use std::io::{BufReader, BufRead, Read};
 use std::process::{Command, Stdio, Child};
 use std::sync::mpsc::Sender;
@@ -7,6 +6,7 @@ use std::thread::spawn;
 
 use operation::Operation;
 use termination;
+use utils::join;
 
 
 
@@ -38,7 +38,7 @@ fn run(tx: Option<Sender<Operation>>, command_line: &[String], stdin: Option<Str
     if process_stdout(tx, child, stdin) {
         puts_event!("shell/close");
     } else {
-        puts_error!("at" => "shell", "for" => join(command_line));
+        puts_error!("at" => "shell", "for" => join(command_line, ','));
     }
 
     termination::unregister(&terminator);
@@ -81,13 +81,4 @@ fn pass<T: Read + Send>(source: &str, out: Option<T>) {
             puts_event!(format!("shell/{}", source), "line" => line);
         }
     }
-}
-
-fn join(xs: &[String]) -> String {
-    let mut result = o!("");
-    for x in xs {
-        write!(result, "{},", x).unwrap();
-    }
-    result.pop();
-    result
 }

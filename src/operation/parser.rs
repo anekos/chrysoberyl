@@ -12,6 +12,7 @@ use expandable::Expandable;
 use filer;
 use mapping::{Input, InputType};
 use shellexpand_wrapper as sh;
+use utils::join;
 
 use operation::*;
 
@@ -193,6 +194,22 @@ pub fn parse_fill(args: &[String]) -> Result<Operation, String> {
         parse_args(&mut ap, args)
     } .map(|_| {
         Operation::Fill(region, color, max!(cell_index, 1) - 1)
+    })
+}
+
+pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
+    let mut expr = vec![];
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut expr).add_argument("expression", Collect, "Filter expression");
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        if expr.is_empty() {
+            Ok(Operation::Filter(Box::new(None)))
+        } else {
+            join(&expr, ' ').parse().map(|it| Operation::Filter(Box::new(Some(it))))
+        }
     })
 }
 
@@ -683,6 +700,8 @@ impl FromStr for Session {
                 Ok(Session::Mappings),
             "envs" | "env" | "E" =>
                 Ok(Session::Envs),
+            "filter" | "f" =>
+                Ok(Session::Filter),
             "all" | "a" =>
                 Ok(Session::All),
             _ =>

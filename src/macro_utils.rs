@@ -126,3 +126,13 @@ macro_rules! with_ouput_string {
         }
     }
 }
+
+macro_rules! if_let_some {
+    ($var:ident = $value:expr, $else_value:expr) => {
+        let $var = if let Some(it) = $value {
+            it
+        } else {
+            return $else_value;
+        };
+    }
+}

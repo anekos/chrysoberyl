@@ -119,7 +119,7 @@ pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) {
     }
 }
 
-pub fn on_fill(app: &mut App, updated: &mut Updated, region: Option<Region>, color: Color, cell_index: usize, context: &Option<OperationContext>) {
+pub fn on_fill(app: &mut App, updated: &mut Updated, region: Option<Region>, color: Color, mask: bool, cell_index: usize, context: &Option<OperationContext>) {
     use cherenkov::Che;
 
     let region = extract_region_from_context(context).or(region).unwrap_or_else(Region::full);
@@ -129,7 +129,7 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, region: Option<Region>, col
         app.cache.cherenkov(
             &entry,
             &cell_size,
-            &Che::Fill(region, color),
+            &Che::Fill(region, color, mask),
             &app.states.drawing);
         updated.image = true;
     }

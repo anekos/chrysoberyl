@@ -35,7 +35,7 @@ pub enum Operation {
     Editor(Option<Expandable>, Vec<Expandable>, Vec<Session>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
-    Fill(Option<Region>, Color, usize), /* region, cell index */
+    Fill(Option<Region>, Color, bool, usize), /* region, mask, cell index */
     Filter(Box<Option<entry::filter::expression::Expr>>),
     Fragile(Expandable),
     Initialized,

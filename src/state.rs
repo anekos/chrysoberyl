@@ -1,6 +1,7 @@
 
 use std::default::Default;
 
+use cairo;
 use gdk_pixbuf::InterpType;
 
 use entry::SearchKey;
@@ -38,6 +39,7 @@ pub struct DrawingState {
     pub fit_to: FitTo,
     pub scaling: ScalingMethod,
     pub clipping: Option<Region>,
+    pub mask_operator: MaskOperator,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -52,6 +54,9 @@ pub struct StatusFormat(pub String);
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TitleFormat(pub String);
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct MaskOperator(pub cairo::Operator);
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Direction {
@@ -87,6 +92,7 @@ impl Default for DrawingState {
             fit_to: FitTo::Cell,
             scaling: ScalingMethod::default(),
             clipping: None,
+            mask_operator: MaskOperator(cairo::Operator::DestIn),
         }
     }
 }

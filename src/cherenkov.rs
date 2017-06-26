@@ -24,7 +24,7 @@
 use std::collections::HashMap;
 use std::f64::consts::PI;
 
-use cairo::{Context, ImageSurface, Format};
+use cairo::{Context, ImageSurface, Format, SurfacePattern, Operator};
 use gdk::prelude::ContextExt;
 use gdk_pixbuf::Pixbuf;
 use rand::distributions::{IndependentSample, Range};
@@ -137,7 +137,7 @@ impl Cherenkoved {
 
 impl CacheEntry {
     pub fn is_valid(&self, cell_size: &Size, drawing: &DrawingState) -> bool {
-        self.cell_size == *cell_size && self.drawing.fit_to == drawing.fit_to && self.drawing.clipping == drawing.clipping
+        self.cell_size == *cell_size && self.drawing.fit_to == drawing.fit_to && self.drawing.clipping == drawing.clipping && self.drawing.mask_operator == drawing.mask_operator
     }
 }
 
@@ -153,7 +153,7 @@ fn re_cherenkov(entry: &Entry, cell_size: &Size, drawing: &DrawingState, modifie
                 mask = _mask;
             }
             let pixbuf = if let Some(mask) = mask {
-                apply_mask(pixbuf, mask)
+                apply_mask(pixbuf, mask, drawing.mask_operator.0)
             } else {
                 pixbuf
             };
@@ -398,9 +398,7 @@ fn context_fill(context: &Context, filler: Filler, region: &Region, color: &Colo
     context.restore();
 }
 
-fn apply_mask(pixbuf: Pixbuf, mask: ImageSurface) -> Pixbuf {
-    use cairo::{Operator, SurfacePattern};
-
+fn apply_mask(pixbuf: Pixbuf, mask: ImageSurface, operator: Operator) -> Pixbuf {
     let (w, h) = (pixbuf.get_width(), pixbuf.get_height());
     let surface = ImageSurface::create(Format::ARgb32, w, h);
     let context = Context::new(&surface);
@@ -408,7 +406,7 @@ fn apply_mask(pixbuf: Pixbuf, mask: ImageSurface) -> Pixbuf {
     context.set_source_pixbuf(&pixbuf, 0.0, 0.0);
     context.paint();
 
-    context.set_operator(Operator::DestIn);
+    context.set_operator(operator);
     let pattern = SurfacePattern::create(&mask);
     context.mask(&pattern);
 

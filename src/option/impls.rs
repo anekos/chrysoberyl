@@ -1,12 +1,13 @@
 
 use std::str::FromStr;
 
+use cairo;
 use gdk_pixbuf::InterpType;
 
 use color::Color;
 use option::*;
 use size::FitTo;
-use state::{ScalingMethod, StatusFormat, TitleFormat};
+use state::{ScalingMethod, StatusFormat, TitleFormat, MaskOperator};
 
 
 
@@ -173,8 +174,99 @@ impl OptionValue for TitleFormat {
 }
 
 
+impl FromStr for MaskOperator {
+    type Err = String;
+
+    fn from_str(src: &str) -> StdResult<Self, String> {
+        use self::cairo::Operator::*;
+
+        let result = match src {
+            "clear" => Clear,
+            "source" => Source,
+            "over" => Over,
+            "in" => In,
+            "out" => Out,
+            "atop" => Atop,
+            "dest" => Dest,
+            "dest-over" => DestOver,
+            "dest-in" => DestIn,
+            "dest-out" => DestOut,
+            "dest-atop" => DestAtop,
+            "xor" => Xor,
+            "add" => Add,
+            "saturate" => Saturate,
+            "multiply" => Multiply,
+            "screen" => Screen,
+            "overlay" => Overlay,
+            "darken" => Darken,
+            "lighten" => Lighten,
+            "color-dodge" => ColorDodge,
+            "color-burn" => ColorBurn,
+            "hard-light" => HardLight,
+            "soft-light" => SoftLight,
+            "difference" => Difference,
+            "exclusion" => Exclusion,
+            "hsl-hue" => HslHue,
+            "hsl-saturation" => HslSaturation,
+            "hsl-color" => HslColor,
+            "hsl-luminosity" => HslLuminosity,
+            _ => return Err(format!("invalid mask operator: {}", src)),
+        };
+
+        Ok(MaskOperator(result))
+    }
+}
+
+impl OptionValue for MaskOperator {
+    fn set(&mut self, value: &str) -> Result {
+        value.parse().map(|value| {
+            *self = value;
+            ()
+        })
+    }
+
+    fn cycle(&mut self, reverse: bool) -> Result {
+        use self::cairo::Operator::*;
+
+        self.0 = cycled(self.0, &[
+            Clear,
+            Source,
+            Over,
+            In,
+            Out,
+            Atop,
+            Dest,
+            DestOver,
+            DestIn,
+            DestOut,
+            DestAtop,
+            Xor,
+            Add,
+            Saturate,
+            Multiply,
+            Screen,
+            Overlay,
+            Darken,
+            Lighten,
+            ColorDodge,
+            ColorBurn,
+            HardLight,
+            SoftLight,
+            Difference,
+            Exclusion,
+            HslHue,
+            HslSaturation,
+            HslColor,
+            HslLuminosity,
+        ], reverse);
+
+        Ok(())
+    }
+}
+
+
 pub fn cycled<T>(current: T, order: &[T], reverse: bool) -> T
-where T: Eq + Copy {
+where T: PartialEq + Copy {
     let i = order.iter().position(|it| *it == current).expect("Invalid value");
     if reverse {
         if i == 0 {

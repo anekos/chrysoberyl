@@ -204,8 +204,8 @@ impl App {
                    on_editor(self, editor_command.clone(), files, sessions),
                 Expand(recursive, ref base) =>
                     on_expand(self, &mut updated, recursive, base.clone()),
-                Fill(region, color, mask, cell_index) =>
-                    on_fill(self, &mut updated, region, color, mask, cell_index, &context),
+                Fill(filler, region, color, mask, cell_index) =>
+                    on_fill(self, &mut updated, filler, region, color, mask, cell_index, &context),
                 Filter(expr) =>
                     on_filter(self, &mut updated, *expr),
                 First(count, ignore_views, move_by, _) =>

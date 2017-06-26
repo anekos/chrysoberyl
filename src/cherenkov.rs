@@ -48,7 +48,14 @@ const FERROR: f64 = 0.000001;
 #[derive(Debug, Clone)]
 pub enum Che {
     Nova(CheNova),
-    Fill(Region, Color, bool),
+    Fill(Filler, Region, Color, bool),
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Filler {
+    Rectangle,
+    Circle,
+    Ellipse,
 }
 
 #[derive(Debug, Clone)]
@@ -169,10 +176,10 @@ fn cherenkov_pixbuf(pixbuf: Pixbuf, mask_surface: Option<ImageSurface>, che: &Ch
             }
             (pixbuf, mask_surface)
         },
-        Che::Fill(ref region, ref color, false) =>
-            (fill(region, color, &pixbuf), mask_surface),
-        Che::Fill(ref region, ref color, true) => {
-            let (pixbuf, mask_surface) = mask(mask_surface, region, color, pixbuf);
+        Che::Fill(filler, ref region, ref color, false) =>
+            (fill(filler, region, color, &pixbuf), mask_surface),
+        Che::Fill(filler, ref region, ref color, true) => {
+            let (pixbuf, mask_surface) = mask(mask_surface, filler, region, color, pixbuf);
             (pixbuf, Some(mask_surface))
         }
     }
@@ -327,7 +334,7 @@ fn nova(che: &CheNova, pixels: &mut [u8], rowstride: i32, width: i32, height: i3
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
-fn fill(che: &Region, color: &Color, pixbuf: &Pixbuf) -> Pixbuf {
+fn fill(filler: Filler, che: &Region, color: &Color, pixbuf: &Pixbuf) -> Pixbuf {
     let (w, h) = (pixbuf.get_width(), pixbuf.get_height());
     let surface = ImageSurface::create(Format::ARgb32, w, h);
     let context = Context::new(&surface);
@@ -335,31 +342,60 @@ fn fill(che: &Region, color: &Color, pixbuf: &Pixbuf) -> Pixbuf {
     context.set_source_pixbuf(pixbuf, 0.0, 0.0);
     context.paint();
 
-    context_fill(&context, che, color, w, h);
+    context_fill(&context, filler, che, color, w, h);
 
     new_pixbuf_from_surface(&surface)
 }
 
-fn mask(surface: Option<ImageSurface>, che: &Region, color: &Color, pixbuf: Pixbuf) -> (Pixbuf, ImageSurface) {
+fn mask(surface: Option<ImageSurface>, filler: Filler, che: &Region, color: &Color, pixbuf: Pixbuf) -> (Pixbuf, ImageSurface) {
     let (w, h) = (pixbuf.get_width(), pixbuf.get_height());
     let surface = surface.unwrap_or_else(|| ImageSurface::create(Format::ARgb32, w, h));
     let context = Context::new(&surface);
 
-    context_fill(&context, che, color, w, h);
+    context_fill(&context, filler, che, color, w, h);
 
     (pixbuf, surface)
 }
 
-fn context_fill(context: &Context, region: &Region, color: &Color, w: i32, h: i32) {
+fn context_fill(context: &Context, filler: Filler, region: &Region, color: &Color, w: i32, h: i32) {
     let (r, g, b, a) = color.tupled4();
     context.set_source_rgba(r, g, b, a);
-    let (w, h) = (w as f64, h as f64);
-    context.rectangle(
-        region.left * w,
-        region.top * h,
-        (region.right - region.left) * w,
-        (region.bottom - region.top) * h);
+
+    context.save();
+
+    match filler {
+        Filler::Rectangle => {
+            let (w, h) = (w as f64, h as f64);
+            context.rectangle(
+                region.left * w,
+                region.top * h,
+                (region.right - region.left) * w,
+                (region.bottom - region.top) * h);
+        },
+        Filler::Circle => {
+            let (w, h) = (w as f64, h as f64);
+            let (rw, rh) = (region.width(), region.height());
+            let r = min!(rw * w, rh * h);
+            context.arc(
+                (region.left + rw / 2.0) * w,
+                (region.top + rh / 2.0) * h,
+                r,
+                0.0,
+                2.0 * PI);
+        },
+        Filler::Ellipse => {
+            let (w, h) = (w as f64, h as f64);
+            let (rw, rh) = (region.width(), region.height());
+            context.translate(
+                (region.left + rw / 2.0) * w,
+                (region.top + rh / 2.0) * h);
+            context.scale(rw * w / 2.0, rh * h / 2.0);
+            context.arc(0.0, 0.0, 1.0, 0.0, 2.0 * PI);
+        }
+    }
     context.fill();
+
+    context.restore();
 }
 
 fn apply_mask(pixbuf: Pixbuf, mask: ImageSurface) -> Pixbuf {

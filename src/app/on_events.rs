@@ -13,11 +13,12 @@ use rand::distributions::{IndependentSample, Range as RandRange};
 
 use app_path;
 use archive;
+use cherenkov::Filler;
 use color::Color;
 use config::DEFAULT_CONFIG;
 use editor;
-use entry::{self, Meta, SearchKey};
 use entry::filter::expression::Expr as FilterExpr;
+use entry::{self, Meta, SearchKey};
 use expandable::{Expandable, expand_all};
 use filer;
 use fragile_input::new_fragile_input;
@@ -119,7 +120,7 @@ pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) {
     }
 }
 
-pub fn on_fill(app: &mut App, updated: &mut Updated, region: Option<Region>, color: Color, mask: bool, cell_index: usize, context: &Option<OperationContext>) {
+pub fn on_fill(app: &mut App, updated: &mut Updated, filler: Filler, region: Option<Region>, color: Color, mask: bool, cell_index: usize, context: &Option<OperationContext>) {
     use cherenkov::Che;
 
     let region = extract_region_from_context(context).or(region).unwrap_or_else(Region::full);
@@ -129,7 +130,7 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, region: Option<Region>, col
         app.cache.cherenkov(
             &entry,
             &cell_size,
-            &Che::Fill(region, color, mask),
+            &Che::Fill(filler, region, color, mask),
             &app.states.drawing);
         updated.image = true;
     }

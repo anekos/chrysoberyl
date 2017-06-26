@@ -16,7 +16,7 @@ use gui::Gui;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, key_mapping as kmap, mouse_mapping as mmap, region_mapping as rmap};
 use size::FitTo;
-use state::{States, ScalingMethod};
+use state::{States, ScalingMethod, MaskOperator};
 use utils::path_to_str;
 
 
@@ -86,6 +86,7 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
     sprintln!(out, "@set status-bar {}", b2s(st.status_bar));
     sprintln!(out, "@set status-format {}", escape(&st.status_format.0));
     sprintln!(out, "@set title-format {}", escape(&st.title_format.0));
+    sprintln!(out, "@set mask-operator {}", st.drawing.mask_operator);
     sprintln!(out, "@set window-background-color {}", c2s(&gui.colors.window_background));
     sprintln!(out, "@set status-bar-color {}", c2s(&gui.colors.status_bar));
     sprintln!(out, "@set status-bar-background-color {}", c2s(&gui.colors.status_bar_background));
@@ -254,6 +255,48 @@ impl fmt::Display for FitTo {
                 Height => "height",
                 Cell => "cell",
                 Fixed(w, h) => return write!(f, "{}x{}", w, h),
+            };
+
+        write!(f, "{}", result)
+    }
+}
+
+
+impl fmt::Display for MaskOperator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use cairo::Operator::*;
+
+        let result =
+            match self.0 {
+                Clear => "clear",
+                Source => "source",
+                Over => "over",
+                In => "in",
+                Out => "out",
+                Atop => "atop",
+                Dest => "dest",
+                DestOver => "dest-over",
+                DestIn => "dest-in",
+                DestOut => "dest-out",
+                DestAtop => "dest-atop",
+                Xor => "xor",
+                Add => "add",
+                Saturate => "saturate",
+                Multiply => "multiply",
+                Screen => "screen",
+                Overlay => "overlay",
+                Darken => "darken",
+                Lighten => "lighten",
+                ColorDodge => "color-dodge",
+                ColorBurn => "color-burn",
+                HardLight => "hard-light",
+                SoftLight => "soft-light",
+                Difference => "difference",
+                Exclusion => "exclusion",
+                HslHue => "hsl-hue",
+                HslSaturation => "hsl-saturation",
+                HslColor => "hsl-color",
+                HslLuminosity => "hsl-luminosity",
             };
 
         write!(f, "{}", result)

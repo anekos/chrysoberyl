@@ -39,10 +39,10 @@ use app::*;
 
 
 
-pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: &Option<OperationContext>) {
+pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<OperationContext>) {
     use cherenkov::{Che, CheNova};
 
-    if let Some(OperationContext::Input(Input::MouseButton((mx, my), _))) = *context {
+    if let Some(Input::MouseButton((mx, my), _)) = context.map(|it| it.input) {
         let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
 
         for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
@@ -84,8 +84,8 @@ pub fn on_clear(app: &mut App, updated: &mut Updated) {
     updated.image = true;
 }
 
-pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region, context: &Option<OperationContext>) {
-    let inner = extract_region_from_context(context).unwrap_or(inner);
+pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region, context: Option<OperationContext>) {
+    let inner = extract_region_from_context(context).map(|it| it.0).unwrap_or(inner);
     let current = app.states.drawing.clipping.unwrap_or_default();
     app.states.drawing.clipping = Some(current + inner);
     updated.image_options = true;
@@ -120,10 +120,12 @@ pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) {
     }
 }
 
-pub fn on_fill(app: &mut App, updated: &mut Updated, filler: Filler, region: Option<Region>, color: Color, mask: bool, cell_index: usize, context: &Option<OperationContext>) {
+pub fn on_fill(app: &mut App, updated: &mut Updated, filler: Filler, region: Option<Region>, color: Color, mask: bool, cell_index: usize, context: Option<OperationContext>) {
     use cherenkov::Che;
 
-    let region = extract_region_from_context(context).or(region).unwrap_or_else(Region::full);
+    let (region, cell_index) = extract_region_from_context(context)
+        .or(region.map(|it| (it, cell_index)))
+        .unwrap_or_else(|| (Region::full(), cell_index));
 
     if let Some(entry) = app.entries.current_with(&app.pointer, cell_index).map(|(entry,_)| entry) {
         let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
@@ -185,7 +187,7 @@ pub fn on_input(app: &mut App, input: &Input) {
     for op in operations {
         match Operation::parse_from_vec(&op) {
             Ok(op) =>
-                app.operate(Operation::Context(OperationContext::Input(input.clone()), Box::new(op))),
+                app.operate(Operation::Context(OperationContext { input: input.clone(), cell_index: None }, Box::new(op))),
             Err(err) =>
                 puts_error!("at" => "input", "reason" => err)
         }
@@ -552,7 +554,7 @@ pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f6
                     (my - y1) as f64 / h,
                     (right - x1 as f64) / w,
                     (bottom - y1 as f64) / h);
-                let op = Operation::Input(Input::Region(region, button));
+                let op = Operation::Input(Input::Region(region, button, index));
                 app.tx.send(op).unwrap();
             }
         }
@@ -719,10 +721,10 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
     app.do_show(updated);
 }
 
-fn extract_region_from_context(context: &Option<OperationContext>) -> Option<Region> {
-    if let Some(OperationContext::Input(ref input)) = *context {
-        if let Input::Region(ref region, _) = *input {
-            return Some(*region);
+fn extract_region_from_context(context: Option<OperationContext>) -> Option<(Region, usize)> {
+    if let Some(input) = context.map(|it| it.input) {
+        if let Input::Region(ref region, _, cell_index) = input {
+            return Some((*region, cell_index));
         }
     }
     None

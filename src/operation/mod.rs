@@ -97,8 +97,9 @@ pub struct CherenkovParameter {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum OperationContext {
-    Input(mapping::Input)
+pub struct OperationContext {
+    pub input: mapping::Input,
+    pub cell_index: Option<usize>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

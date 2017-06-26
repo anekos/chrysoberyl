@@ -375,7 +375,7 @@ fn context_fill(context: &Context, filler: Filler, region: &Region, color: &Colo
         Filler::Circle => {
             let (w, h) = (w as f64, h as f64);
             let (rw, rh) = (region.width(), region.height());
-            let r = min!(rw * w, rh * h);
+            let r = min!(rw * w, rh * h) / 2.0;
             context.arc(
                 (region.left + rw / 2.0) * w,
                 (region.top + rh / 2.0) * h,

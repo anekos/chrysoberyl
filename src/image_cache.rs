@@ -90,6 +90,11 @@ impl ImageCache {
         cherenkoved.remove(entry)
     }
 
+    pub fn undo_cherenkov(&mut self, entry: &Entry, count: usize) {
+        let mut cherenkoved = self.cherenkoved.lock().unwrap();
+        cherenkoved.undo(entry, count)
+    }
+
     fn wait(&mut self, key: &Key) {
         trace!("image_cache/wait/start: key={:?}", key);
 

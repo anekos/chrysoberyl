@@ -79,6 +79,7 @@ pub enum Operation {
     Timer(String, Vec<String>, Duration, Option<usize>),
     UpdateOption(OptionName, OptionUpdater),
     User(Vec<(String, String)>),
+    Undo(Option<usize>),
     Unclip,
     Views(Option<usize>, Option<usize>),
     ViewsFellow(bool), /* for_rows */
@@ -333,6 +334,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@timer"                        => parse_timer(whole),
             "@toggle"                       => parse_option_1(whole, OptionUpdater::Toggle),
             "@unclip"                       => Ok(Unclip),
+            "@undo"                         => parse_undo(whole),
             "@unset"                        => parse_option_1(whole, OptionUpdater::Unset),
             "@user"                         => Ok(Operation::user(args.to_vec())),
             "@views"                        => parse_views(whole),

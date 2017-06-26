@@ -136,3 +136,12 @@ macro_rules! if_let_some {
         };
     }
 }
+
+macro_rules! if_let_ok {
+    ($var:ident = $value:expr, $else_value:expr) => {
+        let $var = match $value {
+            Ok(it) => it,
+            Err(err) => return $else_value(err),
+        };
+    }
+}

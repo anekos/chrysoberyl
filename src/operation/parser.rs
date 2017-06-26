@@ -654,6 +654,18 @@ pub fn parse_timer(args: &[String]) -> Result<Operation, String> {
     })
 }
 
+pub fn parse_undo(args: &[String]) -> Result<Operation, String> {
+    let mut count = None;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut count).add_argument("Count", StoreOption, "Count");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Undo(count)
+    })
+}
+
 pub fn parse_views(args: &[String]) -> Result<Operation, String> {
     let mut for_rows = false;
     let mut rows = None;

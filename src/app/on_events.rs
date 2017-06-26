@@ -570,6 +570,14 @@ pub fn on_unclip(app: &mut App, updated: &mut Updated) {
     updated.image_options = true;
 }
 
+pub fn on_undo(app: &mut App, updated: &mut Updated, count: Option<usize>) {
+    let count = count.unwrap_or(app.pointer.counted());
+    if let Some((ref entry, _)) = app.entries.current(&app.pointer) {
+        app.cache.undo_cherenkov(entry, count)
+    }
+    updated.image_options = true;
+}
+
 pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &OptionName, updater: OptionUpdater) {
     use option::OptionValue;
     use operation::OptionName::*;

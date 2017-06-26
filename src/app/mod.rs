@@ -290,6 +290,8 @@ impl App {
                     on_timer(self, name, op, interval, repeat),
                 Unclip => 
                     on_unclip(self, &mut updated),
+                Undo(count) => 
+                    on_undo(self, &mut updated, count),
                 UpdateOption(ref option_name, ref updater) =>
                     on_update_option(self, &mut updated, option_name, updater.clone()),
                 User(ref data) =>

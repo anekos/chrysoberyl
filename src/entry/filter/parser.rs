@@ -37,7 +37,7 @@ impl FromStr for Expr {
  * Compare ← Value CmpOp Value
  * CmpOp ← '<' | '<=' | '>' | '>=' | '=' | '=~'
  * Value ← Glob | Integer | Variable
- * Variable ← 'type' | 'width' | 'height' | 'path' | 'ext' | 'extension'
+ * Variable ← 'type' | 'width' | 'height' | 'path' | 'ext' | 'extension' | 'dimensions'
  * Glob ← '<' string '>'
  */
 
@@ -58,7 +58,7 @@ fn variable() -> Parser<u8, EValue> {
         seq(name).map(move |_| EValue::Variable(var))
     }
 
-    gen(b"type", Type) | gen(b"width", Width) | gen(b"height", Height) | gen(b"path", Path) | gen(b"ext", Extension) | gen(b"extension", Extension)
+    gen(b"type", Type) | gen(b"width", Width) | gen(b"height", Height) | gen(b"path", Path) | gen(b"ext", Extension) | gen(b"extension", Extension) | gen(b"dim", Dimentions) | gen(b"dimensions", Dimentions)
 }
 
 fn value() -> Parser<u8, EValue> {

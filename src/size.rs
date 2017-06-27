@@ -108,6 +108,10 @@ impl Size {
         }
     }
 
+    pub fn dimensions(&self) -> i32 {
+        self.width * self.height
+    }
+
     fn fit_to_original(&self) -> (f64, Size) {
         (1.0, *self)
     }

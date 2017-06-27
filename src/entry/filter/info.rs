@@ -20,7 +20,7 @@ pub fn get_info(entry: &mut Entry) -> &EntryInfo {
 fn generate_info(content: &EntryContent, path: String) -> EntryInfo {
     use self::EntryContent::*;
 
-    let size = match *content {
+    let dimensions = match *content {
         File(ref path) | Http(ref path, _) =>
             generate_static_image_size(path),
         Archive(_, ref entry) =>
@@ -39,7 +39,7 @@ fn generate_info(content: &EntryContent, path: String) -> EntryInfo {
     };
 
     EntryInfo {
-        size: size,
+        dimensions: dimensions,
         path: path,
         extension: extension,
         entry_type: entry_type,

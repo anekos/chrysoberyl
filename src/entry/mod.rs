@@ -54,7 +54,7 @@ pub enum EntryContent {
 
 #[derive(Clone)]
 pub struct EntryInfo {
-    pub size: Option<Size>, // PDF makes None
+    pub dimensions: Option<Size>, // PDF makes None
     pub path: String, // local filepath or archive filepath or url
     pub extension: Option<String>,
     pub entry_type: &'static str,

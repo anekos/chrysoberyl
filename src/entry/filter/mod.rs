@@ -117,8 +117,9 @@ fn eval_variable(info: &EntryInfo, v: &EVariable) -> Option<i64> {
     use self::EVariable::*;
 
     match *v {
-        Width => info.size.map(|it| it.width as i64),
-        Height => info.size.map(|it| it.height as i64),
+        Width => info.dimensions.map(|it| it.width as i64),
+        Height => info.dimensions.map(|it| it.height as i64),
+        Dimentions => info.dimensions.map(|it| it.dimensions() as i64),
         _ => None,
     }
 }
@@ -129,6 +130,7 @@ fn eval_variable_as_s(info: &EntryInfo, v: &EVariable) -> Option<String> {
     match *v {
         Path => Some(info.path.clone()),
         Extension => info.extension.clone(),
+        Type => Some(o!(info.entry_type.clone())),
         _ => None,
     }
 }

@@ -24,7 +24,7 @@ use image_cache::ImageCache;
 use image_fetcher::ImageFetcher;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, Input};
-use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy};
+use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy, PreDefinedOptionName};
 use option::user::UserSwitchManager;
 use output;
 use shellexpand_wrapper as sh;
@@ -577,7 +577,18 @@ impl App {
         }
     }
 
+    pub fn update_env_for_option(&self, option_name: &PreDefinedOptionName) {
+        use session::{generate_option_value, WriteContext};
+        use constant::OPTION_VARIABLE_PREFIX;
+
+        let (name, value) = generate_option_value(option_name, &self.states, &self.gui, WriteContext::ENV);
+        env::set_var(format!("{}{}", OPTION_VARIABLE_PREFIX, name), value);
+    }
+
     fn initialize_envs_for_options(&self) {
+        for option_name in PreDefinedOptionName::iterator() {
+            self.update_env_for_option(option_name)
+        }
     }
 }
 

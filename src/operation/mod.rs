@@ -139,8 +139,7 @@ pub enum OptionName {
     UserDefined(String),
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum PreDefinedOptionName {
+iterable_enum!(PreDefinedOptionName =>
     AutoPaging,
     CenterAlignment,
     ColorError,
@@ -160,7 +159,7 @@ pub enum PreDefinedOptionName {
     StatusFormat,
     TitleFormat,
     VerticalViews,
-}
+);
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum QueuedOperation {

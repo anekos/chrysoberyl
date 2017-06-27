@@ -145,3 +145,32 @@ macro_rules! if_let_ok {
         };
     }
 }
+
+macro_rules! count_idents {
+    ($x:ident) => {
+        1
+    };
+    ($x:ident $(,$xs:ident)*) => {
+        1 + count_idents!($($xs),*)
+    }
+}
+
+macro_rules! iterable_enum {
+    ($name:ident => $($var:ident,)*) => {
+        #[derive(Clone, Debug, PartialEq)]
+        pub enum $name {
+            $($var,)*
+        }
+
+        use std::slice::Iter;
+
+        impl $name {
+            pub fn iterator() -> Iter<'static, $name> {
+                use self::$name::*;
+
+                static ITEMS: [$name; count_idents!($($var),*)] = [$($var,)*];
+                ITEMS.into_iter()
+            }
+        }
+    }
+}

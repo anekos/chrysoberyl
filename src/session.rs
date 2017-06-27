@@ -34,6 +34,12 @@ pub enum Session {
     All,
 }
 
+#[derive(Clone, Debug, Copy)]
+pub enum WriteContext {
+    Session,
+    ENV
+}
+
 
 pub fn write_sessions(app: &App, sessions: &[Session], out: &mut String) {
     for session in sessions {
@@ -63,14 +69,13 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
     }
 }
 
-pub fn generate_option_value(name: PreDefinedOptionName, st: &States, gui: &Gui, for_session: bool) -> (String, String) {
+pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui, context: WriteContext) -> (String, String) {
     use self::PreDefinedOptionName::*;
 
     let esc = |s: &str| {
-        if for_session {
-            escape(s)
-        } else {
-            o!(s)
+        match context {
+            WriteContext::ENV => o!(s),
+            WriteContext::Session => escape(s),
         }
     };
 
@@ -86,30 +91,34 @@ pub fn generate_option_value(name: PreDefinedOptionName, st: &States, gui: &Gui,
         esc(&format!("{}", c))
     };
 
-    fn gen<T: fmt::Display + Sized>(name: &str, value: T) -> (String, String) {
+    fn gen<T: fmt::Display + Sized>(name: &str, value: T, context: WriteContext) -> (String, String) {
+        let name = match context {
+            WriteContext::Session => o!(name),
+            WriteContext::ENV => name.replace("-", "_").to_uppercase()
+        };;
         (o!(name), s!(value))
     }
 
-    match name {
-        AutoPaging => gen("auto-paging", b2s(st.auto_paging)),
-        CenterAlignment => gen("center-alignment", b2s(st.view.center_alignment)),
-        ColorError => gen("error-color", c2s(&gui.colors.error)),
-        ColorErrorBackground => gen("error-background-color", c2s(&gui.colors.error_background)),
-        ColorStatusBar => gen("status-bar-color", c2s(&gui.colors.status_bar)),
-        ColorStatusBarBackground => gen("status-bar-background-color", c2s(&gui.colors.status_bar_background)),
-        ColorWindowBackground => gen("window-background-color", c2s(&gui.colors.window_background)),
-        FitTo => gen("fit-to", st.drawing.fit_to),
-        HorizontalViews => gen("horizontal-views", st.view.cols),
-        MaskOperator => gen("mask-operator", &st.drawing.mask_operator),
-        PreFetchEnabled => gen("pre-render", b2s(st.pre_fetch.enabled)),
-        PreFetchLimit => gen("pre-render-limit", st.pre_fetch.limit_of_items),
-        PreFetchPageSize => gen("pre-render-pages", st.pre_fetch.page_size),
-        Reverse => gen("reverse", b2s(st.reverse)),
-        Scaling => gen("scaling", &st.drawing.scaling),
-        StatusBar => gen("status-bar", b2s(st.status_bar)),
-        StatusFormat => gen("status-format", esc(&st.status_format.0)),
-        TitleFormat => gen("title-format", esc(&st.title_format.0)),
-        VerticalViews => gen("vertical-views", &st.view.rows),
+    match *name {
+        AutoPaging => gen("auto-paging", b2s(st.auto_paging), context),
+        CenterAlignment => gen("center-alignment", b2s(st.view.center_alignment), context),
+        ColorError => gen("error-color", c2s(&gui.colors.error), context),
+        ColorErrorBackground => gen("error-background-color", c2s(&gui.colors.error_background), context),
+        ColorStatusBar => gen("status-bar-color", c2s(&gui.colors.status_bar), context),
+        ColorStatusBarBackground => gen("status-bar-background-color", c2s(&gui.colors.status_bar_background), context),
+        ColorWindowBackground => gen("window-background-color", c2s(&gui.colors.window_background), context),
+        FitTo => gen("fit-to", st.drawing.fit_to, context),
+        HorizontalViews => gen("horizontal-views", st.view.cols, context),
+        MaskOperator => gen("mask-operator", &st.drawing.mask_operator, context),
+        PreFetchEnabled => gen("pre-render", b2s(st.pre_fetch.enabled), context),
+        PreFetchLimit => gen("pre-render-limit", st.pre_fetch.limit_of_items, context),
+        PreFetchPageSize => gen("pre-render-pages", st.pre_fetch.page_size, context),
+        Reverse => gen("reverse", b2s(st.reverse), context),
+        Scaling => gen("scaling", &st.drawing.scaling, context),
+        StatusBar => gen("status-bar", b2s(st.status_bar), context),
+        StatusFormat => gen("status-format", esc(&st.status_format.0), context),
+        TitleFormat => gen("title-format", esc(&st.title_format.0), context),
+        VerticalViews => gen("vertical-views", &st.view.rows, context),
     }
 }
 
@@ -117,7 +126,7 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
     use self::PreDefinedOptionName::*;
 
     let write = |out: &mut String, name: PreDefinedOptionName| {
-        let (name, value) = generate_option_value(name, st, gui, true);
+        let (name, value) = generate_option_value(&name, st, gui, WriteContext::Session);
         sprintln!(out, "@set {} {}", name, value);
     };
 

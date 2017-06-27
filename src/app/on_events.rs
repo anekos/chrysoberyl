@@ -637,6 +637,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: Optio
     updated.image = true;
 
     if let PreDefined(ref option_name) = option_name {
+        app.update_env_for_option(option_name);
         match *option_name {
             StatusBar => {
                 app.update_label_visibility();

@@ -167,6 +167,8 @@ impl App {
             tx.send(Operation::Shuffle(fix)).unwrap();
         }
 
+        app.initialize_envs_for_options();
+
         (app, primary_rx, rx)
     }
 
@@ -292,8 +294,8 @@ impl App {
                     on_unclip(self, &mut updated),
                 Undo(count) => 
                     on_undo(self, &mut updated, count),
-                UpdateOption(ref option_name, ref updater) =>
-                    on_update_option(self, &mut updated, option_name, updater.clone()),
+                UpdateOption(option_name, updater) =>
+                    on_update_option(self, &mut updated, option_name, updater),
                 User(ref data) =>
                     on_user(self, data),
                 Views(cols, rows) =>
@@ -573,6 +575,9 @@ impl App {
         } else {
             self.gui.label.hide();
         }
+    }
+
+    fn initialize_envs_for_options(&self) {
     }
 }
 

@@ -31,10 +31,18 @@ fn generate_info(content: &EntryContent, path: String) -> EntryInfo {
 
     let extension = Path::new(&path).extension().and_then(|it| it.to_str().map(|it| it.to_owned()));
 
+    let entry_type: &'static str = match *content {
+        File(_) => "file",
+        Http(_, _) => "http",
+        Archive(_, _) => "archive",
+        Pdf(_, _) => "pdf",
+    };
+
     EntryInfo {
         size: size,
         path: path,
-        extension: extension
+        extension: extension,
+        entry_type: entry_type,
     }
 }
 

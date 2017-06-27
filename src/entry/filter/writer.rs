@@ -66,6 +66,7 @@ fn write_value(v: &EValue, out: &mut String) {
             Height => sprint!(out, "height"),
             Path => sprint!(out, "path"),
             Extension => sprint!(out, "extension"),
+            Type => sprint!(out, "type"),
         },
         Glob(ref rs) => {
             sprint!(out, "<");

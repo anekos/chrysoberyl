@@ -1,6 +1,5 @@
 
 use std::cmp::{PartialEq, PartialOrd, Ord, Ordering};
-use std::default::Default;
 use std::hash::{Hash, Hasher};
 use std::io;
 use std::path::{PathBuf, Path};
@@ -14,13 +13,15 @@ use natord;
 use archive::ArchiveEntry;
 use filterable_vec::FilterableVec;
 use index_pointer::IndexPointer;
-use lazy::Lazy;
-use size::Size;
 use utils::path_to_str;
 use validation::is_valid_image_filename;
 
 pub mod image;
 pub mod filter;
+pub mod info;
+
+use self::info::EntryInfo;
+
 
 
 pub struct EntryContainer {
@@ -41,7 +42,7 @@ pub struct Entry {
     pub key: Key,
     pub content: EntryContent,
     pub meta: Option<Meta>,
-    pub info: Lazy<EntryInfo>,
+    pub info: info::EntryInfo,
 }
 
 #[derive(Clone)]
@@ -50,15 +51,6 @@ pub enum EntryContent {
     Http(PathBuf, String),
     Archive(Arc<PathBuf>, ArchiveEntry),
     Pdf(Arc<PathBuf>, usize)
-}
-
-#[derive(Clone)]
-pub struct EntryInfo {
-    pub dimensions: Option<Size>, // PDF makes None
-    pub path: String, // local filepath or archive filepath or url
-    pub extension: Option<String>,
-    pub entry_type: &'static str,
-    pub is_animated: bool,
 }
 
 pub type Meta = Arc<Vec<MetaEntry>>;
@@ -96,11 +88,15 @@ pub enum Position {
 
 impl Entry {
     pub fn new(content: EntryContent, meta: Option<Meta>) -> Entry {
+        let key = content.key();
+
+        let info = EntryInfo::new(&content, &key.1);
+
         Entry {
-            key: content.key(),
+            key: key,
             content: content,
             meta: meta,
-            info: Lazy::default(),
+            info: info
         }
     }
 

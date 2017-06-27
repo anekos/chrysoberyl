@@ -294,7 +294,7 @@ impl App {
                     on_unclip(self, &mut updated),
                 Undo(count) => 
                     on_undo(self, &mut updated, count),
-                UpdateOption(option_name, updater) =>
+                UpdateOption(ref option_name, ref updater) =>
                     on_update_option(self, &mut updated, option_name, updater),
                 User(ref data) =>
                     on_user(self, data),

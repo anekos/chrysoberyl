@@ -120,11 +120,12 @@ pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) {
     }
 }
 
+#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 pub fn on_fill(app: &mut App, updated: &mut Updated, filler: Filler, region: Option<Region>, color: Color, mask: bool, cell_index: usize, context: Option<OperationContext>) {
     use cherenkov::Che;
 
     let (region, cell_index) = extract_region_from_context(context)
-        .or(region.map(|it| (it, cell_index)))
+        .or_else(|| region.map(|it| (it, cell_index)))
         .unwrap_or_else(|| (Region::full(), cell_index));
 
     if let Some(entry) = app.entries.current_with(&app.pointer, cell_index).map(|(entry,_)| entry) {
@@ -571,14 +572,17 @@ pub fn on_unclip(app: &mut App, updated: &mut Updated) {
 }
 
 pub fn on_undo(app: &mut App, updated: &mut Updated, count: Option<usize>) {
+    // `counted` should be evaluated
+    #[cfg_attr(feature = "cargo-clippy", allow(or_fun_call))]
     let count = count.unwrap_or(app.pointer.counted());
+
     if let Some((ref entry, _)) = app.entries.current(&app.pointer) {
         app.cache.undo_cherenkov(entry, count)
     }
     updated.image_options = true;
 }
 
-pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: OptionName, updater: OptionUpdater) {
+pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &OptionName, updater: &OptionUpdater) {
     use option::OptionValue;
     use operation::OptionName::*;
     use operation::PreDefinedOptionName::*;
@@ -587,7 +591,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: Optio
     let mut dummy_switch = DummySwtich::new();
 
     {
-        let value: &mut OptionValue = match option_name {
+        let value: &mut OptionValue = match *option_name {
             PreDefined(ref option_name) => match *option_name {
                 AutoPaging => &mut app.states.auto_paging,
                 CenterAlignment => &mut app.states.view.center_alignment,
@@ -619,11 +623,11 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: Optio
             }
         };
 
-        let result = match updater {
-            Cycle(reverse) => value.cycle(reverse),
+        let result = match *updater {
+            Cycle(ref reverse) => value.cycle(*reverse),
             Disable => value.disable(),
             Enable => value.enable(),
-            Set(arg) => value.set(&arg),
+            Set(ref arg) => value.set(arg),
             Toggle => value.toggle(),
             Unset => value.unset(),
         };
@@ -636,7 +640,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: Optio
 
     updated.image = true;
 
-    if let PreDefined(ref option_name) = option_name {
+    if let PreDefined(ref option_name) = *option_name {
         app.update_env_for_option(option_name);
         match *option_name {
             StatusBar => {

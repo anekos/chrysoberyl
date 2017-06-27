@@ -129,6 +129,7 @@ macro_rules! with_ouput_string {
 
 macro_rules! if_let_some {
     ($var:ident = $value:expr, $else_value:expr) => {
+        #[cfg_attr(feature = "cargo-clippy", allow(if_let_some_result))]
         let $var = if let Some(it) = $value {
             it
         } else {

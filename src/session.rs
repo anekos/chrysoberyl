@@ -91,7 +91,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         esc(&format!("{}", c))
     };
 
-    fn gen<T: fmt::Display + Sized>(name: &str, value: T, context: WriteContext) -> (String, String) {
+    fn gen<T: fmt::Display + Sized>(name: &str, value: &T, context: WriteContext) -> (String, String) {
         let name = match context {
             WriteContext::Session => o!(name),
             WriteContext::ENV => name.replace("-", "_").to_uppercase()
@@ -100,24 +100,24 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
     }
 
     match *name {
-        AutoPaging => gen("auto-paging", b2s(st.auto_paging), context),
-        CenterAlignment => gen("center-alignment", b2s(st.view.center_alignment), context),
-        ColorError => gen("error-color", c2s(&gui.colors.error), context),
-        ColorErrorBackground => gen("error-background-color", c2s(&gui.colors.error_background), context),
-        ColorStatusBar => gen("status-bar-color", c2s(&gui.colors.status_bar), context),
-        ColorStatusBarBackground => gen("status-bar-background-color", c2s(&gui.colors.status_bar_background), context),
-        ColorWindowBackground => gen("window-background-color", c2s(&gui.colors.window_background), context),
-        FitTo => gen("fit-to", st.drawing.fit_to, context),
-        HorizontalViews => gen("horizontal-views", st.view.cols, context),
+        AutoPaging => gen("auto-paging", &b2s(st.auto_paging), context),
+        CenterAlignment => gen("center-alignment", &b2s(st.view.center_alignment), context),
+        ColorError => gen("error-color", &c2s(&gui.colors.error), context),
+        ColorErrorBackground => gen("error-background-color", &c2s(&gui.colors.error_background), context),
+        ColorStatusBar => gen("status-bar-color", &c2s(&gui.colors.status_bar), context),
+        ColorStatusBarBackground => gen("status-bar-background-color", &c2s(&gui.colors.status_bar_background), context),
+        ColorWindowBackground => gen("window-background-color", &c2s(&gui.colors.window_background), context),
+        FitTo => gen("fit-to", &st.drawing.fit_to, context),
+        HorizontalViews => gen("horizontal-views", &st.view.cols, context),
         MaskOperator => gen("mask-operator", &st.drawing.mask_operator, context),
-        PreFetchEnabled => gen("pre-render", b2s(st.pre_fetch.enabled), context),
-        PreFetchLimit => gen("pre-render-limit", st.pre_fetch.limit_of_items, context),
-        PreFetchPageSize => gen("pre-render-pages", st.pre_fetch.page_size, context),
-        Reverse => gen("reverse", b2s(st.reverse), context),
+        PreFetchEnabled => gen("pre-render", &b2s(st.pre_fetch.enabled), context),
+        PreFetchLimit => gen("pre-render-limit", &st.pre_fetch.limit_of_items, context),
+        PreFetchPageSize => gen("pre-render-pages", &st.pre_fetch.page_size, context),
+        Reverse => gen("reverse", &b2s(st.reverse), context),
         Scaling => gen("scaling", &st.drawing.scaling, context),
-        StatusBar => gen("status-bar", b2s(st.status_bar), context),
-        StatusFormat => gen("status-format", esc(&st.status_format.0), context),
-        TitleFormat => gen("title-format", esc(&st.title_format.0), context),
+        StatusBar => gen("status-bar", &b2s(st.status_bar), context),
+        StatusFormat => gen("status-format", &esc(&st.status_format.0), context),
+        TitleFormat => gen("title-format", &esc(&st.title_format.0), context),
         VerticalViews => gen("vertical-views", &st.view.rows, context),
     }
 }

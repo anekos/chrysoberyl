@@ -1,9 +1,9 @@
 
 use globset::GlobMatcher;
 
-use entry::{Entry, EntryInfo};
+use entry::{Entry, EntryContent};
+use entry::info::EntryInfo;
 
-mod info;
 pub mod expression;
 pub mod parser;
 pub mod writer;
@@ -14,24 +14,23 @@ use self::expression::*;
 
 impl Expr {
     pub fn evaluate(&self, entry: &mut Entry) -> bool {
-        let info = info::get_info(entry);
-        eval(info, self)
+        eval(&mut entry.info, &entry.content, self)
     }
 }
 
 
-fn eval(info: &EntryInfo, expr: &Expr) -> bool {
+fn eval(info: &mut EntryInfo, content: &EntryContent, expr: &Expr) -> bool {
     use self::Expr::*;
 
     match *expr {
         Boolean(ref b) =>
-            eval_bool(info, b),
+            eval_bool(info, content, b),
         Logic(ref l, ref op, ref r) =>
-            eval_logic(info, l, op, r),
+            eval_logic(info, content, l, op, r),
     }
 }
 
-fn eval_bool(info: &EntryInfo, b: &EBool) -> bool {
+fn eval_bool(info: &mut EntryInfo, content: &EntryContent, b: &EBool) -> bool {
     use self::EBool::*;
     use self::ECompOp::*;
     use self::EICompOp::*;
@@ -41,7 +40,7 @@ fn eval_bool(info: &EntryInfo, b: &EBool) -> bool {
         Compare(ref l, ref op, ref r) => {
             match *op {
                 ForInt(ref op) => {
-                    if let (Some(l), Some(r)) = (eval_value_as_i(info, l), eval_value_as_i(info, r)) {
+                    if let (Some(l), Some(r)) = (eval_value_as_i(info, content, l), eval_value_as_i(info, content, r)) {
                         return match *op {
                             Eq => l == r,
                             Lt => l < r,
@@ -52,7 +51,7 @@ fn eval_bool(info: &EntryInfo, b: &EBool) -> bool {
                         };
                     } else if *op == Eq || *op == Ne {
                         let b = Compare(l.clone(), GlobMatch(*op == Ne), r.clone());
-                        return eval_bool(info, &b);
+                        return eval_bool(info, content, &b);
                     }
                 }
                 GlobMatch(inverse) => {
@@ -64,7 +63,7 @@ fn eval_bool(info: &EntryInfo, b: &EBool) -> bool {
         },
         Variable(ref name) => {
             return match *name {
-                Animation => info.is_animated
+                Animation => info.lazy(content).is_animated
             }
         }
     }
@@ -72,11 +71,11 @@ fn eval_bool(info: &EntryInfo, b: &EBool) -> bool {
     true
 }
 
-fn eval_logic(info: &EntryInfo, l: &Expr, op: &ELogicOp, r: &Expr) -> bool {
+fn eval_logic(info: &mut EntryInfo, content: &EntryContent, l: &Expr, op: &ELogicOp, r: &Expr) -> bool {
     use self::ELogicOp::*;
 
-    let l = eval(info, l);
-    let r = eval(info, r);
+    let l = eval(info, content, l);
+    let r = eval(info, content, r);
 
     match *op {
         And => l && r,
@@ -84,14 +83,14 @@ fn eval_logic(info: &EntryInfo, l: &Expr, op: &ELogicOp, r: &Expr) -> bool {
     }
 }
 
-fn eval_value_as_i(info: &EntryInfo, v: &EValue) -> Option<i64> {
+fn eval_value_as_i(info: &mut EntryInfo, content: &EntryContent, v: &EValue) -> Option<i64> {
     use self::EValue::*;
 
     match *v {
         Integer(v) =>
             Some(v),
         Variable(ref v) =>
-            eval_variable(info, v),
+            eval_variable(info, content, v),
         Glob(_) =>
             None,
     }
@@ -119,13 +118,13 @@ fn eval_value_as_s(info: &EntryInfo, v: &EValue) -> Option<String> {
     }
 }
 
-fn eval_variable(info: &EntryInfo, v: &EVariable) -> Option<i64> {
+fn eval_variable(info: &mut EntryInfo, content: &EntryContent, v: &EVariable) -> Option<i64> {
     use self::EVariable::*;
 
     match *v {
-        Width => info.dimensions.map(|it| it.width as i64),
-        Height => info.dimensions.map(|it| it.height as i64),
-        Dimentions => info.dimensions.map(|it| it.dimensions() as i64),
+        Width => info.lazy(content).dimensions.map(|it| it.width as i64),
+        Height => info.lazy(content).dimensions.map(|it| it.height as i64),
+        Dimentions => info.lazy(content).dimensions.map(|it| it.dimensions() as i64),
         _ => None,
     }
 }
@@ -134,9 +133,9 @@ fn eval_variable_as_s(info: &EntryInfo, v: &EVariable) -> Option<String> {
     use self::EVariable::*;
 
     match *v {
-        Path => Some(info.path.clone()),
-        Extension => info.extension.clone(),
-        Type => Some(o!(info.entry_type.clone())),
+        Path => Some(info.strict.path.clone()),
+        Extension => info.strict.extension.clone(),
+        Type => Some(o!(info.strict.entry_type)),
         _ => None,
     }
 }

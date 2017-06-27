@@ -135,27 +135,31 @@ pub enum OptionUpdater {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum OptionName {
+    PreDefined(PreDefinedOptionName),
+    UserDefined(String),
+}
+
+iterable_enum!(PreDefinedOptionName =>
     AutoPaging,
     CenterAlignment,
+    ColorError,
+    ColorErrorBackground,
+    ColorStatusBar,
+    ColorStatusBarBackground,
+    ColorWindowBackground,
     FitTo,
+    HorizontalViews,
+    MaskOperator,
+    PreFetchEnabled,
+    PreFetchLimit,
+    PreFetchPageSize,
     Reverse,
     Scaling,
     StatusBar,
     StatusFormat,
     TitleFormat,
-    PreFetchEnabled,
-    PreFetchLimit,
-    PreFetchPageSize,
     VerticalViews,
-    HorizontalViews,
-    MaskOperator,
-    ColorWindowBackground,
-    ColorStatusBar,
-    ColorStatusBarBackground,
-    ColorError,
-    ColorErrorBackground,
-    User(String),
-}
+);
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum QueuedOperation {
@@ -175,11 +179,11 @@ impl FromStr for Operation {
     }
 }
 
-impl FromStr for OptionName {
+impl FromStr for PreDefinedOptionName {
     type Err = ParsingError;
 
     fn from_str(src: &str) -> Result<Self, ParsingError> {
-        use self::OptionName::*;
+        use self::PreDefinedOptionName::*;
 
         match src {
             "auto-page" | "auto-paging" | "paging" => Ok(AutoPaging),
@@ -201,14 +205,28 @@ impl FromStr for OptionName {
             "status-bar-background-color"          => Ok(ColorStatusBarBackground),
             "error-color"                          => Ok(ColorError),
             "error-background-color"               => Ok(ColorErrorBackground),
-            user => Ok(User(o!(user)))
+            _                                      => Err(ParsingError::InvalidOperation(format!("Invalid option name: {}", src)))
         }
+    }
+}
+
+impl FromStr for OptionName {
+    type Err = ParsingError;
+
+    fn from_str(src: &str) -> Result<Self, ParsingError> {
+        use self::OptionName::*;
+
+        Ok({
+            src.parse().map(PreDefined).unwrap_or_else(|_| {
+                UserDefined(o!(src))
+            })
+        })
     }
 }
 
 impl Default for OptionName {
     fn default() -> Self {
-        OptionName::StatusBar
+        OptionName::PreDefined(PreDefinedOptionName::StatusBar)
     }
 }
 

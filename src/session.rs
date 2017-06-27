@@ -15,8 +15,9 @@ use entry::{Entry, EntryContainer, KeyType, Key};
 use gui::Gui;
 use index_pointer::IndexPointer;
 use mapping::{Mapping, key_mapping as kmap, mouse_mapping as mmap, region_mapping as rmap};
+use operation::PreDefinedOptionName;
 use size::FitTo;
-use state::{States, ScalingMethod, MaskOperator};
+use state::{self, States, ScalingMethod};
 use utils::path_to_str;
 
 
@@ -31,6 +32,12 @@ pub enum Session {
     Envs,
     Filter,
     All,
+}
+
+#[derive(Clone, Debug, Copy)]
+pub enum WriteContext {
+    Session,
+    ENV
 }
 
 
@@ -62,7 +69,16 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
     }
 }
 
-pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
+pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui, context: WriteContext) -> (String, String) {
+    use self::PreDefinedOptionName::*;
+
+    let esc = |s: &str| {
+        match context {
+            WriteContext::ENV => o!(s),
+            WriteContext::Session => escape(s),
+        }
+    };
+
     fn b2s(b: bool) -> &'static str {
         if b {
             "true"
@@ -71,29 +87,69 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
         }
     }
 
-    fn c2s(c: &Color) -> String {
-        escape(&format!("{}", c))
+    let c2s = |c: &Color| {
+        esc(&format!("{}", c))
+    };
+
+    fn gen<T: fmt::Display + Sized>(name: &str, value: T, context: WriteContext) -> (String, String) {
+        let name = match context {
+            WriteContext::Session => o!(name),
+            WriteContext::ENV => name.replace("-", "_").to_uppercase()
+        };;
+        (o!(name), s!(value))
     }
 
-    sprintln!(out, "@set auto-paging {}", b2s(st.auto_paging));
-    sprintln!(out, "@set center-alignment {}", b2s(st.view.center_alignment));
-    sprintln!(out, "@set fit-to {}", st.drawing.fit_to);
-    sprintln!(out, "@set pre-render {}", b2s(st.pre_fetch.enabled));
-    sprintln!(out, "@set pre-render-limit {}", st.pre_fetch.limit_of_items);
-    sprintln!(out, "@set pre-render-pages {}", st.pre_fetch.page_size);
-    sprintln!(out, "@set reverse {}", b2s(st.reverse));
-    sprintln!(out, "@set scaling {}", st.drawing.scaling);
-    sprintln!(out, "@set status-bar {}", b2s(st.status_bar));
-    sprintln!(out, "@set status-format {}", escape(&st.status_format.0));
-    sprintln!(out, "@set title-format {}", escape(&st.title_format.0));
-    sprintln!(out, "@set mask-operator {}", st.drawing.mask_operator);
-    sprintln!(out, "@set window-background-color {}", c2s(&gui.colors.window_background));
-    sprintln!(out, "@set status-bar-color {}", c2s(&gui.colors.status_bar));
-    sprintln!(out, "@set status-bar-background-color {}", c2s(&gui.colors.status_bar_background));
-    sprintln!(out, "@set error-color {}", c2s(&gui.colors.error));
-    sprintln!(out, "@set error-background-color {}", c2s(&gui.colors.error_background));
-    // sprintln!(out, "@set horizontal-views {}", gui.cols());
-    // sprintln!(out, "@set vertical-views {}", gui.rows());
+    match *name {
+        AutoPaging => gen("auto-paging", b2s(st.auto_paging), context),
+        CenterAlignment => gen("center-alignment", b2s(st.view.center_alignment), context),
+        ColorError => gen("error-color", c2s(&gui.colors.error), context),
+        ColorErrorBackground => gen("error-background-color", c2s(&gui.colors.error_background), context),
+        ColorStatusBar => gen("status-bar-color", c2s(&gui.colors.status_bar), context),
+        ColorStatusBarBackground => gen("status-bar-background-color", c2s(&gui.colors.status_bar_background), context),
+        ColorWindowBackground => gen("window-background-color", c2s(&gui.colors.window_background), context),
+        FitTo => gen("fit-to", st.drawing.fit_to, context),
+        HorizontalViews => gen("horizontal-views", st.view.cols, context),
+        MaskOperator => gen("mask-operator", &st.drawing.mask_operator, context),
+        PreFetchEnabled => gen("pre-render", b2s(st.pre_fetch.enabled), context),
+        PreFetchLimit => gen("pre-render-limit", st.pre_fetch.limit_of_items, context),
+        PreFetchPageSize => gen("pre-render-pages", st.pre_fetch.page_size, context),
+        Reverse => gen("reverse", b2s(st.reverse), context),
+        Scaling => gen("scaling", &st.drawing.scaling, context),
+        StatusBar => gen("status-bar", b2s(st.status_bar), context),
+        StatusFormat => gen("status-format", esc(&st.status_format.0), context),
+        TitleFormat => gen("title-format", esc(&st.title_format.0), context),
+        VerticalViews => gen("vertical-views", &st.view.rows, context),
+    }
+}
+
+pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
+    use self::PreDefinedOptionName::*;
+
+    let write = |out: &mut String, name: PreDefinedOptionName| {
+        let (name, value) = generate_option_value(&name, st, gui, WriteContext::Session);
+        sprintln!(out, "@set {} {}", name, value);
+    };
+
+    write(out, AutoPaging);
+    write(out, CenterAlignment);
+    write(out, ColorError);
+    write(out, ColorErrorBackground);
+    write(out, ColorStatusBar);
+    write(out, ColorStatusBarBackground);
+    write(out, ColorWindowBackground);
+    write(out, FitTo);
+    // write(out, HorizontalViews);
+    write(out, MaskOperator);
+    write(out, PreFetchEnabled);
+    write(out, PreFetchLimit);
+    write(out, PreFetchPageSize);
+    write(out, Reverse);
+    write(out, Scaling);
+    write(out, StatusBar);
+    write(out, StatusFormat);
+    write(out, TitleFormat);
+    // write(out, VerticalViews);
+
     sprintln!(out, "@views {} {}", gui.cols(), gui.rows());
     if let Some(c) = st.drawing.clipping {
         sprintln!(out, "@clip {} {} {} {}", c.left, c.top, c.right, c.bottom);
@@ -262,7 +318,7 @@ impl fmt::Display for FitTo {
 }
 
 
-impl fmt::Display for MaskOperator {
+impl fmt::Display for state::MaskOperator {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use cairo::Operator::*;
 

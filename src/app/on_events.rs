@@ -578,39 +578,42 @@ pub fn on_undo(app: &mut App, updated: &mut Updated, count: Option<usize>) {
     updated.image_options = true;
 }
 
-pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &OptionName, updater: OptionUpdater) {
+pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: OptionName, updater: OptionUpdater) {
     use option::OptionValue;
     use operation::OptionName::*;
+    use operation::PreDefinedOptionName::*;
     use operation::OptionUpdater::*;
 
     let mut dummy_switch = DummySwtich::new();
 
     {
-        let value: &mut OptionValue = match *option_name {
-            AutoPaging => &mut app.states.auto_paging,
-            CenterAlignment => &mut app.states.view.center_alignment,
-            FitTo => &mut app.states.drawing.fit_to,
-            Reverse => &mut app.states.reverse,
-            Scaling => &mut app.states.drawing.scaling,
-            StatusBar => &mut app.states.status_bar,
-            StatusFormat => &mut app.states.status_format,
-            TitleFormat => &mut app.states.title_format,
-            PreFetchEnabled => &mut app.states.pre_fetch.enabled,
-            PreFetchLimit => &mut app.states.pre_fetch.limit_of_items,
-            PreFetchPageSize => &mut app.states.pre_fetch.page_size,
-            HorizontalViews => &mut app.states.view.cols,
-            VerticalViews => &mut app.states.view.rows,
-            MaskOperator => &mut app.states.drawing.mask_operator,
-            ColorWindowBackground => &mut app.gui.colors.window_background,
-            ColorStatusBar => &mut app.gui.colors.status_bar,
-            ColorStatusBarBackground => &mut app.gui.colors.status_bar_background,
-            ColorError => &mut app.gui.colors.error,
-            ColorErrorBackground => &mut app.gui.colors.error_background,
-            User(ref name) => {
-                if let Some(switch) = app.user_switches.get(name) {
+        let value: &mut OptionValue = match option_name {
+            PreDefined(ref option_name) => match *option_name {
+                AutoPaging => &mut app.states.auto_paging,
+                CenterAlignment => &mut app.states.view.center_alignment,
+                FitTo => &mut app.states.drawing.fit_to,
+                Reverse => &mut app.states.reverse,
+                Scaling => &mut app.states.drawing.scaling,
+                StatusBar => &mut app.states.status_bar,
+                StatusFormat => &mut app.states.status_format,
+                TitleFormat => &mut app.states.title_format,
+                PreFetchEnabled => &mut app.states.pre_fetch.enabled,
+                PreFetchLimit => &mut app.states.pre_fetch.limit_of_items,
+                PreFetchPageSize => &mut app.states.pre_fetch.page_size,
+                HorizontalViews => &mut app.states.view.cols,
+                VerticalViews => &mut app.states.view.rows,
+                MaskOperator => &mut app.states.drawing.mask_operator,
+                ColorWindowBackground => &mut app.gui.colors.window_background,
+                ColorStatusBar => &mut app.gui.colors.status_bar,
+                ColorStatusBarBackground => &mut app.gui.colors.status_bar_background,
+                ColorError => &mut app.gui.colors.error,
+                ColorErrorBackground => &mut app.gui.colors.error_background,
+            },
+            UserDefined(ref option_name) => {
+                if let Some(switch) = app.user_switches.get(option_name) {
                     switch
                 } else {
-                    dummy_switch.rename(o!(name));
+                    dummy_switch.rename(o!(option_name));
                     &mut dummy_switch
                 }
             }
@@ -633,24 +636,27 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
 
     updated.image = true;
 
-    match *option_name {
-        StatusBar => {
-            app.update_label_visibility();
-            updated.image_options = true;
+    if let PreDefined(ref option_name) = option_name {
+        app.update_env_for_option(option_name);
+        match *option_name {
+            StatusBar => {
+                app.update_label_visibility();
+                updated.image_options = true;
+            }
+            CenterAlignment => {
+                app.reset_view();
+                updated.image_options = true;
+            }
+            FitTo =>
+                updated.image_options = true,
+            PreFetchLimit =>
+                app.cache.update_limit(app.states.pre_fetch.limit_of_items),
+            ColorWindowBackground | ColorStatusBar | ColorStatusBarBackground =>
+                app.gui.update_colors(),
+            VerticalViews | HorizontalViews =>
+                on_update_views(app, updated),
+            _ => ()
         }
-        CenterAlignment => {
-            app.reset_view();
-            updated.image_options = true;
-        }
-        FitTo =>
-            updated.image_options = true,
-        PreFetchLimit =>
-            app.cache.update_limit(app.states.pre_fetch.limit_of_items),
-        ColorWindowBackground | ColorStatusBar | ColorStatusBarBackground =>
-            app.gui.update_colors(),
-        VerticalViews | HorizontalViews =>
-            on_update_views(app, updated),
-        _ => ()
     }
 }
 

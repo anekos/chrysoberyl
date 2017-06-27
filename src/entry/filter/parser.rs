@@ -32,13 +32,14 @@ impl FromStr for Expr {
 /**
  * Expr ← Logic | Bool
  * Logic ← Bool LogicOp Bool
- * Bool ← Compare
+ * Bool ← Compare | BoolVariable
  * BoolOp ← 'and' | 'or'
  * Compare ← Value CmpOp Value
  * CmpOp ← '<' | '<=' | '>' | '>=' | '=' | '=~'
  * Value ← Glob | Integer | Variable
  * Variable ← 'type' | 'width' | 'height' | 'path' | 'ext' | 'extension' | 'dimensions'
  * Glob ← '<' string '>'
+ * BoolVariable ← 'animation'
  */
 
 fn spaces() -> Parser<u8, ()> {
@@ -98,10 +99,18 @@ fn comp_op() -> Parser<u8, ECompOp> {
     eq | lt | gt | not
 }
 
-fn boolean() -> Parser<u8, Expr> {
+fn compare() -> Parser<u8, EBool> {
     (value() + (spaces() * comp_op() - spaces()) + value()).map(|((l, op), r)| {
-        Expr::Boolean(EBool::Compare(l, op, r))
+        EBool::Compare(l, op, r)
     })
+}
+
+fn bool_variable() -> Parser<u8, EBool> {
+    seq(b"animation").map(|_| EBool::Variable(EBVariable::Animation))
+}
+
+fn boolean() -> Parser<u8, Expr> {
+    (bool_variable() | compare()).map(Expr::Boolean)
 }
 
 fn logic_op() -> Parser<u8, ELogicOp> {

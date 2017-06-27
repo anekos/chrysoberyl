@@ -58,6 +58,7 @@ pub struct EntryInfo {
     pub path: String, // local filepath or archive filepath or url
     pub extension: Option<String>,
     pub entry_type: &'static str,
+    pub is_animated: bool,
 }
 
 pub type Meta = Arc<Vec<MetaEntry>>;

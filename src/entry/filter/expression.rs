@@ -12,6 +12,7 @@ pub enum Expr {
 #[derive(Clone, Debug)]
 pub enum EBool {
     Compare(EValue, ECompOp, EValue),
+    Variable(EBVariable),
 }
 
 #[derive(Clone, Debug)]
@@ -51,4 +52,9 @@ pub enum EVariable {
     Extension,
     Type,
     Dimentions,
+}
+
+#[derive(Clone, Debug, Copy)]
+pub enum EBVariable {
+    Animation,
 }

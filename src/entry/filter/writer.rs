@@ -30,6 +30,7 @@ fn write_bool(b: &EBool, out: &mut String) {
     use self::EBool::*;
     use self::ECompOp::*;
     use self::EICompOp::*;
+    use self::EBVariable::*;
 
     match *b {
         Compare(ref l, ref op, ref r) => {
@@ -51,6 +52,11 @@ fn write_bool(b: &EBool, out: &mut String) {
             }
             write_space(out);
             write_value(r, out);
+        }
+        Variable(ref name) => {
+            match *name {
+                Animation => sprint!(out, "animation")
+            }
         }
     }
 }

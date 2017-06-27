@@ -35,6 +35,7 @@ fn eval_bool(info: &EntryInfo, b: &EBool) -> bool {
     use self::EBool::*;
     use self::ECompOp::*;
     use self::EICompOp::*;
+    use self::EBVariable::*;
 
     match *b {
         Compare(ref l, ref op, ref r) => {
@@ -59,6 +60,11 @@ fn eval_bool(info: &EntryInfo, b: &EBool) -> bool {
                         return rs.iter().any(|r| r.is_match(l)) ^ inverse;
                     }
                 }
+            }
+        },
+        Variable(ref name) => {
+            return match *name {
+                Animation => info.is_animated
             }
         }
     }

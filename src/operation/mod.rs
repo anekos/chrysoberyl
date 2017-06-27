@@ -8,6 +8,7 @@ use std::time::Duration;
 use cmdline_parser::Parser;
 
 use archive::ArchiveEntry;
+use cherenkov::Filler;
 use color::Color;
 use entry::Meta;
 use entry;
@@ -35,7 +36,7 @@ pub enum Operation {
     Editor(Option<Expandable>, Vec<Expandable>, Vec<Session>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
-    Fill(Option<Region>, Color, usize), /* region, cell index */
+    Fill(Filler, Option<Region>, Color, bool, usize), /* region, mask, cell index */
     Filter(Box<Option<entry::filter::expression::Expr>>),
     Fragile(Expandable),
     Initialized,
@@ -78,6 +79,7 @@ pub enum Operation {
     Timer(String, Vec<String>, Duration, Option<usize>),
     UpdateOption(OptionName, OptionUpdater),
     User(Vec<(String, String)>),
+    Undo(Option<usize>),
     Unclip,
     Views(Option<usize>, Option<usize>),
     ViewsFellow(bool), /* for_rows */
@@ -96,8 +98,9 @@ pub struct CherenkovParameter {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum OperationContext {
-    Input(mapping::Input)
+pub struct OperationContext {
+    pub input: mapping::Input,
+    pub cell_index: Option<usize>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -145,6 +148,7 @@ pub enum OptionName {
     PreFetchPageSize,
     VerticalViews,
     HorizontalViews,
+    MaskOperator,
     ColorWindowBackground,
     ColorStatusBar,
     ColorStatusBarBackground,
@@ -191,6 +195,7 @@ impl FromStr for OptionName {
             "pre-render-pages"                     => Ok(PreFetchPageSize),
             "vertical-views"                       => Ok(VerticalViews),
             "horizontal-views"                     => Ok(HorizontalViews),
+            "mask-operator"                        => Ok(MaskOperator),
             "window-background-color"              => Ok(ColorWindowBackground),
             "status-bar-color"                     => Ok(ColorStatusBar),
             "status-bar-background-color"          => Ok(ColorStatusBarBackground),
@@ -329,6 +334,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@timer"                        => parse_timer(whole),
             "@toggle"                       => parse_option_1(whole, OptionUpdater::Toggle),
             "@unclip"                       => Ok(Unclip),
+            "@undo"                         => parse_undo(whole),
             "@unset"                        => parse_option_1(whole, OptionUpdater::Unset),
             "@user"                         => Ok(Operation::user(args.to_vec())),
             "@views"                        => parse_views(whole),

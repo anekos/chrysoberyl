@@ -185,11 +185,11 @@ impl App {
         {
             match operation {
                 Cherenkov(ref parameter) =>
-                    on_cherenkov(self, &mut updated, parameter, &context),
+                    on_cherenkov(self, &mut updated, parameter, context),
                 Clear =>
                     on_clear(self, &mut updated),
                 Clip(region) =>
-                    on_clip(self, &mut updated, region, &context),
+                    on_clip(self, &mut updated, region, context),
                 Context(context, op) =>
                     return self.operate_with_context(*op, Some(context)),
                 Count(count) =>
@@ -204,8 +204,8 @@ impl App {
                    on_editor(self, editor_command.clone(), files, sessions),
                 Expand(recursive, ref base) =>
                     on_expand(self, &mut updated, recursive, base.clone()),
-                Fill(region, color, cell_index) =>
-                    on_fill(self, &mut updated, region, color, cell_index, &context),
+                Fill(filler, region, color, mask, cell_index) =>
+                    on_fill(self, &mut updated, filler, region, color, mask, cell_index, context),
                 Filter(expr) =>
                     on_filter(self, &mut updated, *expr),
                 First(count, ignore_views, move_by, _) =>
@@ -290,6 +290,8 @@ impl App {
                     on_timer(self, name, op, interval, repeat),
                 Unclip => 
                     on_unclip(self, &mut updated),
+                Undo(count) => 
+                    on_undo(self, &mut updated, count),
                 UpdateOption(ref option_name, ref updater) =>
                     on_update_option(self, &mut updated, option_name, updater.clone()),
                 User(ref data) =>

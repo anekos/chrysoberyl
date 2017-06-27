@@ -16,7 +16,7 @@ pub enum Input {
     Key(String),
     MouseButton((i32, i32), u32), // (X, Y), Button
     Event(String), // event name
-    Region(Region, u32),
+    Region(Region, u32, usize), // region, button, cell_index
 }
 
 #[derive(Clone, Copy)]
@@ -73,7 +73,7 @@ impl Mapping {
                 self.mouse_mapping.matched(*button, x, y, width, height).into_iter().collect(),
             Input::Event(ref event_name) =>
                 self.event_mapping.matched(event_name),
-            Input::Region(_, button) =>
+            Input::Region(_, button, _) =>
                 self.region_mapping.matched(button).into_iter().collect(),
         }
     }
@@ -113,7 +113,7 @@ impl Input {
             Input::Key(ref name) => o!(name),
             Input::MouseButton(ref position, ref button) => format!("{:?}, {}", position, button),
             Input::Event(ref event_name) => o!(event_name),
-            Input::Region(ref region, button) => format!("{}, {}", region, button),
+            Input::Region(ref region, button, _) => format!("{}, {}", region, button),
         }
     }
 
@@ -122,7 +122,7 @@ impl Input {
             Input::Key(_) => "key",
             Input::MouseButton(_, _) => "mouse_button",
             Input::Event(_) => "event",
-            Input::Region(_, _) => "region",
+            Input::Region(_, _, _) => "region",
         }
     }
 }

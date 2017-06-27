@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse, StoreOption, List};
 
+use cherenkov::Filler;
 use color::Color;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
 use expandable::Expandable;
@@ -182,18 +183,37 @@ pub fn parse_expand(args: &[String]) -> Result<Operation, String> {
 }
 
 pub fn parse_fill(args: &[String]) -> Result<Operation, String> {
+    impl FromStr for Filler {
+        type Err = String;
+
+        fn from_str(src: &str) -> Result<Self, String> {
+            use self::Filler::*;
+
+            match src {
+                "rectangle" | "rect" | "r" => Ok(Rectangle),
+                "circle" | "c" => Ok(Circle),
+                "ellipse" | "e" => Ok(Ellipse),
+                _ => Err(format!("Invalid filler: {}", src)),
+            }
+        }
+    }
+
     let mut cell_index = 1;
     let mut region = None;
     let mut color = Color::black();
+    let mut mask = false;
+    let mut filler = Filler::Rectangle;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut cell_index).add_option(&["--cell-index", "-i"], Store, "Cell index (1 origin, default = 1)");
         ap.refer(&mut region).add_option(&["--region", "-r"], StoreOption, "Fill target region");
         ap.refer(&mut color).add_option(&["--color", "-c"], Store, "Fill color");
+        ap.refer(&mut mask).add_option(&["--mask", "-m"], StoreTrue, "Mask");
+        ap.refer(&mut filler).add_option(&["--filler", "-f"], Store, "Filler (rectangle/circle/ellipse)");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Fill(region, color, max!(cell_index, 1) - 1)
+        Operation::Fill(filler, region, color, mask, max!(cell_index, 1) - 1)
     })
 }
 
@@ -631,6 +651,18 @@ pub fn parse_timer(args: &[String]) -> Result<Operation, String> {
         parse_args(&mut ap, args)
     } .map(|_| {
         Operation::Timer(name, op, Duration::from_millis((interval_seconds * 1000.0) as u64), repeat)
+    })
+}
+
+pub fn parse_undo(args: &[String]) -> Result<Operation, String> {
+    let mut count = None;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut count).add_argument("Count", StoreOption, "Count");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Undo(count)
     })
 }
 

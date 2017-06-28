@@ -41,6 +41,7 @@ mod cache;
 mod cherenkov;
 mod chrysoberyl;
 mod color;
+mod command_line;
 mod config;
 mod constant;
 mod controller;

@@ -4,7 +4,6 @@ use std::collections::VecDeque;
 use std::env;
 use std::ops::Range;
 use std::path::Path;
-use std::str::FromStr;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::{sleep, spawn};
 use std::time::Duration;
@@ -14,10 +13,10 @@ use gtk::prelude::*;
 use libc;
 use rand::{self, ThreadRng};
 
+use command_line::{Initial, Entry as CLEntry};
 use constant;
 use controller;
 use entry::{EntryContainer, EntryContainerOptions};
-use ui_event;
 use gui::Gui;
 use http_cache::HttpCache;
 use image_cache::ImageCache;
@@ -33,6 +32,7 @@ use sorting_buffer::SortingBuffer;
 use state::{States, PreFetchState};
 use termination;
 use timer::TimerManager;
+use ui_event;
 use utils::path_to_str;
 
 
@@ -60,17 +60,6 @@ pub struct App {
     pub states: States
 }
 
-pub struct Initial {
-    pub http_threads: u8,
-    pub expand: bool,
-    pub expand_recursive: bool,
-    pub shuffle: bool,
-    pub controllers: controller::Controllers,
-    pub files: Vec<String>,
-    pub encodings: Vec<EncodingRef>,
-    pub operations: Vec<String>
-}
-
 #[derive(Default)]
 pub struct Updated {
     pointer: bool,
@@ -81,7 +70,7 @@ pub struct Updated {
 
 
 impl App {
-    pub fn new(initial: Initial, states: States, gui: Gui, entry_options:EntryContainerOptions) -> (App, Receiver<Operation>, Receiver<Operation>) {
+    pub fn new(initial: Initial) -> (App, Receiver<Operation>, Receiver<Operation>) {
         let (tx, rx) = channel();
         let (primary_tx, primary_rx) = channel();
 
@@ -105,11 +94,11 @@ impl App {
         let sorting_buffer = SortingBuffer::new();
 
         let mut app = App {
-            entries: EntryContainer::new(entry_options),
-            gui: gui.clone(),
+            entries: EntryContainer::new(EntryContainerOptions::new()),
+            gui: Gui::new(),
             tx: tx.clone(),
             http_cache: HttpCache::new(initial.http_threads, tx.clone(), sorting_buffer.clone()),
-            states: states,
+            states: States::default(),
             encodings: initial.encodings,
             mapping: Mapping::new(),
             draw_serial: 0,
@@ -127,43 +116,43 @@ impl App {
 
         app.reset_view();
 
-        for op in &initial.operations {
-            match Operation::from_str(op) {
-                Ok(op) => tx.send(op).unwrap(),
-                Err(err) => puts_error!("at" => "operation", "reason" => s!(err)),
-            }
-        }
-
-        ui_event::register(&gui, &primary_tx);
-        controller::register(&tx, &initial.controllers);
+        ui_event::register(&app.gui, &primary_tx);
 
         app.update_label_visibility();
 
+        let mut first_path = None;
+
         {
             let mut updated = Updated::default();
-            for file in &initial.files {
-                on_events::on_push(&mut app, &mut updated, file.clone(), None, false);
-            }
-        }
-
-        {
-            let mut expand_base = None;
-
-            if app.entries.len() == 0 {
-                if let Some(file) = initial.files.get(0) {
-                    expand_base = Path::new(file).to_path_buf().parent().map(|it| it.to_path_buf());
+            for file in initial.entries {
+                match file {
+                    CLEntry::Path(file) => {
+                        if first_path.is_none() {
+                            first_path = Some(file.clone());
+                        }
+                        on_events::on_push(&mut app, &mut updated, file.clone(), None, false);
+                    }
+                    CLEntry::Input(file) => {
+                        controller::register_file(tx.clone(), file);
+                    },
+                    CLEntry::Expand(file, recursive) => {
+                        on_events::on_push(&mut app, &mut updated, file.clone(), None, false);
+                        tx.send(Operation::Expand(recursive, Some(Path::new(&file).to_path_buf()))).unwrap();
+                    },
+                    CLEntry::Operation(op) => {
+                        match Operation::parse_from_vec(&op) {
+                            Ok(op) => tx.send(op).unwrap(),
+                            Err(err) => puts_error!("at" => "operation", "reason" => s!(err)),
+                        }
+                    }
                 }
             }
-
-            if initial.expand {
-                tx.send(Operation::Expand(false, expand_base)).unwrap();
-            } else if initial.expand_recursive {
-                tx.send(Operation::Expand(true, expand_base)).unwrap();
-            }
         }
 
+        controller::register_stdin(tx.clone());
+
         if initial.shuffle {
-            let fix = initial.files.get(0).map(|it| Path::new(it).is_file()).unwrap_or(false);
+            let fix = first_path.map(|it| Path::new(&it).is_file()).unwrap_or(false);
             tx.send(Operation::Shuffle(fix)).unwrap();
         }
 
@@ -588,22 +577,6 @@ impl App {
     fn initialize_envs_for_options(&self) {
         for option_name in PreDefinedOptionName::iterator() {
             self.update_env_for_option(option_name)
-        }
-    }
-}
-
-
-impl Initial {
-    pub fn new() -> Initial {
-        Initial {
-            http_threads: 3,
-            expand: false,
-            expand_recursive: false,
-            shuffle: false,
-            files: vec![],
-            controllers: controller::Controllers::new(),
-            encodings: vec![],
-            operations: vec![],
         }
     }
 }

@@ -8,31 +8,7 @@ use operation_utils::read_operations;
 
 
 
-pub struct Controllers {
-    pub inputs: Vec<String>
-}
-
-
-impl Controllers {
-    pub fn new() -> Controllers {
-        Controllers {
-            inputs: vec![],
-        }
-    }
-}
-
-
-
-pub fn register(tx: &Sender<Operation>, controllers: &Controllers) {
-    for path in &controllers.inputs {
-        file_controller(tx.clone(), path.clone());
-    }
-
-    stdin_controller(tx.clone());
-}
-
-
-pub fn file_controller(tx: Sender<Operation>, filepath: String) {
+pub fn register_file(tx: Sender<Operation>, filepath: String) {
     spawn(move || {
         if let Ok(file) = File::open(&filepath) {
             puts_event!("input/file/open");
@@ -44,7 +20,7 @@ pub fn file_controller(tx: Sender<Operation>, filepath: String) {
     });
 }
 
-fn stdin_controller(tx: Sender<Operation>) {
+pub fn register_stdin(tx: Sender<Operation>) {
     use std::io;
     use std::io::BufRead;
 

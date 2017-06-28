@@ -149,11 +149,14 @@ impl Drop for PopplerPage {
 
 
 fn generate_index(iter: *const sys::page_index_iter_t) -> Index {
-    let mut entries = vec![];
+    let mut result = Index { entries: vec![] };
 
     unsafe {
         loop {
             let action = sys::poppler_index_iter_get_action(iter);
+            if action.is_null() {
+                break;
+            }
 
             if let Some(mut entry) = extract_action(action) {
                 let child = sys::poppler_index_iter_get_child(iter);
@@ -162,7 +165,7 @@ fn generate_index(iter: *const sys::page_index_iter_t) -> Index {
                 } else {
                     Some(generate_index(child))
                 };
-                entries.push(entry);
+                result.entries.push(entry);
             }
 
             sys::poppler_action_free(action);
@@ -173,9 +176,7 @@ fn generate_index(iter: *const sys::page_index_iter_t) -> Index {
         }
     }
 
-    Index {
-        entries: entries,
-    }
+    result
 }
 
 fn extract_action(action: *const sys::action_t) -> Option<IndexEntry> {

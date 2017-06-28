@@ -4,7 +4,7 @@ extern crate glib;
 extern crate gobject_sys;
 
 #[cfg(feature = "poppler_lock")] use std::sync::{Arc, Mutex};
-use std::ffi::CString;
+use std::ffi::{CString, CStr};
 use std::mem::transmute;
 use std::path::Path;
 use std::ptr::{null, null_mut};
@@ -33,8 +33,20 @@ lazy_static! {
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
 pub struct PopplerDocument(*mut sys::document_t);
+
 pub struct PopplerPage(*mut sys::page_t);
 
+#[derive(Debug)]
+pub struct Index {
+    entries: Vec<IndexEntry>,
+}
+
+#[derive(Debug)]
+pub struct IndexEntry {
+    title: String,
+    page: usize,
+    child: Option<Index>,
+}
 
 
 impl PopplerDocument {
@@ -59,6 +71,15 @@ impl PopplerDocument {
             time!("nth_page" => sys::poppler_document_get_page(self.0, index as c_int))
         };
         PopplerPage(page)
+    }
+
+    pub fn index(&self) -> Index {
+        unsafe {
+            let iter = sys::poppler_index_iter_new(self.0);
+            let result = generate_index(iter);
+            sys::poppler_index_iter_free(iter);
+            result
+        }
     }
 }
 
@@ -123,5 +144,68 @@ impl Drop for PopplerPage {
             let ptr = transmute::<*mut sys::page_t, *mut gobject_sys::GObject>(self.0);
             gobject_sys::g_object_unref(ptr);
         }
+    }
+}
+
+
+fn generate_index(iter: *const sys::page_index_iter_t) -> Index {
+    let mut entries = vec![];
+
+    unsafe {
+        loop {
+            let action = sys::poppler_index_iter_get_action(iter);
+
+            if let Some(mut entry) = extract_action(action) {
+                let child = sys::poppler_index_iter_get_child(iter);
+                entry.child = if child.is_null() {
+                    None
+                } else {
+                    Some(generate_index(child))
+                };
+                entries.push(entry);
+            }
+
+            sys::poppler_action_free(action);
+
+            if sys::poppler_index_iter_next(iter) == 0 {
+                break;
+            }
+        }
+    }
+
+    Index {
+        entries: entries,
+    }
+}
+
+fn extract_action(action: *const sys::action_t) -> Option<IndexEntry> {
+    unsafe {
+        let action_type = (*action).action_type;
+
+        if action_type != 2 {
+            return None;
+        }
+
+        let dest = (*action).dest;
+
+        if dest.is_null() {
+            return None;
+        }
+
+        let title = (*action).title;
+        if title.is_null() {
+            return None;
+        }
+
+        CStr::from_ptr(title).to_str().map(|title| {
+            println!("index-entry: {:?} at {}", title, (*dest).page);
+            IndexEntry {
+                title: o!(title),
+                page: 1,
+                child: None,
+            }
+        }).map_err(|err| {
+            puts_error!("at" => "poppler/extract_action", "reason" => s!(err))
+        }).ok()
     }
 }

@@ -11,6 +11,7 @@ use libc;
 use operation::Operation;
 use operation_utils::read_operations;
 use termination;
+use utils::path_to_str;
 
 
 
@@ -38,6 +39,6 @@ pub fn new_fragile_input<T: AsRef<Path>>(tx: Sender<Operation>, path: &T) {
             read_operations("fragile", file, &tx);
             puts_event!("input/fragile/close");
         }
-        puts_error!("at" => "fragile_controller", "reason" => "Could not open file", "for" => d!(path));
+        puts_error!("at" => "fragile_controller", "reason" => "Could not open file", "for" => path_to_str(&path));
     });
 }

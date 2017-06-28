@@ -488,6 +488,27 @@ pub fn parse_option_1(args: &[String], updater: OptionUpdater) -> Result<Operati
     })
 }
 
+pub fn parse_pdf_index(args: &[String]) -> Result<Operation, String> {
+    let mut async = true;
+    let mut read_operations = true;
+    let mut command_line: Vec<String> = vec![];
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut async)
+            .add_option(&["--async", "-a"], StoreTrue, "Async (Non-blocking)")
+            .add_option(&["--sync", "-s"], StoreFalse, "Sync (Blocking)");
+        ap.refer(&mut read_operations)
+            .add_option(&["--operation", "-o"], StoreTrue, "Read operations from stdout")
+            .add_option(&["--no-operation", "-O"], StoreTrue, "Dont read operations from stdout");
+        ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        let command_line = command_line.into_iter().map(Expandable).collect();
+        Ok(Operation::PdfIndex(async, read_operations, command_line))
+    })
+}
+
 pub fn parse_push<T>(args: &[String], op: T) -> Result<Operation, String>
 where T: FnOnce(String, Option<Meta>, bool) -> Operation {
     let mut meta: Vec<MetaEntry> = vec![];
@@ -606,7 +627,9 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
             .add_option(&["--async", "-a"], StoreTrue, "Async (Non-blocking)")
             .add_option(&["--sync", "-s"], StoreFalse, "Sync (Blocking)");
         ap.refer(&mut sessions).add_option(&["--session", "-S"], Collect, "Sessions");
-        ap.refer(&mut read_operations).add_option(&["--operation", "-o"], StoreTrue, "Read operations form stdout");
+        ap.refer(&mut read_operations)
+            .add_option(&["--operation", "-o"], StoreTrue, "Read operations from stdout")
+            .add_option(&["--no-operation", "-O"], StoreTrue, "Dont read operations from stdout");
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
     } .and_then(|_| {

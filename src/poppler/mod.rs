@@ -38,14 +38,14 @@ pub struct PopplerPage(*mut sys::page_t);
 
 #[derive(Debug)]
 pub struct Index {
-    entries: Vec<IndexEntry>,
+    pub entries: Vec<IndexEntry>,
 }
 
 #[derive(Debug)]
 pub struct IndexEntry {
-    title: String,
-    page: usize,
-    child: Option<Index>,
+    pub title: String,
+    pub page: usize,
+    pub child: Option<Index>,
 }
 
 
@@ -198,10 +198,9 @@ fn extract_action(action: *const sys::action_t) -> Option<IndexEntry> {
         }
 
         CStr::from_ptr(title).to_str().map(|title| {
-            println!("index-entry: {:?} at {}", title, (*dest).page);
             IndexEntry {
                 title: o!(title),
-                page: 1,
+                page: (*dest).page as usize,
                 child: None,
             }
         }).map_err(|err| {

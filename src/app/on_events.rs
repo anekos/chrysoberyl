@@ -18,7 +18,7 @@ use color::Color;
 use config::DEFAULT_CONFIG;
 use editor;
 use entry::filter::expression::Expr as FilterExpr;
-use entry::{self, Meta, SearchKey};
+use entry::{self, Meta, SearchKey, EntryContent};
 use expandable::{Expandable, expand_all};
 use filer;
 use fragile_input::new_fragile_input;
@@ -27,7 +27,7 @@ use mapping;
 use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater};
 use option::user::DummySwtich;
 use output;
-use poppler::PopplerDocument;
+use poppler::{PopplerDocument, self};
 use script;
 use session::{Session, write_sessions};
 use shell;
@@ -307,6 +307,17 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) {
             Ok(_) => puts_event!("operate_file", "status" => "ok", "operation" => text),
             Err(err) => puts_event!("operate_file", "status" => "fail", "reason" => err, "operation" => text),
         }
+    }
+}
+
+pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, command_line: &[Expandable], tx: Sender<Operation>) {
+    if_let_some!((entry, _) = app.entries.current(&app.pointer), ());
+    if let EntryContent::Pdf(path, _) = entry.content {
+        let mut stdin = o!("");
+        write_pdf_index(PopplerDocument::new_from_file(&*path).index(), 0, &mut stdin);
+        shell::call(async, &expand_all(command_line), Some(stdin), option!(read_operations, tx));
+    } else {
+        puts_error!("at" => "on_pdf_index", "reason" => "current entry is not PDF");
     }
 }
 
@@ -746,4 +757,16 @@ fn extract_region_from_context(context: Option<OperationContext>) -> Option<(Reg
         }
     }
     None
+}
+
+fn write_pdf_index(index: poppler::Index, level: u8, out: &mut String) {
+    let indent = "  ".repeat(level as usize);
+
+    for entry in index.entries {
+        sprint!(out, &indent);
+        sprintln!(out, "{:03} = {}", entry.page, entry.title);
+        if let Some(child) = entry.child {
+            write_pdf_index(child, level + 1, out);
+        }
+    }
 }

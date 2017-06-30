@@ -3,6 +3,7 @@ use std::env;
 use std::fs::File;
 use std::io::{Write, Read};
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use std::sync::Arc;
 use std::thread::spawn;
 use std::time::Duration;
@@ -489,28 +490,34 @@ pub fn on_save(app: &mut App, path: &Option<PathBuf>, sessions: &[Session]) {
 }
 
 pub fn on_search_text(app: &mut App, updated: &mut Updated, text: &str, backward: bool) {
-    fn is_found(entry: &Entry, text: &str) -> bool {
-        if let EntryContent::Pdf(ref path, ref index) = entry.content {
-            let doc = PopplerDocument::new_from_file(&**path);
-            let page = doc.nth_page(*index);
-            return page.find_text(text);
-        }
-        false
-    }
-
-    if backward {
+    let seq: Vec<(usize, &Rc<Entry>)> = if backward {
         let skip = app.pointer.current.map(|index| app.entries.len() - index).unwrap_or(0);
-        for (index, entry) in app.entries.iter().enumerate().rev().skip(skip) {
-            if is_found(entry, text) {
-                app.pointer.current = Some(index);
-                updated.pointer = true;
-                return;
-            }
-        }
+        app.entries.iter().enumerate().rev().skip(skip).collect()
     } else {
         let skip = app.pointer.current.unwrap_or(0) + 1;
-        for (index, entry) in app.entries.iter().enumerate().skip(skip) {
-            if is_found(entry, text) {
+        app.entries.iter().enumerate().skip(skip).collect()
+    };
+
+    let mut previous: Option<(Rc<PopplerDocument>, PathBuf)> = None;
+
+    for (index, entry) in seq {
+        if let EntryContent::Pdf(ref path, ref doc_index) = entry.content {
+            let mut doc: Option<Rc<PopplerDocument>> = None;
+
+            if let Some((ref p_doc, ref p_path)) = previous {
+                if **path == *p_path {
+                    doc = Some(p_doc.clone());
+                }
+            }
+
+            if doc.is_none() {
+                let d = Rc::new(PopplerDocument::new_from_file(&**path));
+                doc = Some(d.clone());
+                previous = Some((d, (**path).clone()));
+            }
+
+            let page = doc.unwrap().nth_page(*doc_index);
+            if page.find_text(text) {
                 app.pointer.current = Some(index);
                 updated.pointer = true;
                 return;

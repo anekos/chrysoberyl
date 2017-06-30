@@ -274,6 +274,8 @@ impl App {
                     on_reset_image(self, &mut updated),
                 Save(ref path, ref sources) =>
                     on_save(self, path, sources),
+                SearchText(ref text, backward) =>
+                    on_search_text(self, &mut updated, text, backward),
                 SetEnv(name, value) =>
                     on_set_env(self, &name, &value.map(|it| it.to_string())),
                 Scroll(ref direction, ref operation, scroll_size) =>

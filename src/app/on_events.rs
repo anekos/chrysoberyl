@@ -18,7 +18,7 @@ use color::Color;
 use config::DEFAULT_CONFIG;
 use editor;
 use entry::filter::expression::Expr as FilterExpr;
-use entry::{self, Meta, SearchKey, EntryContent};
+use entry::{self, Meta, SearchKey, Entry,EntryContent};
 use expandable::{Expandable, expand_all};
 use filer;
 use fragile_input::new_fragile_input;
@@ -485,6 +485,37 @@ pub fn on_save(app: &mut App, path: &Option<PathBuf>, sessions: &[Session]) {
 
     if let Err(err) = result {
         puts_error!("at" => "save_session", "reason" => s!(err))
+    }
+}
+
+pub fn on_search_text(app: &mut App, updated: &mut Updated, text: &str, backward: bool) {
+    fn is_found(entry: &Entry, text: &str) -> bool {
+        if let EntryContent::Pdf(ref path, ref index) = entry.content {
+            let doc = PopplerDocument::new_from_file(&**path);
+            let page = doc.nth_page(*index);
+            return page.find_text(text);
+        }
+        false
+    }
+
+    if backward {
+        let skip = app.pointer.current.map(|index| app.entries.len() - index).unwrap_or(0);
+        for (index, entry) in app.entries.iter().enumerate().rev().skip(skip) {
+            if is_found(entry, text) {
+                app.pointer.current = Some(index);
+                updated.pointer = true;
+                return;
+            }
+        }
+    } else {
+        let skip = app.pointer.current.unwrap_or(0) + 1;
+        for (index, entry) in app.entries.iter().enumerate().skip(skip) {
+            if is_found(entry, text) {
+                app.pointer.current = Some(index);
+                updated.pointer = true;
+                return;
+            }
+        }
     }
 }
 

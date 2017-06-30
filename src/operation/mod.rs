@@ -70,6 +70,7 @@ pub enum Operation {
     Refresh,
     ResetImage,
     Save(Option<PathBuf>, Vec<Session>),
+    SearchText(String, bool), /* text, backward */
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     SetEnv(String, Option<Expandable>),
     Shell(bool, bool, Vec<Expandable>, Vec<Session>), /* async, operation, command_line, session */
@@ -345,6 +346,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@reset-image"                  => Ok(ResetImage),
             "@save"                         => parse_save(whole),
             "@scroll"                       => parse_scroll(whole),
+            "@search"                       => parse_search(whole),
             "@set"                          => parse_option_set(whole),
             "@set-env"                      => parse_set_env(whole),
             "@shell"                        => parse_shell(whole),

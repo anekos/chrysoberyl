@@ -126,6 +126,13 @@ impl PopplerPage {
 
         new_pixbuf_from_surface(&surface)
     }
+
+    pub fn find_text(&self, text: &str) -> bool {
+        unsafe {
+            let ptr = transmute::<*const u8, *mut i8>(text.as_ptr());
+            !sys::poppler_page_find_text(self.0, ptr).is_null()
+        }
+    }
 }
 
 impl Drop for PopplerPage {

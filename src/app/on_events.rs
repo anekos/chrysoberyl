@@ -759,7 +759,7 @@ fn extract_region_from_context(context: Option<OperationContext>) -> Option<(Reg
     None
 }
 
-fn write_pdf_index(index: poppler::Index, level: u8, out: &mut String) {
+fn write_pdf_index(index: poppler::index::Index, level: u8, out: &mut String) {
     let indent = "  ".repeat(level as usize);
 
     for entry in index.entries {

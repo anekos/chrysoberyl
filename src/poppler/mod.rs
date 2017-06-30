@@ -20,6 +20,8 @@ use size::Size;
 use state::DrawingState;
 
 mod sys;
+pub mod index;
+
 
 
 #[cfg(feature = "poppler_lock")]
@@ -33,8 +35,8 @@ lazy_static! {
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
 pub struct PopplerDocument(*mut sys::document_t);
-pub struct PopplerPage(*mut sys::page_t);
 
+pub struct PopplerPage(*mut sys::page_t);
 
 
 impl PopplerDocument {
@@ -59,6 +61,15 @@ impl PopplerDocument {
             time!("nth_page" => sys::poppler_document_get_page(self.0, index as c_int))
         };
         PopplerPage(page)
+    }
+
+    pub fn index(&self) -> index::Index {
+        unsafe {
+            let iter = sys::poppler_index_iter_new(self.0);
+            let result = index::Index::new(iter);
+            sys::poppler_index_iter_free(iter);
+            result
+        }
     }
 }
 

@@ -16,6 +16,7 @@ use expandable::Expandable;
 use filer;
 use gui::Direction;
 use mapping;
+use poppler;
 use session::Session;
 use size::Region;
 
@@ -53,6 +54,7 @@ pub enum Operation {
     Next(Option<usize>, bool, MoveBy, bool),
     Nop,
     OperateFile(filer::FileOperation),
+    PdfIndex(bool, bool, Vec<Expandable>, poppler::index::Format),
     PreFetch(u64),
     Previous(Option<usize>, bool, MoveBy, bool),
     PrintEntries,
@@ -328,6 +330,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@move-entry"                   => parse_move_entry(whole),
             "@multi"                        => parse_multi(whole),
             "@next" | "@n"                  => parse_move(whole, Next),
+            "@pdf-index"                    => parse_pdf_index(whole),
             "@prev" | "@p" | "@previous"    => parse_move(whole, Previous),
             "@push"                         => parse_push(whole, |it, meta, force| Push(Expandable(it), meta, force)),
             "@push-next"                    => parse_push_sibling(whole, true),

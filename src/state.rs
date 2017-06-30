@@ -129,7 +129,7 @@ impl Default for ViewState {
 
 impl Default for StatusFormat {
     fn default() -> Self {
-        StatusFormat(o!("<span background=\"#005050\"> $CHRY_PAGING/$CHRY_COUNT </span> $CHRY_PATH <span foreground=\"grey\">$CHRY_FLAGS</span>"))
+        StatusFormat(o!("<span background=\"red\">$CHRY_MESSAGE</span><span background=\"#005050\"> $CHRY_PAGING/$CHRY_COUNT </span> $CHRY_PATH <span foreground=\"grey\">$CHRY_FLAGS</span>"))
     }
 }
 

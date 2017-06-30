@@ -311,12 +311,12 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) {
     }
 }
 
-pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, command_line: &[Expandable], fmt: &poppler::index::Format, tx: Sender<Operation>) {
+pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, command_line: &[Expandable], fmt: &poppler::index::Format) {
     if_let_some!((entry, _) = app.entries.current(&app.pointer), ());
     if let EntryContent::Pdf(path, _) = entry.content {
         let mut stdin = o!("");
         PopplerDocument::new_from_file(&*path).index().write(fmt, &mut stdin);
-        shell::call(async, &expand_all(command_line), Some(stdin), option!(read_operations, tx));
+        shell::call(async, &expand_all(command_line), Some(stdin), option!(read_operations, app.tx.clone()));
     } else {
         puts_error!("at" => "on_pdf_index", "reason" => "current entry is not PDF");
     }
@@ -494,7 +494,9 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
         app.search_text = Some(text);
     }
 
-    if_let_some!(text = app.search_text.clone(), ());
+    updated.message = true;
+
+    if_let_some!(text = app.search_text.clone(), app.update_message(Some(o!("Empty"))));
 
     let seq: Vec<(usize, &Rc<Entry>)> = if backward {
         let skip = app.pointer.current.map(|index| app.entries.len() - index).unwrap_or(0);
@@ -526,10 +528,13 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
             if page.find_text(&text) {
                 app.pointer.current = Some(index);
                 updated.pointer = true;
+                app.update_message(Some(o!("Found!")));
                 return;
             }
         }
     }
+
+    app.update_message(Some(o!("Not found!")))
 }
 
 pub fn on_set_env(_: &mut App, name: &str, value: &Option<String>) {
@@ -750,6 +755,13 @@ pub fn on_window_resized(app: &mut App, updated: &mut Updated) {
     // Ignore followed PreFetch
     app.pre_fetch_serial += 1;
     fire_event(app, "resize-window");
+}
+
+pub fn on_with_message(app: &mut App, updated: &mut Updated, message: Option<String>, op: Box<Operation>) {
+    updated.message = true;
+    app.update_message(message);
+    app.tx.send(Operation::UpdateUI).unwrap();
+    app.tx.send(*op).unwrap();
 }
 
 pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) {

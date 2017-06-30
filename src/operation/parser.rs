@@ -633,7 +633,9 @@ pub fn parse_search(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut backward).add_option(&["-b", "--backward"], StoreTrue, "Search backward");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::SearchText(text, backward)
+        Operation::WithMessage(
+            Some(o!("Searching")),
+            Box::new(Operation::SearchText(text, backward)))
     })
 }
 

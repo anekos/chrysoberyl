@@ -78,6 +78,7 @@ pub struct Updated {
     label: bool,
     image: bool,
     image_options: bool,
+    message: bool,
 }
 
 
@@ -182,7 +183,7 @@ impl App {
         use self::Operation::*;
         use self::on_events::*;
 
-        let mut updated = Updated { pointer: false, label: false, image: false, image_options: false };
+        let mut updated = Updated { pointer: false, label: false, image: false, image_options: false, message: false };
         let mut to_end = false;
         let len = self.entries.len();
 
@@ -245,7 +246,7 @@ impl App {
                 OperateFile(ref file_operation) =>
                     on_operate_file(self, file_operation),
                 PdfIndex(async, read_operations, ref command_line, ref fmt) =>
-                    on_pdf_index(self, async, read_operations, command_line, fmt, self.tx.clone()),
+                    on_pdf_index(self, async, read_operations, command_line, fmt),
                 PreFetch(pre_fetch_serial) =>
                     on_pre_fetch(self, pre_fetch_serial),
                 Previous(count, ignore_views, move_by, wrap) =>
@@ -300,6 +301,8 @@ impl App {
                     on_unclip(self, &mut updated),
                 Undo(count) => 
                     on_undo(self, &mut updated, count),
+                UpdateUI =>
+                    return,
                 UpdateOption(ref option_name, ref updater) =>
                     on_update_option(self, &mut updated, option_name, updater),
                 User(ref data) =>
@@ -308,6 +311,8 @@ impl App {
                     on_views(self, &mut updated, cols, rows),
                 ViewsFellow(for_rows) =>
                     on_views_fellow(self, &mut updated, for_rows),
+                WithMessage(message, op) =>
+                    on_with_message(self, &mut updated, message, op),
                 Write(ref path, ref index) =>
                     on_write(self, path, index),
                 WindowResized =>
@@ -333,6 +338,9 @@ impl App {
 
         if updated.pointer {
             self.send_lazy_draw(None, to_end);
+            if !updated.message {
+                self.update_message(None);
+            }
         }
 
         if updated.image_options {
@@ -347,7 +355,7 @@ impl App {
             self.on_image_updated(image_size);
         }
 
-        if updated.image || updated.image_options || updated.label {
+        if updated.image || updated.image_options || updated.label || updated.message {
             self.update_label(updated.image);
         }
     }
@@ -464,6 +472,16 @@ impl App {
             env::remove_var(name);
         }
         self.current_env_keys = new_keys;
+    }
+
+    fn update_message(&self, message: Option<String>) {
+        let name = constant::env_name("MESSAGE");
+
+        if let Some(message) = message {
+            env::set_var(name, message);
+        } else {
+            env::remove_var(name);
+        }
     }
 
     fn on_image_updated(&mut self, image_size: Option<Size>) {

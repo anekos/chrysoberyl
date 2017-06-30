@@ -80,13 +80,15 @@ pub enum Operation {
     Sort,
     TellRegion(f64, f64, f64, f64, u32), /* lef,t top, right, bottom, mousesbutton */
     Timer(String, Vec<String>, Duration, Option<usize>),
-    UpdateOption(OptionName, OptionUpdater),
-    User(Vec<(String, String)>),
-    Undo(Option<usize>),
     Unclip,
+    Undo(Option<usize>),
+    UpdateOption(OptionName, OptionUpdater),
+    UpdateUI,
+    User(Vec<(String, String)>),
     Views(Option<usize>, Option<usize>),
     ViewsFellow(bool), /* for_rows */
     WindowResized,
+    WithMessage(Option<String>, Box<Operation>),
     Write(PathBuf, Option<usize>),
 }
 

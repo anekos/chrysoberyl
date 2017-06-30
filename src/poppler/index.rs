@@ -1,4 +1,5 @@
 
+use std::default::Default;
 use std::ffi::CStr;
 
 use poppler::sys;
@@ -17,6 +18,11 @@ pub struct IndexEntry {
     pub child: Option<Index>,
 }
 
+#[derive(Clone, Debug, Copy)]
+pub enum Format {
+    Indented,
+    TwoLines,
+}
 
 
 
@@ -52,6 +58,16 @@ impl Index {
         result
     }
 
+    pub fn write(&self, fmt: &Format, out: &mut String) {
+        use self::Format::*;
+
+        match *fmt {
+            Indented =>
+                write_indented(self, " = ", 0, out),
+            TwoLines =>
+                write_two_lines(self, out),
+        }
+    }
 }
 
 
@@ -84,4 +100,34 @@ fn extract_action(action: *const sys::action_t) -> Option<IndexEntry> {
             puts_error!("at" => "poppler/extract_action", "reason" => s!(err))
         }).ok()
     }
+}
+
+
+impl Default for Format {
+    fn default() -> Self {
+        Format::Indented
+    }
+}
+
+
+fn write_indented(index: &Index, separator: &str, level: u8, out: &mut String) {
+        let indent = "  ".repeat(level as usize);
+
+        for entry in &index.entries {
+            sprint!(out, &indent);
+            sprintln!(out, "{:03}{}{}", entry.page, separator, entry.title);
+            if let Some(ref child) = entry.child {
+                write_indented(&child, separator, level + 1, out);
+            }
+        }
+}
+
+fn write_two_lines(index: &Index, out: &mut String) {
+        for entry in &index.entries {
+            sprintln!(out, "{}", entry.page);
+            sprintln!(out, "{}", entry.title);
+            if let Some(ref child) = entry.child {
+                write_two_lines(&child, out);
+            }
+        }
 }

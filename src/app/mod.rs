@@ -242,8 +242,8 @@ impl App {
                     (),
                 OperateFile(ref file_operation) =>
                     on_operate_file(self, file_operation),
-                PdfIndex(async, read_operations, ref command_line) =>
-                    on_pdf_index(self, async, read_operations, command_line, self.tx.clone()),
+                PdfIndex(async, read_operations, ref command_line, ref fmt) =>
+                    on_pdf_index(self, async, read_operations, command_line, fmt, self.tx.clone()),
                 PreFetch(pre_fetch_serial) =>
                     on_pre_fetch(self, pre_fetch_serial),
                 Previous(count, ignore_views, move_by, wrap) =>

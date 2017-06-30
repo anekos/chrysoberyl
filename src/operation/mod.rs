@@ -16,6 +16,7 @@ use expandable::Expandable;
 use filer;
 use gui::Direction;
 use mapping;
+use poppler;
 use session::Session;
 use size::Region;
 
@@ -53,7 +54,7 @@ pub enum Operation {
     Next(Option<usize>, bool, MoveBy, bool),
     Nop,
     OperateFile(filer::FileOperation),
-    PdfIndex(bool, bool, Vec<Expandable>),
+    PdfIndex(bool, bool, Vec<Expandable>, poppler::index::Format),
     PreFetch(u64),
     Previous(Option<usize>, bool, MoveBy, bool),
     PrintEntries,

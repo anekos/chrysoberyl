@@ -489,9 +489,13 @@ pub fn parse_option_1(args: &[String], updater: OptionUpdater) -> Result<Operati
 }
 
 pub fn parse_pdf_index(args: &[String]) -> Result<Operation, String> {
+    use poppler::index::Format;
+
     let mut async = true;
     let mut read_operations = true;
     let mut command_line: Vec<String> = vec![];
+    let mut fmt = Format::default();
+    let mut fmt_separator: Option<String> = None;
 
     {
         let mut ap = ArgumentParser::new();
@@ -501,11 +505,15 @@ pub fn parse_pdf_index(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut read_operations)
             .add_option(&["--operation", "-o"], StoreTrue, "Read operations from stdout")
             .add_option(&["--no-operation", "-O"], StoreTrue, "Dont read operations from stdout");
+        ap.refer(&mut fmt_separator)
+            .add_option(&["--separator"], StoreOption, "Separator for `indented`");
+        ap.refer(&mut fmt)
+            .add_option(&["--two-lines"], StoreConst(Format::TwoLines), "Two lines (page/title)");
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
     } .and_then(|_| {
         let command_line = command_line.into_iter().map(Expandable).collect();
-        Ok(Operation::PdfIndex(async, read_operations, command_line))
+        Ok(Operation::PdfIndex(async, read_operations, command_line, fmt))
     })
 }
 

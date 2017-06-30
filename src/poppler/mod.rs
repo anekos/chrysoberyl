@@ -34,9 +34,9 @@ lazy_static! {
 
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
-pub struct PopplerDocument(*mut sys::document_t);
+pub struct PopplerDocument(*const sys::document_t);
 
-pub struct PopplerPage(*mut sys::page_t);
+pub struct PopplerPage(*const sys::page_t);
 
 
 impl PopplerDocument {
@@ -76,7 +76,7 @@ impl PopplerDocument {
 impl Drop for PopplerDocument {
     fn drop(&mut self) {
         unsafe {
-            let ptr = transmute::<*mut sys::document_t, *mut gobject_sys::GObject>(self.0);
+            let ptr = transmute::<*const sys::document_t, *mut gobject_sys::GObject>(self.0);
             gobject_sys::g_object_unref(ptr);
         }
     }
@@ -131,7 +131,7 @@ impl PopplerPage {
 impl Drop for PopplerPage {
     fn drop(&mut self) {
         unsafe {
-            let ptr = transmute::<*mut sys::page_t, *mut gobject_sys::GObject>(self.0);
+            let ptr = transmute::<*const sys::page_t, *mut gobject_sys::GObject>(self.0);
             gobject_sys::g_object_unref(ptr);
         }
     }

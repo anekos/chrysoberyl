@@ -38,18 +38,19 @@ pub struct dest_t {
 
 #[link(name = "poppler")]
 extern "C" {
-    pub fn poppler_document_new_from_file(uri: *const c_char, password: *const c_char, error: *mut *mut glib_sys::GError) -> *mut document_t;
+    pub fn poppler_document_new_from_file(uri: *const c_char, password: *const c_char, error: *const *const glib_sys::GError) -> *const document_t;
     pub fn poppler_document_get_n_pages(doc: *const document_t) -> c_int;
-    pub fn poppler_document_get_page(doc: *const document_t, index: c_int) -> *mut page_t;
+    pub fn poppler_document_get_page(doc: *const document_t, index: c_int) -> *const page_t;
 
-    pub fn poppler_page_render(page: *const page_t, cairo: *mut cairo_sys::cairo_t);
-    pub fn poppler_page_get_size(page: *const page_t, width: *mut c_double, height: *mut c_double);
+    pub fn poppler_page_render(page: *const page_t, cairo: *const cairo_sys::cairo_t);
+    pub fn poppler_page_get_size(page: *const page_t, width: *const c_double, height: *const c_double);
+    pub fn poppler_page_find_text(page: *const page_t, text: *const c_char) -> *const c_void; // *GList
 
-    pub fn poppler_index_iter_new(doc: *const document_t) -> *mut page_index_iter_t;
+    pub fn poppler_index_iter_new(doc: *const document_t) -> *const page_index_iter_t;
     pub fn poppler_index_iter_free(iter: *const page_index_iter_t);
-    pub fn poppler_index_iter_get_child(iter: *const page_index_iter_t) -> *mut page_index_iter_t;
+    pub fn poppler_index_iter_get_child(iter: *const page_index_iter_t) -> *const page_index_iter_t;
     // pub fn poppler_index_iter_is_open(iter: *const page_index_iter_t) -> gboolean;
-    pub fn poppler_index_iter_get_action(iter: *const page_index_iter_t) -> *mut action_t;
+    pub fn poppler_index_iter_get_action(iter: *const page_index_iter_t) -> *const action_t;
     pub fn poppler_index_iter_next(iter: *const page_index_iter_t) -> gboolean;
 
     pub fn poppler_action_free(action: *const action_t);

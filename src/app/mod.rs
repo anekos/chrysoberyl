@@ -52,6 +52,7 @@ pub struct App {
     timers: TimerManager,
     user_switches: UserSwitchManager,
     do_clear_cache: bool,
+    search_text: Option<String>,
     pub mapping: Mapping,
     pub pointer: IndexPointer,
     pub entries: EntryContainer,
@@ -123,6 +124,7 @@ impl App {
             timers: TimerManager::new(tx.clone()),
             user_switches: UserSwitchManager::new(tx.clone()),
             do_clear_cache: false,
+            search_text: None,
         };
 
         app.reset_view();
@@ -274,7 +276,7 @@ impl App {
                     on_reset_image(self, &mut updated),
                 Save(ref path, ref sources) =>
                     on_save(self, path, sources),
-                SearchText(ref text, backward) =>
+                SearchText(text, backward) =>
                     on_search_text(self, &mut updated, text, backward),
                 SetEnv(name, value) =>
                     on_set_env(self, &name, &value.map(|it| it.to_string())),

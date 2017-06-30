@@ -624,12 +624,12 @@ pub fn parse_scroll(args: &[String]) -> Result<Operation, String> {
 }
 
 pub fn parse_search(args: &[String]) -> Result<Operation, String> {
-    let mut text = o!("");
+    let mut text = None;
     let mut backward = false;
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut text).add_argument("text", Store, "Search text").required();
+        ap.refer(&mut text).add_argument("text", StoreOption, "Search text");
         ap.refer(&mut backward).add_option(&["-b", "--backward"], StoreTrue, "Search backward");
         parse_args(&mut ap, args)
     } .map(|_| {

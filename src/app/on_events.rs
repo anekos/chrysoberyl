@@ -489,7 +489,13 @@ pub fn on_save(app: &mut App, path: &Option<PathBuf>, sessions: &[Session]) {
     }
 }
 
-pub fn on_search_text(app: &mut App, updated: &mut Updated, text: &str, backward: bool) {
+pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>, backward: bool) {
+    if let Some(text) = text {
+        app.search_text = Some(text);
+    }
+
+    if_let_some!(text = app.search_text.clone(), ());
+
     let seq: Vec<(usize, &Rc<Entry>)> = if backward {
         let skip = app.pointer.current.map(|index| app.entries.len() - index).unwrap_or(0);
         app.entries.iter().enumerate().rev().skip(skip).collect()
@@ -517,7 +523,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: &str, backward
             }
 
             let page = doc.unwrap().nth_page(*doc_index);
-            if page.find_text(text) {
+            if page.find_text(&text) {
                 app.pointer.current = Some(index);
                 updated.pointer = true;
                 return;

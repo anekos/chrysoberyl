@@ -491,7 +491,7 @@ pub fn on_save(app: &mut App, path: &Option<PathBuf>, sessions: &[Session]) {
 
 pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>, backward: bool) {
     if let Some(text) = text {
-        app.search_text = Some(text);
+        app.search_text = Some(text.to_lowercase()); // FIXME ??
     }
 
     updated.message = true;

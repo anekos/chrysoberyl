@@ -8,6 +8,7 @@ build = "build.rs"
 poppler_lock = []
 
 [dependencies]
+aho-corasick = "*"
 app_dirs = "*"
 argparse = "*"
 cairo-sys-rs = "*"

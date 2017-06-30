@@ -4,11 +4,12 @@ extern crate glib;
 extern crate gobject_sys;
 
 #[cfg(feature = "poppler_lock")] use std::sync::{Arc, Mutex};
-use std::ffi::CString;
+use std::ffi::{CStr, CString};
 use std::mem::transmute;
 use std::path::Path;
 use std::ptr::{null, null_mut};
 
+use aho_corasick::{Automaton, AcAutomaton};
 use cairo::{Context, ImageSurface, Format};
 use cairo;
 use gdk_pixbuf::Pixbuf;
@@ -129,10 +130,24 @@ impl PopplerPage {
 
     pub fn find_text(&self, text: &str) -> bool {
         unsafe {
-            let ptr = transmute::<*const u8, *mut i8>(text.as_ptr());
-            !sys::poppler_page_find_text(self.0, ptr).is_null()
+            let content = sys::poppler_page_get_text(self.0);
+            if let Ok(content) = CStr::from_ptr(content).to_str() {
+                let aut = AcAutomaton::new(vec![text]);
+                let content = content.to_lowercase();
+                let mut m = aut.find(&content);
+                m.next().is_some()
+            } else {
+                false
+            }
         }
     }
+
+    // pub fn find_text(&self, text: &str) -> bool {
+    //     unsafe {
+    //         let ptr = transmute::<*const u8, *mut i8>(text.as_ptr());
+    //         !sys::poppler_page_find_text(self.0, ptr).is_null()
+    //     }
+    // }
 }
 
 impl Drop for PopplerPage {

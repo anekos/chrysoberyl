@@ -2,6 +2,7 @@
 #[macro_use] extern crate closet;
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate log;
+extern crate aho_corasick;
 extern crate app_dirs;
 extern crate argparse;
 extern crate cairo;

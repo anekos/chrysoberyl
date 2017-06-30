@@ -2,6 +2,7 @@
 name = "chrysoberyl"
 version = "0.1.0"
 dependencies = [
+ "aho-corasick 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "app_dirs 1.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "argparse 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "cairo-rs 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",

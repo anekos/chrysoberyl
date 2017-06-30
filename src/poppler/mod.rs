@@ -33,7 +33,7 @@ lazy_static! {
 }
 
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
+#[derive(Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub struct PopplerDocument(*const sys::document_t);
 
 pub struct PopplerPage(*const sys::page_t);

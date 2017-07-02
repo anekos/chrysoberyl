@@ -6,7 +6,7 @@ extern crate gobject_sys;
 extern crate libc;
 
 use libc::{c_int, c_char, c_double, c_void, c_uint};
-use self::glib_sys::gboolean;
+use self::glib_sys::{gboolean, GList};
 
 #[repr(C)]
 pub struct document_t(c_void);
@@ -44,7 +44,7 @@ extern "C" {
 
     pub fn poppler_page_render(page: *const page_t, cairo: *const cairo_sys::cairo_t);
     pub fn poppler_page_get_size(page: *const page_t, width: *const c_double, height: *const c_double);
-    pub fn poppler_page_find_text(page: *const page_t, text: *const c_char) -> *const c_void; // *GList
+    pub fn poppler_page_find_text(page: *const page_t, text: *const c_char) -> *mut GList;
 
     pub fn poppler_index_iter_new(doc: *const document_t) -> *const page_index_iter_t;
     pub fn poppler_index_iter_free(iter: *const page_index_iter_t);

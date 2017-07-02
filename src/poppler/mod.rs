@@ -1,6 +1,7 @@
 
 extern crate gdk_sys;
 extern crate glib;
+extern crate glib_sys;
 extern crate gobject_sys;
 
 #[cfg(feature = "poppler_lock")] use std::sync::{Arc, Mutex};
@@ -13,6 +14,7 @@ use cairo::{Context, ImageSurface, Format};
 use cairo;
 use gdk_pixbuf::Pixbuf;
 use glib::translate::ToGlibPtr;
+use self::glib_sys::g_list_free;
 use libc::{c_int, c_double};
 
 use gtk_utils::new_pixbuf_from_surface;
@@ -129,8 +131,11 @@ impl PopplerPage {
 
     pub fn find_text(&self, text: &str) -> bool {
         unsafe {
-            let ptr = transmute::<*const u8, *mut i8>(text.as_ptr());
-            !sys::poppler_page_find_text(self.0, ptr).is_null()
+            let cstr = CString::new(text.as_bytes()).unwrap();
+            let found = sys::poppler_page_find_text(self.0, cstr.as_ptr());
+            let result = !found.is_null();
+            g_list_free(found);
+            result
         }
     }
 }

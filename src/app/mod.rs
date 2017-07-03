@@ -53,6 +53,7 @@ pub struct App {
     user_switches: UserSwitchManager,
     do_clear_cache: bool,
     search_text: Option<String>,
+    found_on: Option<Range<usize>>,
     pub mapping: Mapping,
     pub pointer: IndexPointer,
     pub entries: EntryContainer,
@@ -126,6 +127,7 @@ impl App {
             user_switches: UserSwitchManager::new(tx.clone()),
             do_clear_cache: false,
             search_text: None,
+            found_on: None,
         };
 
         app.reset_view();

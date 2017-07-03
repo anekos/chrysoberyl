@@ -1,5 +1,6 @@
 
 use std::fmt::{Display, Write};
+use std::ops::Range;
 use std::path::Path;
 use std::time::Duration;
 
@@ -39,4 +40,8 @@ pub fn join(xs: &[String], sep: char) -> String {
     }
     result.pop();
     result
+}
+
+pub fn range_contains<T: PartialOrd>(range: &Range<T>, index: &T) -> bool {
+    range.start <= *index && *index <= range.end
 }

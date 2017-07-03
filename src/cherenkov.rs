@@ -116,8 +116,9 @@ impl Cherenkoved {
     pub fn clear_search_highlights(&mut self) -> bool {
         let mut removees = vec![];
         for (key, cache_entry) in &mut self.cache {
-            cache_entry.clear_search_highlight();
-            removees.push(key.clone());
+            if cache_entry.clear_search_highlight() {
+                removees.push(key.clone());
+            }
         }
         for key in &removees {
             self.cache.remove(key);
@@ -137,6 +138,7 @@ impl Cherenkoved {
     pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, modifier: Modifier, drawing: &DrawingState) {
         let mut modifiers = self.cache.get(&entry.key).map(|it| it.modifiers.clone()).unwrap_or_else(|| vec![]);
 
+        clear_search_highlight(&mut modifiers);
         modifiers.push(modifier);
 
         if let Ok(image_buffer) =  re_cherenkov(entry, cell_size, drawing, &modifiers) {
@@ -163,10 +165,8 @@ impl CacheEntry {
         None
     }
 
-    pub fn clear_search_highlight(&mut self) {
-        while let Some(index) = self.modifiers.iter().position(|it| it.search_highlight) {
-            self.modifiers.remove(index);
-        }
+    pub fn clear_search_highlight(&mut self) -> bool {
+        clear_search_highlight(&mut self.modifiers)
     }
 }
 
@@ -441,6 +441,15 @@ fn apply_mask(pixbuf: &Pixbuf, mask: ImageSurface, operator: Operator) -> Pixbuf
     context.mask(&pattern);
 
     new_pixbuf_from_surface(&surface)
+}
+
+fn clear_search_highlight(modifiers: &mut Vec<Modifier>) -> bool {
+    let mut result = false;
+    while let Some(index) = modifiers.iter().position(|it| it.search_highlight) {
+        modifiers.remove(index);
+        result |= true;
+    }
+    result
 }
 
 #[cfg(test)]#[test]

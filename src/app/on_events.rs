@@ -34,7 +34,7 @@ use session::{Session, write_sessions};
 use shell;
 use shell_filter;
 use state;
-use utils::path_to_str;
+use utils::{path_to_str, range_contains};
 
 use app::*;
 
@@ -498,10 +498,15 @@ pub fn on_save(app: &mut App, path: &Option<PathBuf>, sessions: &[Session]) {
 pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>, backward: bool, color: Color) {
     use cherenkov::{Che, Modifier};
 
+    fn opt_range_contains(range: &Option<Range<usize>>, index: usize, if_none: bool) -> bool {
+        range.as_ref().map(|it| range_contains(it, &index)).unwrap_or(if_none)
+    }
+
     if let Some(text) = text {
         if app.cache.clear_search_highlights() {
             updated.image = true;
         }
+        app.found_on = None;
         app.search_text = Some(text);
     }
 
@@ -510,16 +515,21 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
     if_let_some!(text = app.search_text.clone(), app.update_message(Some(o!("Empty"))));
 
     let seq: Vec<(usize, &Rc<Entry>)> = if backward {
-        let skip = app.pointer.current.map(|index| app.entries.len() - index).unwrap_or(0);
+        let skip = app.pointer.current.map(|index| app.entries.len() - index - 1).unwrap_or(0);
         app.entries.iter().enumerate().rev().skip(skip).collect()
     } else {
-        let skip = app.pointer.current.unwrap_or(0) + 1;
+        let skip = app.pointer.current.unwrap_or(0);
         app.entries.iter().enumerate().skip(skip).collect()
     };
 
     let mut previous: Option<(Rc<PopplerDocument>, PathBuf)> = None;
+    let mut new_found_on = None;
+    let cells = app.gui.len();
 
     for (index, entry) in seq {
+        if !opt_range_contains(&new_found_on, index, true) { break; }
+        if opt_range_contains(&app.found_on, index, false) { continue; }
+
         if let EntryContent::Pdf(ref path, ref doc_index) = entry.content {
             let mut doc: Option<Rc<PopplerDocument>> = None;
 
@@ -536,31 +546,32 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
             }
 
             let page = doc.unwrap().nth_page(*doc_index);
-            let found = page.find_text(&text);
+            let regions = page.find_text(&text);
 
             let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
 
-            for region in &found {
+            for region in &regions {
                 app.cache.cherenkov(
                     entry,
                     &cell_size,
-                    Modifier {
-                        search_highlight: true,
-                        che: Che::Fill(Filler::Rectangle, *region, color, false),
-                    },
+                    Modifier { search_highlight: true, che: Che::Fill(Filler::Rectangle, *region, color, false) },
                     &app.states.drawing);
             }
 
-            if !found.is_empty() {
-                app.pointer.current = Some(index);
-                updated.pointer = true;
+            if !regions.is_empty() && new_found_on.is_none() {
+                updated.pointer = app.pointer.show_found(index, true);
+                updated.image = true;
                 app.update_message(Some(o!("Found!")));
-                return;
+                let left = index / cells * cells;
+                new_found_on = Some(left .. left + cells - 1);
             }
         }
     }
 
-    app.update_message(Some(o!("Not found!")))
+    if new_found_on.is_none() {
+        app.update_message(Some(o!("Not found!")));
+    }
+    app.found_on = new_found_on;
 }
 
 pub fn on_set_env(_: &mut App, name: &str, value: &Option<String>) {

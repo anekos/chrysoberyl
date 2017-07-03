@@ -41,7 +41,7 @@ use app::*;
 
 
 pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<OperationContext>) {
-    use cherenkov::{Che, CheNova};
+    use cherenkov::{Che, CheNova, Modifier};
 
     if let Some(Input::MouseButton((mx, my), _)) = context.map(|it| it.input) {
         let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
@@ -64,13 +64,16 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
                     app.cache.cherenkov(
                         &entry,
                         &cell_size,
-                        &Che::Nova(CheNova {
-                            center: center,
-                            n_spokes: parameter.n_spokes,
-                            radius: parameter.radius,
-                            random_hue: parameter.random_hue,
-                            color: parameter.color,
-                        }),
+                        Modifier {
+                            search_highlight: false,
+                            che: Che::Nova(CheNova {
+                                center: center,
+                                n_spokes: parameter.n_spokes,
+                                radius: parameter.radius,
+                                random_hue: parameter.random_hue,
+                                color: parameter.color,
+                            })
+                        },
                         &app.states.drawing);
                     updated.image = true;
                 }
@@ -123,7 +126,7 @@ pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) {
 
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 pub fn on_fill(app: &mut App, updated: &mut Updated, filler: Filler, region: Option<Region>, color: Color, mask: bool, cell_index: usize, context: Option<OperationContext>) {
-    use cherenkov::Che;
+    use cherenkov::{Modifier, Che};
 
     let (region, cell_index) = extract_region_from_context(context)
         .or_else(|| region.map(|it| (it, cell_index)))
@@ -134,7 +137,10 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, filler: Filler, region: Opt
         app.cache.cherenkov(
             &entry,
             &cell_size,
-            &Che::Fill(filler, region, color, mask),
+            Modifier {
+                search_highlight: false,
+                che: Che::Fill(filler, region, color, mask),
+            },
             &app.states.drawing);
         updated.image = true;
     }
@@ -471,7 +477,7 @@ pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) {
 
 pub fn on_reset_image(app: &mut App, updated: &mut Updated) {
     if let Some(entry) = app.entries.current_entry(&app.pointer) {
-        app.cache.uncherenkov(&entry);
+        app.cache.uncherenkov(&entry.key);
         updated.image_options = true;
     }
 }
@@ -489,8 +495,13 @@ pub fn on_save(app: &mut App, path: &Option<PathBuf>, sessions: &[Session]) {
     }
 }
 
-pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>, backward: bool) {
+pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>, backward: bool, color: Color) {
+    use cherenkov::{Che, Modifier};
+
     if let Some(text) = text {
+        if app.cache.clear_search_highlights() {
+            updated.image = true;
+        }
         app.search_text = Some(text);
     }
 
@@ -526,6 +537,20 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
 
             let page = doc.unwrap().nth_page(*doc_index);
             let found = page.find_text(&text);
+
+            let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
+
+            for region in &found {
+                app.cache.cherenkov(
+                    &entry,
+                    &cell_size,
+                    Modifier {
+                        search_highlight: true,
+                        che: Che::Fill(Filler::Rectangle, *region, color, false),
+                    },
+                    &app.states.drawing);
+            }
+
             if !found.is_empty() {
                 app.pointer.current = Some(index);
                 updated.pointer = true;
@@ -638,7 +663,7 @@ pub fn on_undo(app: &mut App, updated: &mut Updated, count: Option<usize>) {
     let count = count.unwrap_or(app.pointer.counted());
 
     if let Some((ref entry, _)) = app.entries.current(&app.pointer) {
-        app.cache.undo_cherenkov(entry, count)
+        app.cache.undo_cherenkov(&entry.key, count)
     }
     updated.image_options = true;
 }

@@ -70,7 +70,7 @@ pub enum Operation {
     Refresh,
     ResetImage,
     Save(Option<PathBuf>, Vec<Session>),
-    SearchText(Option<String>, bool), /* text, backward */
+    SearchText(Option<String>, bool, Color), /* text, backward */
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     SetEnv(String, Option<Expandable>),
     Shell(bool, bool, Vec<Expandable>, Vec<Session>), /* async, operation, command_line, session */

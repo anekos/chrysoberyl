@@ -626,16 +626,18 @@ pub fn parse_scroll(args: &[String]) -> Result<Operation, String> {
 pub fn parse_search(args: &[String]) -> Result<Operation, String> {
     let mut text = None;
     let mut backward = false;
+    let mut color = Color::new4(255, 255, 0, 128);
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut text).add_argument("text", StoreOption, "Search text");
         ap.refer(&mut backward).add_option(&["-b", "--backward"], StoreTrue, "Search backward");
+        ap.refer(&mut color).add_option(&["-c", "--color"], Store, "Highlight color");
         parse_args(&mut ap, args)
     } .map(|_| {
         Operation::WithMessage(
             Some(o!("Searching")),
-            Box::new(Operation::SearchText(text, backward)))
+            Box::new(Operation::SearchText(text, backward, color)))
     })
 }
 

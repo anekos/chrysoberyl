@@ -31,7 +31,7 @@ use rand::distributions::{IndependentSample, Range};
 use rand::{self, Rng, ThreadRng};
 
 use color::Color;
-use entry::{Entry, self};
+use entry::{Entry, Key, self};
 use gtk_utils::new_pixbuf_from_surface;
 use image::{ImageBuffer, StaticImageBuffer};
 use size::{Size, Region};
@@ -44,6 +44,12 @@ type TupleColor = (f64, f64, f64);
 
 const FERROR: f64 = 0.000001;
 
+
+#[derive(Debug, Clone)]
+pub struct Modifier {
+    pub che: Che,
+    pub search_highlight: bool,
+}
 
 #[derive(Debug, Clone)]
 pub enum Che {
@@ -69,7 +75,7 @@ pub struct CheNova {
 
 #[derive(Clone)]
 pub struct Cherenkoved {
-    cache: HashMap<Entry, CacheEntry>
+    cache: HashMap<Key, CacheEntry>
 }
 
 #[derive(Clone)]
@@ -77,7 +83,7 @@ pub struct CacheEntry {
     image: Option<StaticImageBuffer>,
     cell_size: Size,
     drawing: DrawingState,
-    modifiers: Vec<Che>
+    modifiers: Vec<Modifier>
 }
 
 
@@ -87,7 +93,7 @@ impl Cherenkoved {
     }
 
     pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: &Size, drawing: &DrawingState) -> Option<Result<ImageBuffer, String>> {
-        if_let_some!(cache_entry = self.cache.get_mut(entry), None);
+        if_let_some!(cache_entry = self.cache.get_mut(&entry.key), None);
 
         if let Some(image) = cache_entry.get(cell_size, drawing) {
             return Some(Ok(ImageBuffer::Static(image)))
@@ -103,12 +109,24 @@ impl Cherenkoved {
         Some(Ok(ImageBuffer::Static(image)))
     }
 
-    pub fn remove(&mut self, entry: &Entry) {
-        self.cache.remove(entry);
+    pub fn remove(&mut self, key: &Key) {
+        self.cache.remove(key);
     }
 
-    pub fn undo(&mut self, entry: &Entry, count: usize) {
-        if let Some(cache_entry) = self.cache.get_mut(entry) {
+    pub fn clear_search_highlights(&mut self) -> bool {
+        let mut removees = vec![];
+        for (key, cache_entry) in self.cache.iter_mut() {
+            cache_entry.clear_search_highlight();
+            removees.push(key.clone());
+        }
+        for key in &removees {
+            self.cache.remove(&key);
+        }
+        !removees.is_empty()
+    }
+
+    pub fn undo(&mut self, key: &Key, count: usize) {
+        if let Some(cache_entry) = self.cache.get_mut(key) {
             for _ in 0..count {
                 cache_entry.modifiers.pop();
             }
@@ -116,14 +134,14 @@ impl Cherenkoved {
         }
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, che: &Che, drawing: &DrawingState) {
-        let mut modifiers = self.cache.get(entry).map(|it| it.modifiers.clone()).unwrap_or_else(|| vec![]);
+    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, modifier: Modifier, drawing: &DrawingState) {
+        let mut modifiers = self.cache.get(&entry.key).map(|it| it.modifiers.clone()).unwrap_or_else(|| vec![]);
 
-        modifiers.push(che.clone());
+        modifiers.push(modifier);
 
         if let Ok(image_buffer) =  re_cherenkov(entry, cell_size, drawing, &modifiers) {
             self.cache.insert(
-                entry.clone(),
+                entry.key.clone(),
                 CacheEntry {
                     image: Some(image_buffer),
                     cell_size: *cell_size,
@@ -144,16 +162,22 @@ impl CacheEntry {
         }
         None
     }
+
+    pub fn clear_search_highlight(&mut self) {
+        while let Some(index) = self.modifiers.iter().position(|it| it.search_highlight) {
+            self.modifiers.remove(index);
+        }
+    }
 }
 
 
-fn re_cherenkov(entry: &Entry, cell_size: &Size, drawing: &DrawingState, modifiers: &[Che]) -> Result<StaticImageBuffer, String> {
+fn re_cherenkov(entry: &Entry, cell_size: &Size, drawing: &DrawingState, modifiers: &[Modifier]) -> Result<StaticImageBuffer, String> {
     entry::image::get_image_buffer(entry, cell_size, drawing).and_then(|image_buffer| {
         if let ImageBuffer::Static(buf) = image_buffer {
             let mut pixbuf = buf.get_pixbuf();
             let mut mask = None;
-            for che in modifiers {
-                let (_pixbuf, _mask) = cherenkov_pixbuf(pixbuf, mask, che);
+            for modifier in modifiers {
+                let (_pixbuf, _mask) = cherenkov_pixbuf(pixbuf, mask, &modifier.che);
                 pixbuf = _pixbuf;
                 mask = _mask;
             }

@@ -312,7 +312,7 @@ impl App {
                 ViewsFellow(for_rows) =>
                     on_views_fellow(self, &mut updated, for_rows),
                 WithMessage(message, op) =>
-                    on_with_message(self, &mut updated, message, op),
+                    on_with_message(self, &mut updated, message, *op),
                 Write(ref path, ref index) =>
                     on_write(self, path, index),
                 WindowResized =>

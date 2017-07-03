@@ -783,11 +783,11 @@ pub fn on_window_resized(app: &mut App, updated: &mut Updated) {
     fire_event(app, "resize-window");
 }
 
-pub fn on_with_message(app: &mut App, updated: &mut Updated, message: Option<String>, op: Box<Operation>) {
+pub fn on_with_message(app: &mut App, updated: &mut Updated, message: Option<String>, op: Operation) {
     updated.message = true;
     app.update_message(message);
     app.tx.send(Operation::UpdateUI).unwrap();
-    app.tx.send(*op).unwrap();
+    app.tx.send(op).unwrap();
 }
 
 pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) {

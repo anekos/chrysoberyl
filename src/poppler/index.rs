@@ -117,7 +117,7 @@ fn write_indented(index: &Index, separator: &str, level: u8, out: &mut String) {
             sprint!(out, &indent);
             sprintln!(out, "{:03}{}{}", entry.page, separator, entry.title);
             if let Some(ref child) = entry.child {
-                write_indented(&child, separator, level + 1, out);
+                write_indented(child, separator, level + 1, out);
             }
         }
 }
@@ -127,7 +127,7 @@ fn write_two_lines(index: &Index, out: &mut String) {
             sprintln!(out, "{}", entry.page);
             sprintln!(out, "{}", entry.title);
             if let Some(ref child) = entry.child {
-                write_two_lines(&child, out);
+                write_two_lines(child, out);
             }
         }
 }

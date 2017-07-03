@@ -70,6 +70,7 @@ pub enum Operation {
     Refresh,
     ResetImage,
     Save(Option<PathBuf>, Vec<Session>),
+    SearchText(Option<String>, bool, Color), /* text, backward */
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     SetEnv(String, Option<Expandable>),
     Shell(bool, bool, Vec<Expandable>, Vec<Session>), /* async, operation, command_line, session */
@@ -79,13 +80,15 @@ pub enum Operation {
     Sort,
     TellRegion(f64, f64, f64, f64, u32), /* lef,t top, right, bottom, mousesbutton */
     Timer(String, Vec<String>, Duration, Option<usize>),
-    UpdateOption(OptionName, OptionUpdater),
-    User(Vec<(String, String)>),
-    Undo(Option<usize>),
     Unclip,
+    Undo(Option<usize>),
+    UpdateOption(OptionName, OptionUpdater),
+    UpdateUI,
+    User(Vec<(String, String)>),
     Views(Option<usize>, Option<usize>),
     ViewsFellow(bool), /* for_rows */
     WindowResized,
+    WithMessage(Option<String>, Box<Operation>),
     Write(PathBuf, Option<usize>),
 }
 
@@ -345,6 +348,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@reset-image"                  => Ok(ResetImage),
             "@save"                         => parse_save(whole),
             "@scroll"                       => parse_scroll(whole),
+            "@search"                       => parse_search(whole),
             "@set"                          => parse_option_set(whole),
             "@set-env"                      => parse_set_env(whole),
             "@shell"                        => parse_shell(whole),

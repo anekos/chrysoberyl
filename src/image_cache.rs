@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, Condvar};
 
 use cache::Cache;
-use cherenkov::{Cherenkoved, Che};
+use cherenkov::{Cherenkoved, Modifier};
 use entry::{Entry, Key, self};
 use image::{ImageBuffer};
 use size::Size;
@@ -80,19 +80,24 @@ impl ImageCache {
         })
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, che: &Che, drawing: &DrawingState) {
+    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, modifier: Modifier, drawing: &DrawingState) {
         let mut cherenkoved = self.cherenkoved.lock().unwrap();
-        cherenkoved.cherenkov(entry, cell_size, che, drawing)
+        cherenkoved.cherenkov(entry, cell_size, modifier, drawing)
     }
 
-    pub fn uncherenkov(&mut self, entry: &Entry) {
+    pub fn uncherenkov(&mut self, key: &Key) {
         let mut cherenkoved = self.cherenkoved.lock().unwrap();
-        cherenkoved.remove(entry)
+        cherenkoved.remove(key)
     }
 
-    pub fn undo_cherenkov(&mut self, entry: &Entry, count: usize) {
+    pub fn undo_cherenkov(&mut self, key: &Key, count: usize) {
         let mut cherenkoved = self.cherenkoved.lock().unwrap();
-        cherenkoved.undo(entry, count)
+        cherenkoved.undo(key, count)
+    }
+
+    pub fn clear_search_highlights(&mut self) -> bool {
+        let mut cherenkoved = self.cherenkoved.lock().unwrap();
+        cherenkoved.clear_search_highlights()
     }
 
     fn wait(&mut self, key: &Key) {

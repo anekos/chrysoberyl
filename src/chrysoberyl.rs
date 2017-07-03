@@ -20,6 +20,8 @@ use operation::Operation;
 
 
 pub fn main() {
+    use self::Operation::UpdateUI;
+
     env_logger::init().unwrap();
 
     put_features();
@@ -34,13 +36,19 @@ pub fn main() {
         }
 
         for op in primary_rx.try_iter() {
-            app.operate(op);
+            match op {
+                UpdateUI => continue 'outer,
+                op => app.operate(op),
+            }
         }
 
         let t = Instant::now();
 
         for op in secondary_rx.try_iter() {
-            app.operate(op);
+            match op {
+                UpdateUI => continue 'outer,
+                op => app.operate(op),
+            }
             if t.elapsed() > Duration::from_millis(10) {
                 continue 'outer;
             }

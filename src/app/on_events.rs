@@ -3,6 +3,7 @@ use std::env;
 use std::fs::File;
 use std::io::{Write, Read};
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use std::sync::Arc;
 use std::thread::spawn;
 use std::time::Duration;
@@ -18,7 +19,7 @@ use color::Color;
 use config::DEFAULT_CONFIG;
 use editor;
 use entry::filter::expression::Expr as FilterExpr;
-use entry::{self, Meta, SearchKey, EntryContent};
+use entry::{self, Meta, SearchKey, Entry,EntryContent};
 use expandable::{Expandable, expand_all};
 use filer;
 use fragile_input::new_fragile_input;
@@ -40,7 +41,7 @@ use app::*;
 
 
 pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<OperationContext>) {
-    use cherenkov::{Che, CheNova};
+    use cherenkov::{Che, CheNova, Modifier};
 
     if let Some(Input::MouseButton((mx, my), _)) = context.map(|it| it.input) {
         let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
@@ -63,13 +64,16 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
                     app.cache.cherenkov(
                         &entry,
                         &cell_size,
-                        &Che::Nova(CheNova {
-                            center: center,
-                            n_spokes: parameter.n_spokes,
-                            radius: parameter.radius,
-                            random_hue: parameter.random_hue,
-                            color: parameter.color,
-                        }),
+                        Modifier {
+                            search_highlight: false,
+                            che: Che::Nova(CheNova {
+                                center: center,
+                                n_spokes: parameter.n_spokes,
+                                radius: parameter.radius,
+                                random_hue: parameter.random_hue,
+                                color: parameter.color,
+                            })
+                        },
                         &app.states.drawing);
                     updated.image = true;
                 }
@@ -122,7 +126,7 @@ pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) {
 
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 pub fn on_fill(app: &mut App, updated: &mut Updated, filler: Filler, region: Option<Region>, color: Color, mask: bool, cell_index: usize, context: Option<OperationContext>) {
-    use cherenkov::Che;
+    use cherenkov::{Modifier, Che};
 
     let (region, cell_index) = extract_region_from_context(context)
         .or_else(|| region.map(|it| (it, cell_index)))
@@ -133,7 +137,10 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, filler: Filler, region: Opt
         app.cache.cherenkov(
             &entry,
             &cell_size,
-            &Che::Fill(filler, region, color, mask),
+            Modifier {
+                search_highlight: false,
+                che: Che::Fill(filler, region, color, mask),
+            },
             &app.states.drawing);
         updated.image = true;
     }
@@ -310,12 +317,12 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) {
     }
 }
 
-pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, command_line: &[Expandable], fmt: &poppler::index::Format, tx: Sender<Operation>) {
+pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, command_line: &[Expandable], fmt: &poppler::index::Format) {
     if_let_some!((entry, _) = app.entries.current(&app.pointer), ());
     if let EntryContent::Pdf(path, _) = entry.content {
         let mut stdin = o!("");
         PopplerDocument::new_from_file(&*path).index().write(fmt, &mut stdin);
-        shell::call(async, &expand_all(command_line), Some(stdin), option!(read_operations, tx));
+        shell::call(async, &expand_all(command_line), Some(stdin), option!(read_operations, app.tx.clone()));
     } else {
         puts_error!("at" => "on_pdf_index", "reason" => "current entry is not PDF");
     }
@@ -470,7 +477,7 @@ pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) {
 
 pub fn on_reset_image(app: &mut App, updated: &mut Updated) {
     if let Some(entry) = app.entries.current_entry(&app.pointer) {
-        app.cache.uncherenkov(&entry);
+        app.cache.uncherenkov(&entry.key);
         updated.image_options = true;
     }
 }
@@ -486,6 +493,74 @@ pub fn on_save(app: &mut App, path: &Option<PathBuf>, sessions: &[Session]) {
     if let Err(err) = result {
         puts_error!("at" => "save_session", "reason" => s!(err))
     }
+}
+
+pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>, backward: bool, color: Color) {
+    use cherenkov::{Che, Modifier};
+
+    if let Some(text) = text {
+        if app.cache.clear_search_highlights() {
+            updated.image = true;
+        }
+        app.search_text = Some(text);
+    }
+
+    updated.message = true;
+
+    if_let_some!(text = app.search_text.clone(), app.update_message(Some(o!("Empty"))));
+
+    let seq: Vec<(usize, &Rc<Entry>)> = if backward {
+        let skip = app.pointer.current.map(|index| app.entries.len() - index).unwrap_or(0);
+        app.entries.iter().enumerate().rev().skip(skip).collect()
+    } else {
+        let skip = app.pointer.current.unwrap_or(0) + 1;
+        app.entries.iter().enumerate().skip(skip).collect()
+    };
+
+    let mut previous: Option<(Rc<PopplerDocument>, PathBuf)> = None;
+
+    for (index, entry) in seq {
+        if let EntryContent::Pdf(ref path, ref doc_index) = entry.content {
+            let mut doc: Option<Rc<PopplerDocument>> = None;
+
+            if let Some((ref p_doc, ref p_path)) = previous {
+                if **path == *p_path {
+                    doc = Some(p_doc.clone());
+                }
+            }
+
+            if doc.is_none() {
+                let d = Rc::new(PopplerDocument::new_from_file(&**path));
+                doc = Some(d.clone());
+                previous = Some((d, (**path).clone()));
+            }
+
+            let page = doc.unwrap().nth_page(*doc_index);
+            let found = page.find_text(&text);
+
+            let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
+
+            for region in &found {
+                app.cache.cherenkov(
+                    entry,
+                    &cell_size,
+                    Modifier {
+                        search_highlight: true,
+                        che: Che::Fill(Filler::Rectangle, *region, color, false),
+                    },
+                    &app.states.drawing);
+            }
+
+            if !found.is_empty() {
+                app.pointer.current = Some(index);
+                updated.pointer = true;
+                app.update_message(Some(o!("Found!")));
+                return;
+            }
+        }
+    }
+
+    app.update_message(Some(o!("Not found!")))
 }
 
 pub fn on_set_env(_: &mut App, name: &str, value: &Option<String>) {
@@ -588,7 +663,7 @@ pub fn on_undo(app: &mut App, updated: &mut Updated, count: Option<usize>) {
     let count = count.unwrap_or(app.pointer.counted());
 
     if let Some((ref entry, _)) = app.entries.current(&app.pointer) {
-        app.cache.undo_cherenkov(entry, count)
+        app.cache.undo_cherenkov(&entry.key, count)
     }
     updated.image_options = true;
 }
@@ -706,6 +781,13 @@ pub fn on_window_resized(app: &mut App, updated: &mut Updated) {
     // Ignore followed PreFetch
     app.pre_fetch_serial += 1;
     fire_event(app, "resize-window");
+}
+
+pub fn on_with_message(app: &mut App, updated: &mut Updated, message: Option<String>, op: Box<Operation>) {
+    updated.message = true;
+    app.update_message(message);
+    app.tx.send(Operation::UpdateUI).unwrap();
+    app.tx.send(*op).unwrap();
 }
 
 pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) {

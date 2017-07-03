@@ -1,6 +1,7 @@
 
 extern crate gdk_sys;
 extern crate glib;
+extern crate glib_sys;
 extern crate gobject_sys;
 
 #[cfg(feature = "poppler_lock")] use std::sync::{Arc, Mutex};
@@ -13,10 +14,11 @@ use cairo::{Context, ImageSurface, Format};
 use cairo;
 use gdk_pixbuf::Pixbuf;
 use glib::translate::ToGlibPtr;
-use libc::{c_int, c_double};
+use libc::{c_int, c_double, c_void};
+use self::glib_sys::{g_list_free, g_list_length, g_list_nth_data};
 
 use gtk_utils::new_pixbuf_from_surface;
-use size::Size;
+use size::{Size, Region};
 use state::DrawingState;
 
 mod sys;
@@ -33,10 +35,10 @@ lazy_static! {
 }
 
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone, PartialOrd, Ord)]
-pub struct PopplerDocument(*mut sys::document_t);
+#[derive(Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub struct PopplerDocument(*const sys::document_t);
 
-pub struct PopplerPage(*mut sys::page_t);
+pub struct PopplerPage(*const sys::page_t);
 
 
 impl PopplerDocument {
@@ -76,7 +78,7 @@ impl PopplerDocument {
 impl Drop for PopplerDocument {
     fn drop(&mut self) {
         unsafe {
-            let ptr = transmute::<*mut sys::document_t, *mut gobject_sys::GObject>(self.0);
+            let ptr = transmute::<*const sys::document_t, *mut gobject_sys::GObject>(self.0);
             gobject_sys::g_object_unref(ptr);
         }
     }
@@ -126,13 +128,48 @@ impl PopplerPage {
 
         new_pixbuf_from_surface(&surface)
     }
+
+    pub fn find_text(&self, text: &str) -> Vec<Region> {
+        let mut result = vec![];
+
+        unsafe {
+            let cstr = CString::new(text.as_bytes()).unwrap();
+            let listed = sys::poppler_page_find_text(self.0, cstr.as_ptr());
+
+            if listed.is_null() {
+                return result;
+            }
+
+            let size = self.get_size();
+
+            for n in 0..g_list_length(listed) {
+                let data = g_list_nth_data(listed, n);
+                let data = &*transmute::<*mut c_void, *const sys::rectangle_t>(data);
+                result.push(new_region_on(data, &size));
+            }
+
+            g_list_free(listed);
+
+            result
+        }
+    }
 }
 
 impl Drop for PopplerPage {
     fn drop(&mut self) {
         unsafe {
-            let ptr = transmute::<*mut sys::page_t, *mut gobject_sys::GObject>(self.0);
+            let ptr = transmute::<*const sys::page_t, *mut gobject_sys::GObject>(self.0);
             gobject_sys::g_object_unref(ptr);
         }
+    }
+}
+
+fn new_region_on(pdf_region: &sys::rectangle_t, size: &Size) -> Region {
+    let (w, h) = (size.width as f64, size.height as f64);
+    Region {
+        left: pdf_region.x1 / w,
+        top: 1.0 - (pdf_region.y1 / h),
+        right: pdf_region.x2 / w,
+        bottom: 1.0 - (pdf_region.y2 / h),
     }
 }

@@ -34,6 +34,13 @@ pub struct dest_t {
     pub change_top: c_uint,
     pub change_zoom: c_uint,
 }
+#[repr(C)]#[derive(Debug)]
+pub struct rectangle_t {
+  pub x1: c_double, /* gdouble */
+  pub y1: c_double, /* gdouble */
+  pub x2: c_double, /* gdouble */
+  pub y2: c_double, /* gdouble */
+}
 
 
 #[link(name = "poppler")]

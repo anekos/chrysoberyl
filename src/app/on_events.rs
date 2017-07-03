@@ -525,7 +525,8 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
             }
 
             let page = doc.unwrap().nth_page(*doc_index);
-            if page.find_text(&text) {
+            let found = page.find_text(&text);
+            if !found.is_empty() {
                 app.pointer.current = Some(index);
                 updated.pointer = true;
                 app.update_message(Some(o!("Found!")));

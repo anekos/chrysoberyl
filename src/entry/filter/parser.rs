@@ -150,46 +150,19 @@ fn exp() -> Parser<u8, Expr> {
 
 #[cfg(test)]#[test]
 fn test_parser() {
-    use self::Expr::*;
-    use self::EBool::*;
-    use self::EValue::*;
-    use self::ECompOp::*;
-    use self::EVariable::*;
-    use self::ELogicOp::*;
+    use session::write_filter;
 
-    assert_eq!(
-        parse("1 < 2"),
-        Ok(
-            Boolean(
-                Compare(
-                    Integer(1),
-                    Lt,
-                    Integer(2)))));
+    fn assert_parse(src: &str) {
+        assert_eq!(
+            parse(src).map(|it| {
+                let mut parsed = o!("");
+                write_filter(&Some(it), &mut parsed);
+                parsed
+            }),
+            Ok(format!("@filter {}\n", src)))
+    }
 
-    assert_eq!(
-        parse("width < 200"),
-        Ok(
-            Boolean(
-                Compare(
-                    Variable(Width),
-                    Lt,
-                    Integer(200)))));
-
-    assert_eq!(
-        parse("width < 200 and height < 400"),
-        Ok(
-            Logic(
-                Box::new(
-                    Boolean(
-                        Compare(
-                            Variable(Width),
-                            Lt,
-                            Integer(200)))),
-                And,
-                Box::new(
-                        Boolean(
-                            Compare(
-                                Variable(Height),
-                                Lt,
-                                Integer(400)))))));
+    assert_parse("1 < 2");
+    assert_parse("width < 200");
+    assert_parse("width < 200 and height < 400");
 }

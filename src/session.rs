@@ -289,7 +289,7 @@ fn write_envs(out: &mut String) {
     }
 }
 
-fn write_filter(expr: &Option<FilterExpr>, out: &mut String) {
+pub fn write_filter(expr: &Option<FilterExpr>, out: &mut String) {
     sprint!(out, "@filter");
     if let Some(ref expr) = *expr {
         sprint!(out, " ");

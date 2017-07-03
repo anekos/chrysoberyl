@@ -542,7 +542,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
 
             for region in &found {
                 app.cache.cherenkov(
-                    &entry,
+                    entry,
                     &cell_size,
                     Modifier {
                         search_highlight: true,

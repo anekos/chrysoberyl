@@ -115,12 +115,12 @@ impl Cherenkoved {
 
     pub fn clear_search_highlights(&mut self) -> bool {
         let mut removees = vec![];
-        for (key, cache_entry) in self.cache.iter_mut() {
+        for (key, cache_entry) in &mut self.cache {
             cache_entry.clear_search_highlight();
             removees.push(key.clone());
         }
         for key in &removees {
-            self.cache.remove(&key);
+            self.cache.remove(key);
         }
         !removees.is_empty()
     }

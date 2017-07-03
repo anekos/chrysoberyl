@@ -144,7 +144,7 @@ impl PopplerPage {
 
             for n in 0..g_list_length(listed) {
                 let data = g_list_nth_data(listed, n);
-                let ref data = *transmute::<*mut c_void, *const sys::rectangle_t>(data);
+                let data = &*transmute::<*mut c_void, *const sys::rectangle_t>(data);
                 result.push(new_region_on(data, &size));
             }
 

@@ -118,6 +118,15 @@ impl IndexPointer {
         false
     }
 
+    pub fn show_found(&mut self, target: usize, multiply: bool) -> bool {
+        if let Some(current) = self.current {
+            let multiply = self.fix(1, multiply);
+            self.update(calculate_first_for(current, target, multiply))
+        } else {
+            self.update(target)
+        }
+    }
+
     pub fn counted(&mut self) -> usize {
         let result = self.count.unwrap_or(1);
         self.count = None;
@@ -191,6 +200,12 @@ fn calculate_next(current: usize, container_size: usize, multiply: usize, counte
     None
 }
 
+fn calculate_first_for(current: usize, target: usize, multiply: usize) -> usize {
+    let m_pad = current % multiply;
+    (target - m_pad) / multiply * multiply + m_pad
+}
+
+
 
 #[cfg(test)]#[test]
 fn test_calculate_next() {
@@ -234,4 +249,16 @@ fn test_calculate_previous() {
     assert_eq!(calculate_previous(0, 10, 3, 1, true), Some(9));
     assert_eq!(calculate_previous(1, 10, 3, 1, true), Some(9));
     assert_eq!(calculate_previous(1, 10, 3, 2, true), Some(6));
+}
+
+#[cfg(test)]#[test]
+fn test_calculate_first_for() {
+    // current, target, multiply
+
+    assert_eq!(calculate_first_for(0, 5, 1), 5);
+    assert_eq!(calculate_first_for(0, 5, 3), 3);
+    assert_eq!(calculate_first_for(0, 4, 3), 3);
+    assert_eq!(calculate_first_for(1, 4, 3), 4);
+    assert_eq!(calculate_first_for(1, 5, 3), 4);
+    assert_eq!(calculate_first_for(1, 4, 4), 1);
 }

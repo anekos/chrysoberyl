@@ -202,7 +202,7 @@ fn calculate_next(current: usize, container_size: usize, multiply: usize, counte
 
 fn calculate_first_for(current: usize, target: usize, multiply: usize) -> usize {
     let m_pad = current % multiply;
-    target / multiply * multiply + m_pad
+    (target - m_pad) / multiply * multiply + m_pad
 }
 
 
@@ -260,4 +260,5 @@ fn test_calculate_first_for() {
     assert_eq!(calculate_first_for(0, 4, 3), 3);
     assert_eq!(calculate_first_for(1, 4, 3), 4);
     assert_eq!(calculate_first_for(1, 5, 3), 4);
+    assert_eq!(calculate_first_for(1, 4, 4), 1);
 }

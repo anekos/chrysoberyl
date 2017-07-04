@@ -7,8 +7,9 @@ use std::sync::mpsc::{Sender, channel};
 use std::thread::spawn;
 
 use logger;
-use utils::path_to_str;
 use option::OptionValue;
+use shellexpand_wrapper as sh;
+use utils::path_to_str;
 
 
 
@@ -44,7 +45,7 @@ impl File {
 
 impl OptionValue for File {
     fn set(&mut self, path: &str) -> Result<(), String> {
-        self.register(&path)
+        self.register(&sh::expand_to_pathbuf(path))
     }
 
     fn unset(&mut self) -> Result<(), String> {

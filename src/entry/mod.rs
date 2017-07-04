@@ -163,7 +163,7 @@ impl EntryContainer {
 
     pub fn clear(&mut self, pointer: &mut IndexPointer) {
         self.entries.clear();
-        pointer.current = None;
+        pointer.set_current(None);
     }
 
     pub fn len(&self) -> usize {
@@ -171,7 +171,7 @@ impl EntryContainer {
     }
 
     pub fn current(&self, pointer: &IndexPointer) -> Option<(Entry, usize)> {
-        pointer.current.and_then(|index| {
+        pointer.get_current().and_then(|index| {
             self.entries.get(index).map(|it: &Rc<Entry>| {
                 ((**it).clone(), index)
             })
@@ -273,16 +273,16 @@ impl EntryContainer {
         match *position {
             FromLast(d) => Some(self.len() - d - 1),
             FromFirst(d) => Some(d),
-            Current => pointer.current
+            Current => pointer.get_current()
         } .and_then(|index| {
             if self.len() <= index { None } else { Some(index) }
         })
     }
 
     pub fn shuffle(&mut self, pointer: &mut IndexPointer, fix_current: bool) {
-        if let Some(after_index) = self.entries.shuffle(pointer.current) {
+        if let Some(after_index) = self.entries.shuffle(pointer.get_current()) {
             if fix_current {
-                pointer.current = Some(after_index);
+                pointer.set_current(Some(after_index));
                 return;
             }
         }
@@ -290,8 +290,8 @@ impl EntryContainer {
     }
 
     pub fn sort(&mut self, pointer: &mut IndexPointer) {
-        if let Some(after_index) = self.entries.sort(pointer.current) {
-            pointer.current = Some(after_index);
+        if let Some(after_index) = self.entries.sort(pointer.get_current()) {
+            pointer.set_current(Some(after_index));
         } else {
             pointer.first(1, false);
         }
@@ -378,7 +378,7 @@ impl EntryContainer {
 
     fn set_current(&mut self, pointer: &mut IndexPointer, entry: &Entry) -> bool {
         if let Some(index) = self.entries.get_index(entry) {
-            pointer.current = Some(index);
+            pointer.set_current(Some(index));
             true
         } else {
             false
@@ -505,8 +505,8 @@ impl EntryContainer {
     }
 
     pub fn update_filter(&mut self, pointer: &mut IndexPointer, pred: Option<Box<FnMut(&mut Entry) -> bool>>) {
-        if let Some(after_index) = self.entries.update_filter(pointer.current, pred) {
-            pointer.current = Some(after_index)
+        if let Some(after_index) = self.entries.update_filter(pointer.get_current(), pred) {
+            pointer.set_current(Some(after_index))
         } else {
             pointer.first(1, false);
         }

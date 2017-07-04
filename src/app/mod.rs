@@ -327,7 +327,7 @@ impl App {
         }
 
         if self.entries.len() != len {
-            if let Some(current) = self.pointer.current {
+            if let Some(current) = self.pointer.get_current() {
                 let gui_len = self.gui.len();
                 if current < len && len < current + gui_len {
                     updated.image = true;
@@ -386,7 +386,7 @@ impl App {
     fn do_show(&mut self, updated: &mut Updated) {
         let index = self.states.show.as_ref().and_then(|key| self.entries.search(key));
         if let Some(index) = index {
-            self.pointer.current = Some(index);
+            self.pointer.set_current(Some(index));
             updated.pointer = true;
             self.states.show = None;
         }

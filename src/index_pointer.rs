@@ -2,7 +2,7 @@
 
 #[derive(Clone)]
 pub struct IndexPointer {
-    pub current: Option<usize>,
+    current: Option<usize>,
     count: Option<usize>,
     multiplier: usize,
 }
@@ -19,6 +19,14 @@ impl IndexPointer {
 
     pub fn new_with_index(index: usize) -> IndexPointer {
         IndexPointer { current: Some(index), count: None, multiplier: 1 }
+    }
+
+    pub fn get_current(&self) -> Option<usize> {
+        self.current
+    }
+
+    pub fn set_current(&mut self, count: Option<usize>) {
+        self.current = count;
     }
 
     pub fn save(&self) -> Save {

@@ -164,7 +164,7 @@ pub fn on_first(app: &mut App, updated: &mut Updated, len: usize, count: Option<
         MoveBy::Archive => {
             let count = app.pointer.with_count(count).counted();
             if let Some(first) = app.entries.find_nth_archive(count, false) {
-                app.pointer.current = Some(first);
+                app.pointer.set_current(Some(first));
                 updated.pointer = true;
             }
         }
@@ -213,7 +213,7 @@ pub fn on_last(app: &mut App, updated: &mut Updated, len: usize, count: Option<u
         MoveBy::Archive => {
             let count = app.pointer.with_count(count).counted();
             if let Some(nth) = app.entries.find_nth_archive(count, true) {
-                app.pointer.current = Some(nth);
+                app.pointer.set_current(Some(nth));
                 updated.pointer = true;
             }
         }
@@ -293,7 +293,7 @@ pub fn on_next(app: &mut App, updated: &mut Updated, len: usize, count: Option<u
         MoveBy::Archive => {
             let count = app.pointer.with_count(count).counted();
             if let Some(next) = app.entries.find_next_archive(&app.pointer, count) {
-                app.pointer.current = Some(next);
+                app.pointer.set_current(Some(next));
                 updated.pointer = true;
             }
         }
@@ -351,7 +351,7 @@ pub fn on_previous(app: &mut App, updated: &mut Updated, len: usize, to_end: &mu
         MoveBy::Archive => {
             let count = app.pointer.with_count(count).counted();
             if let Some(previous) = app.entries.find_previous_archive(&app.pointer, count) {
-                app.pointer.current = Some(previous);
+                app.pointer.set_current(Some(previous));
                 updated.pointer = true;
             }
         }
@@ -470,7 +470,7 @@ pub fn on_quit(app: &mut App) {
 
 pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) {
     if len > 0 {
-        app.pointer.current = Some(RandRange::new(0, len).ind_sample(&mut app.rng));
+        app.pointer.set_current(Some(RandRange::new(0, len).ind_sample(&mut app.rng)));
         updated.image = true;
     }
 }
@@ -515,10 +515,10 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
     if_let_some!(text = app.search_text.clone(), app.update_message(Some(o!("Empty"))));
 
     let seq: Vec<(usize, &Rc<Entry>)> = if backward {
-        let skip = app.pointer.current.map(|index| app.entries.len() - index - 1).unwrap_or(0);
+        let skip = app.pointer.get_current().map(|index| app.entries.len() - index - 1).unwrap_or(0);
         app.entries.iter().enumerate().rev().skip(skip).collect()
     } else {
-        let skip = app.pointer.current.unwrap_or(0);
+        let skip = app.pointer.get_current().unwrap_or(0);
         app.entries.iter().enumerate().skip(skip).collect()
     };
 
@@ -612,7 +612,7 @@ pub fn on_shell_filter(app: &App, command_line: &[Expandable]) {
 pub fn on_show(app: &mut App, updated: &mut Updated, key: &SearchKey) {
     let index = app.entries.search(key);
     if let Some(index) = index {
-        app.pointer.current = Some(index);
+        app.pointer.set_current(Some(index));
         updated.pointer = true;
     } else {
         app.states.show = Some(key.clone());

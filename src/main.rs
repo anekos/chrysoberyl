@@ -33,7 +33,7 @@ extern crate shellexpand;
 extern crate url;
 
 #[macro_use] mod macro_utils;
-#[macro_use] mod output;
+#[macro_use] mod logger;
 mod app;
 mod app_path;
 mod archive;

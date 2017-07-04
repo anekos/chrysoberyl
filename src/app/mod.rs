@@ -17,22 +17,22 @@ use rand::{self, ThreadRng};
 use constant;
 use controller;
 use entry::{EntryContainer, EntryContainerOptions};
-use ui_event;
 use gui::Gui;
 use http_cache::HttpCache;
 use image_cache::ImageCache;
 use image_fetcher::ImageFetcher;
 use index_pointer::IndexPointer;
+use logger;
 use mapping::{Mapping, Input};
 use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy, PreDefinedOptionName};
 use option::user::UserSwitchManager;
-use output;
 use shellexpand_wrapper as sh;
 use size::{Size, FitTo, Region};
 use sorting_buffer::SortingBuffer;
 use state::{States, PreFetchState};
 use termination;
 use timer::TimerManager;
+use ui_event;
 use utils::path_to_str;
 
 
@@ -638,5 +638,5 @@ impl Initial {
 fn puts_show_event(envs: &[(String, String)]) {
     let mut pairs = vec![(o!("event"), o!("show"))];
     pairs.extend_from_slice(envs);
-    output::puts(&pairs);
+    logger::puts(&pairs);
 }

@@ -24,10 +24,10 @@ use expandable::{Expandable, expand_all};
 use filer;
 use fragile_input::new_fragile_input;
 use gui::Direction;
+use logger;
 use mapping;
 use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater};
 use option::user::DummySwtich;
-use output;
 use poppler::{PopplerDocument, self};
 use script;
 use session::{Session, write_sessions};
@@ -693,17 +693,18 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 AutoPaging => &mut app.states.auto_paging,
                 CenterAlignment => &mut app.states.view.center_alignment,
                 FitTo => &mut app.states.drawing.fit_to,
+                HorizontalViews => &mut app.states.view.cols,
+                LogFile => &mut app.states.log_file,
+                MaskOperator => &mut app.states.drawing.mask_operator,
+                PreFetchEnabled => &mut app.states.pre_fetch.enabled,
+                PreFetchLimit => &mut app.states.pre_fetch.limit_of_items,
+                PreFetchPageSize => &mut app.states.pre_fetch.page_size,
                 Reverse => &mut app.states.reverse,
                 Scaling => &mut app.states.drawing.scaling,
                 StatusBar => &mut app.states.status_bar,
                 StatusFormat => &mut app.states.status_format,
                 TitleFormat => &mut app.states.title_format,
-                PreFetchEnabled => &mut app.states.pre_fetch.enabled,
-                PreFetchLimit => &mut app.states.pre_fetch.limit_of_items,
-                PreFetchPageSize => &mut app.states.pre_fetch.page_size,
-                HorizontalViews => &mut app.states.view.cols,
                 VerticalViews => &mut app.states.view.rows,
-                MaskOperator => &mut app.states.drawing.mask_operator,
                 ColorWindowBackground => &mut app.gui.colors.window_background,
                 ColorStatusBar => &mut app.gui.colors.status_bar,
                 ColorStatusBarBackground => &mut app.gui.colors.status_bar_background,
@@ -764,7 +765,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
 pub fn on_user(_: &mut App, data: &[(String, String)]) {
     let mut pairs = vec![(o!("event"), o!("user"))];
     pairs.extend_from_slice(data);
-    output::puts(&pairs);
+    logger::puts(&pairs);
 }
 
 pub fn on_views(app: &mut App, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>) {

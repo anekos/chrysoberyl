@@ -1,6 +1,7 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::io::{stdout, Write};
 use std::sync::mpsc::{Sender, channel};
 use std::sync::{Arc, Mutex};
 use std::thread::spawn;
@@ -93,8 +94,10 @@ fn run_stdout_output() -> Sender<String> {
     let (tx, rx) = channel();
 
     spawn(move || {
+        let stdout = stdout();
+        let mut stdout = stdout.lock();
         while let Ok(s) = rx.recv() {
-            println!("{}", s);
+            let _ = stdout.write_fmt(format_args!("{}\n", s));
         }
     });
 

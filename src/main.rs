@@ -77,6 +77,7 @@ mod timer;
 mod ui_event;
 mod utils;
 mod validation;
+mod version;
 
 
 

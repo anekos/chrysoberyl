@@ -56,3 +56,4 @@ features = ["termination"]
 
 [build-dependencies]
 pkg-config = "*"
+vergen = "*"

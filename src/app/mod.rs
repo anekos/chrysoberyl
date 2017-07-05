@@ -34,6 +34,7 @@ use termination;
 use timer::TimerManager;
 use ui_event;
 use utils::path_to_str;
+use version;
 
 
 mod on_events;
@@ -96,11 +97,7 @@ impl App {
             initial.encodings.push(WINDOWS_31J);
         }
 
-        unsafe {
-            let pid = s!(libc::getpid());
-            env::set_var(&constant::env_name("PID"), &pid);
-            puts_event!("info/pid", "value" => pid);
-        }
+        set_envs();
 
         let cache_limit = PreFetchState::default().limit_of_items;
         let cache = ImageCache::new(cache_limit);
@@ -639,4 +636,15 @@ fn puts_show_event(envs: &[(String, String)]) {
     let mut pairs = vec![(o!("event"), o!("show"))];
     pairs.extend_from_slice(envs);
     logger::puts(&pairs);
+}
+
+fn set_envs() {
+    unsafe {
+        let pid = s!(libc::getpid());
+        env::set_var(constant::env_name("PID"), &pid);
+        puts_event!("info/pid", "value" => pid);
+    }
+
+    env::set_var(constant::env_name("GIT_HASH"), version::sha());
+    env::set_var(constant::env_name("VERSION"), env!("CARGO_PKG_VERSION").to_string());
 }

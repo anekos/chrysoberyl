@@ -645,6 +645,13 @@ fn set_envs() {
         puts_event!("info/pid", "value" => pid);
     }
 
-    env::set_var(constant::env_name("GIT_HASH"), version::sha());
-    env::set_var(constant::env_name("VERSION"), env!("CARGO_PKG_VERSION").to_string());
+    let version = env!("CARGO_PKG_VERSION").to_string();
+    let sha = version::sha();
+    let date = version::commit_date();
+
+    puts_event!("version", "version" => version, "git_hash" => sha, "date" => date);
+
+    env::set_var(constant::env_name("GIT_HASH"), sha);
+    env::set_var(constant::env_name("GIT_DATE"), date);
+    env::set_var(constant::env_name("VERSION"), version);
 }

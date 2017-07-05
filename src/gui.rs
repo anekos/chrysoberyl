@@ -413,8 +413,8 @@ fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), String> {
         let context = Context::new(&surface);
         context.set_source_pixbuf(&pixbuf, 0.0, 0.0);
         context.paint();
-        File::create(path).map_err(|it| s!(it)).and_then(|file| {
-            surface.write_to_png(file).map_err(|_| o!("IO Error"))
+        File::create(path).map_err(|it| s!(it)).and_then(|mut file| {
+            surface.write_to_png(&mut file).map_err(|_| o!("IO Error"))
         })
     })
 }

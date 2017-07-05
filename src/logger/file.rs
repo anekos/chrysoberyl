@@ -1,6 +1,6 @@
 
 use std::fmt;
-use std::fs::OpenOptions;
+use std::fs::{OpenOptions, create_dir_all};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Sender, channel};
@@ -66,6 +66,10 @@ impl fmt::Display for File {
 
 
 pub fn register<T: AsRef<Path>>(path: &T) -> Result<Sender<String>, String> {
+    if let Some(parent) = path.as_ref().parent() {
+        create_dir_all(parent).unwrap();
+    }
+
     OpenOptions::new()
         .read(false)
         .write(true)

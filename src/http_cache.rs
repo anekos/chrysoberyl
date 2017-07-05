@@ -110,7 +110,6 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                     }
                 }
                 Fail(thread_id, err, request) => {
-                    waiting.push(thread_id);
                     buffer.skip(request.ticket);
 
                     app_tx.send(Operation::Pull).unwrap();

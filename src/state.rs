@@ -6,6 +6,7 @@ use gdk_pixbuf::InterpType;
 
 use entry::SearchKey;
 use entry::filter::expression::Expr as FilterExpr;
+use logger;
 use size::{FitTo, Region};
 
 
@@ -23,6 +24,7 @@ pub struct States {
     pub pre_fetch: PreFetchState,
     pub last_direction: Direction,
     pub last_filter: Option<FilterExpr>,
+    pub log_file: logger::file::File,
 }
 
 pub struct ViewState {
@@ -80,6 +82,7 @@ impl Default for States {
             pre_fetch: PreFetchState::default(),
             last_direction: Direction::Forward,
             last_filter: None,
+            log_file: logger::file::File::new(),
         }
     }
 

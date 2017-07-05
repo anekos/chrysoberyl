@@ -4,8 +4,8 @@ use std::io::{Write, BufReader, BufRead, BufWriter};
 use std::thread::spawn;
 use std::sync::mpsc::{Sender, channel};
 
+use logger;
 use operation::Operation;
-use output;
 
 
 
@@ -39,7 +39,7 @@ fn main(command_line: Vec<String>, tx: Sender<Operation>) {
     });
 
     let (tx, rx) = channel();
-    let output_handle = output::register(tx);
+    let output_handle = logger::register(tx);
 
     let stdin_handle = spawn(move || {
         let mut writer = BufWriter::new(stdin);
@@ -53,5 +53,5 @@ fn main(command_line: Vec<String>, tx: Sender<Operation>) {
     stdout_handle.join().unwrap();
     stdin_handle.join().unwrap();
 
-    output::unregister(output_handle);
+    logger::unregister(output_handle);
 }

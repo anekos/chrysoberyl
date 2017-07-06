@@ -49,6 +49,8 @@ pub enum EVariable {
     Width,
     Height,
     Path,
+    Name,
+    Page,
     Extension,
     Type,
     Dimentions,

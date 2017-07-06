@@ -7,6 +7,7 @@ use archive::ArchiveEntry;
 use entry::EntryContent;
 use lazy::Lazy;
 use size::Size;
+use utils::path_to_str;
 
 
 
@@ -25,14 +26,16 @@ pub struct LazyEntryInfo {
 
 #[derive(Clone)]
 pub struct StrictEntryInfo {
-    pub path: String, // local filepath or archive filepath or url
+    pub path: String, // local filepath, archive filepath or url
+    pub name: String, // local filepath, inner filename in archive filepath or url
     pub extension: Option<String>,
     pub entry_type: &'static str,
+    pub page: i64,
 }
 
 
 impl EntryInfo {
-    pub fn new(content: &EntryContent, path: &str) -> EntryInfo {
+    pub fn new(content: &EntryContent, path: &str, page: usize) -> EntryInfo {
         use self::EntryContent::*;
 
         let extension = Path::new(path).extension().and_then(|it| it.to_str().map(|it| it.to_owned()));
@@ -44,11 +47,20 @@ impl EntryInfo {
             Pdf(_, _) => "pdf",
         };
 
+        let name: String = match *content {
+            File(ref path) => o!(path_to_str(path)),
+            Http(_, ref url) => url.clone(),
+            Archive(_, ref entry) => entry.name.clone(),
+            Pdf(ref path, _) => o!(path_to_str(&**path)),
+        };
+
         EntryInfo {
             strict: StrictEntryInfo {
                 entry_type: entry_type,
                 extension: extension,
                 path: o!(path),
+                name: name,
+                page: page as i64,
             },
             lazy_info: Lazy::default()
         }

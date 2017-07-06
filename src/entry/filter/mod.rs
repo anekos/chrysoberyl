@@ -125,7 +125,8 @@ fn eval_variable(info: &mut EntryInfo, content: &EntryContent, v: &EVariable) ->
         Width => info.lazy(content).dimensions.map(|it| it.width as i64),
         Height => info.lazy(content).dimensions.map(|it| it.height as i64),
         Dimentions => info.lazy(content).dimensions.map(|it| it.dimensions() as i64),
-        _ => None,
+        Page => Some(info.strict.page),
+        Type | Path | Name | Extension => None,
     }
 }
 
@@ -136,6 +137,7 @@ fn eval_variable_as_s(info: &EntryInfo, v: &EVariable) -> Option<String> {
         Path => Some(info.strict.path.clone()),
         Extension => info.strict.extension.clone(),
         Type => Some(o!(info.strict.entry_type)),
-        _ => None,
+        Name => Some(info.strict.name.clone()),
+        Page | Dimentions | Width | Height => None,
     }
 }

@@ -68,12 +68,14 @@ fn write_value(v: &EValue, out: &mut String) {
     match *v {
         Integer(ref v) => sprint!(out, "{}", v),
         Variable(ref v) => match *v {
-            Width => sprint!(out, "width"),
-            Height => sprint!(out, "height"),
-            Path => sprint!(out, "path"),
-            Extension => sprint!(out, "extension"),
-            Type => sprint!(out, "type"),
             Dimentions => sprint!(out, "dimensions"),
+            Extension => sprint!(out, "extension"),
+            Height => sprint!(out, "height"),
+            Page => sprint!(out, "page"),
+            Path => sprint!(out, "path"),
+            Type => sprint!(out, "type"),
+            Width => sprint!(out, "width"),
+            Name => sprint!(out, "name"),
         },
         Glob(ref rs) => {
             sprint!(out, "<");

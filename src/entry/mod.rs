@@ -90,7 +90,7 @@ impl Entry {
     pub fn new(content: EntryContent, meta: Option<Meta>) -> Entry {
         let key = content.key();
 
-        let info = EntryInfo::new(&content, &key.1);
+        let info = EntryInfo::new(&content, &key.1, key.2);
 
         Entry {
             key: key,

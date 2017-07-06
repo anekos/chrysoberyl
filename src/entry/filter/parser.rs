@@ -59,7 +59,16 @@ fn variable() -> Parser<u8, EValue> {
         seq(name).map(move |_| EValue::Variable(var))
     }
 
-    gen(b"type", Type) | gen(b"width", Width) | gen(b"height", Height) | gen(b"path", Path) | gen(b"ext", Extension) | gen(b"extension", Extension) | gen(b"dim", Dimentions) | gen(b"dimensions", Dimentions)
+    gen(b"type", Type) |
+        gen(b"width", Width) |
+        gen(b"height", Height) |
+        gen(b"path", Path) |
+        gen(b"ext", Extension) |
+        gen(b"extension", Extension) |
+        gen(b"dim", Dimentions) |
+        gen(b"dimensions", Dimentions) |
+        gen(b"page", Page) |
+        gen(b"name", Name)
 }
 
 fn value() -> Parser<u8, EValue> {

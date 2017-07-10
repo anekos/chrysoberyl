@@ -30,8 +30,8 @@ impl FromStr for Expr {
 
 #[cfg_attr(feature = "cargo-clippy", allow(doc_markdown))]
 /**
- * Expr ← Logic | Bool | If
- * Logic ← Bool LogicOp Bool
+ * Expr ← Bool | If | Logic
+ * Logic ← Bool LogicOp Expr
  * Bool ← Compare | BoolVariable
  * If ← 'if' Expr Expr Expr
  * BoolOp ← 'and' | 'or'
@@ -131,7 +131,7 @@ fn logic_op() -> Parser<u8, ELogicOp> {
 }
 
 fn logic() -> Parser<u8, Expr> {
-    (boolean() + (spaces() * logic_op() - spaces()) + boolean()).map(|((l, op), r)| {
+    (boolean() + (spaces() * logic_op() - spaces()) + call(expr_item)).map(|((l, op), r)| {
         Expr::Logic(Box::new(l), op, Box::new(r))
     })
 }
@@ -156,7 +156,7 @@ fn if_() -> Parser<u8, Expr> {
 }
 
 fn expr_item() -> Parser<u8, Expr> {
-    logic() | boolean() | if_()
+    call(logic) | boolean() | call(if_)
 }
 
 
@@ -184,6 +184,6 @@ fn test_parser() {
     assert_parse("width < 200");
     assert_parse("width < 200 and height < 400");
     assert_parse("width < 200 and height < 400");
-    assert_parse("width < 200 and height < 400 and ext == <jpg>");
+    assert_parse("width < 200 and height < 400 and extension == <jpg>");
     assert_parse("if path == <*.google.com*> width < 200 height < 400");
 }

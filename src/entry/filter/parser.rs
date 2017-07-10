@@ -30,7 +30,8 @@ impl FromStr for Expr {
 
 #[cfg_attr(feature = "cargo-clippy", allow(doc_markdown))]
 /**
- * Expr ← Bool | If | Logic
+ * Expr ← Block | Bool | If | Logic
+ * Block ← '(' Expr ')' | '{' Expr '}'
  * Logic ← Bool LogicOp Expr
  * Bool ← Compare | BoolVariable
  * If ← 'if' Expr Expr Expr
@@ -155,8 +156,20 @@ fn if_() -> Parser<u8, Expr> {
     p.map(|((cond, true_clause), false_clause)| Expr::If(Box::new(cond), Box::new(true_clause), Box::new(false_clause)))
 }
 
+fn block_paren() -> Parser<u8, Expr> {
+    sym(b'(') * spaces() * call(expr_item) - spaces() - sym(b')')
+}
+
+fn block_curly() -> Parser<u8, Expr> {
+    sym(b'{') * spaces() * call(expr_item) - spaces() - sym(b'}')
+}
+
+fn block() -> Parser<u8, Expr> {
+    block_paren() | block_curly()
+}
+
 fn expr_item() -> Parser<u8, Expr> {
-    call(logic) | boolean() | call(if_)
+    block() | call(logic) | boolean() | call(if_)
 }
 
 
@@ -195,11 +208,14 @@ fn test_parser() {
     assert_parse("width < 200 and height < 400");
     assert_parse("width < 200 and height < 400");
     assert_parse("width < 200 and height < 400 and extension == <jpg>");
+
     assert_parse("if path == <*.google.com*> width < 200 height < 400");
+
+    assert_parse2("if (path == <google>) (width < 200) (height < 400)", "if path == <google> width < 200 height < 400");
+    assert_parse2("if (path == <google>) {width < 200} {height < 400}", "if path == <google> width < 200 height < 400");
 
     assert_parse("dimensions == 12345");
     assert_parse2("dim == 12345", "dimensions == 12345");
-
     assert_parse("extension == <hoge>");
     assert_parse2("ext == <hoge>", "extension == <hoge>");
 }

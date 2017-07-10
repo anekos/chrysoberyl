@@ -234,8 +234,6 @@ impl App {
                     on_map(self, target, mapped_operation),
                 MoveAgain(count, ignore_views, move_by, wrap) =>
                     on_move_again(self, &mut updated, len, &mut to_end, count, ignore_views, move_by, wrap),
-                MoveEntry(ref from, ref to) =>
-                    on_move_entry(self, &mut updated, from, to),
                 Multi(ops, async) =>
                     on_multi(self, ops, async),
                 Next(count, ignore_views, move_by, wrap) =>

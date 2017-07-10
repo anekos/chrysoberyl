@@ -19,7 +19,7 @@ use color::Color;
 use config::DEFAULT_CONFIG;
 use editor;
 use entry::filter::expression::Expr as FilterExpr;
-use entry::{self, Meta, SearchKey, Entry,EntryContent};
+use entry::{Meta, SearchKey, Entry,EntryContent};
 use expandable::{Expandable, expand_all};
 use filer;
 use fragile_input::new_fragile_input;
@@ -264,10 +264,6 @@ pub fn on_move_again(app: &mut App, updated: &mut Updated, len: usize, to_end: &
     } else {
         on_previous(app, updated, len, to_end, count, ignore_views, move_by, wrap)
     }
-}
-
-pub fn on_move_entry(app: &mut App, updated: &mut Updated, from: &entry::Position, to: &entry::Position) {
-    updated.image = app.entries.move_entry(&app.pointer, from, to);
 }
 
 pub fn on_multi(app: &mut App, mut operations: VecDeque<Operation>, async: bool) {

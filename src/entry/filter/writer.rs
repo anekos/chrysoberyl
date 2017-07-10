@@ -8,6 +8,8 @@ pub fn write(expr: &Expr, out: &mut String) {
     match *expr {
         If(ref cond, ref true_clause, ref false_clause) =>
             write_if(cond, true_clause, false_clause, out),
+        When(reverse, ref cond, ref clause) =>
+            write_when(reverse, cond, clause, out),
         Logic(ref l, ref op, ref r) =>
             write_logic(l, op, r, out),
         Boolean(ref v) =>
@@ -23,6 +25,18 @@ fn write_if(cond: &Expr, true_clause: &Expr, false_clause: &Expr, out: &mut Stri
     write(true_clause, out);
     write_space(out);
     write(false_clause, out);
+}
+
+fn write_when(reverse: bool, cond: &Expr, clause: &Expr, out: &mut String) {
+    if reverse {
+        sprint!(out, "unless");
+    } else {
+        sprint!(out, "when");
+    }
+    write_space(out);
+    write(cond, out);
+    write_space(out);
+    write(clause, out);
 }
 
 fn write_logic(l: &Expr, op: &ELogicOp, r: &Expr, out: &mut String) {

@@ -30,11 +30,11 @@ impl FromStr for Expr {
 
 #[cfg_attr(feature = "cargo-clippy", allow(doc_markdown))]
 /**
- * Expr ← Block | Bool | If | Logic
+ * Expr ← Block | Bool | Cond | Logic
  * Block ← '(' Expr ')' | '{' Expr '}'
  * Logic ← Bool LogicOp Expr
  * Bool ← Compare | BoolVariable
- * If ← 'if' Expr Expr Expr
+ * Cond ← 'if' Expr Expr Expr | 'when' Expr Expr | 'unless' Expr Expr
  * BoolOp ← 'and' | 'or'
  * Compare ← Value CmpOp Value
  * CmpOp ← '<' | '<=' | '>' | '>=' | '=' | '=~'
@@ -151,6 +151,11 @@ fn glob_entry() -> Parser<u8, (globset::GlobMatcher, String)> {
     })
 }
 
+fn when() -> Parser<u8, Expr> {
+    let p = (seq(b"when") | seq(b"unless")) - spaces() + (call(expr_item) + (spaces() * call(expr_item)));
+    p.map(|(when_unless, (cond, clause))| Expr::When(when_unless == b"unless", Box::new(cond), Box::new(clause)))
+}
+
 fn if_() -> Parser<u8, Expr> {
     let p = seq(b"if") * spaces() * (call(expr_item) + (spaces() * call(expr_item)) + (spaces() * call(expr_item)));
     p.map(|((cond, true_clause), false_clause)| Expr::If(Box::new(cond), Box::new(true_clause), Box::new(false_clause)))
@@ -169,7 +174,7 @@ fn block() -> Parser<u8, Expr> {
 }
 
 fn expr_item() -> Parser<u8, Expr> {
-    block() | call(logic) | boolean() | call(if_)
+    block() | call(logic) | boolean() | call(if_) | call(when)
 }
 
 
@@ -209,6 +214,8 @@ fn test_parser() {
     assert_parse("width < 200 and height < 400");
     assert_parse("width < 200 and height < 400 and extension == <jpg>");
 
+    assert_parse("when path == <google> width < 200");
+    assert_parse("unless path == <google> width < 200");
     assert_parse("if path == <*.google.com*> width < 200 height < 400");
 
     assert_parse2("if (path == <google>) (width < 200) (height < 400)", "if path == <google> width < 200 height < 400");

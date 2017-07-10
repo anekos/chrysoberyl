@@ -37,9 +37,9 @@ impl FromStr for Expr {
  * Cond ← 'if' Expr Expr Expr | 'when' Expr Expr | 'unless' Expr Expr
  * BoolOp ← 'and' | 'or'
  * Compare ← Value CmpOp Value
- * CmpOp ← '<' | '<=' | '>' | '>=' | '=' | '=~'
+ * CmpOp ← '<' | '<=' | '>' | '>=' | '=' | '==' | '!=' | '=~'
  * Value ← Glob | Integer | Variable
- * Variable ← 'type' | 'width' | 'height' | 'path' | 'ext' | 'extension' | 'dimensions'
+ * Variable ← 'type' | 'width' | 'height' | 'path' | 'ext' | 'extension' | 'dimensions' | 'name'
  * Glob ← '<' string '>'
  * BoolVariable ← 'animation'
  */

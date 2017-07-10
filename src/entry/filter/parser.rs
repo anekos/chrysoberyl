@@ -16,7 +16,7 @@ use entry::filter::expression::*;
  */
 pub fn parse(input: &str) -> Result<Expr, String> {
     let mut input = DataInput::new(input.as_bytes());
-    exp().parse(&mut input).map_err(|it| s!(it))
+    expr().parse(&mut input).map_err(|it| s!(it))
 }
 
 impl FromStr for Expr {
@@ -30,9 +30,10 @@ impl FromStr for Expr {
 
 #[cfg_attr(feature = "cargo-clippy", allow(doc_markdown))]
 /**
- * Expr ← Logic | Bool
+ * Expr ← Logic | Bool | If
  * Logic ← Bool LogicOp Bool
  * Bool ← Compare | BoolVariable
+ * If ← 'if' Expr Expr Expr
  * BoolOp ← 'and' | 'or'
  * Compare ← Value CmpOp Value
  * CmpOp ← '<' | '<=' | '>' | '>=' | '=' | '=~'
@@ -149,10 +150,18 @@ fn glob_entry() -> Parser<u8, (globset::GlobMatcher, String)> {
     })
 }
 
+fn if_() -> Parser<u8, Expr> {
+    let p = seq(b"if") * spaces() * (call(expr_item) + (spaces() * call(expr_item)) + (spaces() * call(expr_item)));
+    p.map(|((cond, true_clause), false_clause)| Expr::If(Box::new(cond), Box::new(true_clause), Box::new(false_clause)))
+}
+
+fn expr_item() -> Parser<u8, Expr> {
+    logic() | boolean() | if_()
+}
 
 
-fn exp() -> Parser<u8, Expr> {
-    spaces() * (logic() | boolean()) - spaces()
+fn expr() -> Parser<u8, Expr> {
+    spaces() * expr_item() - spaces()
 }
 
 
@@ -174,4 +183,6 @@ fn test_parser() {
     assert_parse("1 < 2");
     assert_parse("width < 200");
     assert_parse("width < 200 and height < 400");
+    assert_parse("width < 200 and height < 400");
+    assert_parse("if path == <*.google.com*> width < 200 height < 400");
 }

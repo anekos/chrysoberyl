@@ -7,6 +7,7 @@ use globset::GlobMatcher;
 pub enum Expr {
     Logic(Box<Expr>, ELogicOp, Box<Expr>),
     Boolean(EBool),
+    If(Box<Expr>, Box<Expr>, Box<Expr>),
 }
 
 #[derive(Clone, Debug)]

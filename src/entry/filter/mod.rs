@@ -23,10 +23,20 @@ fn eval(info: &mut EntryInfo, content: &EntryContent, expr: &Expr) -> bool {
     use self::Expr::*;
 
     match *expr {
+        If(ref cond, ref true_clause, ref false_clause) =>
+            eval_if(info, content, cond, true_clause, false_clause),
         Boolean(ref b) =>
             eval_bool(info, content, b),
         Logic(ref l, ref op, ref r) =>
             eval_logic(info, content, l, op, r),
+    }
+}
+
+fn eval_if(info: &mut EntryInfo, content: &EntryContent, cond: &Expr, true_clause: &Expr, false_clause: &Expr) -> bool {
+    if eval(info, content, cond) {
+        eval(info, content, true_clause)
+    } else {
+        eval(info, content, false_clause)
     }
 }
 

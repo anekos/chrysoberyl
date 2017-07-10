@@ -6,11 +6,23 @@ pub fn write(expr: &Expr, out: &mut String) {
     use self::Expr::*;
 
     match *expr {
+        If(ref cond, ref true_clause, ref false_clause) =>
+            write_if(cond, true_clause, false_clause, out),
         Logic(ref l, ref op, ref r) =>
             write_logic(l, op, r, out),
         Boolean(ref v) =>
             write_bool(v, out),
     }
+}
+
+fn write_if(cond: &Expr, true_clause: &Expr, false_clause: &Expr, out: &mut String) {
+    sprint!(out, "if");
+    write_space(out);
+    write(cond, out);
+    write_space(out);
+    write(true_clause, out);
+    write_space(out);
+    write(false_clause, out);
 }
 
 fn write_logic(l: &Expr, op: &ELogicOp, r: &Expr, out: &mut String) {

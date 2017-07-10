@@ -184,5 +184,6 @@ fn test_parser() {
     assert_parse("width < 200");
     assert_parse("width < 200 and height < 400");
     assert_parse("width < 200 and height < 400");
+    assert_parse("width < 200 and height < 400 and ext == <jpg>");
     assert_parse("if path == <*.google.com*> width < 200 height < 400");
 }

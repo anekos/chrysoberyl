@@ -61,15 +61,15 @@ fn variable() -> Parser<u8, EValue> {
     }
 
     gen(b"type", Type) |
-        gen(b"width", Width) |
-        gen(b"height", Height) |
-        gen(b"path", Path) |
-        gen(b"extension", Extension) |
-        gen(b"ext", Extension) |
         gen(b"dimensions", Dimentions) |
         gen(b"dim", Dimentions) |
+        gen(b"extension", Extension) |
+        gen(b"ext", Extension) |
+        gen(b"height", Height) |
+        gen(b"name", Name) |
         gen(b"page", Page) |
-        gen(b"name", Name)
+        gen(b"path", Path) |
+        gen(b"width", Width)
 }
 
 fn value() -> Parser<u8, EValue> {
@@ -180,10 +180,26 @@ fn test_parser() {
             Ok(format!("@filter {}\n", src)))
     }
 
+    fn assert_parse2(src: &str, expect: &str) {
+        assert_eq!(
+            parse(src).map(|it| {
+                let mut parsed = o!("");
+                write_filter(&Some(it), &mut parsed);
+                parsed
+            }),
+            Ok(format!("@filter {}\n", expect)))
+    }
+
     assert_parse("1 < 2");
     assert_parse("width < 200");
     assert_parse("width < 200 and height < 400");
     assert_parse("width < 200 and height < 400");
     assert_parse("width < 200 and height < 400 and extension == <jpg>");
     assert_parse("if path == <*.google.com*> width < 200 height < 400");
+
+    assert_parse("dimensions == 12345");
+    assert_parse2("dim == 12345", "dimensions == 12345");
+
+    assert_parse("extension == <hoge>");
+    assert_parse2("ext == <hoge>", "extension == <hoge>");
 }

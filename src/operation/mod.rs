@@ -38,7 +38,7 @@ pub enum Operation {
     Expand(bool, Option<PathBuf>), /* recursive, base */
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Fill(Filler, Option<Region>, Color, bool, usize), /* region, mask, cell index */
-    Filter(Box<Option<entry::filter::expression::Expr>>),
+    Filter(bool, Box<Option<entry::filter::expression::Expr>>), /* dynamic, filter expression */
     Fragile(Expandable),
     Initialized,
     Input(mapping::Input),

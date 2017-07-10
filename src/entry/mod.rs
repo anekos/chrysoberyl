@@ -236,7 +236,7 @@ impl EntryContainer {
 
         if let Some((expanded, file)) = result {
             self.entries.clear();
-            self.entries.extend_from_slice(expanded.as_slice());
+            self.entries.extend_from_slice(&mut expanded.as_slice());
             if let Some(file) = file {
                 self.set_current(pointer, &file);
             } else  {
@@ -470,8 +470,8 @@ impl EntryContainer {
         }
     }
 
-    pub fn update_filter(&mut self, pointer: &mut IndexPointer, pred: Option<Box<FnMut(&mut Entry) -> bool>>) {
-        if let Some(after_index) = self.entries.update_filter(pointer.get_current(), pred) {
+    pub fn update_filter(&mut self, dynamic: bool, pointer: &mut IndexPointer, pred: Option<Box<FnMut(&mut Entry) -> bool>>) {
+        if let Some(after_index) = self.entries.update_filter(dynamic, pointer.get_current(), pred) {
             pointer.set_current(Some(after_index))
         } else {
             pointer.first(1, false);

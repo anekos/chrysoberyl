@@ -14,7 +14,8 @@ pub struct FilterableVec<T: Clone + Hash + Eq + Sized> {
     original_indices: HashMap<Rc<T>, usize>,
     filtered_indices: HashMap<Rc<T>, usize>,
     rng: ThreadRng,
-    pred: Option<Box<FnMut(&mut T) -> bool>>,
+    dynamic_pred: Option<Box<FnMut(&mut T) -> bool>>,
+    static_pred: Option<Box<FnMut(&mut T) -> bool>>,
 }
 
 
@@ -26,7 +27,8 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
             original_indices: HashMap::new(),
             filtered_indices: HashMap::new(),
             rng: thread_rng(),
-            pred: None,
+            dynamic_pred: None,
+            static_pred: None,
         }
     }
 
@@ -84,19 +86,33 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
     pub fn extend_from_slice(&mut self, entries: &[Rc<T>]) {
         let len = self.original.len();
 
-        self.original.extend_from_slice(entries);
-        let targets = if let Some(ref mut pred) = self.pred {
-            let entries = entries.to_vec();
+        let entries =
+            if let Some(ref mut static_pred) = self.static_pred {
+                let entries = entries.to_vec();
+                let mut targets = vec![];
+                for mut entry in &mut entries.into_iter() {
+                    if (static_pred)(Rc::make_mut(&mut entry)) {
+                        targets.push(entry.clone());
+                    }
+                }
+                targets
+            } else {
+                entries.to_vec()
+            };
+
+        self.original.extend_from_slice(&*entries);
+
+        let targets = if let Some(ref mut dynamic_pred) = self.dynamic_pred {
             let mut targets = vec![];
             for (index, mut entry) in &mut entries.into_iter().enumerate() {
-                if (pred)(Rc::make_mut(&mut entry)) {
+                if (dynamic_pred)(Rc::make_mut(&mut entry)) {
                     self.original_indices.insert(entry.clone(), len + index);
                     targets.push(entry.clone());
                 }
             }
             targets
         } else {
-            self.filtered.extend_from_slice(entries);
+            self.filtered.extend_from_slice(&*entries);
             self.reset_indices(); // FXIME Optimize
             return;
         };
@@ -107,25 +123,44 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
     }
 
     pub fn push(&mut self, mut entry: Rc<T>) {
+        if let Some(ref mut static_pred) = self.static_pred {
+            if !(static_pred)(Rc::make_mut(&mut entry)) {
+                return;
+            }
+        };
+
         self.original_indices.insert(entry.clone(), self.original.len());
         self.original.push(entry.clone());
 
-        let ok = if let Some(ref mut pred) = self.pred {
-            (pred)(Rc::make_mut(&mut entry))
-        } else {
-            true
+        if let Some(ref mut dynamic_pred) = self.dynamic_pred {
+            if !(dynamic_pred)(Rc::make_mut(&mut entry)) {
+                return;
+            }
         };
-        if ok {
-            self.push_filtered(entry.clone());
-        }
+
+        self.push_filtered(entry.clone());
     }
 
-    pub fn update_filter(&mut self, before_filtered_index: Option<usize>, pred: Option<Box<FnMut(&mut T) -> bool>>) -> Option<usize> {
-        self.pred = pred;
+    pub fn update_filter(&mut self, dynamic: bool, before_filtered_index: Option<usize>, pred: Option<Box<FnMut(&mut T) -> bool>>) -> Option<usize> {
+        if dynamic {
+            self.dynamic_pred = pred;
+        } else {
+            self.static_pred = pred;
+        }
         self.filter(before_filtered_index)
     }
 
     pub fn filter(&mut self, before_filtered_index: Option<usize>) -> Option<usize> {
+        if let Some(ref mut static_pred) = self.static_pred {
+            let mut new_originals = vec![];
+            for mut entry in &mut self.original.iter_mut() {
+                if (static_pred)(Rc::make_mut(&mut entry)) {
+                    new_originals.push(entry.clone());
+                }
+            }
+            self.original = new_originals;
+        }
+
         let before_index: Option<usize> = before_filtered_index.and_then(|bi| {
             self.filtered.get(bi).and_then(|entry| {
                 self.original_indices.get(entry).cloned()
@@ -134,10 +169,10 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
 
         let (mut after_index_left, mut after_index_right) = (None, None);
 
-        if let Some(ref mut pred) = self.pred {
+        if let Some(ref mut dynamic_pred) = self.dynamic_pred {
             self.filtered = vec![];
             for (index, mut entry) in &mut self.original.iter_mut().enumerate() {
-                if (pred)(Rc::make_mut(&mut entry)) {
+                if (dynamic_pred)(Rc::make_mut(&mut entry)) {
                      self.filtered.push(entry.clone());
 
                      if let Some(before_index) = before_index {

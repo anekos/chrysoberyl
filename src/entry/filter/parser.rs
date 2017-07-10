@@ -64,10 +64,10 @@ fn variable() -> Parser<u8, EValue> {
         gen(b"width", Width) |
         gen(b"height", Height) |
         gen(b"path", Path) |
-        gen(b"ext", Extension) |
         gen(b"extension", Extension) |
-        gen(b"dim", Dimentions) |
+        gen(b"ext", Extension) |
         gen(b"dimensions", Dimentions) |
+        gen(b"dim", Dimentions) |
         gen(b"page", Page) |
         gen(b"name", Name)
 }

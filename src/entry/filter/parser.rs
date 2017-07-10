@@ -16,7 +16,7 @@ use entry::filter::expression::*;
  */
 pub fn parse(input: &str) -> Result<Expr, String> {
     let mut input = DataInput::new(input.as_bytes());
-    exp().parse(&mut input).map_err(|it| s!(it))
+    expr().parse(&mut input).map_err(|it| s!(it))
 }
 
 impl FromStr for Expr {
@@ -30,9 +30,11 @@ impl FromStr for Expr {
 
 #[cfg_attr(feature = "cargo-clippy", allow(doc_markdown))]
 /**
- * Expr ← Logic | Bool
- * Logic ← Bool LogicOp Bool
+ * Expr ← Block | Bool | Cond | Logic
+ * Block ← '(' Expr ')' | '{' Expr '}'
+ * Logic ← Bool LogicOp Expr
  * Bool ← Compare | BoolVariable
+ * Cond ← 'if' Expr Expr Expr | 'when' Expr Expr | 'unless' Expr Expr
  * BoolOp ← 'and' | 'or'
  * Compare ← Value CmpOp Value
  * CmpOp ← '<' | '<=' | '>' | '>=' | '=' | '=~'
@@ -60,15 +62,15 @@ fn variable() -> Parser<u8, EValue> {
     }
 
     gen(b"type", Type) |
-        gen(b"width", Width) |
-        gen(b"height", Height) |
-        gen(b"path", Path) |
-        gen(b"ext", Extension) |
-        gen(b"extension", Extension) |
-        gen(b"dim", Dimentions) |
         gen(b"dimensions", Dimentions) |
+        gen(b"dim", Dimentions) |
+        gen(b"extension", Extension) |
+        gen(b"ext", Extension) |
+        gen(b"height", Height) |
+        gen(b"name", Name) |
         gen(b"page", Page) |
-        gen(b"name", Name)
+        gen(b"path", Path) |
+        gen(b"width", Width)
 }
 
 fn value() -> Parser<u8, EValue> {
@@ -130,7 +132,7 @@ fn logic_op() -> Parser<u8, ELogicOp> {
 }
 
 fn logic() -> Parser<u8, Expr> {
-    (boolean() + (spaces() * logic_op() - spaces()) + boolean()).map(|((l, op), r)| {
+    (boolean() + (spaces() * logic_op() - spaces()) + call(expr_item)).map(|((l, op), r)| {
         Expr::Logic(Box::new(l), op, Box::new(r))
     })
 }
@@ -149,10 +151,35 @@ fn glob_entry() -> Parser<u8, (globset::GlobMatcher, String)> {
     })
 }
 
+fn when() -> Parser<u8, Expr> {
+    let p = (seq(b"when") | seq(b"unless")) - spaces() + (call(expr_item) + (spaces() * call(expr_item)));
+    p.map(|(when_unless, (cond, clause))| Expr::When(when_unless == b"unless", Box::new(cond), Box::new(clause)))
+}
+
+fn if_() -> Parser<u8, Expr> {
+    let p = seq(b"if") * spaces() * (call(expr_item) + (spaces() * call(expr_item)) + (spaces() * call(expr_item)));
+    p.map(|((cond, true_clause), false_clause)| Expr::If(Box::new(cond), Box::new(true_clause), Box::new(false_clause)))
+}
+
+fn block_paren() -> Parser<u8, Expr> {
+    sym(b'(') * spaces() * call(expr_item) - spaces() - sym(b')')
+}
+
+fn block_curly() -> Parser<u8, Expr> {
+    sym(b'{') * spaces() * call(expr_item) - spaces() - sym(b'}')
+}
+
+fn block() -> Parser<u8, Expr> {
+    block_paren() | block_curly()
+}
+
+fn expr_item() -> Parser<u8, Expr> {
+    block() | call(logic) | boolean() | call(if_) | call(when)
+}
 
 
-fn exp() -> Parser<u8, Expr> {
-    spaces() * (logic() | boolean()) - spaces()
+fn expr() -> Parser<u8, Expr> {
+    spaces() * expr_item() - spaces()
 }
 
 
@@ -171,7 +198,31 @@ fn test_parser() {
             Ok(format!("@filter {}\n", src)))
     }
 
+    fn assert_parse2(src: &str, expect: &str) {
+        assert_eq!(
+            parse(src).map(|it| {
+                let mut parsed = o!("");
+                write_filter(&Some(it), &mut parsed);
+                parsed
+            }),
+            Ok(format!("@filter {}\n", expect)))
+    }
+
     assert_parse("1 < 2");
     assert_parse("width < 200");
     assert_parse("width < 200 and height < 400");
+    assert_parse("width < 200 and height < 400");
+    assert_parse("width < 200 and height < 400 and extension == <jpg>");
+
+    assert_parse("when path == <google> width < 200");
+    assert_parse("unless path == <google> width < 200");
+    assert_parse("if path == <*.google.com*> width < 200 height < 400");
+
+    assert_parse2("if (path == <google>) (width < 200) (height < 400)", "if path == <google> width < 200 height < 400");
+    assert_parse2("if (path == <google>) {width < 200} {height < 400}", "if path == <google> width < 200 height < 400");
+
+    assert_parse("dimensions == 12345");
+    assert_parse2("dim == 12345", "dimensions == 12345");
+    assert_parse("extension == <hoge>");
+    assert_parse2("ext == <hoge>", "extension == <hoge>");
 }

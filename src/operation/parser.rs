@@ -219,16 +219,18 @@ pub fn parse_fill(args: &[String]) -> Result<Operation, String> {
 
 pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
     let mut expr = vec![];
+    let mut dynamic = false;
 
     {
         let mut ap = ArgumentParser::new();
+        ap.refer(&mut dynamic).add_option(&["--dynamic", "-d"], StoreTrue, "Update dynamic filter");
         ap.refer(&mut expr).add_argument("expression", Collect, "Filter expression");
         parse_args(&mut ap, args)
     } .and_then(|_| {
         if expr.is_empty() {
-            Ok(Operation::Filter(Box::new(None)))
+            Ok(Operation::Filter(dynamic, Box::new(None)))
         } else {
-            join(&expr, ' ').parse().map(|it| Operation::Filter(Box::new(Some(it))))
+            join(&expr, ' ').parse().map(|it| Operation::Filter(dynamic, Box::new(Some(it))))
         }
     })
 }

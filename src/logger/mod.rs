@@ -99,8 +99,8 @@ fn run_stdout_output() -> Sender<String> {
 
     spawn(move || {
         let stdout = stdout();
-        let mut stdout = stdout.lock();
         while let Ok(s) = rx.recv() {
+            let mut stdout = stdout.lock();
             let _ = stdout.write_fmt(format_args!("{}\n", s));
         }
     });

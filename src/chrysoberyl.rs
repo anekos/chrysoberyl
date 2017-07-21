@@ -3,7 +3,7 @@ use std::sync::mpsc::Receiver;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-use argparse::{ArgumentParser, List, Collect, Store, StoreTrue, StoreOption, Print};
+use argparse::{ArgumentParser, List, Collect, Store, StoreTrue, Print};
 use encoding::EncodingRef;
 use encoding::label::encoding_from_whatwg_label;
 use env_logger;
@@ -13,7 +13,6 @@ use app;
 use app_path;
 use script;
 use config;
-use entry::EntryContainerOptions;
 use gui::Gui;
 use operation::Operation;
 
@@ -62,15 +61,11 @@ pub fn main() {
 fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operation>) {
     use state::*;
 
-    let mut eco = EntryContainerOptions::new();
     let mut states = States::default();
     let mut encodings: Vec<String> = vec![];
     let mut initial = app::Initial::new();
 
     {
-        let mut width: Option<u32> = None;
-        let mut height: Option<u32> = None;
-
         let path = format!(
             "Configuration: {}\nCache: {}",
             app_path::config_file(None).to_str().unwrap(),
@@ -112,28 +107,6 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
             ap.refer(&mut states.view.center_alignment)
                 .add_option(&["--center"], StoreTrue, "Center alignment in multi view");
 
-            // Container
-            ap.refer(&mut eco.min_width)
-                .add_option(&["--min-width", "-w"], StoreOption, "Minimum width")
-                .metavar("PX");
-            ap.refer(&mut eco.min_height)
-                .add_option(&["--min-height", "-h"], StoreOption, "Minimum height")
-                .metavar("PX");
-            ap.refer(&mut eco.max_width)
-                .add_option(&["--max-width", "-W"], StoreOption, "Maximum width")
-                .metavar("PX");
-            ap.refer(&mut eco.max_height)
-                .add_option(&["--max-height", "-H"], StoreOption, "Maximum height")
-                .metavar("PX");
-            ap.refer(&mut eco.ratio)
-                .add_option(&["--ratio", "-R"], StoreOption, "Width / Height");
-            ap.refer(&mut width)
-                .add_option(&["--width"], StoreOption, "Width")
-                .metavar("PX");
-            ap.refer(&mut height)
-                .add_option(&["--height"], StoreOption, "Height")
-                .metavar("PX");
-
             ap.add_option(&["-V", "--version"], Print(env!("CARGO_PKG_VERSION").to_string()), "Show version");
 
             ap.add_option(&["--print-default"], Print(o!(config::DEFAULT_CONFIG)), "Print default config");
@@ -141,14 +114,11 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
 
             ap.parse_args_or_exit();
         }
-
-        if let Some(width) = width { eco.min_width = Some(width); eco.max_width = Some(width); }
-        if let Some(height) = height { eco.min_height = Some(height); eco.max_height = Some(height); }
     }
 
     initial.encodings = parse_encodings(&encodings);
 
-    let (app, primary_rx, rx) = app::App::new(initial, states, gui, eco);
+    let (app, primary_rx, rx) = app::App::new(initial, states, gui);
 
     script::load(&app.tx, &config::get_config_source());
 

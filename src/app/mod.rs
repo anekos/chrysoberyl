@@ -18,7 +18,7 @@ use rand::{self, ThreadRng};
 use constant;
 use controller;
 use counter::Counter;
-use entry::{Entry, EntryContainer, EntryContainerOptions, EntryContent};
+use entry::{Entry, EntryContainer, EntryContent};
 use gui::Gui;
 use http_cache::HttpCache;
 use image_cache::ImageCache;
@@ -89,7 +89,7 @@ pub struct Updated {
 
 
 impl App {
-    pub fn new(initial: Initial, states: States, gui: Gui, entry_options:EntryContainerOptions) -> (App, Receiver<Operation>, Receiver<Operation>) {
+    pub fn new(initial: Initial, states: States, gui: Gui) -> (App, Receiver<Operation>, Receiver<Operation>) {
         let (tx, rx) = channel();
         let (primary_tx, primary_rx) = channel();
 
@@ -109,7 +109,7 @@ impl App {
         let sorting_buffer = SortingBuffer::new();
 
         let mut app = App {
-            entries: EntryContainer::new(entry_options),
+            entries: EntryContainer::new(),
             gui: gui.clone(),
             tx: tx.clone(),
             http_cache: HttpCache::new(initial.http_threads, tx.clone(), sorting_buffer.clone()),

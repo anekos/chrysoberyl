@@ -7,7 +7,6 @@ use std::rc::Rc;
 use std::slice;
 use std::sync::Arc;
 
-use immeta;
 use natord;
 
 use archive::ArchiveEntry;
@@ -25,15 +24,6 @@ use self::info::EntryInfo;
 
 pub struct EntryContainer {
     entries: FilterableVec<Entry>,
-    options: EntryContainerOptions,
-}
-
-pub struct EntryContainerOptions {
-    pub min_width: Option<u32>,
-    pub min_height: Option<u32>,
-    pub max_width: Option<u32>,
-    pub max_height: Option<u32>,
-    pub ratio: Option<f32>, // width / height
 }
 
 #[derive(Clone)]
@@ -142,10 +132,9 @@ impl EntryContent {
 
 
 impl EntryContainer {
-    pub fn new(options: EntryContainerOptions) -> EntryContainer {
+    pub fn new() -> EntryContainer {
         EntryContainer {
             entries: FilterableVec::new(),
-            options: options
         }
     }
 
@@ -386,56 +375,13 @@ impl EntryContainer {
         use self::EntryContent::*;
 
         match (*entry).content {
-            File(ref path) | Http(ref path, _) => self.is_valid_image_file(path),
+            File(ref path) | Http(ref path, _) => is_valid_image_filename(path),
             Archive(_, _) | Pdf(_,  _) => true, // FIXME archive
-        }
-    }
-
-    fn is_valid_image_file(&self, path: &PathBuf) -> bool {
-        let opt = &self.options;
-
-        if !opt.needs_image_info() && is_valid_image_filename(path){
-            return true;
-        }
-
-        debug!("&is_valid_image(&path): path = {:?}", path);
-
-        if let Ok(img) = immeta::load_from_file(&path) {
-            let dim = img.dimensions();
-
-            let min_w = opt.min_width.map(|it| it <= dim.width).unwrap_or(true);
-            let min_h = opt.min_height.map(|it| it <= dim.height).unwrap_or(true);
-            let max_w = opt.max_width.map(|it| dim.width <= it).unwrap_or(true);
-            let max_h = opt.max_height.map(|it| dim.height <= it).unwrap_or(true);
-            let ratio = opt.ratio_matches(dim.width, dim.height);
-
-            min_w && min_h && max_w && max_h && ratio
-        } else {
-            false
         }
     }
 
     pub fn update_filter(&mut self, dynamic: bool, current_index: Option<usize>, pred: Option<Box<FnMut(&mut Entry) -> bool>>) -> Option<usize> {
         self.entries.update_filter(dynamic, current_index, pred)
-    }
-}
-
-
-impl EntryContainerOptions {
-    pub fn new() -> EntryContainerOptions {
-        EntryContainerOptions { min_width: None, min_height: None, max_width: None, max_height: None, ratio: None }
-    }
-
-    fn needs_image_info(&self) -> bool {
-        self.min_width.is_some() || self.min_height.is_some() || self.max_width.is_some() || self.max_height.is_some() || self.ratio.is_some()
-    }
-
-    fn ratio_matches(&self, width: u32, height: u32) -> bool {
-        if let Some(ratio) = self.ratio {
-            (ratio - (width as f32 / height as f32)).abs() < 0.001
-        } else {
-            true
-        }
     }
 }
 

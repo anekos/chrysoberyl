@@ -60,10 +60,10 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
         All => {
             write_options(&app.states, &app.gui, out);
             write_entries(&app.entries, out);
-            write_paginator(&app.current_entry(), out);
             write_mappings(&app.mapping, out);
             write_envs(out);
             write_filter(&app.states.last_filter, out);
+            write_paginator(&app.current_entry(), out);
         }
     }
 }
@@ -215,7 +215,7 @@ fn write_path(entry: &Entry, out: &mut String) {
 pub fn write_paginator(entry: &Option<Entry>, out: &mut String) {
     if let Some(ref entry) = *entry {
         let (_, ref path, index) = entry.key;
-        sprintln!(out, "@show {} {}", escape(path), index + 1);
+        sprintln!(out, "@go {} {}", escape(path), index + 1);
     }
 }
 

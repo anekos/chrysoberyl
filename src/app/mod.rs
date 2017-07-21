@@ -222,6 +222,8 @@ impl App {
                     on_first(self, &mut updated, count, ignore_views, move_by),
                 Fragile(ref path) =>
                     on_fragile(self, path),
+                Go(ref key) =>
+                    on_go(self, &mut updated, key),
                 Initialized =>
                     return on_initialized(self),
                 Input(ref input) =>
@@ -290,8 +292,8 @@ impl App {
                     on_shell(self, async, read_operations, command_line, self.tx.clone(), stdin_sources),
                 ShellFilter(ref command_line) =>
                     on_shell_filter(self, command_line),
-                Show(ref key) =>
-                    on_show(self, &mut updated, key),
+                Show(count, ignore_views, move_by, _) =>
+                    on_show(self, &mut updated, count, ignore_views, move_by),
                 Shuffle(fix_current) =>
                     on_shuffle(self, &mut updated, fix_current),
                 Sort =>
@@ -448,12 +450,13 @@ impl App {
         }
     }
 
-    fn do_show(&mut self, updated: &mut Updated) {
-        let index = self.states.show.as_ref().and_then(|key| self.entries.search(key));
+    fn do_go(&mut self, updated: &mut Updated) {
+        let index = self.states.go.as_ref().and_then(|key| self.entries.search(key));
         if let Some(index) = index {
-            self.paginator.update_index(Index(index));
-            updated.pointer = true;
-            self.states.show = None;
+            if self.paginator.update_index(Index(index)) {
+                updated.pointer = true;
+                self.states.go = None;
+            }
         }
     }
 

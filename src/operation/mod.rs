@@ -40,6 +40,7 @@ pub enum Operation {
     Fill(Filler, Option<Region>, Color, bool, usize), /* region, mask, cell index */
     Filter(bool, Box<Option<entry::filter::expression::Expr>>), /* dynamic, filter expression */
     Fragile(Expandable),
+    Go(entry::SearchKey),
     Initialized,
     Input(mapping::Input),
     KillTimer(String),
@@ -74,7 +75,7 @@ pub enum Operation {
     SetEnv(String, Option<Expandable>),
     Shell(bool, bool, Vec<Expandable>, Vec<Session>), /* async, operation, command_line, session */
     ShellFilter(Vec<Expandable>),
-    Show(entry::SearchKey),
+    Show(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Shuffle(bool), /* Fix current */
     Sort,
     TellRegion(f64, f64, f64, f64, u32), /* lef,t top, right, bottom, mousesbutton */
@@ -324,6 +325,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@filter"                       => parse_filter(whole),
             "@first" | "@f"                 => parse_move(whole, First),
             "@fragile"                      => parse_command1(whole, |it| Fragile(Expandable(it))),
+            "@go"                           => parse_go(whole),
             "@input"                        => parse_input(whole),
             "@kill-timer"                   => parse_kill_timer(whole),
             "@last" | "@l"                  => parse_move(whole, Last),
@@ -353,7 +355,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@set-env"                      => parse_set_env(whole),
             "@shell"                        => parse_shell(whole),
             "@shell-filter"                 => Ok(ShellFilter(whole.iter().map(|it| Expandable(it.clone())).collect())),
-            "@show"                         => parse_show(whole),
+            "@show"                         => parse_move(whole, Show),
             "@shuffle"                      => Ok(Shuffle(false)),
             "@sort"                         => Ok(Sort),
             "@timer"                        => parse_timer(whole),

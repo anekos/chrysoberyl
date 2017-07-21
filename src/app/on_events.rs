@@ -198,9 +198,20 @@ pub fn on_fragile(app: &mut App, path: &Expandable) {
     new_fragile_input(app.tx.clone(), &path.to_path_buf());
 }
 
+pub fn on_go(app: &mut App, updated: &mut Updated, key: &SearchKey) {
+    let index = app.entries.search(key);
+    if let Some(index) = index {
+        if app.paginator.update_index(Index(index)) {
+            updated.pointer = true;
+            return;
+        }
+    }
+
+    app.states.go = Some(key.clone());
+}
+
 pub fn on_initialized(app: &mut App) {
     app.states.initialized = true;
-    app.paginator.reset_level();
     app.gui.update_colors();
     app.tx.send(Operation::Draw).unwrap();
     puts_event!("initialized");
@@ -447,7 +458,7 @@ pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Op
     push_buffered(app, updated, buffered);
 }
 
-pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: Option<Meta>, force: bool, show: bool) {
+pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: Option<Meta>, force: bool, go: bool) {
     fn find_sibling(base: &PathBuf, next: bool) -> Option<PathBuf> {
         base.parent().and_then(|dir| {
             dir.read_dir().ok().and_then(|dir| {
@@ -478,8 +489,8 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
     });
 
     if let Some(found) = found {
-        if show {
-            on_show(app, updated, &SearchKey { path: o!(path_to_str(&found)), index: None});
+        if go {
+            on_go(app, updated, &SearchKey { path: o!(path_to_str(&found)), index: None});
         }
         on_push_path(app, updated, &found, meta, force);
     }
@@ -588,7 +599,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
             }
 
             if !regions.is_empty() && new_found_on.is_none() {
-                updated.pointer = app.paginator.set_index(Index(index));
+                updated.pointer = app.paginator.update_index(Index(index));
                 updated.image = true;
                 app.update_message(Some(o!("Found!")));
                 let left = index / cells * cells;
@@ -638,13 +649,15 @@ pub fn on_shell_filter(app: &App, command_line: &[Expandable]) {
     shell_filter::start(expand_all(command_line), app.tx.clone());
 }
 
-pub fn on_show(app: &mut App, updated: &mut Updated, key: &SearchKey) {
-    let index = app.entries.search(key);
-    if let Some(index) = index {
-        app.paginator.set_index(Index(index));
-        updated.pointer = true;
-    } else {
-        app.states.show = Some(key.clone());
+pub fn on_show(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {
+    match move_by {
+        MoveBy::Page => {
+            let paging = app.paging_with_count(false, ignore_views, count);
+            updated.pointer = app.paginator.show(paging);
+        },
+        MoveBy::Archive => {
+            on_first(app, updated, count, ignore_views, move_by);
+        }
     }
 }
 
@@ -889,7 +902,7 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
         updated.pointer = app.paginator.reset_level()
     }
 
-    app.do_show(updated);
+    app.do_go(updated);
 }
 
 fn extract_region_from_context(context: Option<OperationContext>) -> Option<(Region, usize)> {

@@ -80,16 +80,6 @@ impl Paginator {
         None
     }
 
-    pub fn set_index(&mut self, index: Index) -> bool {
-        if self.len == 0 {
-            return false;
-        }
-
-        let new_level = index.with_fly_leaves(self.fly_leaves).to_level(self.sight_size);
-        let levels = self.levels();
-        self.update_level(Level(min!(levels - 1, new_level.0)))
-    }
-
     pub fn reset(&mut self) {
         self.fly_leaves = FlyLeaves(0);
         self.level = None;
@@ -198,7 +188,7 @@ impl Paginator {
     }
 
     pub fn show(&mut self, paging: Paging) -> bool {
-        self.set_index(Index(paging.count - 1))
+        self.update_index(Index(paging.count - 1))
     }
 
     fn increase_level(&mut self, delta: usize, wrap: bool) -> bool {
@@ -278,7 +268,12 @@ impl Paginator {
     }
 
     pub fn update_index(&mut self, index: Index) -> bool {
+        if self.len == 0 {
+            return false;
+        }
+
         let new_level = index.with_fly_leaves(self.fly_leaves).to_level(self.sight_size);
-        self.update_level(new_level)
+        let levels = self.levels();
+        self.update_level(Level(min!(levels - 1, new_level.0)))
     }
 }

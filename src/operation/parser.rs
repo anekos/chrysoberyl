@@ -235,6 +235,26 @@ pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
     })
 }
 
+pub fn parse_go(args: &[String]) -> Result<Operation, String> {
+    let mut key = SearchKey { path: o!(""), index: None };
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut key.path).add_argument("path", Store, "File path / URL");
+        ap.refer(&mut key.index).add_argument("page", StoreOption, "Page");
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        if let Some(mut index) = key.index.as_mut() {
+            if *index == 0 {
+                return Err(o!("Page is 1 origin"))
+            }
+            *index -= 1;
+        }
+        Ok(Operation::Go(key))
+    })
+}
+
+
 pub fn parse_input(args: &[String]) -> Result<Operation, String> {
     impl InputType {
         pub fn input_from_text(&self, text: &str) -> Result<Input, String> {
@@ -627,25 +647,6 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
     } .and_then(|_| {
         let command_line = command_line.into_iter().map(Expandable).collect();
         Ok(Operation::Shell(async, read_operations, command_line, sessions))
-    })
-}
-
-pub fn parse_show(args: &[String]) -> Result<Operation, String> {
-    let mut key = SearchKey { path: o!(""), index: None };
-
-    {
-        let mut ap = ArgumentParser::new();
-        ap.refer(&mut key.path).add_argument("path", Store, "File path / URL");
-        ap.refer(&mut key.index).add_argument("page", StoreOption, "Page");
-        parse_args(&mut ap, args)
-    } .and_then(|_| {
-        if let Some(mut index) = key.index.as_mut() {
-            if *index == 0 {
-                return Err(o!("Page is 1 origin"))
-            }
-            *index -= 1;
-        }
-        Ok(Operation::Show(key))
     })
 }
 

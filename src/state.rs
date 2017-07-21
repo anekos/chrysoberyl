@@ -129,6 +129,12 @@ impl Default for ViewState {
     }
 }
 
+impl ViewState {
+    pub fn len(&self) -> usize {
+        self.rows * self.cols
+    }
+}
+
 
 impl Default for StatusFormat {
     fn default() -> Self {

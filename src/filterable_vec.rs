@@ -81,15 +81,6 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
         self.filter(before_filtered_index)
     }
 
-    // FIXME
-    pub fn insert(&mut self, _: usize, _: Rc<T>) {
-        not_implemented!();
-        // self.original.insert(index, entry.clone());
-        // if (self.pred)(Rc::make_mut(&mut entry)) {
-        //     self.filtered.insert(index, entry);
-        // }
-    }
-
     pub fn extend_from_slice(&mut self, entries: &[Rc<T>]) {
         let len = self.original.len();
 
@@ -114,13 +105,6 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
         for target in targets {
             self.push_filtered(target);
         }
-    }
-
-    pub fn remove(&mut self, index: usize) -> Rc<T> {
-        self.original.remove(index);
-        let result = self.filtered.remove(index);
-        self.reset_indices();
-        result
     }
 
     pub fn push(&mut self, mut entry: Rc<T>) {

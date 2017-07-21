@@ -4,6 +4,7 @@ use std::collections::VecDeque;
 use std::env;
 use std::ops::Range;
 use std::path::Path;
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::{sleep, spawn};
@@ -16,16 +17,18 @@ use rand::{self, ThreadRng};
 
 use constant;
 use controller;
-use entry::{EntryContainer, EntryContainerOptions};
+use counter::Counter;
+use entry::{Entry, EntryContainer, EntryContainerOptions, EntryContent};
 use gui::Gui;
 use http_cache::HttpCache;
 use image_cache::ImageCache;
 use image_fetcher::ImageFetcher;
-use index_pointer::IndexPointer;
 use logger;
 use mapping::{Mapping, Input};
 use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy, PreDefinedOptionName};
 use option::user::UserSwitchManager;
+use paginator::values::Index;
+use paginator::{self, Paginator, Paging};
 use shellexpand_wrapper as sh;
 use size::{Size, FitTo, Region};
 use sorting_buffer::SortingBuffer;
@@ -55,8 +58,9 @@ pub struct App {
     do_clear_cache: bool,
     search_text: Option<String>,
     found_on: Option<Range<usize>>,
+    counter: Counter,
     pub mapping: Mapping,
-    pub pointer: IndexPointer,
+    pub paginator: Paginator,
     pub entries: EntryContainer,
     pub gui: Gui,
     pub tx: Sender<Operation>,
@@ -115,7 +119,7 @@ impl App {
             draw_serial: 0,
             pre_fetch_serial: 0,
             rng: rand::thread_rng(),
-            pointer: IndexPointer::new(),
+            paginator: Paginator::new(),
             current_env_keys: HashSet::new(),
             cache: cache.clone(),
             fetcher: ImageFetcher::new(cache),
@@ -125,6 +129,7 @@ impl App {
             do_clear_cache: false,
             search_text: None,
             found_on: None,
+            counter: Counter::new(),
         };
 
         app.reset_view();
@@ -170,6 +175,7 @@ impl App {
         }
 
         app.initialize_envs_for_options();
+        app.update_paginator_condition();
 
         (app, primary_rx, rx)
     }
@@ -197,9 +203,9 @@ impl App {
                 Context(context, op) =>
                     return self.operate_with_context(*op, Some(context)),
                 Count(count) =>
-                    self.pointer.set_count(count),
+                    self.counter.set(count),
                 CountDigit(digit) =>
-                    self.pointer.push_count_digit(digit),
+                    self.counter.push_digit(digit),
                 DefineUserSwitch(name, values) =>
                     on_define_switch(self, name, values),
                 Draw =>
@@ -213,7 +219,7 @@ impl App {
                 Filter(expr) =>
                     on_filter(self, &mut updated, *expr),
                 First(count, ignore_views, move_by, _) =>
-                    on_first(self, &mut updated, len, count, ignore_views, move_by),
+                    on_first(self, &mut updated, count, ignore_views, move_by),
                 Fragile(ref path) =>
                     on_fragile(self, path),
                 Initialized =>
@@ -223,7 +229,7 @@ impl App {
                 KillTimer(ref name) =>
                     on_kill_timer(self, name),
                 Last(count, ignore_views, move_by, _) =>
-                    on_last(self, &mut updated, len, count, ignore_views, move_by),
+                    on_last(self, &mut updated, count, ignore_views, move_by),
                 LazyDraw(serial, new_to_end) =>
                     on_lazy_draw(self, &mut updated, &mut to_end, serial, new_to_end),
                 Load(ref file) =>
@@ -233,13 +239,11 @@ impl App {
                 Map(target, mapped_operation) =>
                     on_map(self, target, mapped_operation),
                 MoveAgain(count, ignore_views, move_by, wrap) =>
-                    on_move_again(self, &mut updated, len, &mut to_end, count, ignore_views, move_by, wrap),
-                MoveEntry(ref from, ref to) =>
-                    on_move_entry(self, &mut updated, from, to),
+                    on_move_again(self, &mut updated, &mut to_end, count, ignore_views, move_by, wrap),
                 Multi(ops, async) =>
                     on_multi(self, ops, async),
                 Next(count, ignore_views, move_by, wrap) =>
-                    on_next(self, &mut updated, len, count, ignore_views, move_by, wrap),
+                    on_next(self, &mut updated, count, ignore_views, move_by, wrap),
                 Nop =>
                     (),
                 OperateFile(ref file_operation) =>
@@ -249,7 +253,7 @@ impl App {
                 PreFetch(pre_fetch_serial) =>
                     on_pre_fetch(self, pre_fetch_serial),
                 Previous(count, ignore_views, move_by, wrap) =>
-                    on_previous(self, &mut updated, len, &mut to_end, count, ignore_views, move_by, wrap),
+                    on_previous(self, &mut updated, &mut to_end, count, ignore_views, move_by, wrap),
                 PrintEntries =>
                     on_print_entries(self),
                 Pull =>
@@ -324,11 +328,11 @@ impl App {
         }
 
         if self.entries.len() != len {
-            if let Some(current) = self.pointer.get_current() {
-                let gui_len = self.gui.len();
-                if current < len && len < current + gui_len {
+            let gui_len = self.gui.len();
+            if let Some(index) = self.paginator.current_index() {
+                if index < len && len < index + gui_len {
                     updated.image = true;
-                } else if self.states.auto_paging && gui_len <= len && len - gui_len == current {
+                } else if self.states.auto_paging && gui_len <= len && len - gui_len == index {
                     self.operate(Operation::Next(None, false, MoveBy::Page, false));
                     return
                 }
@@ -359,8 +363,70 @@ impl App {
         }
     }
 
+    pub fn current(&self) -> Option<(Entry, usize)> {
+        self.current_with(0)
+    }
+
+    pub fn current_with(&self, delta: usize) -> Option<(Entry, usize)> {
+        self.paginator.current_index_with(delta).and_then(|index| {
+            self.entries.nth(index).map(|it| (it, index))
+        })
+    }
+
+    pub fn current_entry(&self) -> Option<Entry> {
+        self.current_entry_with(0)
+    }
+
+    pub fn current_entry_with(&self, delta: usize) -> Option<Entry> {
+        self.current_with(delta).map(|(entry, _)| entry)
+    }
+
+    pub fn current_for_file(&self) -> Option<(PathBuf, usize, Entry)> {
+        self.current().and_then(|(entry, index)| {
+            match entry.content {
+                EntryContent::File(ref path) => Some((path.clone(), index, entry.clone())),
+                _ => None
+            }
+        })
+    }
+
+    pub fn update_env_for_option(&self, option_name: &PreDefinedOptionName) {
+        use session::{generate_option_value, WriteContext};
+        use constant::OPTION_VARIABLE_PREFIX;
+
+        let (name, value) = generate_option_value(option_name, &self.states, &self.gui, WriteContext::ENV);
+        env::set_var(format!("{}{}", OPTION_VARIABLE_PREFIX, name), value);
+    }
+
+    pub fn paging(&mut self, wrap: bool, ignore_sight: bool) -> Paging {
+        Paging {
+            count: self.counter.pop(),
+            wrap: wrap,
+            ignore_sight: ignore_sight,
+        }
+    }
+
+    pub fn paging_with_count(&mut self, wrap: bool, ignore_sight: bool, count: Option<usize>) -> Paging {
+        Paging {
+            count: self.counter.overwrite(count).pop(),
+            wrap: wrap,
+            ignore_sight: ignore_sight,
+        }
+    }
+
+    pub fn set_current_entry(&mut self, entry: &Entry) -> bool{
+        if let Some(index) = self.entries.get_entry_index(entry) {
+            self.paginator.update_index(Index(index))
+        } else {
+            false
+        }
+    }
+
+    /* Private methods */
+
     fn reset_view(&mut self) {
         self.gui.reset_view(&self.states.view);
+        self.update_paginator_condition();
     }
 
     fn send_lazy_draw(&mut self, delay: Option<u64>, to_end: bool) {
@@ -378,12 +444,10 @@ impl App {
         }
     }
 
-    /* Private methods */
-
     fn do_show(&mut self, updated: &mut Updated) {
         let index = self.states.show.as_ref().and_then(|key| self.entries.search(key));
         if let Some(index) = index {
-            self.pointer.set_current(Some(index));
+            self.paginator.update_index(Index(index));
             updated.pointer = true;
             self.states.show = None;
         }
@@ -396,7 +460,7 @@ impl App {
         for n in range {
             for index in 0..len {
                 let index = index + len * n;
-                if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry, _)| entry) {
+                if let Some(entry) = self.current_entry_with(index) {
                     entries.push_back(entry);
                 }
             }
@@ -421,7 +485,7 @@ impl App {
         let mut showed = false;
 
         for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
-            if let Some(entry) = self.entries.current_with(&self.pointer, index).map(|(entry,_)| entry) {
+            if let Some(entry) = self.current_entry_with(index) {
                 let image_buffer = self.cache.get_image_buffer(&entry, &cell_size, &self.states.drawing);
                 let (fg, bg) = (self.gui.colors.error, self.gui.colors.error_background);
                 match image_buffer {
@@ -491,7 +555,7 @@ impl App {
         let len = self.entries.len();
         let gui_len = self.gui.len();
 
-        if let Some((entry, index)) = self.entries.current(&self.pointer) {
+        if let Some((entry, index)) = self.current() {
             if let Some(meta) = entry.meta {
                 for entry in meta.iter() {
                     envs.push((format!("meta_{}", entry.key), entry.value.clone()));
@@ -573,7 +637,7 @@ impl App {
 
         if update_title {
             let text =
-                if self.entries.current(&self.pointer).is_some() {
+                if self.current().is_some() {
                     sh::expand(&self.states.title_format.0)
                 } else {
                     o!(constant::DEFAULT_INFORMATION)
@@ -583,7 +647,7 @@ impl App {
 
         if self.states.status_bar {
             let text =
-                if self.entries.current(&self.pointer).is_some() {
+                if self.current().is_some() {
                     sh::expand(&self.states.status_format.0)
                 } else {
                     o!(constant::DEFAULT_INFORMATION)
@@ -600,18 +664,18 @@ impl App {
         }
     }
 
-    pub fn update_env_for_option(&self, option_name: &PreDefinedOptionName) {
-        use session::{generate_option_value, WriteContext};
-        use constant::OPTION_VARIABLE_PREFIX;
-
-        let (name, value) = generate_option_value(option_name, &self.states, &self.gui, WriteContext::ENV);
-        env::set_var(format!("{}{}", OPTION_VARIABLE_PREFIX, name), value);
-    }
-
     fn initialize_envs_for_options(&self) {
         for option_name in PreDefinedOptionName::iterator() {
             self.update_env_for_option(option_name)
         }
+    }
+
+    fn update_paginator_condition(&mut self) {
+        let condition = paginator::Condition {
+            len: self.entries.len(),
+            sight_size: self.states.view.len()
+        };
+        self.paginator.update_condition(&condition);
     }
 }
 

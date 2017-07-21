@@ -13,7 +13,6 @@ use entry::filter::expression::Expr as FilterExpr;
 use entry::filter::writer::write as write_expr;
 use entry::{Entry, EntryContainer, KeyType, Key};
 use gui::Gui;
-use index_pointer::IndexPointer;
 use mapping::{Mapping, key_mapping as kmap, mouse_mapping as mmap, region_mapping as rmap};
 use operation::PreDefinedOptionName;
 use size::FitTo;
@@ -54,14 +53,14 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
         Options => write_options(&app.states, &app.gui, out),
         Entries => write_entries(&app.entries, out),
         Paths => write_paths(&app.entries, out),
-        Position => write_position(&app.entries, &app.pointer, out),
+        Position => write_paginator(&app.current_entry(), out),
         Mappings => write_mappings(&app.mapping, out),
         Envs => write_envs(out),
         Filter => write_filter(&app.states.last_filter, out),
         All => {
             write_options(&app.states, &app.gui, out);
             write_entries(&app.entries, out);
-            write_position(&app.entries, &app.pointer, out);
+            write_paginator(&app.current_entry(), out);
             write_mappings(&app.mapping, out);
             write_envs(out);
             write_filter(&app.states.last_filter, out);
@@ -213,8 +212,8 @@ fn write_path(entry: &Entry, out: &mut String) {
     }
 }
 
-pub fn write_position(entries: &EntryContainer, pointer: &IndexPointer, out: &mut String) {
-    if let Some((entry, _)) = entries.current(pointer) {
+pub fn write_paginator(entry: &Option<Entry>, out: &mut String) {
+    if let Some(ref entry) = *entry {
         let (_, ref path, index) = entry.key;
         sprintln!(out, "@show {} {}", escape(path), index + 1);
     }

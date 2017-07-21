@@ -15,14 +15,13 @@ pub mod file;
 
 lazy_static! {
     pub static ref OUTPUT_INSTANCE: Arc<Mutex<Output>> = {
-        let mut out = Output { txs: HashMap::new(), handle: 0 };
-        out.register(run_stdout_output());
+        let out = Output { txs: HashMap::new(), handle: 0 };
         Arc::new(Mutex::new(out))
     };
 }
 
 
-type Handle = u64;
+pub type Handle = u64;
 
 #[derive(Clone)]
 pub struct Output {
@@ -73,6 +72,11 @@ pub fn register(tx: Sender<String>) -> Handle {
 pub fn unregister(handle: Handle) {
     let mut out = (*OUTPUT_INSTANCE).lock().unwrap();
     out.unregister(handle);
+}
+
+pub fn register_stdout() -> Handle {
+    let mut out = (*OUTPUT_INSTANCE).lock().unwrap();
+    out.register(run_stdout_output())
 }
 
 fn generate_text(data: &[(String, String)]) -> String {

@@ -25,6 +25,7 @@ pub struct States {
     pub last_direction: Direction,
     pub last_filter: Option<FilterExpr>,
     pub log_file: logger::file::File,
+    pub stdout: Option<logger::Handle>,
 }
 
 pub struct ViewState {
@@ -83,6 +84,7 @@ impl Default for States {
             last_direction: Direction::Forward,
             last_filter: None,
             log_file: logger::file::File::new(),
+            stdout: None,
         }
     }
 

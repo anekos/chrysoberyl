@@ -3,7 +3,7 @@ use std::sync::mpsc::Receiver;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-use argparse::{ArgumentParser, List, Collect, Store, StoreTrue, Print};
+use argparse::{ArgumentParser, List, Collect, Store, StoreTrue, StoreFalse, Print};
 use encoding::EncodingRef;
 use encoding::label::encoding_from_whatwg_label;
 use env_logger;
@@ -11,10 +11,11 @@ use gtk;
 
 use app;
 use app_path;
-use script;
 use config;
 use gui::Gui;
+use logger::register_stdout;
 use operation::Operation;
+use script;
 
 
 
@@ -70,6 +71,7 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
             "Configuration: {}\nCache: {}",
             app_path::config_file(None).to_str().unwrap(),
             app_path::cache_dir("/").to_str().unwrap());
+        let mut stdout = true;
 
         {
 
@@ -88,6 +90,8 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
                 .add_option(&["--max-http-threads", "-t"], Store, "Maximum number of HTTP Threads");
             ap.refer(&mut encodings)
                 .add_option(&["--encoding", "--enc"], Collect, "Character encoding for filename in archives");
+            ap.refer(&mut stdout)
+                .add_option(&["--silent"], StoreFalse, "No stdout");
             ap.refer(&mut initial.files)
                 .add_argument("images", List, "Image files or URLs");
 
@@ -113,6 +117,10 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
             ap.add_option(&["--print-path"], Print(path), "Print application files path");
 
             ap.parse_args_or_exit();
+        }
+
+        if stdout {
+            states.stdout = Some(register_stdout());
         }
     }
 

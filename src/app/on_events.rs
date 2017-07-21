@@ -172,8 +172,7 @@ pub fn on_filter(app: &mut App, updated: &mut Updated, dynamic: bool, expr: Opti
     if let Some(after_index) = after_index {
         app.paginator.update_index(Index(after_index));
     } else {
-        let paging = app.paging_with_count(false, false, Some(0));
-        app.paginator.first(paging);
+        app.paginator.reset_level();
     }
     updated.pointer = true;
     updated.image = true;
@@ -188,8 +187,8 @@ pub fn on_first(app: &mut App, updated: &mut Updated, count: Option<usize>, igno
         MoveBy::Archive => {
             let count = app.counter.overwrite(count).pop();
             if let Some(first) = app.entries.find_nth_archive(count, false) {
-                let paging = app.paging_with_count(false, ignore_views, Some(first + 1));
-                updated.pointer = app.paginator.first(paging);
+                let paging = app.paging_with_index(false, ignore_views, first);
+                updated.pointer = app.paginator.show(paging);
             }
         }
     }
@@ -201,6 +200,7 @@ pub fn on_fragile(app: &mut App, path: &Expandable) {
 
 pub fn on_initialized(app: &mut App) {
     app.states.initialized = true;
+    app.paginator.reset_level();
     app.gui.update_colors();
     app.tx.send(Operation::Draw).unwrap();
     puts_event!("initialized");
@@ -239,8 +239,8 @@ pub fn on_last(app: &mut App, updated: &mut Updated, count: Option<usize>, ignor
         MoveBy::Archive => {
             let count = app.counter.overwrite(count).pop();
             if let Some(nth) = app.entries.find_nth_archive(count, true) {
-                let paging = app.paging_with_count(false, ignore_views, Some(nth + 1));
-                updated.pointer = app.paginator.first(paging);
+                let paging = app.paging_with_index(false, ignore_views, nth);
+                updated.pointer = app.paginator.show(paging);
             }
         }
     }
@@ -318,8 +318,8 @@ pub fn on_next(app: &mut App, updated: &mut Updated, count: Option<usize>, ignor
             let count = app.counter.overwrite(count).pop();
             let current = app.current();
             if let Some(next) = app.entries.find_next_archive(current, count) {
-                let paging = app.paging_with_count(false, ignore_views, Some(next + 1));
-                updated.pointer = app.paginator.first(paging);
+                let paging = app.paging_with_index(false, ignore_views, next);
+                updated.pointer = app.paginator.show(paging);
             }
         }
     }
@@ -378,8 +378,8 @@ pub fn on_previous(app: &mut App, updated: &mut Updated, to_end: &mut bool, coun
             let count = app.counter.overwrite(count).pop();
             let current = app.current();
             if let Some(previous) = app.entries.find_previous_archive(current, count) {
-                let paging = app.paging_with_count(false, ignore_views, Some(previous + 1));
-                updated.pointer = app.paginator.first(paging);
+                let paging = app.paging_with_index(false, ignore_views, previous);
+                updated.pointer = app.paginator.show(paging);
             }
         }
     }
@@ -498,8 +498,8 @@ pub fn on_quit(app: &mut App) {
 pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) {
     if len > 0 {
         let index = RandRange::new(0, len).ind_sample(&mut app.rng);
-        let paging = app.paging_with_count(false, false, Some(index + 1));
-        app.paginator.first(paging);
+        let paging = app.paging_with_index(false, false, index);
+        app.paginator.show(paging);
         updated.image = true;
     }
 }
@@ -588,7 +588,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
             }
 
             if !regions.is_empty() && new_found_on.is_none() {
-                updated.pointer = app.paginator.show(Index(index));
+                updated.pointer = app.paginator.set_index(Index(index));
                 updated.image = true;
                 app.update_message(Some(o!("Found!")));
                 let left = index / cells * cells;
@@ -641,7 +641,7 @@ pub fn on_shell_filter(app: &App, command_line: &[Expandable]) {
 pub fn on_show(app: &mut App, updated: &mut Updated, key: &SearchKey) {
     let index = app.entries.search(key);
     if let Some(index) = index {
-        app.paginator.show(Index(index));
+        app.paginator.set_index(Index(index));
         updated.pointer = true;
     } else {
         app.states.show = Some(key.clone());
@@ -651,8 +651,8 @@ pub fn on_show(app: &mut App, updated: &mut Updated, key: &SearchKey) {
 pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) {
     if let Some(after_index) = app.entries.shuffle(app.paginator.current_index()) {
         if fix_current {
-            let paging = app.paging_with_count(false, true, Some(after_index + 1));
-            updated.pointer = app.paginator.first(paging);
+            let paging = app.paging_with_index(false, true, after_index);
+            updated.pointer = app.paginator.show(paging);
         }
         if !fix_current || 1 < app.gui.len() {
             updated.image = true;
@@ -663,11 +663,11 @@ pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) {
 
 pub fn on_sort(app: &mut App, updated: &mut Updated) {
     if let Some(after_index) = app.entries.sort(app.paginator.current_index()) {
-        let paging = app.paging_with_count(false, true, Some(after_index + 1));
-        updated.pointer = app.paginator.first(paging);
+        let paging = app.paging_with_index(false, true, after_index);
+        updated.pointer = app.paginator.show(paging);
     } else {
-        let paging = app.paging_with_count(false, true, Some(1));
-        app.paginator.first(paging);
+        let paging = app.paging_with_index(false, true, 0);
+        app.paginator.show(paging);
     }
     updated.image = true;
 }
@@ -886,7 +886,7 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
     app.update_paginator_condition();
 
     if before_len == 0 && 0 < app.entries.len() {
-        updated.pointer = app.paginator.show(Index(0));
+        updated.pointer = app.paginator.reset_level()
     }
 
     app.do_show(updated);

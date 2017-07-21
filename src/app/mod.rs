@@ -414,6 +414,10 @@ impl App {
         }
     }
 
+    pub fn paging_with_index(&mut self, wrap: bool, ignore_sight: bool, index: usize) -> Paging {
+        self.paging_with_count(wrap, ignore_sight, Some(index + 1))
+    }
+
     pub fn set_current_entry(&mut self, entry: &Entry) -> bool{
         if let Some(index) = self.entries.get_entry_index(entry) {
             self.paginator.update_index(Index(index))

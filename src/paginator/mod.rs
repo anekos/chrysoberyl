@@ -52,7 +52,9 @@ impl Paginator {
 
     /* the nubmer of levels */
     fn levels(&self) -> usize {
-        if self.sight_size.0 <= 1 {
+        if self.len <= 0 {
+            0
+        } else if self.sight_size.0 <= 1 {
             self.pseudo_len().0
         } else {
             (self.pseudo_len().0 - 1) / self.sight_size.0 + 1

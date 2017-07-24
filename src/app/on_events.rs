@@ -483,8 +483,8 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
         match entry.content {
             File(ref path) | Http(ref path, _) =>
                 find_sibling(path, next),
-                Archive(ref path, _) | Pdf(ref path, _) =>
-                    find_sibling(&*path, next),
+            Archive(ref path, _) | Pdf(ref path, _) =>
+                find_sibling(&*path, next),
         }
     });
 

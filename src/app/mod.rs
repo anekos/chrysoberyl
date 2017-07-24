@@ -35,7 +35,7 @@ use state::{States, PreFetchState};
 use termination;
 use timer::TimerManager;
 use ui_event;
-use utils::path_to_str;
+use utils::{path_to_str, join};
 use version;
 
 
@@ -152,7 +152,7 @@ impl App {
                     CLEntry::Operation(op) => {
                         match Operation::parse_from_vec(&op) {
                             Ok(op) => tx.send(op).unwrap(),
-                            Err(err) => puts_error!("at" => "operation", "reason" => o!(err)),
+                            Err(err) => puts_error!("at" => "operation", "reason" => o!(err), "for" => join(&op, ' ')),
                         }
                     }
                 }

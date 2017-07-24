@@ -48,7 +48,7 @@ pub fn get_static_image_buffer(entry: &Entry, cell: &Size, drawing: &DrawingStat
     use self::EntryContent::*;
 
     match (*entry).content {
-        File(ref path) =>
+        Image(ref path) =>
             make_scaled_from_file(path_to_str(path), cell, drawing),
         Archive(_, ref entry) =>
             make_scaled(&*entry.content.as_slice(), cell, drawing),
@@ -62,7 +62,7 @@ pub fn get_animation_buffer(entry: &Entry) -> Result<AnimationBuffer, Error> {
     use self::EntryContent::*;
 
     match (*entry).content {
-        File(ref path) =>
+        Image(ref path) =>
             AnimationBuffer::new_from_file(path),
         Archive(_, ref entry) =>
             Ok(AnimationBuffer::new_from_slice(&*entry.content)),
@@ -122,7 +122,7 @@ fn get_meta(entry: &Entry) -> Option<Result<GenericMetadata, immeta::Error>> {
     use self::EntryContent::*;
 
     match (*entry).content {
-        File(ref path) =>
+        Image(ref path) =>
             Some(immeta::load_from_file(&path)),
         Archive(_, ref entry) =>
             Some(immeta::load_from_buf(&entry.content)),

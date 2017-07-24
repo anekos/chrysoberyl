@@ -10,9 +10,9 @@ use std::sync::Arc;
 use natord;
 
 use archive::ArchiveEntry;
+use file_extension::{is_valid_image_filename};
 use filterable_vec::FilterableVec;
 use utils::path_to_str;
-use validation::is_valid_image_filename;
 
 pub mod image;
 pub mod filter;
@@ -37,7 +37,7 @@ pub struct Entry {
 
 #[derive(Clone)]
 pub enum EntryContent {
-    File(PathBuf),
+    Image(PathBuf),
     Archive(Arc<PathBuf>, ArchiveEntry),
     Pdf(Arc<PathBuf>, usize),
 }
@@ -56,13 +56,13 @@ pub struct SearchKey {
     pub index: Option<usize>
 }
 
-pub type Key = (KeyType, String, usize);
+pub type Key = (EntryType, String, usize);
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum KeyType {
+pub enum EntryType {
     Invalid,
     PDF,
-    File,
+    Image,
     Archive,
 }
 
@@ -84,10 +84,6 @@ impl Entry {
 
     pub fn new_local(content: EntryContent, meta: Option<Meta>) -> Entry {
         Entry::new(content, meta, None)
-    }
-
-    pub fn new_remote(content: EntryContent, meta: Option<Meta>, url: String) -> Entry {
-        Entry::new(content, meta, Some(url))
     }
 
     pub fn archive_name(&self) -> &str {
@@ -126,16 +122,16 @@ impl EntryContent {
         use self::EntryContent::*;
 
         match *self {
-            File(ref path) =>
-                (KeyType::File,
+            Image(ref path) =>
+                (EntryType::Image,
                  url.unwrap_or_else(|| path_to_str(path).to_owned()),
                  1),
             Archive(ref path, ref entry) =>
-                (KeyType::Archive,
+                (EntryType::Archive,
                  url.unwrap_or_else(|| path_to_str(&**path).to_owned()),
                  entry.index),
             Pdf(ref path, index) =>
-                (KeyType::PDF,
+                (EntryType::PDF,
                  url.unwrap_or_else(|| path_to_str(&**path).to_owned()),
                  index),
         }
@@ -178,7 +174,7 @@ impl EntryContainer {
                 let dir = n_parents(file.clone(), n);
                 expand(&dir.to_path_buf(), recursive).ok().and_then(|middle| {
                     let mut middle: Vec<Rc<Entry>> = middle.into_iter().map(|it| {
-                        Entry::new_local(EntryContent::File(it), current_entry.meta.clone())
+                        Entry::new_local(EntryContent::Image(it), current_entry.meta.clone())
                     }).filter(|entry| {
                         current_entry == *entry || (!self.is_duplicated(entry) && self.is_valid_image(entry))
                     }).map(Rc::new).collect();
@@ -199,7 +195,7 @@ impl EntryContainer {
                 expand(&dir.to_path_buf(), recursive).ok().map(|files| {
                     let mut result = self.entries.clone_filtered();
                     let mut tail: Vec<Rc<Entry>> = files.into_iter().map(|it| {
-                        Entry::new_local(EntryContent::File(it), None)
+                        Entry::new_local(EntryContent::Image(it), None)
                     }).filter(|entry| {
                         !self.is_duplicated(entry) && self.is_valid_image(entry)
                     }).map(Rc::new).collect();
@@ -319,31 +315,25 @@ impl EntryContainer {
         }
     }
 
-    pub fn push_http_cache(&mut self, file: &PathBuf, url: String, meta: Option<Meta>, force: bool) {
-        let path = file.canonicalize().expect("canonicalize");
+    pub fn push_archive_entry(&mut self, archive_path: &PathBuf, entry: &ArchiveEntry, force: bool, url: Option<String>) {
         self.push_entry(
-            Entry::new_remote(EntryContent::File(path), meta, url),
+            Entry::new(
+                EntryContent::Archive(Arc::new(archive_path.clone()), entry.clone()),
+                None,
+                url),
             force);
     }
 
-    pub fn push_archive_entry(&mut self, archive_path: &PathBuf, entry: &ArchiveEntry, force: bool) {
-        self.push_entry(
-            Entry::new_local(
-                EntryContent::Archive(Arc::new(archive_path.clone()), entry.clone()),
-                None),
-                force);
-    }
-
-    pub fn push_pdf_entry(&mut self, pdf_path: Arc<PathBuf>, index: usize, meta: Option<Meta>, force: bool) {
+    pub fn push_pdf_entry(&mut self, pdf_path: Arc<PathBuf>, index: usize, meta: Option<Meta>, force: bool, url: Option<String>) {
         let content = EntryContent::Pdf(pdf_path.clone(), index);
-        self.push_entry(Entry::new_local(content, meta), force);
+        self.push_entry(Entry::new(content, meta, url), force);
     }
 
     pub fn search(&self, key: &SearchKey) -> Option<usize> {
         self.entries.iter().position(|it| key.matches(it))
     }
 
-    pub fn push_image(&mut self, file: &PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>) {
+    pub fn push_image(&mut self, file: &PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) {
         if_let_some!(file = file.canonicalize().ok(), {
             puts_error!("at" => "push_image", "reason" => o!("Failed to canonicalize"), "for" => path_to_str(&file));
         });
@@ -353,7 +343,7 @@ impl EntryContainer {
                 match expand(dir, expand_level) {
                     Ok(files) => {
                         for file in files {
-                            self.push_image(&file, meta.clone(), force, None);
+                            self.push_image(&file, meta.clone(), force, None, None);
                         }
                     },
                     Err(err) => {
@@ -365,7 +355,7 @@ impl EntryContainer {
         }
 
         self.push_entry(
-            Entry::new_local(EntryContent::File(file), meta),
+            Entry::new(EntryContent::Image(file), meta, url),
             force);
     }
 
@@ -374,7 +364,7 @@ impl EntryContainer {
             let mut expanded = expanded;
             expanded.sort_by(|a, b| natord::compare(path_to_str(a), path_to_str(b)));
             for file in expanded {
-                self.push_image(&file, meta.clone(), force, None);
+                self.push_image(&file, meta.clone(), force, None, None);
             }
         });
     }
@@ -387,7 +377,7 @@ impl EntryContainer {
         use self::EntryContent::*;
 
         match (*entry).content {
-            File(ref path) => is_valid_image_filename(path),
+            Image(ref path) => is_valid_image_filename(path),
             Archive(_, _) | Pdf(_,  _) => true, // FIXME archive
         }
     }
@@ -432,9 +422,9 @@ impl SearchKey {
 }
 
 
-impl KeyType {
+impl EntryType {
     pub fn is_container(&self) -> bool {
-        use self::KeyType::*;
+        use self::EntryType::*;
 
         match *self {
             PDF | Archive => true,

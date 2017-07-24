@@ -2,7 +2,7 @@
 use std::collections::VecDeque;
 use std::fs::{File, create_dir_all};
 use std::io::{BufWriter, Write};
-use std::path::PathBuf;
+use std::path::{PathBuf};
 use std::sync::mpsc::{channel, Sender};
 use std::thread::spawn;
 use std::time::Duration;
@@ -12,9 +12,11 @@ use curl;
 use url::Url;
 
 use app_path;
-use entry::Meta;
+use entry::{Meta, EntryType};
+use file_extension::get_entry_type_from_filename;
 use operation::{Operation, QueuedOperation};
 use sorting_buffer::SortingBuffer;
+
 
 
 type TID = usize;
@@ -32,13 +34,14 @@ struct Request {
     url: String,
     cache_filepath: PathBuf,
     meta: Option<Meta>,
-    force: bool
+    force: bool,
+    entry_type: Option<EntryType>,
 }
 
 
 #[derive(Clone)]
 enum Getter {
-    Queue(String, PathBuf, Option<Meta>, bool),
+    Queue(String, PathBuf, Option<Meta>, bool, Option<EntryType>),
     Done(usize, Request),
     Fail(usize, String, Request),
 }
@@ -50,14 +53,14 @@ impl HttpCache {
         HttpCache { app_tx: app_tx, main_tx: main_tx, sorting_buffer: sorting_buffer  }
     }
 
-    pub fn fetch(&mut self, url: String, meta: Option<Meta>, force: bool) -> Vec<QueuedOperation> {
+    pub fn fetch(&mut self, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) -> Vec<QueuedOperation> {
         let filepath = generate_temporary_filename(&url);
 
         if filepath.exists() {
             self.sorting_buffer.push_with_reserve(
-                QueuedOperation::PushHttpCache(filepath, url, meta, force))
+                make_queued_operation(filepath, url, meta, force, entry_type))
         } else {
-            self.main_tx.send(Getter::Queue(url, filepath, meta, force)).unwrap();
+            self.main_tx.send(Getter::Queue(url, filepath, meta, force, entry_type)).unwrap();
             vec![]
         }
     }
@@ -81,10 +84,10 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
 
         while let Ok(it) = main_rx.recv() {
             match it {
-                Queue(url, cache_filepath, meta, force) => {
+                Queue(url, cache_filepath, meta, force, entry_type) => {
                     let ticket = buffer.reserve();
 
-                    let request = Request { ticket: ticket, url: url.clone(), cache_filepath: cache_filepath, meta: meta, force: force };
+                    let request = Request { ticket: ticket, url: url.clone(), cache_filepath: cache_filepath, meta: meta, force: force, entry_type: entry_type };
 
                     if let Some(worker) = waiting.pop() {
                         threads[worker].send(request).unwrap();
@@ -97,7 +100,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                 Done(thread_id, request) => {
                     buffer.push(
                         request.ticket,
-                        QueuedOperation::PushHttpCache(request.cache_filepath, request.url, request.meta, request.force));
+                        make_queued_operation(request.cache_filepath, request.url, request.meta, request.force, request.entry_type));
 
                     app_tx.send(Operation::Pull).unwrap();
 
@@ -187,5 +190,22 @@ fn generate_temporary_filename(url: &str) -> PathBuf {
         result.push(format!("{}{}", url.host().unwrap(), url.path()));
         create_dir_all(&result.parent().unwrap()).unwrap();
         result
+    }
+}
+
+fn make_queued_operation(file: PathBuf, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) -> QueuedOperation {
+    let entry_type = entry_type.or_else(|| {
+        get_entry_type_from_filename(&file)
+    }).unwrap_or(EntryType::Image);
+
+    match entry_type {
+        EntryType::Image =>
+            QueuedOperation::PushImage(file, meta, force, None, Some(url)),
+        EntryType::Archive =>
+            QueuedOperation::PushArchive(file, force, Some(url)),
+        EntryType::PDF =>
+            QueuedOperation::PushPdf(file, meta, force,  Some(url)),
+        _ =>
+            not_implemented!(),
     }
 }

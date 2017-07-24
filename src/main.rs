@@ -34,6 +34,7 @@ extern crate url;
 
 #[macro_use] mod macro_utils;
 #[macro_use] mod logger;
+
 mod app;
 mod app_path;
 mod archive;
@@ -49,6 +50,7 @@ mod counter;
 mod editor;
 mod entry;
 mod expandable;
+mod file_extension;
 mod filer;
 mod filterable_vec;
 mod fragile_input;
@@ -61,10 +63,10 @@ mod image_fetcher;
 mod lazy;
 mod lazy_sender;
 mod mapping;
-mod paginator;
 mod operation;
 mod operation_utils;
 mod option;
+mod paginator;
 mod poppler;
 mod script;
 mod session;
@@ -78,7 +80,6 @@ mod termination;
 mod timer;
 mod ui_event;
 mod utils;
-mod validation;
 mod version;
 
 

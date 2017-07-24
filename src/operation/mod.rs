@@ -10,7 +10,7 @@ use cmdline_parser::Parser;
 use archive::ArchiveEntry;
 use cherenkov::Filler;
 use color::Color;
-use entry::Meta;
+use entry::{Meta, EntryType};
 use entry;
 use expandable::Expandable;
 use filer;
@@ -64,7 +64,7 @@ pub enum Operation {
     PushImage(Expandable, Option<Meta>, bool, Option<u8>), /* path, meta, force, expand-level */
     PushPdf(Expandable, Option<Meta>, bool),
     PushSibling(bool, Option<Meta>, bool, bool), /* next?, meta, force, show */
-    PushURL(String, Option<Meta>, bool),
+    PushURL(String, Option<Meta>, bool, Option<EntryType>),
     Quit,
     Random,
     Refresh,
@@ -169,11 +169,12 @@ iterable_enum!(PreDefinedOptionName =>
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum QueuedOperation {
-    PushImage(PathBuf, Option<Meta>, bool, Option<u8>), /* path, meta, force, expand-level */
+    PushImage(PathBuf, Option<Meta>, bool, Option<u8>, Option<String>), /* path, meta, force, expand-level, remote-url */
     PushDirectory(PathBuf, Option<Meta>, bool), /* path, meta, force */
-    PushHttpCache(PathBuf, String, Option<Meta>, bool),
-    PushArchiveEntry(PathBuf, ArchiveEntry, bool),
-    PushPdfEntries(PathBuf, usize, Option<Meta>, bool), /* path, pages, meta, force */
+    PushArchive(PathBuf, bool, Option<String>), /* path, force, remote-url */
+    PushArchiveEntry(PathBuf, ArchiveEntry, bool, Option<String>), /* path, archive-entry, force, remote-url */
+    PushPdf(PathBuf, Option<Meta>, bool, Option<String>), /* path, meta, force, remote-url */
+    PushPdfEntries(PathBuf, usize, Option<Meta>, bool, Option<String>), /* path, pages, meta, force, remote-url */
 }
 
 
@@ -343,7 +344,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@push-directory" | "@push-dir" => parse_push(whole, |it, meta, force| PushDirectory(Expandable(it), meta, force)),
             "@push-pdf"                     => parse_push(whole, |it, meta, force| PushPdf(Expandable(it), meta, force)),
             "@push-previous" | "@push-prev" => parse_push_sibling(whole, false),
-            "@push-url"                     => parse_push(whole, PushURL),
+            "@push-url"                     => parse_push_url(whole),
             "@quit"                         => Ok(Quit),
             "@random" | "@rand"             => Ok(Random),
             "@refresh" | "@r"               => Ok(Refresh),

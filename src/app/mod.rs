@@ -257,13 +257,13 @@ impl App {
                 PushDirectory(file, meta, force) =>
                     on_push_directory(self, &mut updated, file.to_path_buf(), meta, force),
                 PushImage(file, meta, force, expand_level) =>
-                    on_push_image(self, &mut updated, file.to_path_buf(), meta, force, expand_level),
+                    on_push_image(self, &mut updated, file.to_path_buf(), meta, force, expand_level, None),
                 PushPdf(file, meta, force) =>
-                    on_push_pdf(self, &mut updated, file.to_path_buf(), meta, force),
+                    on_push_pdf(self, &mut updated, file.to_path_buf(), meta, force, None),
                 PushSibling(next, meta, force, show) =>
                     on_push_sibling(self, &mut updated, next, meta, force, show),
-                PushURL(url, meta, force) =>
-                    on_push_url(self, &mut updated, url, meta, force),
+                PushURL(url, meta, force, entry_type) =>
+                    on_push_url(self, &mut updated, url, meta, force, entry_type),
                 Quit =>
                     on_quit(self),
                 Random =>
@@ -378,7 +378,7 @@ impl App {
     pub fn current_for_file(&self) -> Option<(PathBuf, usize, Entry)> {
         self.current().and_then(|(entry, index)| {
             match entry.content {
-                EntryContent::File(ref path) => Some((path.clone(), index, entry.clone())),
+                EntryContent::Image(ref path) => Some((path.clone(), index, entry.clone())),
                 _ => None
             }
         })
@@ -563,7 +563,7 @@ impl App {
 
             // Path means local file path, url, or pdf file path
             match entry.content {
-                File(ref path) => {
+                Image(ref path) => {
                     envs.push((o!("file"), o!(path_to_str(path))));
                     envs_sub.push((o!("path"), o!(path_to_str(path))));
                 }
@@ -580,7 +580,7 @@ impl App {
             }
 
             if let Some(url) = entry.url {
-                envs.push((o!("url"), o!(url)));
+                envs.push((o!("url"), o!(*url)));
             }
 
             let last_page = min!(index + gui_len, len);

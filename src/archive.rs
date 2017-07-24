@@ -13,9 +13,9 @@ use libarchive::reader::Builder;
 use libarchive::reader::Reader;
 use natord;
 
+use file_extension::is_valid_image_filename;
 use operation::{Operation, QueuedOperation};
 use sorting_buffer::SortingBuffer;
-use validation::is_valid_image_filename;
 
 
 
@@ -52,7 +52,7 @@ impl Hash for ArchiveEntry {
 }
 
 
-pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Operation>, mut sorting_buffer: SortingBuffer<QueuedOperation>, force: bool) {
+pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Operation>, mut sorting_buffer: SortingBuffer<QueuedOperation>, force: bool, url: Option<String>) {
     let from_index: HashMap<usize, (usize, String)> = {
         #[derive(Clone, Debug)]
         struct IndexWithName {
@@ -143,7 +143,8 @@ pub fn fetch_entries(path: &PathBuf, encodings: &[EncodingRef], tx: Sender<Opera
                                 QueuedOperation::PushArchiveEntry(
                                     path.clone(),
                                     ArchiveEntry { name: (*name).to_owned(), index: index, content: Arc::new(content) },
-                                    force));
+                                    force,
+                                    url.clone()));
                             break;
                         }
                     } else {

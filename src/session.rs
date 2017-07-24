@@ -11,7 +11,7 @@ use color::Color;
 use constant;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::filter::writer::write as write_expr;
-use entry::{Entry, EntryContainer, KeyType, Key};
+use entry::{Entry, EntryContainer, EntryType, Key};
 use gui::Gui;
 use mapping::{Mapping, key_mapping as kmap, mouse_mapping as mmap, region_mapping as rmap};
 use operation::PreDefinedOptionName;
@@ -159,7 +159,7 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
 }
 
 pub fn write_entries(entries: &EntryContainer, out: &mut String) {
-    let mut previous = (KeyType::Invalid, o!(""), 0);
+    let mut previous = (EntryType::Invalid, o!(""), 0);
     for entry in entries.iter() {
         write_entry(entry, out, &mut previous);
     }
@@ -171,10 +171,10 @@ fn write_entry(entry: &Entry, out: &mut String, previous: &mut Key) {
     let path_changed = previous.1 != entry.key.1;
 
     match entry.content {
-        File(ref path) =>
+        Image(ref path) =>
             sprintln!(out, "@push-image {}", escape_pathbuf(path)),
         Archive(ref path, _) if path_changed =>
-            sprintln!(out, "@push {}", escape_pathbuf(&*path)),
+            sprintln!(out, "@push-archive {}", escape_pathbuf(&*path)),
         Pdf(ref path, _) if path_changed =>
             sprintln!(out, "@push-pdf {}", escape_pathbuf(&*path)),
         Archive(_, _) | Pdf(_, _) =>
@@ -197,7 +197,7 @@ fn write_path(entry: &Entry, out: &mut String) {
     use entry::EntryContent::*;
 
     match entry.content {
-        File(ref path) =>
+        Image(ref path) =>
             out.push_str(path_to_str(&*path)),
         Archive(ref path, ref entry) if entry.index == 0 =>
             out.push_str(path_to_str(&**path)),

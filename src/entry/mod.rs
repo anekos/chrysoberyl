@@ -315,11 +315,11 @@ impl EntryContainer {
         }
     }
 
-    pub fn push_archive_entry(&mut self, archive_path: &PathBuf, entry: &ArchiveEntry, force: bool, url: Option<String>) {
+    pub fn push_archive_entry(&mut self, archive_path: &PathBuf, entry: &ArchiveEntry, meta: Option<Meta>, force: bool, url: Option<String>) {
         self.push_entry(
             Entry::new(
                 EntryContent::Archive(Arc::new(archive_path.clone()), entry.clone()),
-                None,
+                meta,
                 url),
             force);
     }

@@ -202,7 +202,7 @@ fn make_queued_operation(file: PathBuf, url: String, meta: Option<Meta>, force: 
         EntryType::Image =>
             QueuedOperation::PushImage(file, meta, force, None, Some(url)),
         EntryType::Archive =>
-            QueuedOperation::PushArchive(file, force, Some(url)),
+            QueuedOperation::PushArchive(file, meta, force, Some(url)),
         EntryType::PDF =>
             QueuedOperation::PushPdf(file, meta, force,  Some(url)),
         _ =>

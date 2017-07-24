@@ -60,6 +60,7 @@ pub enum Operation {
     PrintEntries,
     Pull,
     Push(Expandable, Option<Meta>, bool), /* path, meta, force */
+    PushArchive(Expandable, Option<Meta>, bool), /* path, meta, force */
     PushDirectory(Expandable, Option<Meta>, bool), /* path, meta, force */
     PushImage(Expandable, Option<Meta>, bool, Option<u8>), /* path, meta, force, expand-level */
     PushPdf(Expandable, Option<Meta>, bool),
@@ -171,8 +172,8 @@ iterable_enum!(PreDefinedOptionName =>
 pub enum QueuedOperation {
     PushImage(PathBuf, Option<Meta>, bool, Option<u8>, Option<String>), /* path, meta, force, expand-level, remote-url */
     PushDirectory(PathBuf, Option<Meta>, bool), /* path, meta, force */
-    PushArchive(PathBuf, bool, Option<String>), /* path, force, remote-url */
-    PushArchiveEntry(PathBuf, ArchiveEntry, bool, Option<String>), /* path, archive-entry, force, remote-url */
+    PushArchive(PathBuf, Option<Meta>, bool, Option<String>), /* path, meta, force, remote-url */
+    PushArchiveEntry(PathBuf, ArchiveEntry, Option<Meta>, bool, Option<String>), /* path, archive-entry, meta, force, remote-url */
     PushPdf(PathBuf, Option<Meta>, bool, Option<String>), /* path, meta, force, remote-url */
     PushPdfEntries(PathBuf, usize, Option<Meta>, bool, Option<String>), /* path, pages, meta, force, remote-url */
 }
@@ -339,6 +340,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@pdf-index"                    => parse_pdf_index(whole),
             "@prev" | "@p" | "@previous"    => parse_move(whole, Previous),
             "@push"                         => parse_push(whole, |it, meta, force| Push(Expandable(it), meta, force)),
+            "@push-archive"                 => parse_push(whole, |it, meta, force| PushArchive(Expandable(it), meta, force)),
             "@push-next"                    => parse_push_sibling(whole, true),
             "@push-image"                   => parse_push_image(whole),
             "@push-directory" | "@push-dir" => parse_push(whole, |it, meta, force| PushDirectory(Expandable(it), meta, force)),

@@ -254,6 +254,8 @@ impl App {
                     on_pull(self, &mut updated),
                 Push(path, meta, force) =>
                     on_push(self, &mut updated, path.to_string(), meta, force),
+                PushArchive(file, meta, force) =>
+                    on_push_archive(self, &file.to_path_buf(), meta, force, None),
                 PushDirectory(file, meta, force) =>
                     on_push_directory(self, &mut updated, file.to_path_buf(), meta, force),
                 PushImage(file, meta, force, expand_level) =>

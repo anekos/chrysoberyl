@@ -418,8 +418,8 @@ pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<
     on_push_path(app, updated, &Path::new(&path).to_path_buf(), meta, force)
 }
 
-pub fn on_push_archive(app: &mut App, path: &PathBuf, force: bool, url: Option<String>) {
-    archive::fetch_entries(&path, &app.encodings, app.tx.clone(), app.sorting_buffer.clone(), force, url);
+pub fn on_push_archive(app: &mut App, path: &PathBuf, meta: Option<Meta>, force: bool, url: Option<String>) {
+    archive::fetch_entries(&path, meta, &app.encodings, app.tx.clone(), app.sorting_buffer.clone(), force, url);
 }
 
 pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: Option<Meta>, force: bool) {
@@ -427,7 +427,7 @@ pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: 
         if let Some(entry_type) = get_entry_type_from_filename(&path) {
             match entry_type {
                 EntryType::Archive =>
-                    return on_push_archive(app, &path, force, None),
+                    return on_push_archive(app, &path, meta, force, None),
                 EntryType::PDF =>
                     return on_push_pdf(app, updated, path.to_path_buf(), meta, force, None),
                 _ =>
@@ -888,10 +888,10 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
                 app.entries.push_image(&path, meta, force, expand_level, url),
             PushDirectory(path, meta, force) =>
                 app.entries.push_directory(&path, meta, force),
-            PushArchive(archive_path, force, url) =>
-                on_push_archive(app, &archive_path, force, url),
-            PushArchiveEntry(ref archive_path, ref entry, force, ref url) =>
-                app.entries.push_archive_entry(archive_path, entry, force, url.clone()),
+            PushArchive(archive_path, meta, force, url) =>
+                on_push_archive(app, &archive_path, meta, force, url),
+            PushArchiveEntry(archive_path, entry, meta, force, url) =>
+                app.entries.push_archive_entry(&archive_path, &entry, meta, force, url),
             PushPdf(pdf_path, meta, force, url) =>
                 on_push_pdf(app, updated, pdf_path, meta, force, url),
             PushPdfEntries(pdf_path, pages, meta, force, url) => {

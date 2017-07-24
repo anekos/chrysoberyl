@@ -58,7 +58,7 @@ pub fn parse_args() -> Result<Initial, String> {
                 result.entries.push(Entry::Operation(op.clone()));
             }
             if 2 < arg.len() {
-                op = Some(vec![o!(arg[2..])])
+                op = Some(vec![format!("@{}", &arg[2..])]);
             } else {
                 op = None;
             }
@@ -70,6 +70,10 @@ pub fn parse_args() -> Result<Initial, String> {
         } else {
             result.entries.push(Entry::Path(arg));
         }
+    }
+
+    if let Some(ref op) = op {
+        result.entries.push(Entry::Operation(op.clone()));
     }
 
     Ok(result)

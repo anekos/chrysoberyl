@@ -567,11 +567,6 @@ impl App {
                     envs.push((o!("file"), o!(path_to_str(path))));
                     envs_sub.push((o!("path"), o!(path_to_str(path))));
                 }
-                Http(ref path, ref url) => {
-                    envs.push((o!("file"), o!(path_to_str(path))));
-                    envs.push((o!("url"), o!(url)));
-                    envs_sub.push((o!("path"), o!(url)))
-                }
                 Archive(ref archive_file, ref entry) => {
                     envs.push((o!("file"), entry.name.clone()));
                     envs.push((o!("archive_file"), o!(path_to_str(&**archive_file))));
@@ -582,6 +577,10 @@ impl App {
                     envs.push((o!("pdf_page"), s!(index)));
                     envs_sub.push((o!("path"), o!(path_to_str(&**pdf_file))));
                 }
+            }
+
+            if let Some(url) = entry.url {
+                envs.push((o!("url"), o!(url)));
             }
 
             let last_page = min!(index + gui_len, len);

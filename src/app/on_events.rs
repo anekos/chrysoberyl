@@ -341,7 +341,7 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) {
 
     if let Some(entry) = app.current_entry() {
         let result = match entry.content {
-            File(ref path) | Http(ref path, _) => file_operation.execute(path),
+            File(ref path) => file_operation.execute(path),
             Archive(ref path , ref entry) => file_operation.execute_with_buffer(&entry.content.clone(), path),
             _ => not_implemented!(),
         };
@@ -481,7 +481,7 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
 
     let found = app.current_entry().and_then(|entry| {
         match entry.content {
-            File(ref path) | Http(ref path, _) =>
+            File(ref path) =>
                 find_sibling(path, next),
             Archive(ref path, _) | Pdf(ref path, _) =>
                 find_sibling(&*path, next),

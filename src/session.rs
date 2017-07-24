@@ -173,8 +173,6 @@ fn write_entry(entry: &Entry, out: &mut String, previous: &mut Key) {
     match entry.content {
         File(ref path) =>
             sprintln!(out, "@push-image {}", escape_pathbuf(path)),
-        Http(_, ref url) =>
-            sprintln!(out, "@push-url {}", escape(url)),
         Archive(ref path, _) if path_changed =>
             sprintln!(out, "@push {}", escape_pathbuf(&*path)),
         Pdf(ref path, _) if path_changed =>
@@ -201,8 +199,6 @@ fn write_path(entry: &Entry, out: &mut String) {
     match entry.content {
         File(ref path) =>
             out.push_str(path_to_str(&*path)),
-        Http(_, ref url) =>
-            out.push_str(url),
         Archive(ref path, ref entry) if entry.index == 0 =>
             out.push_str(path_to_str(&**path)),
         Pdf(ref path, index) if index == 0 =>

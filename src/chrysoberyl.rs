@@ -1,19 +1,15 @@
 
+use std::process::exit;
 use std::sync::mpsc::Receiver;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-use argparse::{ArgumentParser, List, Collect, Store, StoreTrue, StoreFalse, Print};
-use encoding::EncodingRef;
-use encoding::label::encoding_from_whatwg_label;
 use env_logger;
 use gtk;
 
 use app;
-use app_path;
+use command_line;
 use config;
-use gui::Gui;
-use logger::register_stdout;
 use operation::Operation;
 use script;
 
@@ -26,9 +22,7 @@ pub fn main() {
 
     put_features();
 
-    let gui = Gui::new();
-
-    let (mut app, primary_rx, secondary_rx) = parse_arguments(gui.clone());
+    let (mut app, primary_rx, secondary_rx) = parse_arguments();
 
     'outer: loop {
         while gtk::events_pending() {
@@ -59,74 +53,13 @@ pub fn main() {
 }
 
 
-fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operation>) {
-    use state::*;
+fn parse_arguments() -> (app::App, Receiver<Operation>, Receiver<Operation>) {
+    if_let_ok!(initial = command_line::parse_args(), |err| {
+        println!("{}", err);
+        exit(1);
+    });
 
-    let mut states = States::default();
-    let mut encodings: Vec<String> = vec![];
-    let mut initial = app::Initial::new();
-
-    {
-        let path = format!(
-            "Configuration: {}\nCache: {}",
-            app_path::config_file(None).to_str().unwrap(),
-            app_path::cache_dir("/").to_str().unwrap());
-        let mut stdout = true;
-
-        {
-
-            let mut ap = ArgumentParser::new();
-
-            ap.set_description("Controllable image viewer");
-
-            // Initial
-            ap.refer(&mut initial.expand)
-                .add_option(&["--expand", "-e"], StoreTrue, "`Expand` first file");
-            ap.refer(&mut initial.expand_recursive)
-                .add_option(&["--expand-recursive", "-E"], StoreTrue, "`Expand` first file");
-            ap.refer(&mut initial.shuffle)
-                .add_option(&["--shuffle", "-z"], StoreTrue, "Shuffle file list");
-            ap.refer(&mut initial.http_threads)
-                .add_option(&["--max-http-threads", "-t"], Store, "Maximum number of HTTP Threads");
-            ap.refer(&mut encodings)
-                .add_option(&["--encoding", "--enc"], Collect, "Character encoding for filename in archives");
-            ap.refer(&mut stdout)
-                .add_option(&["--silent"], StoreFalse, "No stdout");
-            ap.refer(&mut initial.files)
-                .add_argument("images", List, "Image files or URLs");
-
-            // Controllers
-            ap.refer(&mut initial.controllers.inputs)
-                .add_option(&["--input", "-i"], Collect, "Controller files")
-                .metavar("FILEPATH");
-            ap.refer(&mut initial.operations)
-                .add_option(&["--operation", "-o"], Collect, "Execute operations at start")
-                .metavar("OPERATION");
-
-            // Options
-            ap.refer(&mut states.status_bar)
-                .add_option(&["--status-bar"], StoreTrue, "Show status bar");
-            ap.refer(&mut states.reverse)
-                .add_option(&["--reverse"], StoreTrue, "Reverse in multi view");
-            ap.refer(&mut states.view.center_alignment)
-                .add_option(&["--center"], StoreTrue, "Center alignment in multi view");
-
-            ap.add_option(&["-V", "--version"], Print(env!("CARGO_PKG_VERSION").to_string()), "Show version");
-
-            ap.add_option(&["--print-default"], Print(o!(config::DEFAULT_CONFIG)), "Print default config");
-            ap.add_option(&["--print-path"], Print(path), "Print application files path");
-
-            ap.parse_args_or_exit();
-        }
-
-        if stdout {
-            states.stdout = Some(register_stdout());
-        }
-    }
-
-    initial.encodings = parse_encodings(&encodings);
-
-    let (app, primary_rx, rx) = app::App::new(initial, states, gui);
+    let (app, primary_rx, rx) = app::App::new(initial);
 
     script::load(&app.tx, &config::get_config_source());
 
@@ -135,20 +68,6 @@ fn parse_arguments(gui: Gui) -> (app::App, Receiver<Operation>, Receiver<Operati
     (app, primary_rx, rx)
 }
 
-
-fn parse_encodings(names: &[String]) -> Vec<EncodingRef> {
-    let mut result = vec![];
-
-    for name in names.iter() {
-        if let Some(encoding) = encoding_from_whatwg_label(name) {
-            result.push(encoding);
-        } else {
-            puts_error!("invalid_encoding_name" => name);
-        }
-    }
-
-    result
-}
 
 fn put_features() {
     if cfg!(feature = "poppler_lock") {

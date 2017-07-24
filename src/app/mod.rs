@@ -3,9 +3,7 @@ use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::env;
 use std::ops::Range;
-use std::path::Path;
-use std::path::PathBuf;
-use std::str::FromStr;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::{sleep, spawn};
 use std::time::Duration;
@@ -15,6 +13,7 @@ use gtk::prelude::*;
 use libc;
 use rand::{self, ThreadRng};
 
+use command_line::{Initial, Entry as CLEntry};
 use constant;
 use controller;
 use counter::Counter;
@@ -67,17 +66,6 @@ pub struct App {
     pub states: States
 }
 
-pub struct Initial {
-    pub http_threads: u8,
-    pub expand: bool,
-    pub expand_recursive: bool,
-    pub shuffle: bool,
-    pub controllers: controller::Controllers,
-    pub files: Vec<String>,
-    pub encodings: Vec<EncodingRef>,
-    pub operations: Vec<String>
-}
-
 #[derive(Default)]
 pub struct Updated {
     pointer: bool,
@@ -89,16 +77,20 @@ pub struct Updated {
 
 
 impl App {
-    pub fn new(initial: Initial, states: States, gui: Gui) -> (App, Receiver<Operation>, Receiver<Operation>) {
+    pub fn new(mut initial: Initial) -> (App, Receiver<Operation>, Receiver<Operation>) {
         let (tx, rx) = channel();
         let (primary_tx, primary_rx) = channel();
 
-        let mut initial = initial;
+        let mut states = States::default();
 
         if initial.encodings.is_empty() {
             use encoding::all::*;
             initial.encodings.push(UTF_8);
             initial.encodings.push(WINDOWS_31J);
+        }
+
+        if !initial.silent {
+            states.stdout = Some(logger::register_stdout());
         }
 
         set_envs();
@@ -110,7 +102,7 @@ impl App {
 
         let mut app = App {
             entries: EntryContainer::new(),
-            gui: gui.clone(),
+            gui: Gui::new(),
             tx: tx.clone(),
             http_cache: HttpCache::new(initial.http_threads, tx.clone(), sorting_buffer.clone()),
             states: states,
@@ -134,43 +126,43 @@ impl App {
 
         app.reset_view();
 
-        for op in &initial.operations {
-            match Operation::from_str(op) {
-                Ok(op) => tx.send(op).unwrap(),
-                Err(err) => puts_error!("at" => "operation", "reason" => s!(err)),
-            }
-        }
-
-        ui_event::register(&gui, &primary_tx);
-        controller::register(&tx, &initial.controllers);
+        ui_event::register(&app.gui, &primary_tx);
 
         app.update_label_visibility();
 
+        let mut first_path = None;
+
         {
             let mut updated = Updated::default();
-            for file in &initial.files {
-                on_events::on_push(&mut app, &mut updated, file.clone(), None, false);
-            }
-        }
-
-        {
-            let mut expand_base = None;
-
-            if app.entries.len() == 0 {
-                if let Some(file) = initial.files.get(0) {
-                    expand_base = Path::new(file).to_path_buf().parent().map(|it| it.to_path_buf());
+            for file in initial.entries {
+                match file {
+                    CLEntry::Path(file) => {
+                        if first_path.is_none() {
+                            first_path = Some(file.clone());
+                        }
+                        on_events::on_push(&mut app, &mut updated, file.clone(), None, false);
+                    }
+                    CLEntry::Input(file) => {
+                        controller::register_file(tx.clone(), file);
+                    },
+                    CLEntry::Expand(file, recursive) => {
+                        on_events::on_push(&mut app, &mut updated, file.clone(), None, false);
+                        tx.send(Operation::Expand(recursive, Some(Path::new(&file).to_path_buf()))).unwrap();
+                    },
+                    CLEntry::Operation(op) => {
+                        match Operation::parse_from_vec(&op) {
+                            Ok(op) => tx.send(op).unwrap(),
+                            Err(err) => puts_error!("at" => "operation", "reason" => o!(err)),
+                        }
+                    }
                 }
             }
-
-            if initial.expand {
-                tx.send(Operation::Expand(false, expand_base)).unwrap();
-            } else if initial.expand_recursive {
-                tx.send(Operation::Expand(true, expand_base)).unwrap();
-            }
         }
 
+        controller::register_stdin(tx.clone());
+
         if initial.shuffle {
-            let fix = initial.files.get(0).map(|it| Path::new(it).is_file()).unwrap_or(false);
+            let fix = first_path.map(|it| Path::new(&it).is_file()).unwrap_or(false);
             tx.send(Operation::Shuffle(fix)).unwrap();
         }
 
@@ -683,22 +675,6 @@ impl App {
             sight_size: self.states.view.len()
         };
         self.paginator.update_condition(&condition);
-    }
-}
-
-
-impl Initial {
-    pub fn new() -> Initial {
-        Initial {
-            http_threads: 3,
-            expand: false,
-            expand_recursive: false,
-            shuffle: false,
-            files: vec![],
-            controllers: controller::Controllers::new(),
-            encodings: vec![],
-            operations: vec![],
-        }
     }
 }
 

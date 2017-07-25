@@ -390,7 +390,11 @@ impl EntryContainer {
 
 impl Entry {
     pub fn display_path(&self) -> String {
-        self.key.1.clone()
+        if let Some(ref url) = self.url {
+            (**url).clone()
+        } else {
+            self.key.1.clone()
+        }
     }
 }
 

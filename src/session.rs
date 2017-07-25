@@ -170,15 +170,29 @@ fn write_entry(entry: &Entry, out: &mut String, previous: &mut Key) {
 
     let path_changed = previous.1 != entry.key.1;
 
-    match entry.content {
-        Image(ref path) =>
-            sprintln!(out, "@push-image {}", escape_pathbuf(path)),
-        Archive(ref path, _) if path_changed =>
-            sprintln!(out, "@push-archive {}", escape_pathbuf(&*path)),
-        Pdf(ref path, _) if path_changed =>
-            sprintln!(out, "@push-pdf {}", escape_pathbuf(&*path)),
-        Archive(_, _) | Pdf(_, _) =>
-            (),
+    if let Some(ref url) = entry.url {
+        let url = &*url;
+        match entry.content {
+            Image(_) =>
+                sprintln!(out, "@push-url --as image {}", escape(url)),
+            Archive(_, _) if path_changed =>
+                sprintln!(out, "@push-url --as archive {}", escape(url)),
+            Pdf(_, _) if path_changed =>
+                sprintln!(out, "@push-url --as pdf {}", escape(url)),
+            Archive(_, _) | Pdf(_, _) =>
+                (),
+        }
+    } else {
+        match entry.content {
+            Image(ref path) =>
+                sprintln!(out, "@push-image {}", escape_pathbuf(path)),
+            Archive(ref path, _) if path_changed =>
+                sprintln!(out, "@push-archive {}", escape_pathbuf(&*path)),
+            Pdf(ref path, _) if path_changed =>
+                sprintln!(out, "@push-pdf {}", escape_pathbuf(&*path)),
+            Archive(_, _) | Pdf(_, _) =>
+                (),
+        }
     }
 
     // To cut down the number of clone.

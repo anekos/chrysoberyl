@@ -32,7 +32,7 @@ pub struct Entry {
     pub content: EntryContent,
     pub meta: Option<Meta>,
     pub info: info::EntryInfo,
-    pub url: Option<String>,
+    pub url: Option<Arc<String>>,
 }
 
 #[derive(Clone)]
@@ -78,7 +78,7 @@ impl Entry {
             content: content,
             meta: meta,
             info: info,
-            url: url,
+            url: url.map(Arc::new),
         }
     }
 

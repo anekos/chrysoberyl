@@ -210,16 +210,31 @@ pub fn write_paths(entries: &EntryContainer, out: &mut String) {
 fn write_path(entry: &Entry, out: &mut String) {
     use entry::EntryContent::*;
 
-    match entry.content {
-        Image(ref path) =>
-            out.push_str(path_to_str(&*path)),
-        Archive(ref path, ref entry) if entry.index == 0 =>
-            out.push_str(path_to_str(&**path)),
-        Pdf(ref path, index) if index == 0 =>
-            out.push_str(path_to_str(&**path)),
-        Archive(_, _) | Pdf(_, _) =>
-            (),
+    if let Some(ref url) = entry.url {
+        match entry.content {
+            Image(_) =>
+                out.push_str(&*url),
+            Archive(_, ref entry) if entry.index == 0 =>
+                out.push_str(&*url),
+            Pdf(_, index) if index == 0 =>
+                out.push_str(&*url),
+            Archive(_, _) | Pdf(_, _) =>
+                return,
+        }
+    } else {
+        match entry.content {
+            Image(ref path) =>
+                out.push_str(path_to_str(&*path)),
+            Archive(ref path, ref entry) if entry.index == 0 =>
+                out.push_str(path_to_str(&**path)),
+            Pdf(ref path, index) if index == 0 =>
+                out.push_str(path_to_str(&**path)),
+            Archive(_, _) | Pdf(_, _) =>
+                return,
+        }
     }
+
+    out.push_str("\n");
 }
 
 pub fn write_paginator(entry: &Option<Entry>, out: &mut String) {

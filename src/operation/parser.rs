@@ -566,8 +566,8 @@ pub fn parse_push_url(args: &[String]) -> Result<Operation, String> {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut meta).add_option(&["--meta", "-m"], Collect, "Meta data");
         ap.refer(&mut force).add_option(&["--force", "-f"], StoreTrue, "Meta data");
-        ap.refer(&mut entry_type).add_option(&["--type", "-t"], StoreOption, "Type (image/archive/pdf)");
-        ap.refer(&mut path).add_argument("Path", Store, "Path to resource").required();
+        ap.refer(&mut entry_type).add_option(&["--type", "-t", "--as"], StoreOption, "Type (image/archive/pdf)");
+        ap.refer(&mut path).add_argument("URL", Store, "URL").required();
         parse_args(&mut ap, args)
     } .map(|_| {
         Operation::PushURL(path, new_opt_meta(meta), force, entry_type)

@@ -11,7 +11,7 @@ use color::Color;
 use constant;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::filter::writer::write as write_expr;
-use entry::{Entry, EntryContainer, KeyType, Key};
+use entry::{Entry, EntryContainer, EntryType, Key};
 use gui::Gui;
 use mapping::{Mapping, key_mapping as kmap, mouse_mapping as mmap, region_mapping as rmap};
 use operation::PreDefinedOptionName;
@@ -159,7 +159,7 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
 }
 
 pub fn write_entries(entries: &EntryContainer, out: &mut String) {
-    let mut previous = (KeyType::Invalid, o!(""), 0);
+    let mut previous = (EntryType::Invalid, o!(""), 0);
     for entry in entries.iter() {
         write_entry(entry, out, &mut previous);
     }
@@ -170,17 +170,29 @@ fn write_entry(entry: &Entry, out: &mut String, previous: &mut Key) {
 
     let path_changed = previous.1 != entry.key.1;
 
-    match entry.content {
-        File(ref path) =>
-            sprintln!(out, "@push-image {}", escape_pathbuf(path)),
-        Http(_, ref url) =>
-            sprintln!(out, "@push-url {}", escape(url)),
-        Archive(ref path, _) if path_changed =>
-            sprintln!(out, "@push {}", escape_pathbuf(&*path)),
-        Pdf(ref path, _) if path_changed =>
-            sprintln!(out, "@push-pdf {}", escape_pathbuf(&*path)),
-        Archive(_, _) | Pdf(_, _) =>
-            (),
+    if let Some(ref url) = entry.url {
+        let url = &*url;
+        match entry.content {
+            Image(_) =>
+                sprintln!(out, "@push-url --as image {}", escape(url)),
+            Archive(_, _) if path_changed =>
+                sprintln!(out, "@push-url --as archive {}", escape(url)),
+            Pdf(_, _) if path_changed =>
+                sprintln!(out, "@push-url --as pdf {}", escape(url)),
+            Archive(_, _) | Pdf(_, _) =>
+                (),
+        }
+    } else {
+        match entry.content {
+            Image(ref path) =>
+                sprintln!(out, "@push-image {}", escape_pathbuf(path)),
+            Archive(ref path, _) if path_changed =>
+                sprintln!(out, "@push-archive {}", escape_pathbuf(&*path)),
+            Pdf(ref path, _) if path_changed =>
+                sprintln!(out, "@push-pdf {}", escape_pathbuf(&*path)),
+            Archive(_, _) | Pdf(_, _) =>
+                (),
+        }
     }
 
     // To cut down the number of clone.
@@ -198,18 +210,31 @@ pub fn write_paths(entries: &EntryContainer, out: &mut String) {
 fn write_path(entry: &Entry, out: &mut String) {
     use entry::EntryContent::*;
 
-    match entry.content {
-        File(ref path) =>
-            out.push_str(path_to_str(&*path)),
-        Http(_, ref url) =>
-            out.push_str(url),
-        Archive(ref path, ref entry) if entry.index == 0 =>
-            out.push_str(path_to_str(&**path)),
-        Pdf(ref path, index) if index == 0 =>
-            out.push_str(path_to_str(&**path)),
-        Archive(_, _) | Pdf(_, _) =>
-            (),
+    if let Some(ref url) = entry.url {
+        match entry.content {
+            Image(_) =>
+                out.push_str(&*url),
+            Archive(_, ref entry) if entry.index == 0 =>
+                out.push_str(&*url),
+            Pdf(_, index) if index == 0 =>
+                out.push_str(&*url),
+            Archive(_, _) | Pdf(_, _) =>
+                return,
+        }
+    } else {
+        match entry.content {
+            Image(ref path) =>
+                out.push_str(path_to_str(&*path)),
+            Archive(ref path, ref entry) if entry.index == 0 =>
+                out.push_str(path_to_str(&**path)),
+            Pdf(ref path, index) if index == 0 =>
+                out.push_str(path_to_str(&**path)),
+            Archive(_, _) | Pdf(_, _) =>
+                return,
+        }
     }
+
+    out.push_str("\n");
 }
 
 pub fn write_paginator(entry: &Option<Entry>, out: &mut String) {

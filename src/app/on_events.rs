@@ -19,8 +19,9 @@ use color::Color;
 use config::DEFAULT_CONFIG;
 use editor;
 use entry::filter::expression::Expr as FilterExpr;
-use entry::{Meta, SearchKey, Entry,EntryContent};
+use entry::{Meta, SearchKey, Entry, EntryContent, EntryType};
 use expandable::{Expandable, expand_all};
+use file_extension::get_entry_type_from_filename;
 use filer;
 use fragile_input::new_fragile_input;
 use gui::Direction;
@@ -341,7 +342,7 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) {
 
     if let Some(entry) = app.current_entry() {
         let result = match entry.content {
-            File(ref path) | Http(ref path, _) => file_operation.execute(path),
+            Image(ref path) => file_operation.execute(path),
             Archive(ref path , ref entry) => file_operation.execute_with_buffer(&entry.content.clone(), path),
             _ => not_implemented!(),
         };
@@ -410,22 +411,27 @@ pub fn on_pull(app: &mut App, updated: &mut Updated) {
 
 pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<Meta>, force: bool) {
     if path.starts_with("http://") || path.starts_with("https://") {
-        app.tx.send(Operation::PushURL(path, meta, force)).unwrap();
+        app.tx.send(Operation::PushURL(path, meta, force, None)).unwrap();
         return;
     }
 
     on_push_path(app, updated, &Path::new(&path).to_path_buf(), meta, force)
 }
 
+pub fn on_push_archive(app: &mut App, path: &PathBuf, meta: Option<Meta>, force: bool, url: Option<String>) {
+    archive::fetch_entries(&path, meta, &app.encodings, app.tx.clone(), app.sorting_buffer.clone(), force, url);
+}
+
 pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: Option<Meta>, force: bool) {
     if let Ok(path) = path.canonicalize() {
-        if let Some(ext) = path.extension() {
-            match &*ext.to_str().unwrap().to_lowercase() {
-                "zip" | "rar" | "tar.gz" | "lzh" | "lha" =>
-                    return archive::fetch_entries(&path, &app.encodings, app.tx.clone(), app.sorting_buffer.clone(), force),
-                "pdf" =>
-                    return on_push_pdf(app, updated, path.to_path_buf(), meta, force),
-                _ => ()
+        if let Some(entry_type) = get_entry_type_from_filename(&path) {
+            match entry_type {
+                EntryType::Archive =>
+                    return on_push_archive(app, &path, meta, force, None),
+                EntryType::PDF =>
+                    return on_push_pdf(app, updated, path.to_path_buf(), meta, force, None),
+                _ =>
+                    ()
             }
         }
     }
@@ -433,7 +439,7 @@ pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: 
     if path.is_dir() {
         on_push_directory(app, updated, path.clone(), meta, force)
     } else {
-        on_push_image(app, updated, path.clone(), meta, force, None)
+        on_push_image(app, updated, path.clone(), meta, force, None, None)
     }
 }
 
@@ -443,18 +449,18 @@ pub fn on_push_directory(app: &mut App, updated: &mut Updated, file: PathBuf, me
     push_buffered(app, updated, buffered);
 }
 
-pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>) {
+pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) {
     let buffered = app.sorting_buffer.push_with_reserve(
-        QueuedOperation::PushImage(file, meta, force, expand_level));
+        QueuedOperation::PushImage(file, meta, force, expand_level, url));
     push_buffered(app, updated, buffered);
 }
 
-pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) {
+pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, url: Option<String>) {
     let document = PopplerDocument::new_from_file(&file);
     let n_pages = document.n_pages();
 
     let buffered = app.sorting_buffer.push_with_reserve(
-        QueuedOperation::PushPdfEntries(file, n_pages, meta, force));
+        QueuedOperation::PushPdfEntries(file, n_pages, meta, force, url));
     push_buffered(app, updated, buffered);
 }
 
@@ -481,10 +487,10 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
 
     let found = app.current_entry().and_then(|entry| {
         match entry.content {
-            File(ref path) | Http(ref path, _) =>
+            Image(ref path) =>
                 find_sibling(path, next),
-                Archive(ref path, _) | Pdf(ref path, _) =>
-                    find_sibling(&*path, next),
+            Archive(ref path, _) | Pdf(ref path, _) =>
+                find_sibling(&*path, next),
         }
     });
 
@@ -496,8 +502,8 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
     }
 }
 
-pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Option<Meta>, force: bool) {
-    let buffered = app.http_cache.fetch(url, meta, force);
+pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) {
+    let buffered = app.http_cache.fetch(url, meta, force, entry_type);
     push_buffered(app, updated, buffered);
 }
 
@@ -878,18 +884,20 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
 
     for op in ops {
         match op {
-            PushImage(path, meta, force, expand_level) =>
-                app.entries.push_image(&path, meta, force, expand_level),
+            PushImage(path, meta, force, expand_level, url) =>
+                app.entries.push_image(&path, meta, force, expand_level, url),
             PushDirectory(path, meta, force) =>
                 app.entries.push_directory(&path, meta, force),
-            PushHttpCache(file, url, meta, force) =>
-                app.entries.push_http_cache(&file, url, meta, force),
-            PushArchiveEntry(ref archive_path, ref entry, force) =>
-                app.entries.push_archive_entry(archive_path, entry, force),
-            PushPdfEntries(pdf_path, pages, meta, force) => {
+            PushArchive(archive_path, meta, force, url) =>
+                on_push_archive(app, &archive_path, meta, force, url),
+            PushArchiveEntry(archive_path, entry, meta, force, url) =>
+                app.entries.push_archive_entry(&archive_path, &entry, meta, force, url),
+            PushPdf(pdf_path, meta, force, url) =>
+                on_push_pdf(app, updated, pdf_path, meta, force, url),
+            PushPdfEntries(pdf_path, pages, meta, force, url) => {
                 let pdf_path = Arc::new(pdf_path.clone());
                 for index in 0 .. pages {
-                    app.entries.push_pdf_entry(pdf_path.clone(), index, meta.clone(), force);
+                    app.entries.push_pdf_entry(pdf_path.clone(), index, meta.clone(), force, url.clone());
                 }
             }
         }
@@ -899,7 +907,7 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
     app.update_paginator_condition();
 
     if before_len == 0 && 0 < app.entries.len() {
-        updated.pointer = app.paginator.reset_level()
+        updated.pointer |= app.paginator.reset_level()
     }
 
     app.do_go(updated);

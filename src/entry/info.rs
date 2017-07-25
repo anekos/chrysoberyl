@@ -41,15 +41,13 @@ impl EntryInfo {
         let extension = Path::new(path).extension().and_then(|it| it.to_str().map(|it| it.to_owned()));
 
         let entry_type: &'static str = match *content {
-            File(_) => "file",
-            Http(_, _) => "http",
+            Image(_) => "image",
             Archive(_, _) => "archive",
             Pdf(_, _) => "pdf",
         };
 
         let name: String = match *content {
-            File(ref path) => o!(path_to_str(path)),
-            Http(_, ref url) => url.clone(),
+            Image(ref path) => o!(path_to_str(path)),
             Archive(_, ref entry) => entry.name.clone(),
             Pdf(ref path, _) => o!(path_to_str(&**path)),
         };
@@ -79,7 +77,7 @@ impl LazyEntryInfo {
         use entry::EntryContent::*;
 
         let meta = match *content {
-            File(ref path) | Http(ref path, _) => generate_static_image_size(path),
+            Image(ref path) => generate_static_image_size(path),
             Archive(_, ref entry) => generate_archive_image_size(entry),
             Pdf(_, _) => None,
         };

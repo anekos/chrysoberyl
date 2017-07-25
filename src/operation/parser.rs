@@ -8,7 +8,7 @@ use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse
 
 use cherenkov::Filler;
 use color::Color;
-use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
+use entry::{Meta, MetaEntry, SearchKey, new_opt_meta, EntryType};
 use expandable::Expandable;
 use filer;
 use mapping::{Input, InputType};
@@ -556,6 +556,24 @@ pub fn parse_push_sibling(args: &[String], next: bool) -> Result<Operation, Stri
     })
 }
 
+pub fn parse_push_url(args: &[String]) -> Result<Operation, String> {
+    let mut meta: Vec<MetaEntry> = vec![];
+    let mut path: String = o!("");
+    let mut force = false;
+    let mut entry_type = None;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut meta).add_option(&["--meta", "-m"], Collect, "Meta data");
+        ap.refer(&mut force).add_option(&["--force", "-f"], StoreTrue, "Meta data");
+        ap.refer(&mut entry_type).add_option(&["--type", "-t", "--as"], StoreOption, "Type (image/archive/pdf)");
+        ap.refer(&mut path).add_argument("URL", Store, "URL").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::PushURL(path, new_opt_meta(meta), force, entry_type)
+    })
+}
+
 pub fn parse_save(args: &[String]) -> Result<Operation, String> {
     let mut path: Option<String> = None;
     let mut sources: Vec<Session> = vec![];
@@ -771,5 +789,23 @@ impl FromStr for MetaEntry {
                 MetaEntry::new_without_value(o!(src))
             }
         })
+    }
+}
+
+
+impl FromStr for EntryType {
+    type Err = String;
+
+    fn from_str(src: &str) -> Result<Self, String> {
+        match src {
+            "image" | "img" | "o" =>
+                Ok(EntryType::Image),
+            "archive" | "arc" | "a" =>
+                Ok(EntryType::Archive),
+            "pdf" | "p" | "portable-document-format" =>
+                Ok(EntryType::PDF),
+            _ =>
+                Err(format!("Invalid type: {}", src))
+        }
     }
 }

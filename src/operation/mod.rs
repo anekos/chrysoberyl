@@ -10,7 +10,7 @@ use cmdline_parser::Parser;
 use archive::ArchiveEntry;
 use cherenkov::Filler;
 use color::Color;
-use entry::Meta;
+use entry::{Meta, EntryType};
 use entry;
 use expandable::Expandable;
 use filer;
@@ -60,11 +60,12 @@ pub enum Operation {
     PrintEntries,
     Pull,
     Push(Expandable, Option<Meta>, bool), /* path, meta, force */
+    PushArchive(Expandable, Option<Meta>, bool), /* path, meta, force */
     PushDirectory(Expandable, Option<Meta>, bool), /* path, meta, force */
     PushImage(Expandable, Option<Meta>, bool, Option<u8>), /* path, meta, force, expand-level */
     PushPdf(Expandable, Option<Meta>, bool),
     PushSibling(bool, Option<Meta>, bool, bool), /* next?, meta, force, show */
-    PushURL(String, Option<Meta>, bool),
+    PushURL(String, Option<Meta>, bool, Option<EntryType>),
     Quit,
     Random,
     Refresh,
@@ -169,11 +170,12 @@ iterable_enum!(PreDefinedOptionName =>
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum QueuedOperation {
-    PushImage(PathBuf, Option<Meta>, bool, Option<u8>), /* path, meta, force, expand-level */
+    PushImage(PathBuf, Option<Meta>, bool, Option<u8>, Option<String>), /* path, meta, force, expand-level, remote-url */
     PushDirectory(PathBuf, Option<Meta>, bool), /* path, meta, force */
-    PushHttpCache(PathBuf, String, Option<Meta>, bool),
-    PushArchiveEntry(PathBuf, ArchiveEntry, bool),
-    PushPdfEntries(PathBuf, usize, Option<Meta>, bool), /* path, pages, meta, force */
+    PushArchive(PathBuf, Option<Meta>, bool, Option<String>), /* path, meta, force, remote-url */
+    PushArchiveEntry(PathBuf, ArchiveEntry, Option<Meta>, bool, Option<String>), /* path, archive-entry, meta, force, remote-url */
+    PushPdf(PathBuf, Option<Meta>, bool, Option<String>), /* path, meta, force, remote-url */
+    PushPdfEntries(PathBuf, usize, Option<Meta>, bool, Option<String>), /* path, pages, meta, force, remote-url */
 }
 
 
@@ -307,6 +309,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
         }
 
         match name {
+            ";"                             => parse_multi_args(args, ";", true),
             "@cherenkov"                    => parse_cherenkov(whole),
             "@clear"                        => Ok(Clear),
             "@clip"                         => parse_clip(whole),
@@ -331,19 +334,20 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@last" | "@l"                  => parse_move(whole, Last),
             "@load"                         => parse_load(whole),
             "@map"                          => parse_map(whole),
-            "@move-file"                    => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Move(path, if_exist))),
             "@move-again"                   => parse_move(whole, MoveAgain),
+            "@move-file"                    => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Move(path, if_exist))),
             "@multi"                        => parse_multi(whole),
             "@next" | "@n"                  => parse_move(whole, Next),
             "@pdf-index"                    => parse_pdf_index(whole),
             "@prev" | "@p" | "@previous"    => parse_move(whole, Previous),
             "@push"                         => parse_push(whole, |it, meta, force| Push(Expandable(it), meta, force)),
-            "@push-next"                    => parse_push_sibling(whole, true),
-            "@push-image"                   => parse_push_image(whole),
+            "@push-archive"                 => parse_push(whole, |it, meta, force| PushArchive(Expandable(it), meta, force)),
             "@push-directory" | "@push-dir" => parse_push(whole, |it, meta, force| PushDirectory(Expandable(it), meta, force)),
+            "@push-image"                   => parse_push_image(whole),
+            "@push-next"                    => parse_push_sibling(whole, true),
             "@push-pdf"                     => parse_push(whole, |it, meta, force| PushPdf(Expandable(it), meta, force)),
             "@push-previous" | "@push-prev" => parse_push_sibling(whole, false),
-            "@push-url"                     => parse_push(whole, PushURL),
+            "@push-url"                     => parse_push_url(whole),
             "@quit"                         => Ok(Quit),
             "@random" | "@rand"             => Ok(Random),
             "@refresh" | "@r"               => Ok(Refresh),
@@ -366,7 +370,6 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@user"                         => Ok(Operation::user(args.to_vec())),
             "@views"                        => parse_views(whole),
             "@write"                        => parse_write(whole),
-            ";"                             => parse_multi_args(args, ";", true),
             _ => Err(format!("Unknown operation: {}", name))
         } .map_err(ParsingError::InvalidOperation)
     } else {

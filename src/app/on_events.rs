@@ -20,6 +20,7 @@ use config::DEFAULT_CONFIG;
 use editor;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::{Meta, SearchKey, Entry, EntryContent, EntryType};
+use events::EventName;
 use expandable::{Expandable, expand_all};
 use file_extension::get_entry_type_from_filename;
 use filer;
@@ -216,7 +217,7 @@ pub fn on_initialized(app: &mut App) {
     app.gui.update_colors();
     app.tx.send(Operation::Draw).unwrap();
     puts_event!("initialized");
-    fire_event(app, "initialize");
+    fire_event(app, EventName::Initialize);
 }
 
 pub fn on_input(app: &mut App, input: &Input) {
@@ -508,7 +509,7 @@ pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Opti
 }
 
 pub fn on_quit(app: &mut App) {
-    fire_event(app, "quit");
+    fire_event(app, EventName::Quit);
     termination::execute();
 }
 
@@ -851,7 +852,7 @@ pub fn on_window_resized(app: &mut App, updated: &mut Updated) {
     updated.image_options = true;
     // Ignore followed PreFetch
     app.pre_fetch_serial += 1;
-    fire_event(app, "resize-window");
+    fire_event(app, EventName::ResizeWindow);
 }
 
 pub fn on_with_message(app: &mut App, updated: &mut Updated, message: Option<String>, op: Operation) {
@@ -868,8 +869,8 @@ pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) {
     }
 }
 
-pub fn fire_event(app: &mut App, event_name: &str) {
-    app.operate(Operation::Input(mapping::Input::Event(o!(event_name))));
+pub fn fire_event(app: &mut App, event_name: EventName) {
+    app.operate(Operation::Input(mapping::Input::Event(event_name)));
 }
 
 fn on_update_views(app: &mut App, updated: &mut Updated) {

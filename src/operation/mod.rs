@@ -12,6 +12,7 @@ use cherenkov::Filler;
 use color::Color;
 use entry::{Meta, EntryType};
 use entry;
+use events::EventName;
 use expandable::Expandable;
 use filer;
 use gui::Direction;
@@ -113,7 +114,7 @@ pub struct OperationContext {
 pub enum MappingTarget {
     Key(Vec<String>),
     Mouse(u32, Option<Region>),
-    Event(String, Option<String>),
+    Event(EventName, Option<String>),
     Region(u32),
 }
 

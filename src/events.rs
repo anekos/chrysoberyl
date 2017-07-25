@@ -13,6 +13,9 @@ pub enum EventName {
     ResizeWindow,
     ShowImage,
     InvalidAll,
+    AtFirst,
+    AtLast,
+    DownloadAll,
     User(String),
 }
 
@@ -36,6 +39,12 @@ impl FromStr for EventName {
                 Ok(ShowImage),
             "invalid-all" =>
                 Ok(InvalidAll),
+            "at-first" =>
+                Ok(AtFirst),
+            "at-last" =>
+                Ok(AtLast),
+            "download-all" =>
+                Ok(DownloadAll),
             _ => Ok(User(o!(src)))
         }
     }
@@ -53,6 +62,9 @@ impl fmt::Display for EventName {
                 ResizeWindow => "resize-window",
                 ShowImage => "show-image",
                 InvalidAll => "invalid-all",
+                AtFirst => "at-first",
+                AtLast => "at-last",
+                DownloadAll => "download-all",
                 User(ref name) => name,
             }
         })

@@ -82,6 +82,15 @@ impl Paginator {
         None
     }
 
+    pub fn at_first(&self) -> bool {
+        self.level.map(|it| it.0 == 0).unwrap_or(false)
+    }
+
+    pub fn at_last(&self) -> bool {
+        let levels = self.levels();
+        0 < levels && self.level.map(|it| it.0 == levels - 1).unwrap_or(false)
+    }
+
     pub fn reset(&mut self) {
         self.fly_leaves = FlyLeaves(0);
         self.level = None;

@@ -320,6 +320,10 @@ impl App {
             }
         }
 
+        self.after_operate(&mut updated, len, to_end);
+    }
+
+    fn after_operate(&mut self, updated: &mut Updated, len: usize, to_end: bool) {
         if !self.states.initialized {
             return
         }
@@ -340,6 +344,11 @@ impl App {
             self.send_lazy_draw(None, to_end);
             if !updated.message {
                 self.update_message(None);
+            }
+            if self.paginator.at_last() {
+                on_events::fire_event(self, EventName::AtLast);
+            } else if self.paginator.at_first() {
+                on_events::fire_event(self, EventName::AtFirst);
             }
         }
 

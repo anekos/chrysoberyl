@@ -309,6 +309,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
         }
 
         match name {
+            ";"                             => parse_multi_args(args, ";", true),
             "@cherenkov"                    => parse_cherenkov(whole),
             "@clear"                        => Ok(Clear),
             "@clip"                         => parse_clip(whole),
@@ -333,17 +334,17 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@last" | "@l"                  => parse_move(whole, Last),
             "@load"                         => parse_load(whole),
             "@map"                          => parse_map(whole),
-            "@move-file"                    => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Move(path, if_exist))),
             "@move-again"                   => parse_move(whole, MoveAgain),
+            "@move-file"                    => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Move(path, if_exist))),
             "@multi"                        => parse_multi(whole),
             "@next" | "@n"                  => parse_move(whole, Next),
             "@pdf-index"                    => parse_pdf_index(whole),
             "@prev" | "@p" | "@previous"    => parse_move(whole, Previous),
             "@push"                         => parse_push(whole, |it, meta, force| Push(Expandable(it), meta, force)),
             "@push-archive"                 => parse_push(whole, |it, meta, force| PushArchive(Expandable(it), meta, force)),
-            "@push-next"                    => parse_push_sibling(whole, true),
-            "@push-image"                   => parse_push_image(whole),
             "@push-directory" | "@push-dir" => parse_push(whole, |it, meta, force| PushDirectory(Expandable(it), meta, force)),
+            "@push-image"                   => parse_push_image(whole),
+            "@push-next"                    => parse_push_sibling(whole, true),
             "@push-pdf"                     => parse_push(whole, |it, meta, force| PushPdf(Expandable(it), meta, force)),
             "@push-previous" | "@push-prev" => parse_push_sibling(whole, false),
             "@push-url"                     => parse_push_url(whole),
@@ -369,7 +370,6 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@user"                         => Ok(Operation::user(args.to_vec())),
             "@views"                        => parse_views(whole),
             "@write"                        => parse_write(whole),
-            ";"                             => parse_multi_args(args, ";", true),
             _ => Err(format!("Unknown operation: {}", name))
         } .map_err(ParsingError::InvalidOperation)
     } else {

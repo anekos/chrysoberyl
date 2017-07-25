@@ -1,10 +1,12 @@
 
 use std::collections::HashMap;
 
+use events::EventName;
+
 
 
 pub struct EventMapping {
-    pub table: HashMap<String, EventMappingEntry>,
+    pub table: HashMap<EventName, EventMappingEntry>,
 }
 
 pub struct EventMappingEntry {
@@ -13,7 +15,7 @@ pub struct EventMappingEntry {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct EventKey {
-    name: String,
+    name: EventName,
     group: Option<String>,
 }
 
@@ -24,7 +26,7 @@ impl EventMapping {
         EventMapping { table: HashMap::new() }
     }
 
-    pub fn register(&mut self, event_name: String, group: Option<String>, operation: Vec<String>) {
+    pub fn register(&mut self, event_name: EventName, group: Option<String>, operation: Vec<String>) {
         if let Some(entry) = self.table.get_mut(&event_name) {
             entry.register(group, operation);
             return;
@@ -35,7 +37,7 @@ impl EventMapping {
         self.table.insert(event_name, entry);
     }
 
-    pub fn matched(&self, event_name: &str) -> Vec<Vec<String>> {
+    pub fn matched(&self, event_name: &EventName) -> Vec<Vec<String>> {
         self.table.get(event_name).map(|it| it.entries()).unwrap_or_else(|| vec![])
     }
 }

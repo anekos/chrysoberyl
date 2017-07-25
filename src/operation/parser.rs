@@ -267,8 +267,12 @@ pub fn parse_input(args: &[String]) -> Result<Operation, String> {
                         Err(err) => Err(s!(err)),
                     }
                 }
-                InputType::Event =>
-                    Ok(Input::Event(o!(text))),
+                InputType::Event => {
+                    match text.parse() {
+                        Ok(event) => Ok(Input::Event(event)),
+                        Err(err) => Err(s!(err)),
+                    }
+                }
             }
         }
     }
@@ -346,7 +350,7 @@ pub fn parse_map(args: &[String]) -> Result<Operation, String> {
     }
 
     fn parse_map_event(args: &[String]) -> Result<Operation, String> {
-        let mut event_name = o!("");
+        let mut event_name = EventName::default();
         let mut group: Option<String> = None;
         let mut to: Vec<String> = vec![];
 

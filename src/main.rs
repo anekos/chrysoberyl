@@ -49,6 +49,7 @@ mod controller;
 mod counter;
 mod editor;
 mod entry;
+mod events;
 mod expandable;
 mod file_extension;
 mod filer;

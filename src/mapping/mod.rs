@@ -1,13 +1,13 @@
 
 use gdk;
 
+use size::Region;
+use events::EventName;
 
 pub mod event_mapping;
 pub mod key_mapping;
 pub mod mouse_mapping;
 pub mod region_mapping;
-
-use size::Region;
 
 
 
@@ -15,7 +15,7 @@ use size::Region;
 pub enum Input {
     Key(String),
     MouseButton((i32, i32), u32), // (X, Y), Button
-    Event(String), // event name
+    Event(EventName),
     Region(Region, u32, usize), // region, button, cell_index
 }
 
@@ -55,7 +55,7 @@ impl Mapping {
         self.mouse_mapping.register(button, region, operation);
     }
 
-    pub fn register_event(&mut self, event_name: String, id: Option<String>, operation: Vec<String>) {
+    pub fn register_event(&mut self, event_name: EventName, id: Option<String>, operation: Vec<String>) {
         self.event_mapping.register(event_name, id, operation);
     }
 
@@ -112,7 +112,7 @@ impl Input {
         match *self {
             Input::Key(ref name) => o!(name),
             Input::MouseButton(ref position, ref button) => format!("{:?}, {}", position, button),
-            Input::Event(ref event_name) => o!(event_name),
+            Input::Event(ref event_name) => s!(event_name),
             Input::Region(ref region, button, _) => format!("{}, {}", region, button),
         }
     }

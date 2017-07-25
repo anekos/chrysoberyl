@@ -18,6 +18,7 @@ use constant;
 use controller;
 use counter::Counter;
 use entry::{Entry, EntryContainer, EntryContent};
+use events::EventName;
 use gui::Gui;
 use http_cache::HttpCache;
 use image_cache::ImageCache;
@@ -517,9 +518,9 @@ impl App {
         }
 
         if showed {
-            on_events::fire_event(self, "show-image");
+            on_events::fire_event(self, EventName::ShowImage);
             if invalid_all {
-                on_events::fire_event(self, "invalid-all");
+                on_events::fire_event(self, EventName::InvalidAll);
             }
         }
 

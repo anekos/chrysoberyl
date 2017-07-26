@@ -108,7 +108,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
 
                     puts!("event" => "http/complete", "thread_id" => s!(thread_id), "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
 
-                    try_next(app_tx.clone(), thread_id, queued.pop_front(), &mut threads, &mut waiting);
+                    try_next(&app_tx, thread_id, queued.pop_front(), &mut threads, &mut waiting);
                 }
                 Fail(thread_id, err, request) => {
                     buffer.skip(request.ticket);
@@ -117,7 +117,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
 
                     puts_error!("at" => "http/get", "thread_id" => s!(thread_id), "reason" => err, "url" => o!(request.url), "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
 
-                    try_next(app_tx.clone(), thread_id, queued.pop_front(), &mut threads, &mut waiting);
+                    try_next(&app_tx, thread_id, queued.pop_front(), &mut threads, &mut waiting);
                 }
             }
         }
@@ -204,7 +204,7 @@ fn make_queued_operation(file: PathBuf, url: String, meta: Option<Meta>, force: 
     }
 }
 
-fn try_next(app_tx: Sender<Operation>, thread_id: TID, next: Option<Request>, threads: &mut Vec<Sender<Request>>, waiting: &mut Vec<TID>) {
+fn try_next(app_tx: &Sender<Operation>, thread_id: TID, next: Option<Request>, threads: &mut Vec<Sender<Request>>, waiting: &mut Vec<TID>) {
     if let Some(next) = next {
         threads[thread_id].send(next).unwrap();
     } else {
@@ -212,6 +212,6 @@ fn try_next(app_tx: Sender<Operation>, thread_id: TID, next: Option<Request>, th
     }
 
     if waiting.len() == threads.len() {
-        app_tx.send((Operation::Input(mapping::Input::Event(EventName::DownloadAll)))).unwrap();
+        app_tx.send(Operation::Input(mapping::Input::Event(EventName::DownloadAll))).unwrap();
     }
 }

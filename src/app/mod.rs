@@ -312,7 +312,7 @@ impl App {
                 ViewsFellow(for_rows) =>
                     on_views_fellow(self, &mut updated, for_rows),
                 When(filter, unless, op) =>
-                    on_when(self, filter, unless, op),
+                    on_when(self, filter, unless, &op),
                 WithMessage(message, op) =>
                     on_with_message(self, &mut updated, message, *op),
                 Write(ref path, ref index) =>

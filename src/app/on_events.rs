@@ -420,7 +420,7 @@ pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<
 }
 
 pub fn on_push_archive(app: &mut App, path: &PathBuf, meta: Option<Meta>, force: bool, url: Option<String>) {
-    archive::fetch_entries(&path, meta, &app.encodings, app.tx.clone(), app.sorting_buffer.clone(), force, url);
+    archive::fetch_entries(path, meta, &app.encodings, app.tx.clone(), app.sorting_buffer.clone(), force, url);
 }
 
 pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: Option<Meta>, force: bool) {
@@ -848,12 +848,12 @@ pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool) {
     on_update_views(app, updated);
 }
 
-pub fn on_when(app: &mut App, filter: FilterExpr, unless: bool, op: Vec<String>) {
+pub fn on_when(app: &mut App, filter: FilterExpr, unless: bool, op: &[String]) {
     if_let_some!(index = app.paginator.current_index(), ());
     if_let_some!(r = app.entries.validate_nth(index, filter), ());
 
     if r ^ unless {
-        match Operation::parse_from_vec(&op) {
+        match Operation::parse_from_vec(op) {
             Ok(op) =>
                 app.operate(op),
             Err(err) =>

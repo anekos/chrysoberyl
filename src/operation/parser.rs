@@ -270,7 +270,7 @@ pub fn parse_input(args: &[String]) -> Result<Operation, String> {
                 InputType::Event => {
                     match text.parse() {
                         Ok(event) => Ok(Input::Event(event)),
-                        Err(err) => Err(s!(err)),
+                        Err(err) => Err(o!(err)),
                     }
                 }
             }

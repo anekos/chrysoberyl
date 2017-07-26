@@ -10,6 +10,7 @@ use std::sync::Arc;
 use natord;
 
 use archive::ArchiveEntry;
+use entry::filter::expression::Expr as FilterExpr;
 use file_extension::{is_valid_image_filename};
 use filterable_vec::FilterableVec;
 use utils::path_to_str;
@@ -166,6 +167,10 @@ impl EntryContainer {
 
     pub fn to_displays(&self) -> Vec<String> {
         self.entries.iter().map(|it: &Rc<Entry>| (**it).display_path()).collect()
+    }
+
+    pub fn validate_nth(&mut self, index: usize, expr: FilterExpr) -> Option<bool> {
+        self.entries.validate_nth(index, Box::new(move |ref mut entry| expr.evaluate(entry)))
     }
 
     pub fn expand(&mut self, center: Option<(PathBuf, usize, Entry)>, dir: Option<PathBuf>, n: u8, recursive: u8) -> bool {

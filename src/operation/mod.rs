@@ -15,6 +15,7 @@ use entry;
 use events::EventName;
 use expandable::Expandable;
 use filer;
+use entry::filter::expression::Expr as FilterExpr;
 use gui::Direction;
 use mapping;
 use poppler;
@@ -90,6 +91,7 @@ pub enum Operation {
     Views(Option<usize>, Option<usize>),
     ViewsFellow(bool), /* for_rows */
     WindowResized,
+    When(FilterExpr, bool, Vec<String>), /* filter, reverse(unless), operation */
     WithMessage(Option<String>, Box<Operation>),
     Write(PathBuf, Option<usize>),
 }
@@ -367,9 +369,11 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@toggle"                       => parse_option_1(whole, OptionUpdater::Toggle),
             "@unclip"                       => Ok(Unclip),
             "@undo"                         => parse_undo(whole),
+            "@unless"                       => parse_when(whole, true),
             "@unset"                        => parse_option_1(whole, OptionUpdater::Unset),
             "@user"                         => Ok(Operation::user(args.to_vec())),
             "@views"                        => parse_views(whole),
+            "@when"                         => parse_when(whole, false),
             "@write"                        => parse_write(whole),
             _ => Err(format!("Unknown operation: {}", name))
         } .map_err(ParsingError::InvalidOperation)

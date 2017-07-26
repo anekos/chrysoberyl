@@ -733,6 +733,20 @@ pub fn parse_views(args: &[String]) -> Result<Operation, String> {
     })
 }
 
+pub fn parse_when(args: &[String], unless: bool) -> Result<Operation, String> {
+    let mut op = Vec::<String>::new();
+    let mut filter = FilterExpr::default();
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut filter).add_argument("filter", Store, "Filter expression").required();
+        ap.refer(&mut op).add_argument("operation", Collect, "Operation").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::When(filter, unless, op)
+    })
+}
+
 pub fn parse_write(args: &[String]) -> Result<Operation, String> {
     let mut index = None;
     let mut path = o!("");

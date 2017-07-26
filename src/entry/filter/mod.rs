@@ -85,7 +85,11 @@ fn eval_bool(info: &mut EntryInfo, content: &EntryContent, b: &EBool) -> bool {
             return match *name {
                 Animation => info.lazy(content).is_animated
             }
-        }
+        },
+        True =>
+            return true,
+        False =>
+            return false,
     }
 
     true

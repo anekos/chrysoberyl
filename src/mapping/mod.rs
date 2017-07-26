@@ -1,8 +1,8 @@
 
 use gdk;
 
-use size::Region;
 use events::EventName;
+use size::Region;
 
 pub mod event_mapping;
 pub mod key_mapping;
@@ -25,7 +25,6 @@ pub enum InputType {
     MouseButton,
     Event,
 }
-
 
 pub struct Mapping {
     key_input_history: key_mapping::KeyInputHistory,
@@ -64,7 +63,7 @@ impl Mapping {
     }
 
     pub fn matched(&mut self, input: &Input, width: i32, height: i32) -> Vec<Vec<String>> {
-        match *input {
+        let found = match *input {
             Input::Key(ref key) => {
                 self.key_input_history.push(key.clone(), self.key_mapping.depth);
                 self.key_mapping.matched(&self.key_input_history).into_iter().collect()
@@ -75,7 +74,13 @@ impl Mapping {
                 self.event_mapping.matched(event_name),
             Input::Region(_, button, _) =>
                 self.region_mapping.matched(button).into_iter().collect(),
+        };
+
+        if found.is_empty() {
+            return vec!();
         }
+
+        found
     }
 }
 

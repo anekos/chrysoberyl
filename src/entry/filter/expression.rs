@@ -1,4 +1,6 @@
 
+use std::default::Default;
+
 use globset::GlobMatcher;
 
 
@@ -15,6 +17,8 @@ pub enum Expr {
 pub enum EBool {
     Compare(EValue, ECompOp, EValue),
     Variable(EBVariable),
+    True,
+    False,
 }
 
 #[derive(Clone, Debug)]
@@ -61,4 +65,11 @@ pub enum EVariable {
 #[derive(Clone, Debug, Copy)]
 pub enum EBVariable {
     Animation,
+}
+
+
+impl Default for Expr {
+    fn default() -> Self {
+        Expr::Boolean(EBool::True)
+    }
 }

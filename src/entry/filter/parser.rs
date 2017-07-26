@@ -33,7 +33,7 @@ impl FromStr for Expr {
  * Expr ← Block | Bool | Cond | Logic
  * Block ← '(' Expr ')' | '{' Expr '}'
  * Logic ← Bool LogicOp Expr
- * Bool ← Compare | BoolVariable
+ * Bool ← Compare | BoolVariable | 'true' | 'false'
  * Cond ← 'if' Expr Expr Expr | 'when' Expr Expr | 'unless' Expr Expr
  * BoolOp ← 'and' | 'or'
  * Compare ← Value CmpOp Value
@@ -120,8 +120,16 @@ fn bool_variable() -> Parser<u8, EBool> {
     seq(b"animation").map(|_| EBool::Variable(EBVariable::Animation))
 }
 
+fn lit_true() -> Parser<u8, EBool> {
+    seq(b"true").map(|_| EBool::True)
+}
+
+fn lit_false() -> Parser<u8, EBool> {
+    seq(b"false").map(|_| EBool::False)
+}
+
 fn boolean() -> Parser<u8, Expr> {
-    (bool_variable() | compare()).map(Expr::Boolean)
+    (bool_variable() | compare() | lit_true() | lit_false()).map(Expr::Boolean)
 }
 
 fn logic_op() -> Parser<u8, ELogicOp> {

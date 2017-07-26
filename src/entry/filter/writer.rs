@@ -84,6 +84,10 @@ fn write_bool(b: &EBool, out: &mut String) {
                 Animation => sprint!(out, "animation")
             }
         }
+        True =>
+            sprint!(out, "true"),
+        False =>
+            sprint!(out, "false"),
     }
 }
 

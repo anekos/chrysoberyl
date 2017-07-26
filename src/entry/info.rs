@@ -76,6 +76,8 @@ impl LazyEntryInfo {
     pub fn new(content: &EntryContent) -> LazyEntryInfo {
         use entry::EntryContent::*;
 
+        info!("LazyEntryInfo::new");
+
         let meta = match *content {
             Image(ref path) => generate_static_image_size(path),
             Archive(_, ref entry) => generate_archive_image_size(entry),

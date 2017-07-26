@@ -848,6 +848,20 @@ pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool) {
     on_update_views(app, updated);
 }
 
+pub fn on_when(app: &mut App, filter: FilterExpr, unless: bool, op: Vec<String>) {
+    if_let_some!(index = app.paginator.current_index(), ());
+    if_let_some!(r = app.entries.validate_nth(index, filter), ());
+
+    if r ^ unless {
+        match Operation::parse_from_vec(&op) {
+            Ok(op) =>
+                app.operate(op),
+            Err(err) =>
+                puts_error!("at" => "input", "reason" => err)
+        }
+    }
+}
+
 pub fn on_window_resized(app: &mut App, updated: &mut Updated) {
     updated.image_options = true;
     // Ignore followed PreFetch

@@ -8,14 +8,16 @@ use rand::{thread_rng, Rng, ThreadRng};
 
 
 
+pub type Pred<T> = Box<FnMut(&mut T) -> bool>;
+
 pub struct FilterableVec<T: Clone + Hash + Eq + Sized> {
     original: Vec<Rc<T>>,
     filtered: Vec<Rc<T>>,
     original_indices: HashMap<Rc<T>, usize>,
     filtered_indices: HashMap<Rc<T>, usize>,
     rng: ThreadRng,
-    dynamic_pred: Option<Box<FnMut(&mut T) -> bool>>,
-    static_pred: Option<Box<FnMut(&mut T) -> bool>>,
+    dynamic_pred: Option<Pred<T>>,
+    static_pred: Option<Pred<T>>,
 }
 
 
@@ -50,6 +52,12 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
 
     pub fn get(&self, index: usize) -> Option<&Rc<T>> {
         self.filtered.get(index)
+    }
+
+    pub fn validate_nth(&mut self, index: usize, mut pred: Pred<T>) -> Option<bool> {
+        self.filtered.get_mut(index).map(|mut it| {
+            (*pred)(Rc::make_mut(&mut it))
+        })
     }
 
     pub fn split_at(&self, index: usize) -> (&[Rc<T>], &[Rc<T>]) {
@@ -141,7 +149,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
         self.push_filtered(entry.clone());
     }
 
-    pub fn update_filter(&mut self, dynamic: bool, before_filtered_index: Option<usize>, pred: Option<Box<FnMut(&mut T) -> bool>>) -> Option<usize> {
+    pub fn update_filter(&mut self, dynamic: bool, before_filtered_index: Option<usize>, pred: Option<Pred<T>>) -> Option<usize> {
         if dynamic {
             self.dynamic_pred = pred;
         } else {

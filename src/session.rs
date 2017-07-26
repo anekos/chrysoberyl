@@ -16,7 +16,7 @@ use gui::Gui;
 use mapping::{Mapping, key_mapping as kmap, mouse_mapping as mmap, region_mapping as rmap};
 use operation::PreDefinedOptionName;
 use size::FitTo;
-use state::{self, States, ScalingMethod};
+use state::{self, States, ScalingMethod, Filters};
 use utils::path_to_str;
 
 
@@ -56,13 +56,13 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
         Position => write_paginator(&app.current_entry(), out),
         Mappings => write_mappings(&app.mapping, out),
         Envs => write_envs(out),
-        Filter => write_filter(&app.states.last_filter, out),
+        Filter => write_filters(&app.states.last_filter, out),
         All => {
             write_options(&app.states, &app.gui, out);
             write_entries(&app.entries, out);
             write_mappings(&app.mapping, out);
             write_envs(out);
-            write_filter(&app.states.last_filter, out);
+            write_filters(&app.states.last_filter, out);
             write_paginator(&app.current_entry(), out);
         }
     }
@@ -314,8 +314,13 @@ fn write_envs(out: &mut String) {
     }
 }
 
-pub fn write_filter(expr: &Option<FilterExpr>, out: &mut String) {
-    sprint!(out, "@filter");
+pub fn write_filters(filters: &Filters, out: &mut String) {
+    write_filter(&filters.static_filter, "", out);
+    write_filter(&filters.dynamic_filter, " --dynamic", out);
+}
+
+pub fn write_filter(expr: &Option<FilterExpr>, arg: &str, out: &mut String) {
+    sprint!(out, "@filter{}", arg);
     if let Some(ref expr) = *expr {
         sprint!(out, " ");
         write_expr(expr, out);

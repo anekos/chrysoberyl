@@ -23,7 +23,7 @@ pub struct States {
     pub drawing: DrawingState,
     pub pre_fetch: PreFetchState,
     pub last_direction: Direction,
-    pub last_filter: Option<FilterExpr>,
+    pub last_filter: Filters,
     pub log_file: logger::file::File,
     pub stdout: Option<logger::Handle>,
 }
@@ -67,6 +67,11 @@ pub enum Direction {
     Backward
 }
 
+pub struct Filters {
+    pub static_filter: Option<FilterExpr>,
+    pub dynamic_filter: Option<FilterExpr>,
+}
+
 
 impl Default for States {
     fn default() -> Self {
@@ -82,7 +87,7 @@ impl Default for States {
             drawing: DrawingState::default(),
             pre_fetch: PreFetchState::default(),
             last_direction: Direction::Forward,
-            last_filter: None,
+            last_filter: Filters::default(),
             log_file: logger::file::File::new(),
             stdout: None,
         }
@@ -147,5 +152,14 @@ impl Default for StatusFormat {
 impl Default for TitleFormat {
     fn default() -> Self {
         TitleFormat(o!("[$CHRY_PAGING/$CHRY_COUNT] $CHRY_PATH"))
+    }
+}
+
+impl Default for Filters {
+    fn default() -> Self {
+        Filters {
+            static_filter: None,
+            dynamic_filter: None,
+        }
     }
 }

@@ -164,7 +164,12 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, filler: Filler, region: Opt
 }
 
 pub fn on_filter(app: &mut App, updated: &mut Updated, dynamic: bool, expr: Option<FilterExpr>) {
-    app.states.last_filter = expr.clone();
+    if dynamic {
+        app.states.last_filter.dynamic_filter = expr.clone();
+    } else {
+        app.states.last_filter.static_filter = expr.clone();
+    }
+
     let current_index = app.paginator.current_index();
     let after_index = if let Some(expr) = expr {
         app.entries.update_filter(dynamic, current_index, Some(Box::new(move |ref mut entry| expr.evaluate(entry))))

@@ -53,7 +53,7 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
         Options => write_options(&app.states, &app.gui, out),
         Entries => write_entries(&app.entries, out),
         Paths => write_paths(&app.entries, out),
-        Position => write_paginator(&app.current_entry(), out),
+        Position => write_paginator(&app.current().map(|it| it.0), out),
         Mappings => write_mappings(&app.mapping, out),
         Envs => write_envs(out),
         Filter => write_filters(&app.states.last_filter, out),
@@ -63,7 +63,7 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
             write_mappings(&app.mapping, out);
             write_envs(out);
             write_filters(&app.states.last_filter, out);
-            write_paginator(&app.current_entry(), out);
+            write_paginator(&app.current().map(|it| it.0), out);
         }
     }
 }

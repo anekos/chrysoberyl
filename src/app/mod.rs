@@ -381,14 +381,6 @@ impl App {
         })
     }
 
-    pub fn current_entry(&self) -> Option<Entry> {
-        self.current_entry_with(0)
-    }
-
-    pub fn current_entry_with(&self, delta: usize) -> Option<Entry> {
-        self.current_with(delta).map(|(entry, _)| entry)
-    }
-
     pub fn current_for_file(&self) -> Option<(PathBuf, usize, Entry)> {
         self.current().and_then(|(entry, index)| {
             match entry.content {
@@ -396,6 +388,19 @@ impl App {
                 _ => None
             }
         })
+    }
+
+    /**
+     * @return (entry, index of entry, number of non fly leave pages)
+     */
+    pub fn current_non_fly_leave(&self) -> Option<(Entry, usize, usize)> {
+        let len = self.gui.len();
+        for delta in 0..len {
+            if let Some((entry, index)) = self.current_with(delta) {
+                return Some((entry, index, len - delta));
+            }
+        }
+        None
     }
 
     pub fn update_env_for_option(&self, option_name: &PreDefinedOptionName) {
@@ -473,7 +478,7 @@ impl App {
         for n in range {
             for index in 0..len {
                 let index = index + len * n;
-                if let Some(entry) = self.current_entry_with(index) {
+                if let Some((entry, _)) = self.current_with(index) {
                     entries.push_back(entry);
                 }
             }
@@ -498,7 +503,7 @@ impl App {
         let mut showed = false;
 
         for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
-            if let Some(entry) = self.current_entry_with(index) {
+            if let Some((entry, _)) = self.current_with(index) {
                 let image_buffer = self.cache.get_image_buffer(&entry, &cell_size, &self.states.drawing);
                 let (fg, bg) = (self.gui.colors.error, self.gui.colors.error_background);
                 match image_buffer {
@@ -565,10 +570,9 @@ impl App {
 
         let mut envs: Vec<(String, String)> = vec![];
         let mut envs_sub: Vec<(String, String)> = vec![];
-        let len = self.entries.len();
         let gui_len = self.gui.len();
 
-        if let Some((entry, index)) = self.current() {
+        if let Some((entry, index, pages)) = self.current_non_fly_leave() {
             if let Some(meta) = entry.meta {
                 for entry in meta.iter() {
                     envs.push((format!("meta_{}", entry.key), entry.value.clone()));
@@ -599,9 +603,8 @@ impl App {
                 envs.push((o!("url"), o!(*url)));
             }
 
-            let last_page = min!(index + gui_len, len);
-            envs.push((o!("page"), s!(index + 1)));
-            envs.push((o!("last_page"), s!(last_page)));
+            envs.push((o!("begin_page"), s!(index + 1)));
+            envs.push((o!("end_page"), s!(index + pages)));
             envs.push((o!("count"), s!(self.entries.len())));
 
             if let Some(image_size) = image_size {
@@ -610,7 +613,7 @@ impl App {
             }
 
             envs_sub.push((o!("paging"), {
-                let (from, to) = (index + 1, min!(index + gui_len, len));
+                let (from, to) = (index + 1, index + pages);
                 if gui_len > 1 {
                     if self.states.reverse {
                         format!("{}←{}", to, from)
@@ -648,10 +651,9 @@ impl App {
     fn update_label(&self, update_title: bool) {
         env::set_var(constant::env_name("count"), s!(self.entries.len()));
 
-
         if update_title {
             let text =
-                if self.current().is_some() {
+                if self.current_non_fly_leave().is_some() {
                     sh::expand(&self.states.title_format.0)
                 } else {
                     o!(constant::DEFAULT_INFORMATION)
@@ -661,7 +663,7 @@ impl App {
 
         if self.states.status_bar {
             let text =
-                if self.current().is_some() {
+                if self.current_non_fly_leave().is_some() {
                     sh::expand(&self.states.status_format.0)
                 } else {
                     o!(constant::DEFAULT_INFORMATION)

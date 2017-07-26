@@ -49,7 +49,7 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
         let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
 
         for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
-            if let Some(entry) = app.current_entry_with(index) {
+            if let Some((entry, _)) = app.current_with(index) {
                 let (x1, y1, w, h) = {
                     let (cx, cy, cw, ch) = cell.get_top_left();
                     if let Some((iw, ih)) = cell.get_image_size() {
@@ -115,7 +115,7 @@ pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Op
     let count = app.counter.pop();
 
     let center = app.current_for_file();
-    let current_entry = app.current_entry();
+    let current_entry = app.current().map(|it| it.0);
 
     let expanded = if recursive {
         app.entries.expand(center, base, 1, count as u8)
@@ -149,7 +149,7 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, filler: Filler, region: Opt
         .or_else(|| region.map(|it| (it, cell_index)))
         .unwrap_or_else(|| (Region::full(), cell_index));
 
-    if let Some(entry) = app.current_entry_with(cell_index) {
+    if let Some((entry, _)) = app.current_with(cell_index) {
         let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
         app.cache.cherenkov(
             &entry,
@@ -346,7 +346,7 @@ pub fn on_next(app: &mut App, updated: &mut Updated, count: Option<usize>, ignor
 pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) {
     use entry::EntryContent::*;
 
-    if let Some(entry) = app.current_entry() {
+    if let Some((entry, _)) = app.current() {
         let result = match entry.content {
             Image(ref path) => file_operation.execute(path),
             Archive(ref path , ref entry) => file_operation.execute_with_buffer(&entry.content.clone(), path),
@@ -361,7 +361,7 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) {
 }
 
 pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, command_line: &[Expandable], fmt: &poppler::index::Format) {
-    if_let_some!(entry = app.current_entry(), ());
+    if_let_some!((entry, _) = app.current(), ());
     if let EntryContent::Pdf(path, _) = entry.content {
         let mut stdin = o!("");
         PopplerDocument::new_from_file(&*path).index().write(fmt, &mut stdin);
@@ -491,7 +491,7 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
 
     use entry::EntryContent::*;
 
-    let found = app.current_entry().and_then(|entry| {
+    let found = app.current().and_then(|(entry, _)| {
         match entry.content {
             Image(ref path) =>
                 find_sibling(path, next),
@@ -528,7 +528,7 @@ pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) {
 }
 
 pub fn on_reset_image(app: &mut App, updated: &mut Updated) {
-    if let Some(entry) = app.current_entry() {
+    if let Some((entry, _)) = app.current() {
         app.cache.uncherenkov(&entry.key);
         updated.image_options = true;
     }
@@ -700,7 +700,7 @@ pub fn on_sort(app: &mut App, updated: &mut Updated) {
 pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f64, button: u32) {
     let (mx, my) = (left as i32, top as i32);
     for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
-        if app.current_entry_with(index).is_some() {
+        if app.current_with(index).is_some() {
             let (x1, y1, w, h) = {
                 let (cx, cy, cw, ch) = cell.get_top_left();
                 if let Some((iw, ih)) = cell.get_image_size() {
@@ -738,7 +738,7 @@ pub fn on_undo(app: &mut App, updated: &mut Updated, count: Option<usize>) {
     #[cfg_attr(feature = "cargo-clippy", allow(or_fun_call))]
     let count = count.unwrap_or(app.counter.pop());
 
-    if let Some(ref entry) = app.current_entry() {
+    if let Some((ref entry, _)) = app.current() {
         app.cache.undo_cherenkov(&entry.key, count)
     }
     updated.image_options = true;

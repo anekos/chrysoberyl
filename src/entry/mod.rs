@@ -238,6 +238,7 @@ impl EntryContainer {
         if let Some(expanded) = result {
             self.entries.clear();
             self.entries.extend_from_slice(expanded.as_slice());
+            self.entries.filter(None);
             true
         } else {
             false

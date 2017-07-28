@@ -14,6 +14,7 @@ use libc;
 use rand::{self, ThreadRng};
 
 use command_line::{Initial, Entry as CLEntry};
+use config;
 use constant;
 use controller;
 use counter::Counter;
@@ -29,6 +30,7 @@ use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, Mov
 use option::user::UserSwitchManager;
 use paginator::values::Index;
 use paginator::{self, Paginator, Paging};
+use script;
 use shellexpand_wrapper as sh;
 use size::{Size, FitTo, Region};
 use sorting_buffer::SortingBuffer;
@@ -124,6 +126,8 @@ impl App {
             found_on: None,
             counter: Counter::new(),
         };
+
+        script::load(&app.tx, &config::get_config_source());
 
         app.reset_view();
 

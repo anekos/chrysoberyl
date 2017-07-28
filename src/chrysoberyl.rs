@@ -9,9 +9,7 @@ use gtk;
 
 use app;
 use command_line;
-use config;
 use operation::Operation;
-use script;
 
 
 
@@ -60,8 +58,6 @@ fn parse_arguments() -> (app::App, Receiver<Operation>, Receiver<Operation>) {
     });
 
     let (app, primary_rx, rx) = app::App::new(initial);
-
-    script::load(&app.tx, &config::get_config_source());
 
     app.tx.send(Operation::Initialized).unwrap();
 

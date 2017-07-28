@@ -2,6 +2,7 @@
 use std::cmp::{PartialEq, PartialOrd, Ord, Ordering};
 use std::hash::{Hash, Hasher};
 use std::io;
+use std::ops;
 use std::path::{PathBuf, Path};
 use std::rc::Rc;
 use std::slice;
@@ -24,11 +25,16 @@ use self::info::EntryInfo;
 
 
 pub struct EntryContainer {
+    serial: Serial,
     entries: FilterableVec<Entry>,
 }
 
+#[derive(Clone, Copy, PartialEq)]
+struct Serial(usize);
+
 #[derive(Clone)]
 pub struct Entry {
+    serial: Serial,
     pub key: Key,
     pub content: EntryContent,
     pub meta: Option<Meta>,
@@ -69,12 +75,13 @@ pub enum EntryType {
 
 
 impl Entry {
-    pub fn new(content: EntryContent, meta: Option<Meta>, url: Option<String>) -> Entry {
+    fn new(serial: Serial, content: EntryContent, meta: Option<Meta>, url: Option<String>) -> Entry {
         let key = content.key(url.clone());
 
         let info = EntryInfo::new(&content, &key.1, key.2);
 
         Entry {
+            serial: serial,
             key: key,
             content: content,
             meta: meta,
@@ -83,8 +90,8 @@ impl Entry {
         }
     }
 
-    pub fn new_local(content: EntryContent, meta: Option<Meta>) -> Entry {
-        Entry::new(content, meta, None)
+    fn new_local(serial: Serial, content: EntryContent, meta: Option<Meta>) -> Entry {
+        Entry::new(serial, content, meta, None)
     }
 
     pub fn archive_name(&self) -> &str {
@@ -143,8 +150,20 @@ impl EntryContent {
 impl EntryContainer {
     pub fn new() -> EntryContainer {
         EntryContainer {
+            serial: Serial(0),
             entries: FilterableVec::new(),
         }
+    }
+
+    fn new_serial(&mut self) -> Serial {
+        self.serial.0 += 1;
+        self.serial
+    }
+
+    fn new_serials(&mut self, n: usize) -> Serial {
+        let result = self.serial + 1;
+        self.serial.0 += n;
+        result
     }
 
     pub fn iter(&self) -> slice::Iter<Rc<Entry>> {
@@ -178,8 +197,10 @@ impl EntryContainer {
             if let Some((file, index, current_entry)) = center {
                 let dir = n_parents(file.clone(), n);
                 expand(&dir.to_path_buf(), recursive).ok().and_then(|middle| {
-                    let mut middle: Vec<Rc<Entry>> = middle.into_iter().map(|it| {
-                        Entry::new_local(EntryContent::Image(it), current_entry.meta.clone())
+                    let serial = self.new_serials(middle.len());
+
+                    let mut middle: Vec<Rc<Entry>> = middle.into_iter().enumerate().map(|(index, it)| {
+                        Entry::new_local(serial + index, EntryContent::Image(it), current_entry.meta.clone())
                     }).filter(|entry| {
                         current_entry == *entry || (!self.is_duplicated(entry) && self.is_valid_image(entry))
                     }).map(Rc::new).collect();
@@ -198,9 +219,11 @@ impl EntryContainer {
             } else if let Some(dir) = dir {
                 let dir = n_parents(dir, n - 1);
                 expand(&dir.to_path_buf(), recursive).ok().map(|files| {
+                    let serial = self.new_serials(files.len());
+
                     let mut result = self.entries.clone_filtered();
-                    let mut tail: Vec<Rc<Entry>> = files.into_iter().map(|it| {
-                        Entry::new_local(EntryContent::Image(it), None)
+                    let mut tail: Vec<Rc<Entry>> = files.into_iter().enumerate().map(|(index, it)| {
+                        Entry::new_local(serial + index, EntryContent::Image(it), None)
                     }).filter(|entry| {
                         !self.is_duplicated(entry) && self.is_valid_image(entry)
                     }).map(Rc::new).collect();
@@ -222,7 +245,9 @@ impl EntryContainer {
     }
 
     pub fn shuffle(&mut self, current_index: Option<usize>) -> Option<usize> {
-        self.entries.shuffle(current_index)
+        let serial_before = current_index.and_then(|idx| self.nth(idx).map(|it| it.serial));
+        self.entries.shuffle();
+        serial_before.and_then(|it| self.search_by_serial(it))
     }
 
     pub fn sort(&mut self, current_index: Option<usize>) -> Option<usize> {
@@ -321,8 +346,10 @@ impl EntryContainer {
     }
 
     pub fn push_archive_entry(&mut self, archive_path: &PathBuf, entry: &ArchiveEntry, meta: Option<Meta>, force: bool, url: Option<String>) {
+        let serial = self.new_serial();
         self.push_entry(
             Entry::new(
+                serial,
                 EntryContent::Archive(Arc::new(archive_path.clone()), entry.clone()),
                 meta,
                 url),
@@ -331,11 +358,16 @@ impl EntryContainer {
 
     pub fn push_pdf_entry(&mut self, pdf_path: Arc<PathBuf>, index: usize, meta: Option<Meta>, force: bool, url: Option<String>) {
         let content = EntryContent::Pdf(pdf_path.clone(), index);
-        self.push_entry(Entry::new(content, meta, url), force);
+        let serial = self.new_serial();
+        self.push_entry(Entry::new(serial, content, meta, url), force);
     }
 
     pub fn search(&self, key: &SearchKey) -> Option<usize> {
         self.entries.iter().position(|it| key.matches(it))
+    }
+
+    fn search_by_serial(&self, serial: Serial) -> Option<usize> {
+        self.entries.iter().position(|it| it.serial == serial)
     }
 
     pub fn push_image(&mut self, file: &PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) {
@@ -359,8 +391,9 @@ impl EntryContainer {
             }
         }
 
+        let serial = self.new_serial();
         self.push_entry(
-            Entry::new(EntryContent::Image(file), meta, url),
+            Entry::new(serial, EntryContent::Image(file), meta, url),
             force);
     }
 
@@ -439,6 +472,15 @@ impl EntryType {
             PDF | Archive => true,
             _ => false,
         }
+    }
+}
+
+
+impl ops::Add<usize> for Serial {
+    type Output = Self;
+
+    fn add(self, n: usize) -> Self {
+        Serial(n + self.0)
     }
 }
 

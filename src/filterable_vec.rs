@@ -75,20 +75,20 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
         self.original_indices.clear();
     }
 
-    pub fn sort(&mut self, before_filtered_index: Option<usize>) -> Option<usize> {
+    pub fn sort(&mut self, index_before_filter: Option<usize>) -> Option<usize> {
         self.original.sort();
-        self.filter(before_filtered_index)
+        self.filter(index_before_filter)
     }
 
     // Shuffle **original** entries
-    pub fn shuffle(&mut self, before_filtered_index: Option<usize>) -> Option<usize> {
+    pub fn shuffle(&mut self) {
         let mut source = self.original.clone();
         let mut buffer = source.as_mut_slice();
         self.rng.shuffle(&mut buffer);
         self.original = buffer.to_vec();
 
         // FIXME Optimize
-        self.filter(before_filtered_index)
+        self.filter(None);
     }
 
     pub fn extend_from_slice(&mut self, entries: &[Rc<T>]) {
@@ -149,16 +149,16 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
         self.push_filtered(entry.clone());
     }
 
-    pub fn update_filter(&mut self, dynamic: bool, before_filtered_index: Option<usize>, pred: Option<Pred<T>>) -> Option<usize> {
+    pub fn update_filter(&mut self, dynamic: bool, index_before_filter: Option<usize>, pred: Option<Pred<T>>) -> Option<usize> {
         if dynamic {
             self.dynamic_pred = pred;
         } else {
             self.static_pred = pred;
         }
-        self.filter(before_filtered_index)
+        self.filter(index_before_filter)
     }
 
-    pub fn filter(&mut self, before_filtered_index: Option<usize>) -> Option<usize> {
+    pub fn filter(&mut self, index_before_filter: Option<usize>) -> Option<usize> {
         if let Some(ref mut static_pred) = self.static_pred {
             let mut new_originals = vec![];
             for mut entry in &mut self.original.iter_mut() {
@@ -169,7 +169,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
             self.original = new_originals;
         }
 
-        let before_index: Option<usize> = before_filtered_index.and_then(|bi| {
+        let original_index_before: Option<usize> = index_before_filter.and_then(|bi| {
             self.filtered.get(bi).and_then(|entry| {
                 self.original_indices.get(entry).cloned()
             })
@@ -183,14 +183,14 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
                 if (dynamic_pred)(Rc::make_mut(&mut entry)) {
                      self.filtered.push(entry.clone());
 
-                     if let Some(before_index) = before_index {
-                         if index == before_index {
+                     if let Some(original_index_before) = original_index_before {
+                         if index == original_index_before {
                              after_index_right = Some(index);
-                         } else if index < before_index {
+                         } else if index < original_index_before {
                              after_index_left = Some(index);
                          } else if after_index_right.is_none() {
                              if let Some(after_index_left) = after_index_left {
-                                 if index - before_index < before_index - after_index_left {
+                                 if index - original_index_before < original_index_before - after_index_left {
                                      after_index_right = Some(index);
                                  }
                              } else {

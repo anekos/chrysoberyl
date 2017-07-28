@@ -363,7 +363,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@shell"                        => parse_shell(whole),
             "@shell-filter"                 => Ok(ShellFilter(whole.iter().map(|it| Expandable(it.clone())).collect())),
             "@show"                         => parse_move(whole, Show),
-            "@shuffle"                      => Ok(Shuffle(false)),
+            "@shuffle"                      => parse_shuffle(whole),
             "@sort"                         => Ok(Sort),
             "@timer"                        => parse_timer(whole),
             "@toggle"                       => parse_option_1(whole, OptionUpdater::Toggle),

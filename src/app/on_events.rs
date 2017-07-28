@@ -678,9 +678,10 @@ pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) {
         if fix_current {
             let paging = app.paging_with_index(false, true, after_index);
             updated.pointer = app.paginator.show(paging);
-        }
-        if !fix_current || 1 < app.gui.len() {
+            updated.image = 1 < app.gui.len();
+        } else {
             updated.image = true;
+            updated.pointer = true;
         }
     }
     updated.label = true;

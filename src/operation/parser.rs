@@ -672,6 +672,19 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
     })
 }
 
+pub fn parse_shuffle(args: &[String]) -> Result<Operation, String> {
+    let mut fix = false;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut fix)
+            .add_option(&["--fix", "-a"], StoreTrue, "Fix current page");
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        Ok(Operation::Shuffle(fix))
+    })
+}
+
 pub fn parse_timer(args: &[String]) -> Result<Operation, String> {
     let mut interval_seconds = 1.0;
     let mut name = o!("");

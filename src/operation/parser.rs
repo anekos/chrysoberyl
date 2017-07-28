@@ -223,7 +223,9 @@ pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut dynamic).add_option(&["--dynamic", "-d"], StoreTrue, "Update dynamic filter");
+        ap.refer(&mut dynamic)
+            .add_option(&["--dynamic", "-d"], StoreTrue, "Update dynamic filter")
+            .add_option(&["--static", "-s"], StoreFalse, "Update static filter (default)");
         ap.refer(&mut expr).add_argument("expression", Collect, "Filter expression");
         parse_args(&mut ap, args)
     } .and_then(|_| {

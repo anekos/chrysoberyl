@@ -60,6 +60,7 @@ pub enum EVariable {
     Extension,
     Type,
     Dimentions,
+    FileSize,
 }
 
 #[derive(Clone, Debug, Copy)]

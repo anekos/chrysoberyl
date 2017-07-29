@@ -39,7 +39,7 @@ impl FromStr for Expr {
  * Compare ← Value CmpOp Value
  * CmpOp ← '<' | '<=' | '>' | '>=' | '=' | '==' | '!=' | '=~'
  * Value ← Glob | Integer | Variable
- * Variable ← 'type' | 'width' | 'height' | 'path' | 'ext' | 'extension' | 'dimensions' | 'name'
+ * Variable ← 'type' | 'width' | 'height' | 'path' | 'ext' | 'extension' | 'dimensions' | 'name' | 'filesize'
  * Glob ← '<' string '>'
  * BoolVariable ← 'animation'
  */
@@ -70,7 +70,8 @@ fn variable() -> Parser<u8, EValue> {
         gen(b"name", Name) |
         gen(b"page", Page) |
         gen(b"path", Path) |
-        gen(b"width", Width)
+        gen(b"width", Width) |
+        gen(b"filesize", FileSize)
 }
 
 fn value() -> Parser<u8, EValue> {

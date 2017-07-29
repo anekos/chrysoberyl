@@ -144,6 +144,16 @@ impl EntryContent {
                  index),
         }
     }
+
+    pub fn local_file_path(&self) -> PathBuf {
+        use self::EntryContent::*;
+
+        match *self {
+            Image(ref path) => path.to_path_buf(),
+            Archive(ref path, _) => path.to_path_buf(),
+            Pdf(ref path, _) => path.to_path_buf(),
+        }
+    }
 }
 
 

@@ -106,6 +106,7 @@ fn write_value(v: &EValue, out: &mut String) {
             Type => sprint!(out, "type"),
             Width => sprint!(out, "width"),
             Name => sprint!(out, "name"),
+            FileSize => sprint!(out, "filesize"),
         },
         Glob(ref rs) => {
             sprint!(out, "<");

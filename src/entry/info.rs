@@ -1,4 +1,5 @@
 
+use std::fs::metadata;
 use std::path::Path;
 
 use immeta;
@@ -21,6 +22,7 @@ pub struct EntryInfo {
 pub struct LazyEntryInfo {
     pub dimensions: Option<Size>, // PDF makes None
     pub is_animated: bool,
+    pub file_size: u64,
 }
 
 
@@ -84,9 +86,18 @@ impl LazyEntryInfo {
             Pdf(_, _) => None,
         };
 
+        let path = content.local_file_path();
+
         LazyEntryInfo {
             dimensions: meta.map(|it| it.0),
             is_animated: meta.map(|it| it.1).unwrap_or(false),
+            file_size: match metadata(&path)  {
+                Ok(meta) => meta.len(),
+                Err(error) => {
+                    puts_error!("at" => "LazyEntryInfo::new/file_size", "reason" => s!(error), "for" => path_to_str(&path));
+                    0
+                }
+            }
         }
     }
 }

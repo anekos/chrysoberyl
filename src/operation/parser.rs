@@ -229,11 +229,12 @@ pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut expr).add_argument("expression", Collect, "Filter expression");
         parse_args(&mut ap, args)
     } .and_then(|_| {
-        if expr.is_empty() {
+        let op = if expr.is_empty() {
             Ok(Operation::Filter(dynamic, Box::new(None)))
         } else {
             join(&expr, ' ').parse().map(|it| Operation::Filter(dynamic, Box::new(Some(it))))
-        }
+        };
+        op.map(|op| Operation::WithMessage(Some(o!("Filtering")), Box::new(op)))
     })
 }
 

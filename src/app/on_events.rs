@@ -178,15 +178,20 @@ pub fn on_filter(app: &mut App, updated: &mut Updated, dynamic: bool, expr: Opti
     } else {
         app.entries.update_filter(dynamic, current_index, None)
     };
+
+    app.update_paginator_condition();
+
     if let Some(after_index) = after_index {
         app.paginator.update_index(Index(after_index));
     } else {
         app.paginator.reset_level();
     }
+
     updated.pointer = true;
     updated.image = true;
+    updated.message = true;
 
-    app.update_paginator_condition();
+    app.update_message(Some(o!("Done")));
 }
 
 pub fn on_first(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {

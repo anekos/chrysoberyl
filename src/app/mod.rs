@@ -301,9 +301,9 @@ impl App {
                     on_tell_region(self, left, top, right, bottom, button),
                 Timer(name, op, interval, repeat) =>
                     on_timer(self, name, op, interval, repeat),
-                Unclip => 
+                Unclip =>
                     on_unclip(self, &mut updated),
-                Undo(count) => 
+                Undo(count) =>
                     on_undo(self, &mut updated, count),
                 UpdateUI =>
                     return,

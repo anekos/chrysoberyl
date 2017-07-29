@@ -18,7 +18,7 @@ use config;
 use constant;
 use controller;
 use counter::Counter;
-use entry::{Entry, EntryContainer, EntryContent};
+use entry::{Entry, EntryContainer, EntryContent, Serial};
 use events::EventName;
 use gui::Gui;
 use http_cache::HttpCache;
@@ -69,7 +69,7 @@ pub struct App {
     pub states: States
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Updated {
     pointer: bool,
     label: bool,
@@ -435,14 +435,6 @@ impl App {
         self.paging_with_count(wrap, ignore_sight, Some(index + 1))
     }
 
-    pub fn set_current_entry(&mut self, entry: &Entry) -> bool{
-        if let Some(index) = self.entries.get_entry_index(entry) {
-            self.paginator.update_index(Index(index))
-        } else {
-            false
-        }
-    }
-
     /* Private methods */
 
     fn reset_view(&mut self) {
@@ -696,6 +688,15 @@ impl App {
             sight_size: self.states.view.len()
         };
         self.paginator.update_condition(&condition);
+    }
+
+    fn store(&self) -> Option<Serial> {
+        self.current().map(|it| it.0.serial)
+    }
+
+    fn restore(&mut self, serial: Serial) -> bool {
+        if_let_some!(index = self.entries.search_by_serial(serial), false);
+        self.paginator.update_index(Index(index))
     }
 }
 

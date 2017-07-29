@@ -30,11 +30,11 @@ pub struct EntryContainer {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-struct Serial(usize);
+pub struct Serial(usize);
 
 #[derive(Clone)]
 pub struct Entry {
-    serial: Serial,
+    pub serial: Serial,
     pub key: Key,
     pub content: EntryContent,
     pub meta: Option<Meta>,
@@ -245,10 +245,8 @@ impl EntryContainer {
         }
     }
 
-    pub fn shuffle(&mut self, current_index: Option<usize>) -> Option<usize> {
-        let serial_before = current_index.and_then(|idx| self.nth(idx).map(|it| it.serial));
-        self.entries.shuffle();
-        serial_before.and_then(|it| self.search_by_serial(it))
+    pub fn shuffle(&mut self) {
+        self.entries.shuffle()
     }
 
     pub fn sort(&mut self, current_index: Option<usize>) -> Option<usize> {
@@ -334,10 +332,6 @@ impl EntryContainer {
         })
     }
 
-    pub fn get_entry_index(&self, entry: &Entry) -> Option<usize> {
-        self.entries.get_index(entry)
-    }
-
     fn push_entry(&mut self, entry: Entry, force: bool) {
         let entry = Rc::new(entry);
 
@@ -367,7 +361,7 @@ impl EntryContainer {
         self.entries.iter().position(|it| key.matches(it))
     }
 
-    fn search_by_serial(&self, serial: Serial) -> Option<usize> {
+    pub fn search_by_serial(&self, serial: Serial) -> Option<usize> {
         self.entries.iter().position(|it| it.serial == serial)
     }
 

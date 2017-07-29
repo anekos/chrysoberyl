@@ -115,7 +115,7 @@ pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Op
     let count = app.counter.pop();
 
     let center = app.current_for_file();
-    let current_entry = app.current().map(|it| it.0);
+    let serial = app.store();
 
     let expanded = if recursive {
         app.entries.expand(center, base, 1, count as u8)
@@ -123,13 +123,15 @@ pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Op
         app.entries.expand(center, base, count as u8, count as u8- 1)
     };
 
+    app.update_paginator_condition();
+
     if expanded {
-        updated.pointer = if let Some(ref entry) = current_entry {
-            app.set_current_entry(entry)
+        updated.pointer = if let Some(serial) = serial {
+            app.restore(serial)
         } else {
             let paging = app.paging(false, false);
             app.paginator.first(paging)
-        }
+        };
     }
 
     updated.label = true;
@@ -676,15 +678,19 @@ pub fn on_show(app: &mut App, updated: &mut Updated, count: Option<usize>, ignor
 }
 
 pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) {
-    if let Some(after_index) = app.entries.shuffle(app.paginator.current_index()) {
-        if fix_current {
-            let paging = app.paging_with_index(false, true, after_index);
-            updated.pointer = app.paginator.show(paging);
-            updated.image = 1 < app.gui.len();
+    let serial = app.store();
+    app.entries.shuffle();
+
+    if fix_current {
+        updated.pointer = if let Some(serial) = serial {
+            app.restore(serial)
         } else {
-            updated.image = true;
-            updated.pointer = true;
-        }
+            false
+        };
+        updated.image = 1 < app.gui.len();
+    } else {
+        updated.image = true;
+        updated.pointer = true;
     }
     updated.label = true;
 }

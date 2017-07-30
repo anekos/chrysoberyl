@@ -694,9 +694,13 @@ impl App {
         self.current().map(|it| it.0.serial)
     }
 
-    fn restore(&mut self, serial: Serial) -> bool {
-        if_let_some!(index = self.entries.search_by_serial(serial), false);
-        self.paginator.update_index(Index(index))
+    fn restore_or_first(&mut self, updated: &mut Updated, serial: Option<Serial>) {
+        updated.pointer = if let Some(index) = serial.and_then(|it| self.entries.search_by_serial(it)) {
+            self.paginator.update_index(Index(index))
+        } else {
+            let paging = self.paging(false, false);
+            self.paginator.first(paging)
+        }
     }
 }
 

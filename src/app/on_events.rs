@@ -126,12 +126,7 @@ pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Op
     app.update_paginator_condition();
 
     if expanded {
-        updated.pointer = if let Some(serial) = serial {
-            app.restore(serial)
-        } else {
-            let paging = app.paging(false, false);
-            app.paginator.first(paging)
-        };
+        app.restore_or_first(updated, serial);
     }
 
     updated.label = true;
@@ -687,11 +682,7 @@ pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) {
     app.entries.shuffle();
 
     if fix_current {
-        updated.pointer = if let Some(serial) = serial {
-            app.restore(serial)
-        } else {
-            false
-        };
+        app.restore_or_first(updated, serial);
         updated.image = 1 < app.gui.len();
     } else {
         updated.image = true;
@@ -908,7 +899,9 @@ pub fn fire_event(app: &mut App, event_name: EventName) {
 
 fn on_update_views(app: &mut App, updated: &mut Updated) {
     updated.image_options = true;
+    let serial = app.store();
     app.reset_view();
+    app.restore_or_first(updated, serial);
 }
 
 fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>) {

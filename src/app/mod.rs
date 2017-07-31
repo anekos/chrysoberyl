@@ -567,6 +567,7 @@ impl App {
         let mut envs: Vec<(String, String)> = vec![];
         let mut envs_sub: Vec<(String, String)> = vec![];
         let gui_len = self.gui.len();
+        let len = self.entries.len();
 
         if let Some((entry, index, pages)) = self.current_non_fly_leave() {
             if let Some(meta) = entry.meta {
@@ -601,7 +602,7 @@ impl App {
 
             envs.push((o!("begin_page"), s!(index + 1)));
             envs.push((o!("end_page"), s!(index + pages)));
-            envs.push((o!("count"), s!(self.entries.len())));
+            envs.push((o!("count"), s!(len)));
 
             if let Some(image_size) = image_size {
                 envs.push((o!("width"), s!(image_size.width)));
@@ -609,7 +610,7 @@ impl App {
             }
 
             envs_sub.push((o!("paging"), {
-                let (from, to) = (index + 1, index + pages);
+                let (from, to) = (index + 1, min!(index + pages, len));
                 if gui_len > 1 {
                     if self.states.reverse {
                         format!("{}←{}", to, from)

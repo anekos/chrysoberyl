@@ -859,7 +859,7 @@ pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool) {
 }
 
 pub fn on_when(app: &mut App, filter: FilterExpr, unless: bool, op: &[String]) {
-    if_let_some!(index = app.paginator.current_index(), ());
+    if_let_some!((_, index, _) = app.current_non_fly_leave(), ());
     if_let_some!(r = app.entries.validate_nth(index, filter), ());
 
     if r ^ unless {

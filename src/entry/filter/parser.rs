@@ -51,7 +51,24 @@ fn spaces() -> Parser<u8, ()> {
 fn number() -> Parser<u8, EValue> {
     let integer = one_of(b"0123456789").repeat(1..);
     let number = sym(b'-').opt() + integer;
-    number.collect().convert(String::from_utf8).convert(|s|i64::from_str(&s)).map(EValue::Integer)
+    let suffix = (one_of(b"KMGTP") + sym(b'i').opt()).opt().map(|suffix| {
+        if let Some((c, i)) = suffix {
+            let p = match c {
+                b'K' => 1,
+                b'M' => 2,
+                b'G' => 3,
+                b'T' => 4,
+                b'P' => 5,
+                _ => panic!("Unexpected char for integer suffix: {}", c)
+            };
+            let base: i64 = if i.is_some() { 1024 } else { 1000 };
+            base.pow(p)
+        } else {
+            1
+        }
+    });
+    let number = number.collect().convert(String::from_utf8).convert(|s|i64::from_str(&s));
+    (number + suffix).map(|(n, s)| EValue::Integer(n * s))
 }
 
 fn variable() -> Parser<u8, EValue> {
@@ -234,4 +251,15 @@ fn test_parser() {
     assert_parse2("dim == 12345", "dimensions == 12345");
     assert_parse("extension == <hoge>");
     assert_parse2("ext == <hoge>", "extension == <hoge>");
+
+    assert_parse("width < 2K");
+    assert_parse("width < 2Ki");
+    assert_parse2("width < 2000", "width < 2K");
+    assert_parse2("width < 2048", "width < 2Ki");
+    assert_parse2("width < -2048", "width < -2Ki");
+
+    for c in "KMGTP".chars() {
+        assert_parse(&format!("width < 9{}", c));
+        assert_parse(&format!("width < 9{}i", c));
+    }
 }

@@ -2,6 +2,10 @@
 use entry::filter::expression::*;
 
 
+
+const SUFFIXES: &'static str = "KMGTP";
+
+
 pub fn write(expr: &Expr, out: &mut String) {
     use self::Expr::*;
 
@@ -96,7 +100,7 @@ fn write_value(v: &EValue, out: &mut String) {
     use self::EVariable::*;
 
     match *v {
-        Integer(ref v) => sprint!(out, "{}", v),
+        Integer(v) => sprint!(out, "{}", suffixed_integer(v)),
         Variable(ref v) => match *v {
             Dimentions => sprint!(out, "dimensions"),
             Extension => sprint!(out, "extension"),
@@ -123,4 +127,32 @@ fn write_value(v: &EValue, out: &mut String) {
 
 fn write_space(out: &mut String) {
     sprint!(out, " ");
+}
+
+fn suffixed_integer(n: i64) -> String {
+    let f = |base: i64| -> (i64, usize) {
+        let mut p = 0;
+        let mut m = n;
+        for _ in SUFFIXES.chars() {
+            if m % base == 0 {
+                m /= base;
+                p += 1;
+            } else {
+                break;
+            }
+        }
+
+        (m, p)
+    };
+
+    let (mi, pi) = f(1024);
+    let (m, p) = f(1000);
+
+    if pi == 0 && p == 0 {
+        format!("{}", n)
+    } else if p < pi {
+        format!("{}{}i", mi, SUFFIXES.chars().nth(pi - 1).unwrap())
+    } else {
+        format!("{}{}", m, SUFFIXES.chars().nth(p - 1).unwrap())
+    }
 }

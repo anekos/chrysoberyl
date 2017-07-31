@@ -201,7 +201,7 @@ fn test_parser() {
         assert_eq!(
             parse(src).map(|it| {
                 let mut parsed = o!("");
-                write_filter(&Some(it), &mut parsed);
+                write_filter(&Some(it), "", &mut parsed);
                 parsed
             }),
             Ok(format!("@filter {}\n", src)))
@@ -211,7 +211,7 @@ fn test_parser() {
         assert_eq!(
             parse(src).map(|it| {
                 let mut parsed = o!("");
-                write_filter(&Some(it), &mut parsed);
+                write_filter(&Some(it), "", &mut parsed);
                 parsed
             }),
             Ok(format!("@filter {}\n", expect)))

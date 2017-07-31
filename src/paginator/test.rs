@@ -1621,7 +1621,7 @@ fn test_last() {
 }
 
 #[test]
-fn test_set_index() {
+fn test_update_index() {
     /**
      * <00>     00
      *  01     <01>
@@ -1629,7 +1629,7 @@ fn test_set_index() {
      *  03  =1  03
      */
     assert_pg!(
-        set_index,
+        update_index,
         [fly_leaves: 0, len: 4, level: None, sight_size: 1],
         [Index(1)],
         true,
@@ -1641,7 +1641,7 @@ fn test_set_index() {
      *  08 09        =6   08 09
      */
     assert_pg!(
-        set_index,
+        update_index,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
         [Index(6)],
         true,
@@ -1653,7 +1653,7 @@ fn test_set_index() {
      *  08 09        =99  <08>09
      */
     assert_pg!(
-        set_index,
+        update_index,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
         [Index(99)],
         true,

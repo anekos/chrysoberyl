@@ -210,7 +210,8 @@ impl EntryContainer {
                     let serial = self.new_serials(middle.len());
 
                     let mut middle: Vec<Rc<Entry>> = middle.into_iter().enumerate().map(|(index, it)| {
-                        Entry::new_local(serial + index, EntryContent::Image(it), current_entry.meta.clone())
+                        let serial = if it == file { current_entry.serial } else { serial + index };
+                        Entry::new_local(serial, EntryContent::Image(it), current_entry.meta.clone())
                     }).filter(|entry| {
                         current_entry == *entry || (!self.is_duplicated(entry) && self.is_valid_image(entry))
                     }).map(Rc::new).collect();

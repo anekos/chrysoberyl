@@ -138,7 +138,7 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
     write(out, ColorStatusBarBackground);
     write(out, ColorWindowBackground);
     write(out, FitTo);
-    // write(out, HorizontalViews);
+    write(out, LogFile);
     write(out, MaskOperator);
     write(out, PreFetchEnabled);
     write(out, PreFetchLimit);
@@ -148,6 +148,8 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
     write(out, StatusBar);
     write(out, StatusFormat);
     write(out, TitleFormat);
+
+    // write(out, HorizontalViews);
     // write(out, VerticalViews);
 
     sprintln!(out, "@views {} {}", gui.cols(), gui.rows());

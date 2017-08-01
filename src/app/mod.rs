@@ -572,6 +572,7 @@ impl App {
         if let Some((entry, index, pages)) = self.current_non_fly_leave() {
             envs_sub.push((o!("path"), entry.display_path()));
             envs_sub.push((o!("abbrev_path"), entry.abbrev_path(self.states.abbrev_length)));
+            envs_sub.push((o!("base_name"), entry.abbrev_path(0)));
 
             if let Some(meta) = entry.meta {
                 for entry in meta.iter() {

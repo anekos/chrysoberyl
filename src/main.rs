@@ -74,6 +74,7 @@ mod session;
 mod shell;
 mod shell_filter;
 mod shellexpand_wrapper;
+mod shorter;
 mod size;
 mod sorting_buffer;
 mod state;

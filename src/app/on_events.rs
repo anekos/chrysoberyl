@@ -760,6 +760,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
     {
         let value: &mut OptionValue = match *option_name {
             PreDefined(ref option_name) => match *option_name {
+                AbbrevLength => &mut app.states.abbrev_length,
                 AutoPaging => &mut app.states.auto_paging,
                 CenterAlignment => &mut app.states.view.center_alignment,
                 FitTo => &mut app.states.drawing.fit_to,
@@ -811,6 +812,8 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
     if let PreDefined(ref option_name) = *option_name {
         app.update_env_for_option(option_name);
         match *option_name {
+            AbbrevLength =>
+                updated.label = true,
             StatusBar => {
                 app.update_label_visibility();
                 updated.image_options = true;

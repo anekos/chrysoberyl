@@ -2,13 +2,37 @@
 use std::env::home_dir;
 use std::path::{PathBuf, Path};
 
+use tldextract::{TldExtractor, TldOption};
+use url::Url;
+
 use utils::path_to_string;
 
 #[cfg(test)] mod test;
 
 
 
-pub fn shorten<T: AsRef<Path>>(path: &T, max: usize) -> String {
+lazy_static! {
+    pub static ref EXTRACTOR: TldExtractor = {
+        let option = TldOption { naive_mode: false, ..Default::default() };
+        TldExtractor::new(option)
+    };
+}
+
+pub fn shorten_url(url: Url, max: usize) -> String {
+    let host = shorten_host(url.as_str()).unwrap_or_else(|| o!(url.host_str().unwrap_or("")));
+    let path = Path::new(url.path());
+
+    let path_max = max.checked_sub(host.len()).unwrap_or(0);
+    let path = shorten_path(&path, path_max);
+
+    format!("{}{}", host, path)
+}
+
+pub fn shorten_host(host: &str) -> Option<String> {
+    EXTRACTOR.extract(host, None).map(|it| it.domain).ok()
+}
+
+pub fn shorten_path<T: AsRef<Path>>(path: &T, max: usize) -> String {
     let mut path = path.as_ref().to_path_buf();
 
     if let Some(home) = home_dir() {

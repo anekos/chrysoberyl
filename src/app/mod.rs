@@ -570,29 +570,27 @@ impl App {
         let len = self.entries.len();
 
         if let Some((entry, index, pages)) = self.current_non_fly_leave() {
+            envs_sub.push((o!("path"), entry.display_path()));
+            envs_sub.push((o!("abbrev_path"), entry.abbrev_path(self.states.abbrev_length)));
+
             if let Some(meta) = entry.meta {
                 for entry in meta.iter() {
                     envs.push((format!("meta_{}", entry.key), entry.value.clone()));
                 }
             }
 
-            let url = entry.url.as_ref().map(|it| (**it).clone());
-
             // Path means local file path, url, or pdf file path
             match entry.content {
                 Image(ref path) => {
                     envs.push((o!("file"), o!(path_to_str(path))));
-                    envs_sub.push((o!("path"), url.unwrap_or_else(|| o!(path_to_str(path)))));
                 }
                 Archive(ref archive_file, ref entry) => {
                     envs.push((o!("file"), entry.name.clone()));
                     envs.push((o!("archive_file"), o!(path_to_str(&**archive_file))));
-                    envs_sub.push((o!("path"), url.unwrap_or_else(|| entry.name.clone())));
                 },
                 Pdf(ref pdf_file, index) => {
                     envs.push((o!("file"), o!(path_to_str(&**pdf_file))));
                     envs.push((o!("pdf_page"), s!(index)));
-                    envs_sub.push((o!("path"), url.unwrap_or_else(|| o!(path_to_str(&**pdf_file)))));
                 }
             }
 

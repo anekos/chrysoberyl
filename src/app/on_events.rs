@@ -27,7 +27,6 @@ use filer;
 use fragile_input::new_fragile_input;
 use gui::Direction;
 use logger;
-use mapping;
 use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater};
 use option::user::DummySwtich;
 use poppler::{PopplerDocument, self};
@@ -41,6 +40,32 @@ use utils::{path_to_str, range_contains};
 use app::*;
 
 
+
+pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: EventName, async: bool) {
+    use self::EventName::*;
+
+    match event_name {
+        ResizeWindow => on_window_resized(app, updated),
+        Initialize => on_initialized(app),
+        _ => ()
+    }
+
+    let op = Operation::Input(Input::Event(event_name.clone()));
+    if async {
+        app.tx.send(op).unwrap();
+    } else {
+        app.operate(op);
+    }
+
+    match event_name {
+        Quit => on_quit(),
+        ResizeWindow if !app.states.spawned => {
+            app.fire_event(EventName::Spawn, true);
+            app.states.spawned = true;
+        },
+        _ => ()
+    }
+}
 
 pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<OperationContext>) {
     use cherenkov::{Che, CheNova, Modifier};
@@ -223,10 +248,11 @@ pub fn on_go(app: &mut App, updated: &mut Updated, key: &SearchKey) {
 
 pub fn on_initialized(app: &mut App) {
     app.states.initialized = true;
+
+    app.tx.send(Operation::UpdateUI).unwrap();
+
     app.gui.update_colors();
-    app.tx.send(Operation::Draw).unwrap();
-    puts_event!("initialized");
-    fire_event(app, EventName::Initialize);
+    app.gui.show();
 }
 
 pub fn on_input(app: &mut App, input: &Input) {
@@ -238,6 +264,7 @@ pub fn on_input(app: &mut App, input: &Input) {
         return;
     }
 
+        puts_event!("debug-input", "type" => input.type_name(), "name" => input.text());
     for op in operations {
         match Operation::parse_from_vec(&op) {
             Ok(op) =>
@@ -517,8 +544,7 @@ pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Opti
     push_buffered(app, updated, buffered);
 }
 
-pub fn on_quit(app: &mut App) {
-    fire_event(app, EventName::Quit);
+pub fn on_quit() {
     termination::execute();
 }
 
@@ -879,7 +905,6 @@ pub fn on_window_resized(app: &mut App, updated: &mut Updated) {
     updated.image_options = true;
     // Ignore followed PreFetch
     app.pre_fetch_serial += 1;
-    fire_event(app, EventName::ResizeWindow);
 }
 
 pub fn on_with_message(app: &mut App, updated: &mut Updated, message: Option<String>, op: Operation) {
@@ -894,10 +919,6 @@ pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) {
     if let Err(error) = app.gui.save(path, count) {
         puts_error!("at" => "save", "reason" => error)
     }
-}
-
-pub fn fire_event(app: &mut App, event_name: EventName) {
-    app.operate(Operation::Input(mapping::Input::Event(event_name)));
 }
 
 fn on_update_views(app: &mut App, updated: &mut Updated) {

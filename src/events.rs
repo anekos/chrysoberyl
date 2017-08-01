@@ -7,15 +7,16 @@ use std::str::FromStr;
 
 #[derive(PartialEq, Hash, Clone, Debug, Eq)]
 pub enum EventName {
-    Void,
-    Initialize,
-    Quit,
-    ResizeWindow,
-    ShowImage,
-    InvalidAll,
     AtFirst,
     AtLast,
     DownloadAll,
+    Initialize,
+    InvalidAll,
+    Quit,
+    ResizeWindow,
+    ShowImage,
+    Spawn,
+    Void,
     User(String),
 }
 
@@ -27,24 +28,16 @@ impl FromStr for EventName {
         use self::EventName::*;
 
         match src {
-            "void" =>
-                Ok(Void),
-            "initialize" | "init" =>
-                Ok(Initialize),
-            "quit" =>
-                Ok(Quit),
-            "resize-window" | "resize" =>
-                Ok(ResizeWindow),
-            "show-image" =>
-                Ok(ShowImage),
-            "invalid-all" =>
-                Ok(InvalidAll),
-            "at-first" =>
-                Ok(AtFirst),
-            "at-last" =>
-                Ok(AtLast),
-            "download-all" =>
-                Ok(DownloadAll),
+            "at-first" => Ok(AtFirst),
+            "at-last" => Ok(AtLast),
+            "download-all" => Ok(DownloadAll),
+            "initialize" | "init" => Ok(Initialize),
+            "invalid-all" => Ok(InvalidAll),
+            "quit" => Ok(Quit),
+            "resize-window" | "resize" => Ok(ResizeWindow),
+            "show-image" => Ok(ShowImage),
+            "spawn" => Ok(Spawn),
+            "void" => Ok(Void),
             _ => Ok(User(o!(src)))
         }
     }
@@ -56,15 +49,16 @@ impl fmt::Display for EventName {
 
         write!(f, "{}", {
             match *self {
-                Void => "void",
+                AtFirst => "at-first",
+                AtLast => "at-last",
+                Spawn => "spawn",
+                DownloadAll => "download-all",
                 Initialize => "initialize",
+                InvalidAll => "invalid-all",
                 Quit => "quit",
                 ResizeWindow => "resize-window",
                 ShowImage => "show-image",
-                InvalidAll => "invalid-all",
-                AtFirst => "at-first",
-                AtLast => "at-last",
-                DownloadAll => "download-all",
+                Void => "void",
                 User(ref name) => name,
             }
         })

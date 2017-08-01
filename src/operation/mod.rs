@@ -28,6 +28,7 @@ mod parser;
 
 #[derive(Clone, Debug)]
 pub enum Operation {
+    AppEvent(EventName, bool), /* event_name, async */
     Cherenkov(CherenkovParameter),
     Clear,
     Clip(Region),
@@ -43,7 +44,6 @@ pub enum Operation {
     Filter(bool, Box<Option<entry::filter::expression::Expr>>), /* dynamic, filter expression */
     Fragile(Expandable),
     Go(entry::SearchKey),
-    Initialized,
     Input(mapping::Input),
     KillTimer(String),
     Last(Option<usize>, bool, MoveBy, bool),
@@ -68,7 +68,6 @@ pub enum Operation {
     PushPdf(Expandable, Option<Meta>, bool),
     PushSibling(bool, Option<Meta>, bool, bool), /* next?, meta, force, show */
     PushURL(String, Option<Meta>, bool, Option<EntryType>),
-    Quit,
     Random,
     Refresh,
     ResetImage,
@@ -90,7 +89,6 @@ pub enum Operation {
     User(Vec<(String, String)>),
     Views(Option<usize>, Option<usize>),
     ViewsFellow(bool), /* for_rows */
-    WindowResized,
     When(FilterExpr, bool, Vec<String>), /* filter, reverse(unless), operation */
     WithMessage(Option<String>, Box<Operation>),
     Write(PathBuf, Option<usize>),
@@ -295,6 +293,12 @@ impl fmt::Display for ParsingError {
 }
 
 
+impl EventName {
+    pub fn to_operation(self, async: bool) -> Operation {
+        Operation::AppEvent(self, async)
+    }
+}
+
 
 fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
     use self::Operation::*;
@@ -353,7 +357,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@push-pdf"                     => parse_push(whole, |it, meta, force| PushPdf(Expandable(it), meta, force)),
             "@push-previous" | "@push-prev" => parse_push_sibling(whole, false),
             "@push-url"                     => parse_push_url(whole),
-            "@quit"                         => Ok(Quit),
+            "@quit"                         => Ok(EventName::Quit.to_operation(false)),
             "@random" | "@rand"             => Ok(Random),
             "@refresh" | "@r"               => Ok(Refresh),
             "@reset-image"                  => Ok(ResetImage),

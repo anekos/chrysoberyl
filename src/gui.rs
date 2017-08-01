@@ -95,7 +95,6 @@ impl Gui {
 
         image_outer.show();
         vbox.show();
-        window.show();
 
         Gui {
             window: window,
@@ -106,6 +105,10 @@ impl Gui {
             label: label,
             colors: Colors::default()
         }
+    }
+
+    pub fn show(&self) {
+        self.window.show();
     }
 
     pub fn rows(&self) -> usize {

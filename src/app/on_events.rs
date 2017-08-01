@@ -668,7 +668,7 @@ pub fn on_shell_filter(app: &App, command_line: &[Expandable]) {
 pub fn on_show(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {
     match move_by {
         MoveBy::Page => {
-            let paging = app.paging_with_count(false, ignore_views, count);
+            let paging = app.paging_with_count(false, false, count);
             updated.pointer = app.paginator.show(paging);
         },
         MoveBy::Archive => {

@@ -26,6 +26,7 @@ pub struct States {
     pub last_filter: Filters,
     pub log_file: logger::file::File,
     pub stdout: Option<logger::Handle>,
+    pub abbrev_length: usize,
 }
 
 pub struct ViewState {
@@ -90,6 +91,7 @@ impl Default for States {
             last_filter: Filters::default(),
             log_file: logger::file::File::new(),
             stdout: None,
+            abbrev_length: 30,
         }
     }
 

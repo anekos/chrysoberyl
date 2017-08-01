@@ -30,6 +30,7 @@ extern crate rand;
 extern crate regex;
 extern crate shell_escape;
 extern crate shellexpand;
+extern crate tldextract;
 extern crate url;
 
 #[macro_use] mod macro_utils;
@@ -74,6 +75,7 @@ mod session;
 mod shell;
 mod shell_filter;
 mod shellexpand_wrapper;
+mod shorter;
 mod size;
 mod sorting_buffer;
 mod state;

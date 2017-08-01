@@ -9,11 +9,13 @@ use std::slice;
 use std::sync::Arc;
 
 use natord;
+use url::Url;
 
 use archive::ArchiveEntry;
 use entry::filter::expression::Expr as FilterExpr;
 use file_extension::{is_valid_image_filename};
 use filterable_vec::FilterableVec;
+use shorter::*;
 use utils::path_to_str;
 
 pub mod image;
@@ -438,6 +440,14 @@ impl Entry {
             (**url).clone()
         } else {
             self.key.1.clone()
+        }
+    }
+
+    pub fn abbrev_path(&self, max: usize) -> String {
+        if let Some(ref url) = self.url {
+            Url::parse(&**url).map(|it| shorten_url(it, max)).unwrap_or_else(|_| (**url).clone())
+        } else {
+            shorten_path(&Path::new(&self.key.1), max)
         }
     }
 }

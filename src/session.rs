@@ -99,6 +99,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
     }
 
     match *name {
+        AbbrevLength => gen("abbrev-length", &st.abbrev_length, context),
         AutoPaging => gen("auto-paging", &b2s(st.auto_paging), context),
         CenterAlignment => gen("center-alignment", &b2s(st.view.center_alignment), context),
         ColorError => gen("error-color", &c2s(&gui.colors.error), context),
@@ -130,6 +131,7 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
         sprintln!(out, "@set {} {}", name, value);
     };
 
+    write(out, AbbrevLength);
     write(out, AutoPaging);
     write(out, CenterAlignment);
     write(out, ColorError);

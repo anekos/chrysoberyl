@@ -149,6 +149,7 @@ pub enum OptionName {
 }
 
 iterable_enum!(PreDefinedOptionName =>
+    AbbrevLength,
     AutoPaging,
     CenterAlignment,
     ColorError,
@@ -197,6 +198,7 @@ impl FromStr for PreDefinedOptionName {
         use self::PreDefinedOptionName::*;
 
         match src {
+            "abbrev-length" | "abbr-length"        => Ok(AbbrevLength),
             "auto-page" | "auto-paging" | "paging" => Ok(AutoPaging),
             "center" | "center-alignment"          => Ok(CenterAlignment),
             "fit" | "fit-to"                       => Ok(FitTo),

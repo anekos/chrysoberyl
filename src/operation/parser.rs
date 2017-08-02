@@ -511,25 +511,27 @@ pub fn parse_pdf_index(args: &[String]) -> Result<Operation, String> {
 }
 
 pub fn parse_push<T>(args: &[String], op: T) -> Result<Operation, String>
-where T: FnOnce(String, Option<Meta>, bool) -> Operation {
+where T: Fn(String, Option<Meta>, bool) -> Operation {
     let mut meta: Vec<MetaEntry> = vec![];
-    let mut path: String = o!("");
+    let mut paths = Vec::<String>::new();
     let mut force = false;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut meta).add_option(&["--meta", "-m"], Collect, "Meta data");
         ap.refer(&mut force).add_option(&["--force", "-f"], StoreTrue, "Meta data");
-        ap.refer(&mut path).add_argument("Path", Store, "Path to resource").required();
+        ap.refer(&mut paths).add_argument("Path", Collect, "Path to resource").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        op(path, new_opt_meta(meta), force)
+        let meta = new_opt_meta(meta);
+        let ops = paths.into_iter().map(|it| op(it, meta.clone(), force)).collect();
+        Operation::Multi(ops, false)
     })
 }
 
 pub fn parse_push_image(args: &[String]) -> Result<Operation, String> {
     let mut meta: Vec<MetaEntry> = vec![];
-    let mut path: String = o!("");
+    let mut paths = Vec::<String>::new();
     let mut expand_level = None;
     let mut force = false;
 
@@ -540,10 +542,12 @@ pub fn parse_push_image(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut expand_level)
             .add_option(&["--expand", "-e"], StoreConst(Some(0)), "Push and expand")
             .add_option(&["--expand-recursive", "-E"], StoreOption, "Push and expand recursive");
-        ap.refer(&mut path).add_argument("Path", Store, "Path to resource").required();
+        ap.refer(&mut paths).add_argument("Path", Collect, "Path to image file").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::PushImage(Expandable(path), new_opt_meta(meta), force, expand_level)
+        let meta = new_opt_meta(meta);
+        let ops = paths.into_iter().map(|it| Operation::PushImage(Expandable(it), meta.clone(), force, expand_level)).collect();
+        Operation::Multi(ops, false)
     })
 }
 
@@ -565,7 +569,7 @@ pub fn parse_push_sibling(args: &[String], next: bool) -> Result<Operation, Stri
 
 pub fn parse_push_url(args: &[String]) -> Result<Operation, String> {
     let mut meta: Vec<MetaEntry> = vec![];
-    let mut path: String = o!("");
+    let mut urls = Vec::<String>::new();
     let mut force = false;
     let mut entry_type = None;
 
@@ -574,10 +578,12 @@ pub fn parse_push_url(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut meta).add_option(&["--meta", "-m"], Collect, "Meta data");
         ap.refer(&mut force).add_option(&["--force", "-f"], StoreTrue, "Meta data");
         ap.refer(&mut entry_type).add_option(&["--type", "-t", "--as"], StoreOption, "Type (image/archive/pdf)");
-        ap.refer(&mut path).add_argument("URL", Store, "URL").required();
+        ap.refer(&mut urls).add_argument("URL", Collect, "URL").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::PushURL(path, new_opt_meta(meta), force, entry_type)
+        let meta = new_opt_meta(meta);
+        let ops = urls.into_iter().map(|it| Operation::PushURL(it, meta.clone(), force, entry_type)).collect();
+        Operation::Multi(ops, false)
     })
 }
 

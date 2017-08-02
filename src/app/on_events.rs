@@ -41,10 +41,10 @@ use app::*;
 
 
 
-pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: EventName, async: bool) {
+pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName, async: bool) {
     use self::EventName::*;
 
-    match event_name {
+    match *event_name {
         ResizeWindow => on_window_resized(app, updated),
         Initialize => on_initialized(app),
         _ => ()
@@ -57,7 +57,7 @@ pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: EventName,
         app.operate(op);
     }
 
-    match event_name {
+    match *event_name {
         Quit => on_quit(),
         ResizeWindow if !app.states.spawned => {
             app.fire_event(EventName::Spawn, true);

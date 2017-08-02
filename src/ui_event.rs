@@ -69,7 +69,7 @@ fn on_configure(mut sender: LazySender, ev: &EventConfigure, last_window_size: A
     let (lw, lh) = last_window_size.get();
 
     if lw != w || lh != h {
-        sender.request(EventName::ResizeWindow.to_operation(false));
+        sender.request(EventName::ResizeWindow.operation(false));
         (*last_window_size).set((w, h));
     }
 
@@ -77,7 +77,7 @@ fn on_configure(mut sender: LazySender, ev: &EventConfigure, last_window_size: A
 }
 
 fn on_delete(tx: &Sender<Operation>) -> Inhibit {
-    tx.send(EventName::Quit.to_operation(true)).unwrap();
+    tx.send(EventName::Quit.operation(true)).unwrap();
     Inhibit(false)
 }
 

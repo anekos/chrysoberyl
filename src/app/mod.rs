@@ -178,7 +178,7 @@ impl App {
     }
 
     pub fn fire_event(&mut self, event_name: EventName, async: bool) {
-        self.operate(event_name.to_operation(async));
+        self.operate(event_name.operation(async));
     }
 
     pub fn operate(&mut self, operation: Operation) {
@@ -196,7 +196,7 @@ impl App {
         {
             match operation {
                 AppEvent(event_name, async) =>
-                    on_app_event(self, &mut updated, event_name, async),
+                    on_app_event(self, &mut updated, &event_name, async),
                 Cherenkov(ref parameter) =>
                     on_cherenkov(self, &mut updated, parameter, context),
                 Clear =>

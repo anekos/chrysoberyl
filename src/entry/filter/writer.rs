@@ -103,7 +103,7 @@ fn write_value(v: &EValue, out: &mut String) {
     use self::EVariable::*;
 
     match *v {
-        Integer(v) => sprint!(out, "{}", suffixed_integer(v)),
+        Integer(v) => sprint!(out, &suffixed_integer(v)),
         Variable(ref v) => match *v {
             Dimentions => sprint!(out, "dimensions"),
             Extension => sprint!(out, "extension"),

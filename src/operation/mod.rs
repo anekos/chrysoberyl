@@ -294,7 +294,7 @@ impl fmt::Display for ParsingError {
 
 
 impl EventName {
-    pub fn to_operation(self, async: bool) -> Operation {
+    pub fn operation(self, async: bool) -> Operation {
         Operation::AppEvent(self, async)
     }
 }
@@ -357,7 +357,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@push-pdf"                     => parse_push(whole, |it, meta, force| PushPdf(Expandable(it), meta, force)),
             "@push-previous" | "@push-prev" => parse_push_sibling(whole, false),
             "@push-url"                     => parse_push_url(whole),
-            "@quit"                         => Ok(EventName::Quit.to_operation(false)),
+            "@quit"                         => Ok(EventName::Quit.operation(false)),
             "@random" | "@rand"             => Ok(Random),
             "@refresh" | "@r"               => Ok(Refresh),
             "@reset-image"                  => Ok(ResetImage),

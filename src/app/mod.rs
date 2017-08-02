@@ -156,7 +156,7 @@ impl App {
                     },
                     CLEntry::Operation(op) => {
                         match Operation::parse_from_vec(&op) {
-                            Ok(op) => tx.send(op).unwrap(),
+                            Ok(op) => app.operate(op),
                             Err(err) => puts_error!("at" => "operation", "reason" => o!(err), "for" => join(&op, ' ')),
                         }
                     }
@@ -177,6 +177,10 @@ impl App {
         (app, primary_rx, rx)
     }
 
+    pub fn fire_event(&mut self, event_name: EventName, async: bool) {
+        self.operate(event_name.to_operation(async));
+    }
+
     pub fn operate(&mut self, operation: Operation) {
         self.operate_with_context(operation, None)
     }
@@ -191,6 +195,8 @@ impl App {
 
         {
             match operation {
+                AppEvent(event_name, async) =>
+                    on_app_event(self, &mut updated, event_name, async),
                 Cherenkov(ref parameter) =>
                     on_cherenkov(self, &mut updated, parameter, context),
                 Clear =>
@@ -221,8 +227,6 @@ impl App {
                     on_fragile(self, path),
                 Go(ref key) =>
                     on_go(self, &mut updated, key),
-                Initialized =>
-                    return on_initialized(self),
                 Input(ref input) =>
                     on_input(self, input),
                 KillTimer(ref name) =>
@@ -271,8 +275,6 @@ impl App {
                     on_push_sibling(self, &mut updated, next, meta, force, show),
                 PushURL(url, meta, force, entry_type) =>
                     on_push_url(self, &mut updated, url, meta, force, entry_type),
-                Quit =>
-                    on_quit(self),
                 Random =>
                     on_random(self, &mut updated, len),
                 Refresh =>
@@ -306,7 +308,7 @@ impl App {
                 Undo(count) =>
                     on_undo(self, &mut updated, count),
                 UpdateUI =>
-                    return,
+                    panic!("WTF"),
                 UpdateOption(ref option_name, ref updater) =>
                     on_update_option(self, &mut updated, option_name, updater),
                 User(ref data) =>
@@ -321,8 +323,6 @@ impl App {
                     on_with_message(self, &mut updated, message, *op),
                 Write(ref path, ref index) =>
                     on_write(self, path, index),
-                WindowResized =>
-                    on_window_resized(self, &mut updated),
             }
         }
 
@@ -352,9 +352,9 @@ impl App {
                 self.update_message(None);
             }
             if self.paginator.at_last() {
-                on_events::fire_event(self, EventName::AtLast);
+                self.fire_event(EventName::AtLast, false);
             } else if self.paginator.at_first() {
-                on_events::fire_event(self, EventName::AtFirst);
+                self.fire_event(EventName::AtFirst, false);
             }
         }
 
@@ -530,9 +530,9 @@ impl App {
         }
 
         if showed {
-            on_events::fire_event(self, EventName::ShowImage);
+            self.fire_event(EventName::ShowImage, false);
             if invalid_all {
-                on_events::fire_event(self, EventName::InvalidAll);
+                self.fire_event(EventName::InvalidAll, false);
             }
         }
 

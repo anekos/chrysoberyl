@@ -13,6 +13,7 @@ use size::{FitTo, Region};
 
 pub struct States {
     pub initialized: bool,
+    pub spawned: bool,
     pub status_bar: bool,
     pub reverse: bool,
     pub auto_paging: bool,
@@ -78,6 +79,7 @@ impl Default for States {
     fn default() -> Self {
         States {
             initialized: false,
+            spawned: false,
             status_bar: true,
             reverse: false,
             auto_paging: false,

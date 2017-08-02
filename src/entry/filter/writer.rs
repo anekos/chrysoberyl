@@ -1,5 +1,6 @@
 
 use entry::filter::expression::*;
+use entry::filter::resolution;
 
 
 
@@ -87,7 +88,9 @@ fn write_bool(b: &EBool, out: &mut String) {
             match *name {
                 Animation => sprint!(out, "animation")
             }
-        }
+        },
+        Resolution(w, h) =>
+            sprint!(out, "?{}", resolution::to(w, h)),
         True =>
             sprint!(out, "true"),
         False =>

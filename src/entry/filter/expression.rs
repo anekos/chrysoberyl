@@ -17,6 +17,7 @@ pub enum Expr {
 pub enum EBool {
     Compare(EValue, ECompOp, EValue),
     Variable(EBVariable),
+    Resolution(i64, i64),
     True,
     False,
 }

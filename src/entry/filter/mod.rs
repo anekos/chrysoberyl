@@ -2,10 +2,11 @@
 use globset::GlobMatcher;
 
 use entry::{Entry, EntryContent};
-use entry::info::EntryInfo;
+use entry::info::{EntryInfo, LazyEntryInfo};
 
 pub mod expression;
 pub mod parser;
+pub mod resolution;
 pub mod writer;
 
 use self::expression::*;
@@ -86,6 +87,8 @@ fn eval_bool(info: &mut EntryInfo, content: &EntryContent, b: &EBool) -> bool {
                 Animation => info.lazy(content).is_animated
             }
         },
+        Resolution(w, h) =>
+            return resolution_match(info.lazy(content), w, h),
         True =>
             return true,
         False =>
@@ -165,4 +168,9 @@ fn eval_variable_as_s(info: &EntryInfo, v: &EVariable) -> Option<String> {
         Name => Some(info.strict.name.clone()),
         Page | Dimentions | Width | Height | FileSize => None,
     }
+}
+
+fn resolution_match(info: &LazyEntryInfo, w: i64, h: i64) -> bool {
+    if_let_some!(dim = info.dimensions, false);
+    dim.width as i64 == w && dim.height as i64 == h
 }

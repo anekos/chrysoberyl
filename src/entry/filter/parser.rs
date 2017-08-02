@@ -6,6 +6,7 @@ use pom::parser::*;
 use pom::{Parser, DataInput};
 
 use entry::filter::expression::*;
+use entry::filter::resolution;
 
 
 
@@ -147,7 +148,7 @@ fn lit_false() -> Parser<u8, EBool> {
 }
 
 fn boolean() -> Parser<u8, Expr> {
-    (bool_variable() | compare() | lit_true() | lit_false()).map(Expr::Boolean)
+    (bool_variable() | compare() | resolution() | lit_true() | lit_false()).map(Expr::Boolean)
 }
 
 fn logic_op() -> Parser<u8, ELogicOp> {
@@ -175,6 +176,14 @@ fn glob_entry() -> Parser<u8, (globset::GlobMatcher, String)> {
             (it.compile_matcher(), src)
         })
     })
+}
+
+fn resolution() -> Parser<u8, EBool> {
+    let integer = || one_of(b"0123456789").repeat(1..).convert(String::from_utf8).convert(|s|i64::from_str(&s));
+    let ixi = integer() + (sym(b'x') * integer());
+    let name = none_of(b" ").repeat(1..).convert(resolution::from);
+
+    (sym(b'?') * (name | ixi)).map(|(w, h)| EBool::Resolution(w, h))
 }
 
 fn when() -> Parser<u8, Expr> {
@@ -262,4 +271,8 @@ fn test_parser() {
         assert_parse(&format!("width < 9{}", c));
         assert_parse(&format!("width < 9{}i", c));
     }
+
+    assert_parse("?100x200");
+    assert_parse("?VGA");
+    assert_parse2("?640x480", "?VGA");
 }

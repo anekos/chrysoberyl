@@ -19,6 +19,9 @@ use operation::*;
 
 
 
+const SEARCH_PATH_DESC: &'static str = "Search script path from ~/.config/chrysoberyl/script and /usr/share/chrysoberyl/script";
+
+
 pub fn parse_command1<T>(args: &[String], op: T) -> Result<Operation, String>
 where T: FnOnce(String) -> Operation {
     if let Some(arg) = args.get(1) {
@@ -674,8 +677,7 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut read_operations)
             .add_option(&["--operation", "-o"], StoreTrue, "Read operations from stdout")
             .add_option(&["--no-operation", "-O"], StoreTrue, "Dont read operations from stdout");
-        ap.refer(&mut search_path)
-            .add_option(&["--search-path", "-p"], StoreTrue, "Search script path from ~/.config/chrysoberyl/script and /usr/share/chrysoberyl/script");
+        ap.refer(&mut search_path).add_option(&["--search-path", "-p"], StoreTrue, SEARCH_PATH_DESC);
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
     } .and_then(|_| {

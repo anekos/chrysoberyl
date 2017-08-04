@@ -1,6 +1,6 @@
 
 use std::fs::create_dir_all;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 
 use app_dirs::*;
 
@@ -27,4 +27,22 @@ pub fn config_file(filename: Option<&str>) -> PathBuf {
         }
     }
     file
+}
+
+pub fn search_path<T: AsRef<Path>>(filename: &T, dirname: &str) -> PathBuf {
+    let path = filename.as_ref().to_path_buf();
+
+    let mut conf = config_file(Some(dirname));
+    conf.push(path.clone());
+    if conf.exists() {
+        return conf;
+    }
+
+    let mut share = Path::new("/usr/share/chrysoberyl/script").to_path_buf();
+    share.push(path.clone());
+    if share.exists() {
+        return share;
+    }
+
+    path
 }

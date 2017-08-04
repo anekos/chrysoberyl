@@ -265,7 +265,6 @@ pub fn on_input(app: &mut App, input: &Input) {
         return;
     }
 
-        puts_event!("debug-input", "type" => input.type_name(), "name" => input.text());
     for op in operations {
         match Operation::parse_from_vec(&op) {
             Ok(op) =>

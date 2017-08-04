@@ -13,12 +13,6 @@ pub struct EventMappingEntry {
     pub table: HashMap<Option<String>, Vec<Vec<String>>>
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct EventKey {
-    name: EventName,
-    group: Option<String>,
-}
-
 
 
 impl EventMapping {

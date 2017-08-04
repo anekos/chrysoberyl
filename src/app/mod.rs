@@ -251,8 +251,10 @@ impl App {
                     (),
                 OperateFile(ref file_operation) =>
                     on_operate_file(self, file_operation),
-                PdfIndex(async, read_operations, ref command_line, ref fmt) =>
-                    on_pdf_index(self, async, read_operations, command_line, fmt),
+                Page(page) =>
+                    on_page(self, &mut updated, page),
+                PdfIndex(async, read_operations, search_path, ref command_line, ref fmt, ref separator) =>
+                    on_pdf_index(self, async, read_operations, search_path, command_line, fmt, separator.as_ref().map(String::as_str)),
                 PreFetch(pre_fetch_serial) =>
                     on_pre_fetch(self, pre_fetch_serial),
                 Previous(count, ignore_views, move_by, wrap) =>
@@ -588,10 +590,11 @@ impl App {
                 Archive(ref archive_file, ref entry) => {
                     envs.push((o!("file"), entry.name.clone()));
                     envs.push((o!("archive_file"), o!(path_to_str(&**archive_file))));
+                    envs.push((o!("archive_page"), s!(entry.index + 1)));
                 },
                 Pdf(ref pdf_file, index) => {
                     envs.push((o!("file"), o!(path_to_str(&**pdf_file))));
-                    envs.push((o!("pdf_page"), s!(index)));
+                    envs.push((o!("archive_page"), s!(index + 1)));
                 }
             }
 

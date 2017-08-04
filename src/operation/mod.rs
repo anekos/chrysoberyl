@@ -56,7 +56,8 @@ pub enum Operation {
     Next(Option<usize>, bool, MoveBy, bool),
     Nop,
     OperateFile(filer::FileOperation),
-    PdfIndex(bool, bool, Vec<Expandable>, poppler::index::Format),
+    Page(usize),
+    PdfIndex(bool, bool, bool, Vec<Expandable>, poppler::index::Format, Option<String>), /* async, read_operations, search_path, ... */
     PreFetch(u64),
     Previous(Option<usize>, bool, MoveBy, bool),
     PrintEntries,
@@ -347,6 +348,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@move-file"                    => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Move(path, if_exist))),
             "@multi"                        => parse_multi(whole),
             "@next" | "@n"                  => parse_move(whole, Next),
+            "@page"                         => parse_page(whole),
             "@pdf-index"                    => parse_pdf_index(whole),
             "@prev" | "@p" | "@previous"    => parse_move(whole, Previous),
             "@push"                         => parse_push(whole, |it, meta, force| Push(Expandable(it), meta, force)),

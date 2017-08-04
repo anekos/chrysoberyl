@@ -99,6 +99,10 @@ impl Entry {
     pub fn archive_name(&self) -> &str {
         &self.key.1
     }
+
+    pub fn page_number(&self) -> usize {
+        self.key.2 + 1
+    }
 }
 
 impl Ord for Entry {
@@ -264,6 +268,35 @@ impl EntryContainer {
 
     pub fn sort(&mut self, current_index: Option<usize>) -> Option<usize> {
         self.entries.sort(current_index)
+    }
+
+    pub fn find_page_in_archive(&self, current: usize, page_number: usize) -> Option<usize> {
+        if_let_some!(base = self.entries.get(current), None);
+
+        let len = self.entries.len();
+
+        for i in (0..current).rev() {
+            let it = self.entries.get(i).unwrap();
+            if it.archive_name() == base.archive_name() {
+                if it.page_number() == page_number {
+                    return Some(i);
+                }
+            } else {
+                break;
+            }
+        }
+
+        for i in current..len {
+            let it = self.entries.get(i).unwrap();
+            if it.archive_name() == base.archive_name() {
+                if it.page_number() == page_number {
+                    return Some(i);
+                }
+            } else {
+                break;
+            }
+        }
+        None
     }
 
     pub fn find_next_archive(&self, current: Option<(Entry, usize)>, mut count: usize) -> Option<usize> {

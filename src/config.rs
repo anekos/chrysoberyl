@@ -6,7 +6,7 @@ use app_path;
 
 
 
-pub static DEFAULT_CONFIG: &'static str = include_str!("../res/config/default.conf");
+pub static DEFAULT_CONFIG: &'static str = include_str!("static/default.chry");
 
 
 pub fn get_config_source() -> String {

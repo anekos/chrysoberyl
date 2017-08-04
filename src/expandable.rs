@@ -38,7 +38,7 @@ impl Expandable {
 pub fn expand_all(xs: &[Expandable], search_path: bool) -> Vec<String> {
     xs.iter().enumerate().map(|(index, it)| {
         if search_path && index == 0 {
-            path_to_string(&app_path::search_path(&it.to_path_buf(), "script"))
+            path_to_string(&app_path::search_path(&it.to_path_buf()))
         } else {
             it.to_string()
         }

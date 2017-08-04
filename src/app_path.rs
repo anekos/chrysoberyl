@@ -18,6 +18,10 @@ pub fn cache_dir(path: &str) -> PathBuf {
     dir
 }
 
+pub fn config_dir() -> PathBuf {
+     get_app_root(AppDataType::UserConfig, &APP_INFO).unwrap()
+}
+
 pub fn config_file(filename: Option<&str>) -> PathBuf {
     let file = get_app_dir(AppDataType::UserConfig, &APP_INFO, filename.unwrap_or("config.chry")).unwrap();
     {
@@ -29,16 +33,16 @@ pub fn config_file(filename: Option<&str>) -> PathBuf {
     file
 }
 
-pub fn search_path<T: AsRef<Path>>(filename: &T, dirname: &str) -> PathBuf {
+pub fn search_path<T: AsRef<Path>>(filename: &T) -> PathBuf {
     let path = filename.as_ref().to_path_buf();
 
-    let mut conf = config_file(Some(dirname));
+    let mut conf = config_dir();
     conf.push(path.clone());
     if conf.exists() {
         return conf;
     }
 
-    let mut share = Path::new("/usr/share/chrysoberyl/script").to_path_buf();
+    let mut share = Path::new("/usr/share/chrysoberyl").to_path_buf();
     share.push(path.clone());
     if share.exists() {
         return share;

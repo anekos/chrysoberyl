@@ -65,6 +65,9 @@
 @map region 1 @clip
 @map region 3 @fill
 
+# script
+@map key o @shell --operation --search-path script/open-dialog.sh
+
 # pre-redner
 @set pre-render yes
 # @set pre-render-limit 1000

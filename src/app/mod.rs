@@ -307,6 +307,8 @@ impl App {
                     on_unclip(self, &mut updated),
                 Undo(count) =>
                     on_undo(self, &mut updated, count),
+                Unmap(target) =>
+                    on_unmap(self, target),
                 UpdateUI =>
                     panic!("WTF"),
                 UpdateOption(ref option_name, ref updater) =>

@@ -17,6 +17,10 @@ impl RegionMapping {
         self.table.insert(button, operation);
     }
 
+    pub fn unregister(&mut self, button: &u32) {
+        self.table.remove(button);
+    }
+
     pub fn matched(&self, button: u32) -> Option<Vec<String>> {
         self.table.get(&button).cloned()
     }

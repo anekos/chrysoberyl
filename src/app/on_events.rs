@@ -325,8 +325,8 @@ pub fn on_map(app: &mut App, target: MappingTarget, operation: Vec<String>) {
             app.mapping.register_key(key_sequence, operation),
         Mouse(button, area) =>
             app.mapping.register_mouse(button, area, operation),
-        Event(event_name, id) =>
-            app.mapping.register_event(event_name, id, operation),
+        Event(event_name, group) =>
+            app.mapping.register_event(event_name, group, operation),
         Region(button) =>
             app.mapping.register_region(button, operation),
     }
@@ -776,6 +776,22 @@ pub fn on_undo(app: &mut App, updated: &mut Updated, count: Option<usize>) {
         app.cache.undo_cherenkov(&entry.key, count)
     }
     updated.image_options = true;
+}
+
+pub fn on_unmap(app: &mut App, target: MappingTarget) {
+    use app::MappingTarget::*;
+
+    // puts_event!("unmap", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
+    match target {
+        Key(key_sequence) =>
+            app.mapping.unregister_key(key_sequence),
+        Mouse(ref button, ref area) =>
+            app.mapping.unregister_mouse(button, area),
+        Event(ref event_name, ref group) =>
+            app.mapping.unregister_event(event_name, group),
+        Region(ref button) =>
+            app.mapping.unregister_region(button),
+    }
 }
 
 pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &OptionName, updater: &OptionUpdater) {

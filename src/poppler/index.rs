@@ -1,6 +1,7 @@
 
 use std::default::Default;
 use std::ffi::CStr;
+use std::str::FromStr;
 
 use poppler::sys;
 
@@ -21,6 +22,7 @@ pub struct IndexEntry {
 #[derive(Clone, Debug, Copy)]
 pub enum Format {
     Indented,
+    OneLine,
     TwoLines,
 }
 
@@ -58,12 +60,14 @@ impl Index {
         result
     }
 
-    pub fn write(&self, fmt: &Format, out: &mut String) {
+    pub fn write(&self, fmt: &Format, separator: Option<&str>, out: &mut String) {
         use self::Format::*;
 
         match *fmt {
             Indented =>
-                write_indented(self, " = ", 0, out),
+                write_indented(self, separator.unwrap_or(" = "), 0, out),
+            OneLine =>
+                write_one_line(self, separator.unwrap_or("="), out),
             TwoLines =>
                 write_two_lines(self, out),
         }
@@ -109,6 +113,22 @@ impl Default for Format {
     }
 }
 
+impl FromStr for Format {
+    type Err = String;
+
+    fn from_str(src: &str) -> Result<Self, String> {
+        use self::Format::*;
+
+        let result = match src {
+            "1" | "one-line" | "one" | "o" => OneLine,
+            "2" | "two-lines" | "two" | "t" => TwoLines,
+            "indented" | "indent" | "i"  => Indented,
+            _ => return Err(format!("Invalid format name: {}", src)),
+        };
+        Ok(result)
+    }
+}
+
 
 fn write_indented(index: &Index, separator: &str, level: u8, out: &mut String) {
         let indent = "  ".repeat(level as usize);
@@ -118,6 +138,15 @@ fn write_indented(index: &Index, separator: &str, level: u8, out: &mut String) {
             sprintln!(out, "{:03}{}{}", entry.page, separator, entry.title);
             if let Some(ref child) = entry.child {
                 write_indented(child, separator, level + 1, out);
+            }
+        }
+}
+
+fn write_one_line(index: &Index, separator: &str, out: &mut String) {
+        for entry in &index.entries {
+            sprintln!(out, "{}{}{}", entry.page, separator, entry.title);
+            if let Some(ref child) = entry.child {
+                write_one_line(child, separator, out);
             }
         }
 }

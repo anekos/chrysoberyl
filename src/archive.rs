@@ -143,7 +143,7 @@ pub fn fetch_entries(path: &PathBuf, meta: Option<Meta>, encodings: &[EncodingRe
                                 ticket + serial,
                                 QueuedOperation::PushArchiveEntry(
                                     path.clone(),
-                                    ArchiveEntry { name: (*name).to_owned(), index: index, content: Arc::new(content) },
+                                    ArchiveEntry { name: (*name).to_owned(), index: serial, content: Arc::new(content) },
                                     meta.clone(),
                                     force,
                                     url.clone()));

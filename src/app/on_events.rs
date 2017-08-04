@@ -391,12 +391,18 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) {
     }
 }
 
-pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, command_line: &[Expandable], fmt: &poppler::index::Format) {
+pub fn on_page(app: &mut App, updated: &mut Updated, page: usize) {
+    if_let_some!((_, index) = app.current(), ());
+    if_let_some!(found = app.entries.find_page_in_archive(index, page), ());
+    updated.pointer = app.paginator.update_index(Index(found));
+}
+
+pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, search_path: bool, command_line: &[Expandable], fmt: &poppler::index::Format, separator: Option<&str>) {
     if_let_some!((entry, _) = app.current(), ());
     if let EntryContent::Pdf(path, _) = entry.content {
         let mut stdin = o!("");
-        PopplerDocument::new_from_file(&*path).index().write(fmt, &mut stdin);
-        shell::call(async, &expand_all(command_line, false), Some(stdin), option!(read_operations, app.tx.clone()));
+        PopplerDocument::new_from_file(&*path).index().write(fmt, separator, &mut stdin);
+        shell::call(async, &expand_all(command_line, search_path), Some(stdin), option!(read_operations, app.tx.clone()));
     } else {
         puts_error!("at" => "on_pdf_index", "reason" => "current entry is not PDF");
     }

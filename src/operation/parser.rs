@@ -19,7 +19,7 @@ use operation::*;
 
 
 
-const SEARCH_PATH_DESC: &'static str = "Search script path from ~/.config/chrysoberyl/script and /usr/share/chrysoberyl/script";
+const SEARCH_PATH_DESC: &'static str = "Search script path from ~/.config/chrysoberyl and /usr/share/chrysoberyl";
 
 
 pub fn parse_command1<T>(args: &[String], op: T) -> Result<Operation, String>
@@ -512,11 +512,24 @@ pub fn parse_option_1(args: &[String], updater: OptionUpdater) -> Result<Operati
     })
 }
 
+pub fn parse_page(args: &[String]) -> Result<Operation, String> {
+    let mut page = 1;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut page).add_argument("page", Store, "Page number");
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        Ok(Operation::Page(page))
+    })
+}
+
 pub fn parse_pdf_index(args: &[String]) -> Result<Operation, String> {
     use poppler::index::Format;
 
     let mut async = true;
     let mut read_operations = true;
+    let mut search_path = false;
     let mut command_line: Vec<String> = vec![];
     let mut fmt = Format::default();
     let mut fmt_separator: Option<String> = None;
@@ -526,18 +539,19 @@ pub fn parse_pdf_index(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut async)
             .add_option(&["--async", "-a"], StoreTrue, "Async (Non-blocking)")
             .add_option(&["--sync", "-s"], StoreFalse, "Sync (Blocking)");
+        ap.refer(&mut search_path).add_option(&["--search-path", "-p"], StoreTrue, SEARCH_PATH_DESC);
         ap.refer(&mut read_operations)
             .add_option(&["--operation", "-o"], StoreTrue, "Read operations from stdout")
             .add_option(&["--no-operation", "-O"], StoreTrue, "Dont read operations from stdout");
         ap.refer(&mut fmt_separator)
             .add_option(&["--separator"], StoreOption, "Separator for `indented`");
         ap.refer(&mut fmt)
-            .add_option(&["--two-lines"], StoreConst(Format::TwoLines), "Two lines (page/title)");
+            .add_option(&["--format", "-f"], Store, "Format (1/2/indented)");
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
     } .and_then(|_| {
         let command_line = command_line.into_iter().map(Expandable).collect();
-        Ok(Operation::PdfIndex(async, read_operations, command_line, fmt))
+        Ok(Operation::PdfIndex(async, read_operations, search_path, command_line, fmt, fmt_separator))
     })
 }
 

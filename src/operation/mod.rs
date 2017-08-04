@@ -76,7 +76,7 @@ pub enum Operation {
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     SetEnv(String, Option<Expandable>),
     Shell(bool, bool, bool, Vec<Expandable>, Vec<Session>), /* async, operation, search_path, command_line, session */
-    ShellFilter(Vec<Expandable>),
+    ShellFilter(Vec<Expandable>, bool), /* path, search_path */
     Show(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Shuffle(bool), /* Fix current */
     Sort,
@@ -367,7 +367,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@set"                          => parse_option_set(whole),
             "@set-env"                      => parse_set_env(whole),
             "@shell"                        => parse_shell(whole),
-            "@shell-filter"                 => Ok(ShellFilter(whole.iter().map(|it| Expandable(it.clone())).collect())),
+            "@shell-filter"                 => parse_shell_filter(whole),
             "@show"                         => parse_move(whole, Show),
             "@shuffle"                      => parse_shuffle(whole),
             "@sort"                         => Ok(Sort),

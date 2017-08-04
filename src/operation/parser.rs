@@ -686,6 +686,21 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
     })
 }
 
+pub fn parse_shell_filter(args: &[String]) -> Result<Operation, String> {
+    let mut search_path = false;
+    let mut command_line: Vec<String> = vec![];
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut search_path).add_option(&["--search-path", "-p"], StoreTrue, SEARCH_PATH_DESC);
+        ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        let command_line = command_line.into_iter().map(Expandable).collect();
+        Ok(Operation::ShellFilter(command_line, search_path))
+    })
+}
+
 pub fn parse_shuffle(args: &[String]) -> Result<Operation, String> {
     let mut fix = false;
 

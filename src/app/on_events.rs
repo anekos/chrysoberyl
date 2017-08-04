@@ -687,8 +687,8 @@ pub fn on_shell(app: &App, async: bool, read_operations: bool, search_path: bool
     shell::call(async, &expand_all(command_line, search_path), stdin, option!(read_operations, tx));
 }
 
-pub fn on_shell_filter(app: &App, command_line: &[Expandable]) {
-    shell_filter::start(expand_all(command_line, false), app.tx.clone());
+pub fn on_shell_filter(app: &App, command_line: &[Expandable], search_path: bool) {
+    shell_filter::start(expand_all(command_line, search_path), app.tx.clone());
 }
 
 pub fn on_show(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {

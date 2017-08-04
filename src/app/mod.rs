@@ -291,8 +291,8 @@ impl App {
                     on_scroll(self, direction, operation, scroll_size),
                 Shell(async, read_operations, search_path, ref command_line, ref stdin_sources) =>
                     on_shell(self, async, read_operations, search_path, command_line, self.tx.clone(), stdin_sources),
-                ShellFilter(ref command_line) =>
-                    on_shell_filter(self, command_line),
+                ShellFilter(ref command_line, search_path) =>
+                    on_shell_filter(self, command_line, search_path),
                 Show(count, ignore_views, move_by, _) =>
                     on_show(self, &mut updated, count, ignore_views, move_by),
                 Shuffle(fix_current) =>

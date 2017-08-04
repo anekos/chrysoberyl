@@ -290,7 +290,7 @@ impl App {
                 Scroll(ref direction, ref operation, scroll_size) =>
                     on_scroll(self, direction, operation, scroll_size),
                 Shell(async, read_operations, search_path, ref command_line, ref stdin_sources) =>
-                    on_shell(self, async, read_operations, search_path, command_line, self.tx.clone(), stdin_sources),
+                    on_shell(self, async, read_operations, search_path, command_line, stdin_sources),
                 ShellFilter(ref command_line, search_path) =>
                     on_shell_filter(self, command_line, search_path),
                 Show(count, ignore_views, move_by, _) =>
@@ -601,7 +601,7 @@ impl App {
 
             envs.push((o!("begin_page"), s!(index + 1)));
             envs.push((o!("end_page"), s!(index + pages)));
-            envs.push((o!("count"), s!(len)));
+            envs.push((o!("pages"), s!(len)));
 
             if let Some(image_size) = image_size {
                 envs.push((o!("width"), s!(image_size.width)));
@@ -645,7 +645,7 @@ impl App {
     }
 
     fn update_label(&self, update_title: bool) {
-        env::set_var(constant::env_name("count"), s!(self.entries.len()));
+        env::set_var(constant::env_name("pages"), s!(self.entries.len()));
 
         if update_title {
             let text =

@@ -17,6 +17,7 @@ use archive;
 use cherenkov::Filler;
 use color::Color;
 use config::DEFAULT_CONFIG;
+use constant::VARIABLE_PREFIX;
 use editor;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::{Meta, SearchKey, Entry, EntryContent, EntryType};
@@ -677,17 +678,20 @@ pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scr
     }
 }
 
-pub fn on_shell(app: &App, async: bool, read_operations: bool, search_path: bool, command_line: &[Expandable], tx: Sender<Operation>, sessions: &[Session]) {
+pub fn on_shell(app: &mut App, async: bool, read_operations: bool, search_path: bool, command_line: &[Expandable], sessions: &[Session]) {
     let stdin = if !sessions.is_empty() {
         Some(with_ouput_string!(out, write_sessions(app, sessions, out)))
     } else {
         None
     };
 
+    set_count_env(app);
+    let tx = app.tx.clone();
     shell::call(async, &expand_all(command_line, search_path), stdin, option!(read_operations, tx));
 }
 
-pub fn on_shell_filter(app: &App, command_line: &[Expandable], search_path: bool) {
+pub fn on_shell_filter(app: &mut App, command_line: &[Expandable], search_path: bool) {
+    set_count_env(app);
     shell_filter::start(expand_all(command_line, search_path), app.tx.clone());
 }
 
@@ -971,4 +975,9 @@ fn extract_region_from_context(context: Option<OperationContext>) -> Option<(Reg
         }
     }
     None
+}
+
+fn set_count_env(app: &mut App) {
+    let count = app.counter.pop();
+    env::set_var(format!("{}COUNT", VARIABLE_PREFIX), s!(count));
 }

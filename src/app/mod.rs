@@ -289,8 +289,8 @@ impl App {
                     on_set_env(self, &name, &value.map(|it| it.to_string())),
                 Scroll(ref direction, ref operation, scroll_size) =>
                     on_scroll(self, direction, operation, scroll_size),
-                Shell(async, read_operations, ref command_line, ref stdin_sources) =>
-                    on_shell(self, async, read_operations, command_line, self.tx.clone(), stdin_sources),
+                Shell(async, read_operations, search_path, ref command_line, ref stdin_sources) =>
+                    on_shell(self, async, read_operations, search_path, command_line, self.tx.clone(), stdin_sources),
                 ShellFilter(ref command_line) =>
                     on_shell_filter(self, command_line),
                 Show(count, ignore_views, move_by, _) =>

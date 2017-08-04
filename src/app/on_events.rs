@@ -396,7 +396,7 @@ pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, command_line:
     if let EntryContent::Pdf(path, _) = entry.content {
         let mut stdin = o!("");
         PopplerDocument::new_from_file(&*path).index().write(fmt, &mut stdin);
-        shell::call(async, &expand_all(command_line), Some(stdin), option!(read_operations, app.tx.clone()));
+        shell::call(async, &expand_all(command_line, false), Some(stdin), option!(read_operations, app.tx.clone()));
     } else {
         puts_error!("at" => "on_pdf_index", "reason" => "current entry is not PDF");
     }
@@ -677,18 +677,18 @@ pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scr
     }
 }
 
-pub fn on_shell(app: &App, async: bool, read_operations: bool, command_line: &[Expandable], tx: Sender<Operation>, sessions: &[Session]) {
+pub fn on_shell(app: &App, async: bool, read_operations: bool, search_path: bool, command_line: &[Expandable], tx: Sender<Operation>, sessions: &[Session]) {
     let stdin = if !sessions.is_empty() {
         Some(with_ouput_string!(out, write_sessions(app, sessions, out)))
     } else {
         None
     };
 
-    shell::call(async, &expand_all(command_line), stdin, option!(read_operations, tx));
+    shell::call(async, &expand_all(command_line, search_path), stdin, option!(read_operations, tx));
 }
 
 pub fn on_shell_filter(app: &App, command_line: &[Expandable]) {
-    shell_filter::start(expand_all(command_line), app.tx.clone());
+    shell_filter::start(expand_all(command_line, false), app.tx.clone());
 }
 
 pub fn on_show(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {

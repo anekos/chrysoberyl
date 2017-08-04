@@ -75,7 +75,7 @@ pub enum Operation {
     SearchText(Option<String>, bool, Color), /* text, backward */
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
     SetEnv(String, Option<Expandable>),
-    Shell(bool, bool, Vec<Expandable>, Vec<Session>), /* async, operation, command_line, session */
+    Shell(bool, bool, bool, Vec<Expandable>, Vec<Session>), /* async, operation, search_path, command_line, session */
     ShellFilter(Vec<Expandable>),
     Show(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Shuffle(bool), /* Fix current */

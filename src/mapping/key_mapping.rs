@@ -67,7 +67,7 @@ impl KeyMapping {
     pub fn unregister(&mut self, keys: KeySequence) {
         use self::MappingEntry::*;
 
-        if_let_some!((head, tail) = keys.split_first(), panic!("Empty key sequence"));
+        if_let_some!((head, tail) = keys.split_first(), ());
         let tail = tail.to_vec();
 
         if let Some(ref mut entry) = self.table.get_mut(head) {

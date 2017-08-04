@@ -3,10 +3,10 @@ use globset::GlobMatcher;
 
 use entry::{Entry, EntryContent};
 use entry::info::{EntryInfo, LazyEntryInfo};
+use resolution;
 
 pub mod expression;
 pub mod parser;
-pub mod resolution;
 pub mod writer;
 
 use self::expression::*;

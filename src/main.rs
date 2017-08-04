@@ -70,6 +70,7 @@ mod operation_utils;
 mod option;
 mod paginator;
 mod poppler;
+mod resolution;
 mod script;
 mod session;
 mod shell;

@@ -32,6 +32,17 @@ impl MouseMapping {
         self.table.insert(button, vec![entry]);
     }
 
+    pub fn unregister(&mut self, button: &u32, region: &Option<Region>) {
+        let is_empty = {
+            if_let_some!(entries = self.table.get_mut(button), ());
+            entries.retain(|it| it.region != *region);
+            entries.is_empty()
+        };
+        if is_empty {
+            self.table.remove(button);
+        }
+    }
+
     pub fn matched(&self, button: u32, x: i32, y: i32, width: i32, height: i32) -> Option<Vec<String>> {
         self.table.get(&button).and_then(|entries| {
             let mut found = None;

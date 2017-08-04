@@ -64,6 +64,22 @@ impl KeyMapping {
         }
     }
 
+    pub fn unregister(&mut self, keys: KeySequence) {
+        use self::MappingEntry::*;
+
+        if_let_some!((head, tail) = keys.split_first(), ());
+        let tail = tail.to_vec();
+
+        if let Some(ref mut entry) = self.table.get_mut(head) {
+            if let Sub(ref mut sub) = **entry {
+                if !tail.is_empty() {
+                    return sub.unregister(tail);
+                }
+            }
+        }
+        self.table.remove(head);
+    }
+
     pub fn matched(&self, history: &KeyInputHistory) -> Option<Vec<String>> {
         let entries = &history.entries;
         let len = entries.len();

@@ -325,21 +325,28 @@ pub fn parse_load(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_map(args: &[String]) -> Result<Operation, String> {
-    fn parse_map_key(args: &[String]) -> Result<Operation, String> {
+pub fn parse_map(args: &[String], register: bool) -> Result<Operation, String> {
+    fn parse_map_key(args: &[String], register: bool) -> Result<Operation, String> {
         let mut from = "".to_owned();
         let mut to: Vec<String> = vec![];
         {
             let mut ap = ArgumentParser::new();
             ap.refer(&mut from).add_argument("from", Store, "Target key sequence").required();
-            ap.refer(&mut to).add_argument("to", List, "Command").required();
+            if register {
+                ap.refer(&mut to).add_argument("to", List, "Command").required();
+            }
             parse_args(&mut ap, args)
         } .map(|_| {
-            Operation::Map(MappingTarget::Key(from.split(',').map(|it| o!(it)).collect()), to)
+            let target = MappingTarget::Key(from.split(',').map(|it| o!(it)).collect());
+            if register {
+                Operation::Map(target, to)
+            } else {
+                Operation::Unmap(target)
+            }
         })
     }
 
-    fn parse_map_mouse(args: &[String]) -> Result<Operation, String> {
+    fn parse_map_mouse(args: &[String], register: bool) -> Result<Operation, String> {
         let mut from = 1;
         let mut to: Vec<String> = vec![];
         let mut region: Option<Region> = None;
@@ -348,14 +355,21 @@ pub fn parse_map(args: &[String]) -> Result<Operation, String> {
             let mut ap = ArgumentParser::new();
             ap.refer(&mut from).add_argument("from", Store, "Target button").required();
             ap.refer(&mut region).add_option(&["--region", "-r"], StoreOption, "Region");
-            ap.refer(&mut to).add_argument("to", List, "Command").required();
+            if register {
+                ap.refer(&mut to).add_argument("to", List, "Command").required();
+            }
             parse_args(&mut ap, args)
         } .map(|_| {
-            Operation::Map(MappingTarget::Mouse(from, region), to)
+            let target = MappingTarget::Mouse(from, region);
+            if register {
+                Operation::Map(target, to)
+            } else {
+                Operation::Unmap(target)
+            }
         })
     }
 
-    fn parse_map_event(args: &[String]) -> Result<Operation, String> {
+    fn parse_map_event(args: &[String], register: bool) -> Result<Operation, String> {
         let mut event_name = EventName::default();
         let mut group: Option<String> = None;
         let mut to: Vec<String> = vec![];
@@ -364,32 +378,46 @@ pub fn parse_map(args: &[String]) -> Result<Operation, String> {
             let mut ap = ArgumentParser::new();
             ap.refer(&mut group).add_option(&["--group", "-g"], StoreOption, "Event group");
             ap.refer(&mut event_name).add_argument("event-name", Store, "Event name").required();
-            ap.refer(&mut to).add_argument("to", List, "Command").required();
+            if register {
+                ap.refer(&mut to).add_argument("to", List, "Command").required();
+            }
             parse_args(&mut ap, args)
         } .map(|_| {
-            Operation::Map(MappingTarget::Event(event_name, group), to)
+            let target = MappingTarget::Event(event_name, group);
+            if register {
+                Operation::Map(target, to)
+            } else {
+                Operation::Unmap(target)
+            }
         })
     }
 
-    fn parse_map_region(args: &[String]) -> Result<Operation, String> {
+    fn parse_map_region(args: &[String], register: bool) -> Result<Operation, String> {
         let mut from = 1;
         let mut to = vec![];
         {
             let mut ap = ArgumentParser::new();
             ap.refer(&mut from).add_argument("from", Store, "Target mouse button").required();
-            ap.refer(&mut to).add_argument("to", List, "Operation").required();
+            if register {
+                ap.refer(&mut to).add_argument("to", List, "Operation").required();
+            }
             parse_args(&mut ap, args)
         } .map(|_| {
-            Operation::Map(MappingTarget::Region(from), to)
+            let target = MappingTarget::Region(from);
+            if register {
+                Operation::Map(target, to)
+            } else {
+                Operation::Unmap(target)
+            }
         })
     }
     if let Some(target) = args.get(1) {
         let args = &args[1..];
         match &**target {
-            "k" | "key" => parse_map_key(args),
-            "m" | "button" | "mouse" | "mouse-button" => parse_map_mouse(args),
-            "e" | "event" => parse_map_event(args),
-            "r" | "region" => parse_map_region(args),
+            "k" | "key" => parse_map_key(args, register),
+            "m" | "button" | "mouse" | "mouse-button" => parse_map_mouse(args, register),
+            "e" | "event" => parse_map_event(args, register),
+            "r" | "region" => parse_map_region(args, register),
             _ => Err(format!("Invalid mapping target: {}", target))
         }
     } else {

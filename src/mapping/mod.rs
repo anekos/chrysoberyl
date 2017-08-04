@@ -54,12 +54,28 @@ impl Mapping {
         self.mouse_mapping.register(button, region, operation);
     }
 
-    pub fn register_event(&mut self, event_name: EventName, id: Option<String>, operation: Vec<String>) {
-        self.event_mapping.register(event_name, id, operation);
+    pub fn register_event(&mut self, event_name: EventName, group: Option<String>, operation: Vec<String>) {
+        self.event_mapping.register(event_name, group, operation);
     }
 
     pub fn register_region(&mut self, button: u32, operation: Vec<String>) {
         self.region_mapping.register(button, operation);
+    }
+
+    pub fn unregister_key(&mut self, key: Vec<String>) {
+        self.key_mapping.unregister(key);
+    }
+
+    pub fn unregister_mouse(&mut self, button: &u32, region: &Option<Region>) {
+        self.mouse_mapping.unregister(button, region);
+    }
+
+    pub fn unregister_event(&mut self, event_name: &EventName, group: &Option<String>) {
+        self.event_mapping.unregister(event_name, group);
+    }
+
+    pub fn unregister_region(&mut self, button: &u32) {
+        self.region_mapping.unregister(button);
     }
 
     pub fn matched(&mut self, input: &Input, width: i32, height: i32) -> Vec<Vec<String>> {

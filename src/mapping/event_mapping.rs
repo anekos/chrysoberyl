@@ -13,12 +13,6 @@ pub struct EventMappingEntry {
     pub table: HashMap<Option<String>, Vec<Vec<String>>>
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct EventKey {
-    name: EventName,
-    group: Option<String>,
-}
-
 
 
 impl EventMapping {
@@ -35,6 +29,11 @@ impl EventMapping {
         let mut entry = EventMappingEntry::new();
         entry.register(group, operation);
         self.table.insert(event_name, entry);
+    }
+
+    pub fn unregister(&mut self, event_name: &EventName, group: &Option<String>) {
+        if_let_some!(entry = self.table.get_mut(event_name), ());
+        entry.unregister(group);
     }
 
     pub fn matched(&self, event_name: &EventName) -> Vec<Vec<String>> {
@@ -54,6 +53,10 @@ impl EventMappingEntry {
         }
 
         self.table.insert(group, vec![operation]);
+    }
+
+    pub fn unregister(&mut self, group: &Option<String>) {
+        self.table.remove(group);
     }
 
     pub fn entries(&self) -> Vec<Vec<String>> {

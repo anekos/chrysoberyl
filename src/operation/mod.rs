@@ -26,7 +26,7 @@ mod parser;
 
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum Operation {
     AppEvent(EventName, bool), /* event_name, async */
     Cherenkov(CherenkovParameter),
@@ -389,5 +389,82 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
         } .map_err(ParsingError::InvalidOperation)
     } else {
         Ok(Nop)
+    }
+}
+
+
+impl fmt::Debug for Operation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        use self::Operation::*;
+
+        let s = match *self {
+            AppEvent(_, _) => "AppEvent",
+            Cherenkov(_) => "Cherenkov",
+            Clear => "Clear ",
+            Clip(_) => "Clip",
+            Context(_, _) => "Context",
+            Count(_) => "Count",
+            CountDigit(_) => "CountDigit",
+            DefineUserSwitch(_, _) => "DefineUserSwitch",
+            Draw => "Draw ",
+            Editor(_, _, _) => "Editor",
+            Expand(_, _) => "Expand",
+            First(_, _, _, _) => "First",
+            Fill(_, _, _, _, _) => "Fill",
+            Filter(_, _) => "Filter",
+            Fragile(_) => "Fragile",
+            Go(_) => "Go",
+            Input(_) => "Input",
+            KillTimer(_) => "KillTimer",
+            Last(_, _, _, _) => "Last",
+            LazyDraw(_, _) => "LazyDraw",
+            Load(_) => "Load",
+            LoadDefault => "LoadDefault ",
+            Map(_, _, _) => "Map",
+            MoveAgain(_, _, _, _) => "MoveAgain",
+            Multi(_, _) => "Multi",
+            Next(_, _, _, _) => "Next",
+            Nop => "Nop ",
+            OperateFile(_) => "OperateFile",
+            Page(_) => "Page",
+            PdfIndex(_, _, _, _, _, _) => "PdfIndex",
+            PreFetch(_) => "PreFetch",
+            Previous(_, _, _, _) => "Previous",
+            PrintEntries => "PrintEntries ",
+            Pull => "Pull ",
+            Push(_, _, _) => "Push",
+            PushArchive(_, _, _) => "PushArchive",
+            PushDirectory(_, _, _) => "PushDirectory",
+            PushImage(_, _, _, _) => "PushImage",
+            PushPdf(_, _, _) => "PushPdf",
+            PushSibling(_, _, _, _) => "PushSibling",
+            PushURL(_, _, _, _) => "PushURL",
+            Random => "Random ",
+            Refresh => "Refresh ",
+            ResetImage => "ResetImage ",
+            Save(_, _) => "Save",
+            SearchText(_, _, _) => "SearchText",
+            Scroll(_, _, _) => "Scroll",
+            SetEnv(_, _) => "SetEnv",
+            Shell(_, _, _, _, _) => "Shell",
+            ShellFilter(_, _) => "ShellFilter",
+            Show(_, _, _, _) => "Show",
+            Shuffle(_) => "Shuffle",
+            Sort => "Sort ",
+            TellRegion(_, _, _, _, _) => "TellRegion",
+            Timer(_, _, _, _) => "Timer",
+            Unclip => "Unclip ",
+            Undo(_) => "Undo",
+            Unmap(_) => "Unmap",
+            UpdateOption(_, _) => "UpdateOption",
+            UpdateUI => "UpdateUI ",
+            User(_) => "User",
+            Views(_, _) => "Views",
+            ViewsFellow(_) => "ViewsFellow",
+            When(_, _, _) => "When",
+            WithMessage(_, _) => "WithMessage",
+            Write(_, _) => "Write",
+        };
+        write!(f, "{}", s)
     }
 }

@@ -339,7 +339,7 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, String> {
         } .map(|_| {
             let target = MappingTarget::Key(from.split(',').map(|it| o!(it)).collect());
             if register {
-                Operation::Map(target, to)
+                Operation::Map(target, None, to)
             } else {
                 Operation::Unmap(target)
             }
@@ -362,7 +362,7 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, String> {
         } .map(|_| {
             let target = MappingTarget::Mouse(from, region);
             if register {
-                Operation::Map(target, to)
+                Operation::Map(target, None, to)
             } else {
                 Operation::Unmap(target)
             }
@@ -373,10 +373,14 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, String> {
         let mut event_name = None;
         let mut group: Option<String> = None;
         let mut to: Vec<String> = vec![];
+        let mut remain = None;
 
         {
             let mut ap = ArgumentParser::new();
             ap.refer(&mut group).add_option(&["--group", "-g"], StoreOption, "Event group");
+            ap.refer(&mut remain)
+                .add_option(&["--once", "-o", "-1"], StoreConst(Some(1)), "Once")
+                .add_option(&["--repeat", "-r"], StoreOption, "Repeat count");
             {
                 let mut en = ap.refer(&mut event_name);
                 en.add_argument("event-name", StoreOption, "Event name");
@@ -391,7 +395,7 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, String> {
         } .map(|_| {
             let target = MappingTarget::Event(event_name, group);
             if register {
-                Operation::Map(target, to)
+                Operation::Map(target, remain, to)
             } else {
                 Operation::Unmap(target)
             }
@@ -411,7 +415,7 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, String> {
         } .map(|_| {
             let target = MappingTarget::Region(from);
             if register {
-                Operation::Map(target, to)
+                Operation::Map(target, None, to)
             } else {
                 Operation::Unmap(target)
             }

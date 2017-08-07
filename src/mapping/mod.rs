@@ -54,8 +54,8 @@ impl Mapping {
         self.mouse_mapping.register(button, region, operation);
     }
 
-    pub fn register_event(&mut self, event_name: EventName, group: Option<String>, operation: Vec<String>) {
-        self.event_mapping.register(event_name, group, operation);
+    pub fn register_event(&mut self, event_name: EventName, group: Option<String>, remain: Option<usize>, operation: Vec<String>) {
+        self.event_mapping.register(event_name, group, remain, operation);
     }
 
     pub fn register_region(&mut self, button: u32, operation: Vec<String>) {
@@ -78,7 +78,7 @@ impl Mapping {
         self.region_mapping.unregister(button);
     }
 
-    pub fn matched(&mut self, input: &Input, width: i32, height: i32) -> Vec<Vec<String>> {
+    pub fn matched(&mut self, input: &Input, width: i32, height: i32, decrease_remain: bool) -> Vec<Vec<String>> {
         let found = match *input {
             Input::Key(ref key) => {
                 self.key_input_history.push(key.clone(), self.key_mapping.depth);
@@ -87,7 +87,7 @@ impl Mapping {
             Input::MouseButton((x, y), ref button) =>
                 self.mouse_mapping.matched(*button, x, y, width, height).into_iter().collect(),
             Input::Event(ref event_name) =>
-                self.event_mapping.matched(event_name),
+                self.event_mapping.matched(event_name, decrease_remain),
             Input::Region(_, button, _) =>
                 self.region_mapping.matched(button).into_iter().collect(),
         };

@@ -258,7 +258,7 @@ pub fn on_initialized(app: &mut App) {
 
 pub fn on_input(app: &mut App, input: &Input) {
     let (width, height) = app.gui.window.get_size();
-    let operations = app.mapping.matched(input, width, height);
+    let operations = app.mapping.matched(input, width, height, true);
 
     if operations.is_empty() {
         puts_event!("input", "type" => input.type_name(), "name" => input.text());
@@ -316,7 +316,7 @@ pub fn on_load_default(app: &mut App) {
     script::load(&app.tx, DEFAULT_CONFIG);
 }
 
-pub fn on_map(app: &mut App, target: MappingTarget, operation: Vec<String>) {
+pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, operation: Vec<String>) {
     use app::MappingTarget::*;
 
     // puts_event!("map", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
@@ -326,7 +326,7 @@ pub fn on_map(app: &mut App, target: MappingTarget, operation: Vec<String>) {
         Mouse(button, area) =>
             app.mapping.register_mouse(button, area, operation),
         Event(Some(event_name), group) =>
-            app.mapping.register_event(event_name, group, operation),
+            app.mapping.register_event(event_name, group, remain, operation),
         Event(None, _) =>
             panic!("WTF"),
         Region(button) =>

@@ -239,8 +239,8 @@ impl App {
                     on_load(self, file),
                 LoadDefault =>
                     on_load_default(self),
-                Map(target, mapped_operation) =>
-                    on_map(self, target, mapped_operation),
+                Map(target, remain, mapped_operation) =>
+                    on_map(self, target, remain, mapped_operation),
                 MoveAgain(count, ignore_views, move_by, wrap) =>
                     on_move_again(self, &mut updated, &mut to_end, count, ignore_views, move_by, wrap),
                 Multi(ops, async) =>

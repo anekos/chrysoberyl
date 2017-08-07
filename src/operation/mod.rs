@@ -50,7 +50,7 @@ pub enum Operation {
     LazyDraw(u64, bool), /* serial, to_end */
     Load(PathBuf),
     LoadDefault,
-    Map(MappingTarget, Vec<String>),
+    Map(MappingTarget, Option<usize>, Vec<String>), /* target, remain, operation */
     MoveAgain(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Multi(VecDeque<Operation>, bool), /* operations, async */
     Next(Option<usize>, bool, MoveBy, bool),

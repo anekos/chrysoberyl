@@ -12,6 +12,7 @@ pub struct EventMapping {
 pub struct EventMappingEntry {
     group: Option<String>,
     operation: Vec<String>,
+    remain: Option<usize>,
 }
 
 
@@ -21,8 +22,8 @@ impl EventMapping {
         EventMapping { table: HashMap::new() }
     }
 
-    pub fn register(&mut self, event_name: EventName, group: Option<String>, operation: Vec<String>) {
-        let entry = EventMappingEntry { group: group, operation: operation };
+    pub fn register(&mut self, event_name: EventName, group: Option<String>, remain: Option<usize>, operation: Vec<String>) {
+        let entry = EventMappingEntry { group: group, operation: operation, remain: remain };
 
         if let Some(entries) = self.table.get_mut(&event_name) {
             return entries.push(entry);
@@ -46,8 +47,17 @@ impl EventMapping {
         }
     }
 
-    pub fn matched(&self, event_name: &EventName) -> Vec<Vec<String>> {
-        if_let_some!(entries = self.table.get(event_name), vec![]);
-        entries.iter().map(|it| it.operation.clone()).collect()
+    pub fn matched(&mut self, event_name: &EventName, decrease_remain: bool) -> Vec<Vec<String>> {
+        if_let_some!(entries = self.table.get_mut(event_name), vec![]);
+        let result = entries.iter().map(|it| it.operation.clone()).collect();
+
+        if decrease_remain{
+            entries.retain(|it| it.remain.map(|it| 1 < it).unwrap_or(true));
+            for it in entries.iter_mut() {
+                it.remain.as_mut().map(|it| *it -= 1);
+            }
+        }
+
+        result
     }
 }

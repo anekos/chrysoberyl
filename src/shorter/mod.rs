@@ -6,6 +6,7 @@ use tldextract::{TldExtractor, TldOption};
 use url::Url;
 
 use utils::path_to_string;
+use app_path;
 
 #[cfg(test)] mod test;
 
@@ -13,7 +14,16 @@ use utils::path_to_string;
 
 lazy_static! {
     pub static ref EXTRACTOR: TldExtractor = {
-        let option = TldOption { naive_mode: false, ..Default::default() };
+        let mut cache_path = app_path::cache_dir("lib");
+        cache_path.push("tldextract.json");
+
+        let option = TldOption {
+            cache_path: Some(path_to_string(&cache_path)),
+            private_domains: false,
+            update_local: true,
+            naive_mode: false,
+        };
+
         TldExtractor::new(option)
     };
 }

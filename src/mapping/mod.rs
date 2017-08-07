@@ -70,7 +70,7 @@ impl Mapping {
         self.mouse_mapping.unregister(button, region);
     }
 
-    pub fn unregister_event(&mut self, event_name: &EventName, group: &Option<String>) {
+    pub fn unregister_event(&mut self, event_name: &Option<EventName>, group: &Option<String>) {
         self.event_mapping.unregister(event_name, group);
     }
 

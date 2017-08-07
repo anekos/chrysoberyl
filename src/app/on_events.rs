@@ -325,8 +325,10 @@ pub fn on_map(app: &mut App, target: MappingTarget, operation: Vec<String>) {
             app.mapping.register_key(key_sequence, operation),
         Mouse(button, area) =>
             app.mapping.register_mouse(button, area, operation),
-        Event(event_name, group) =>
+        Event(Some(event_name), group) =>
             app.mapping.register_event(event_name, group, operation),
+        Event(None, _) =>
+            panic!("WTF"),
         Region(button) =>
             app.mapping.register_region(button, operation),
     }

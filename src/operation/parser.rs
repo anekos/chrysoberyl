@@ -370,14 +370,20 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, String> {
     }
 
     fn parse_map_event(args: &[String], register: bool) -> Result<Operation, String> {
-        let mut event_name = EventName::default();
+        let mut event_name = None;
         let mut group: Option<String> = None;
         let mut to: Vec<String> = vec![];
 
         {
             let mut ap = ArgumentParser::new();
             ap.refer(&mut group).add_option(&["--group", "-g"], StoreOption, "Event group");
-            ap.refer(&mut event_name).add_argument("event-name", Store, "Event name").required();
+            {
+                let mut en = ap.refer(&mut event_name);
+                en.add_argument("event-name", StoreOption, "Event name");
+                if register {
+                    en.required();
+                }
+            }
             if register {
                 ap.refer(&mut to).add_argument("to", List, "Command").required();
             }

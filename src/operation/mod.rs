@@ -116,7 +116,7 @@ pub struct OperationContext {
 pub enum MappingTarget {
     Key(Vec<String>),
     Mouse(u32, Option<Region>),
-    Event(EventName, Option<String>),
+    Event(Option<EventName>, Option<String>),
     Region(u32),
 }
 

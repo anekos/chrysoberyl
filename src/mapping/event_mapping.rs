@@ -32,9 +32,18 @@ impl EventMapping {
         self.table.insert(event_name, entries);
     }
 
-    pub fn unregister(&mut self, event_name: &EventName, group: &Option<String>) {
-        if_let_some!(entries = self.table.get_mut(event_name), ());
-        entries.retain(|it| it.group == *group)
+    pub fn unregister(&mut self, event_name: &Option<EventName>, group: &Option<String>) {
+        match *event_name {
+            Some(ref event_name) => {
+                if_let_some!(entries = self.table.get_mut(event_name), ());
+                entries.retain(|it| it.group == *group)
+            },
+            None => {
+                for entries in self.table.values_mut() {
+                    entries.retain(|it| it.group == *group)
+                }
+            }
+        }
     }
 
     pub fn matched(&self, event_name: &EventName) -> Vec<Vec<String>> {

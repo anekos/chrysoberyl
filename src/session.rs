@@ -116,6 +116,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         PreFetchPageSize => gen("pre-render-pages", &st.pre_fetch.page_size, context),
         Reverse => gen("reverse", &b2s(st.reverse), context),
         Scaling => gen("scaling", &st.drawing.scaling, context),
+        SkipResizeWindow => gen("skip-resize-window", &st.skip_resize_window, context),
         StatusBar => gen("status-bar", &b2s(st.status_bar), context),
         StatusFormat => gen("status-format", &esc(&st.status_format.0), context),
         TitleFormat => gen("title-format", &esc(&st.title_format.0), context),
@@ -147,6 +148,7 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
     write(out, PreFetchPageSize);
     write(out, Reverse);
     write(out, Scaling);
+    write(out, SkipResizeWindow);
     write(out, StatusBar);
     write(out, StatusFormat);
     write(out, TitleFormat);

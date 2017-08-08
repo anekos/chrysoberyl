@@ -28,7 +28,7 @@ mod parser;
 
 #[derive(Clone)]
 pub enum Operation {
-    AppEvent(EventName, bool), /* event_name, async */
+    AppEvent(EventName),
     Cherenkov(CherenkovParameter),
     Clear,
     Clip(Region),
@@ -166,6 +166,7 @@ iterable_enum!(PreDefinedOptionName =>
     PreFetchPageSize,
     Reverse,
     Scaling,
+    SkipResizeWindow,
     StatusBar,
     StatusFormat,
     TitleFormat,
@@ -215,6 +216,7 @@ impl FromStr for PreDefinedOptionName {
             "title-format"                         => Ok(TitleFormat),
             "vertical-views"                       => Ok(VerticalViews),
             "window-background-color"              => Ok(ColorWindowBackground),
+            "skip-resize-window"                   => Ok(SkipResizeWindow),
             "status-bar-color"                     => Ok(ColorStatusBar),
             "status-bar-background-color"          => Ok(ColorStatusBarBackground),
             "error-color"                          => Ok(ColorError),
@@ -296,8 +298,8 @@ impl fmt::Display for ParsingError {
 
 
 impl EventName {
-    pub fn operation(self, async: bool) -> Operation {
-        Operation::AppEvent(self, async)
+    pub fn operation(&self) -> Operation {
+        Operation::AppEvent(self.clone())
     }
 }
 
@@ -360,7 +362,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@push-pdf"                     => parse_push(whole, |it, meta, force| PushPdf(Expandable(it), meta, force)),
             "@push-previous" | "@push-prev" => parse_push_sibling(whole, false),
             "@push-url"                     => parse_push_url(whole),
-            "@quit"                         => Ok(EventName::Quit.operation(false)),
+            "@quit"                         => Ok(EventName::Quit.operation()),
             "@random" | "@rand"             => Ok(Random),
             "@refresh" | "@r"               => Ok(Refresh),
             "@reset-image"                  => Ok(ResetImage),
@@ -398,7 +400,7 @@ impl fmt::Debug for Operation {
         use self::Operation::*;
 
         let s = match *self {
-            AppEvent(_, _) => "AppEvent",
+            AppEvent(ref ev) => return write!(f, "AppEvent({:?})", ev),
             Cherenkov(_) => "Cherenkov",
             Clear => "Clear ",
             Clip(_) => "Clip",
@@ -456,7 +458,7 @@ impl fmt::Debug for Operation {
             Unclip => "Unclip ",
             Undo(_) => "Undo",
             Unmap(_) => "Unmap",
-            UpdateOption(_, _) => "UpdateOption",
+            UpdateOption(ref name, _) => return write!(f, "UpdateOption({:?})", name),
             UpdateUI => "UpdateUI ",
             User(_) => "User",
             Views(_, _) => "Views",

@@ -60,7 +60,7 @@ fn parse_arguments() -> (app::App, Receiver<Operation>, Receiver<Operation>) {
 
     let (mut app, primary_rx, rx) = app::App::new(initial);
 
-    app.fire_event(EventName::Initialize, false);
+    app.fire_event(EventName::Initialize, true);
 
     (app, primary_rx, rx)
 }

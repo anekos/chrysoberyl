@@ -640,6 +640,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
 
             let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
 
+            app.cache.clear_entry_search_highlights(&entry);
             for region in &regions {
                 app.cache.cherenkov(
                     &entry,

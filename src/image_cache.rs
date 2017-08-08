@@ -95,6 +95,11 @@ impl ImageCache {
         cherenkoved.undo(key, count)
     }
 
+    pub fn clear_entry_search_highlights(&mut self, entry: &Entry) -> bool {
+        let mut cherenkoved = self.cherenkoved.lock().unwrap();
+        cherenkoved.clear_entry_search_highlights(entry)
+    }
+
     pub fn clear_search_highlights(&mut self) -> bool {
         let mut cherenkoved = self.cherenkoved.lock().unwrap();
         cherenkoved.clear_search_highlights()

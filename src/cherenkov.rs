@@ -114,16 +114,17 @@ impl Cherenkoved {
     }
 
     pub fn clear_search_highlights(&mut self) -> bool {
-        let mut removees = vec![];
-        for (key, cache_entry) in &mut self.cache {
-            if cache_entry.clear_search_highlight() {
-                removees.push(key.clone());
-            }
+        for it in self.cache.values_mut() {
+            it.clear_search_highlights();
         }
-        for key in &removees {
-            self.cache.remove(key);
-        }
-        !removees.is_empty()
+        let before = self.cache.len();
+        self.cache.retain(|_, v| !v.modifiers.is_empty());
+        before != self.cache.len()
+    }
+
+    pub fn clear_entry_search_highlights(&mut self, entry: &Entry) -> bool {
+        if_let_some!(entry = self.cache.get_mut(&entry.key), false);
+        entry.clear_search_highlights()
     }
 
     pub fn undo(&mut self, key: &Key, count: usize) {
@@ -138,19 +139,18 @@ impl Cherenkoved {
     pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, modifier: Modifier, drawing: &DrawingState) {
         let mut modifiers = self.cache.get(&entry.key).map(|it| it.modifiers.clone()).unwrap_or_else(|| vec![]);
 
-        clear_search_highlight(&mut modifiers);
         modifiers.push(modifier);
 
-        if let Ok(image_buffer) =  re_cherenkov(entry, cell_size, drawing, &modifiers) {
-            self.cache.insert(
-                entry.key.clone(),
-                CacheEntry {
-                    image: Some(image_buffer),
-                    cell_size: *cell_size,
-                    drawing: drawing.clone(),
-                    modifiers: modifiers,
-                });
-        }
+        if_let_ok!(image_buffer = re_cherenkov(entry, cell_size, drawing, &modifiers), |_| ());
+
+        self.cache.insert(
+            entry.key.clone(),
+            CacheEntry {
+                image: Some(image_buffer),
+                cell_size: *cell_size,
+                drawing: drawing.clone(),
+                modifiers: modifiers,
+            });
     }
 }
 
@@ -165,8 +165,10 @@ impl CacheEntry {
         None
     }
 
-    pub fn clear_search_highlight(&mut self) -> bool {
-        clear_search_highlight(&mut self.modifiers)
+    pub fn clear_search_highlights(&mut self) -> bool {
+        let before = self.modifiers.len();
+        self.modifiers.retain(|it| it.search_highlight);
+        before != self.modifiers.len()
     }
 }
 
@@ -441,15 +443,6 @@ fn apply_mask(pixbuf: &Pixbuf, mask: ImageSurface, operator: Operator) -> Pixbuf
     context.mask(&pattern);
 
     new_pixbuf_from_surface(&surface)
-}
-
-fn clear_search_highlight(modifiers: &mut Vec<Modifier>) -> bool {
-    let mut result = false;
-    while let Some(index) = modifiers.iter().position(|it| it.search_highlight) {
-        modifiers.remove(index);
-        result |= true;
-    }
-    result
 }
 
 #[cfg(test)]#[test]

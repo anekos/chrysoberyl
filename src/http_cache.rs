@@ -1,5 +1,6 @@
 
 use std::collections::VecDeque;
+use std::env;
 use std::fs::{File, create_dir_all};
 use std::io::{BufWriter, Write};
 use std::path::{PathBuf};
@@ -12,6 +13,7 @@ use curl;
 use url::Url;
 
 use app_path;
+use constant::env_name;
 use entry::{Meta, EntryType};
 use events::EventName;
 use file_extension::get_entry_type_from_filename;
@@ -48,6 +50,14 @@ enum Getter {
     Fail(usize, String, Request),
 }
 
+// Status Paramter
+enum SP {
+    Initial,
+    Queue(String),
+    Complete(usize),
+    Fail(usize, String, String),
+}
+
 
 impl HttpCache {
     pub fn new(max_threads: u8, app_tx: Sender<Operation>, sorting_buffer: SortingBuffer<QueuedOperation>) -> HttpCache {
@@ -59,8 +69,10 @@ impl HttpCache {
         let filepath = generate_temporary_filename(&url);
 
         if filepath.exists() {
-            self.sorting_buffer.push_with_reserve(
-                make_queued_operation(filepath, url, meta, force, entry_type))
+            let result = self.sorting_buffer.push_with_reserve(
+                make_queued_operation(filepath, url, meta, force, entry_type));
+            env::set_var(env_name("dl_buffer"), s!(self.sorting_buffer.len()));
+            result
         } else {
             self.main_tx.send(Getter::Queue(url, filepath, meta, force, entry_type)).unwrap();
             vec![]
@@ -84,6 +96,8 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
             waiting.push(thread_id);
         }
 
+        log_status(SP::Initial, queued.len(), buffer.len(), waiting.len(), threads.len());
+
         while let Ok(it) = main_rx.recv() {
             match it {
                 Queue(url, cache_filepath, meta, force, entry_type) => {
@@ -95,29 +109,22 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                         threads[worker].send(request).unwrap();
                     } else {
                         queued.push_back(request);
-                        puts!("event" => "http/queue", "url" => o!(&url), "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
+                        log_status(SP::Queue(url), queued.len(), buffer.len(), waiting.len(), threads.len());
                     }
-
                 }
                 Done(thread_id, request) => {
                     buffer.push(
                         request.ticket,
                         make_queued_operation(request.cache_filepath, request.url, request.meta, request.force, request.entry_type));
-
                     app_tx.send(Operation::Pull).unwrap();
-
-                    puts!("event" => "http/complete", "thread_id" => s!(thread_id), "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
-
                     try_next(&app_tx, thread_id, queued.pop_front(), &mut threads, &mut waiting);
+                    log_status(SP::Complete(thread_id), queued.len(), buffer.len(), waiting.len(), threads.len());
                 }
                 Fail(thread_id, err, request) => {
                     buffer.skip(request.ticket);
-
                     app_tx.send(Operation::Pull).unwrap();
-
-                    puts_error!("at" => "http/get", "thread_id" => s!(thread_id), "reason" => err, "url" => o!(request.url), "queue" => s!(queued.len()), "buffer" => s!(buffer.len()), "waiting" => s!(waiting.len()));
-
                     try_next(&app_tx, thread_id, queued.pop_front(), &mut threads, &mut waiting);
+                    log_status(SP::Fail(thread_id, err, request.url), queued.len(), buffer.len(), waiting.len(), threads.len());
                 }
             }
         }
@@ -214,4 +221,23 @@ fn try_next(app_tx: &Sender<Operation>, thread_id: TID, next: Option<Request>, t
     if waiting.len() == threads.len() {
         app_tx.send(Operation::Input(mapping::Input::Event(EventName::DownloadAll))).unwrap();
     }
+}
+
+fn log_status(sp: SP, queues: usize, buffers: usize, waitings: usize, threads: usize) {
+    use self::SP::*;
+
+    let (q, b, w, t) = (s!(queues), s!(buffers), s!(waitings), s!((threads - waitings)));
+    match sp {
+        Initial => (),
+        Queue(ref url) =>
+            puts_event!("http/queue", "url" => url, "queue" => q, "buffer" => b, "waiting" => w),
+        Complete(ref thread_id) =>
+            puts_event!("http/complete", "thread_id" => s!(thread_id), "queue" => q, "buffer" => b, "waiting" => w),
+        Fail(ref thread_id, ref error, ref url) =>
+            puts_event!("http/fail", "thread_id" => s!(thread_id), "reason" => error, "url" => url, "queue" => q, "buffer" => b, "waiting" => w),
+    }
+    env::set_var(env_name("dl_queue"), q);
+    env::set_var(env_name("dl_buffer"), b);
+    env::set_var(env_name("dl_waiting"), w);
+    env::set_var(env_name("dl_thread"), t);
 }

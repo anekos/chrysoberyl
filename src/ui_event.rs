@@ -1,5 +1,6 @@
 
 use std::cell::Cell;
+use std::default::Default;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use std::time::Duration;
@@ -16,17 +17,27 @@ use operation::Operation;
 use utils::feq;
 
 
+
+#[derive(Clone, Copy, Default)]
+struct Conf {
+    width: u32,
+    height: u32,
+    spawned: bool,
+    skip: usize,
+}
+
+
 type ArcPressedAt = Arc<Cell<(f64, f64)>>;
-type ArcLastWindowSize = Arc<Cell<(u32, u32)>>;
+type ArcConf = Arc<Cell<Conf>>;
 
 
-pub fn register(gui: &Gui, tx: &Sender<Operation>) {
+pub fn register(gui: &Gui, skip: usize, tx: &Sender<Operation>) {
+    let sender = LazySender::new(tx.clone(), Duration::from_millis(50));
     let pressed_at = Arc::new(Cell::new((0.0, 0.0)));
-    let last_window_size = Arc::new(Cell::new((0u32, 0u32)));
-    let sender = LazySender::new(tx.clone(), Duration::from_millis(200));
+    let conf = Arc::new(Cell::new(Conf { skip: skip, .. Conf::default() }));
 
     gui.window.connect_key_press_event(clone_army!([tx] move |_, key| on_key_press(&tx, key)));
-    gui.window.connect_configure_event(clone_army!([last_window_size, sender] move |_, ev| on_configure(sender.clone(), ev, last_window_size.clone())));
+    gui.window.connect_configure_event(clone_army!([conf, tx, sender] move |_, ev| on_configure(sender.clone(), &tx, ev, conf.clone())));
     gui.window.connect_delete_event(clone_army!([tx] move |_, _| on_delete(&tx)));
     gui.window.connect_button_press_event(clone_army!([pressed_at] move |_, button| on_button_press(button, pressed_at.clone())));
     gui.window.connect_button_release_event(clone_army!([tx] move |_, button| on_button_release(&tx, button, pressed_at.clone())));
@@ -64,20 +75,37 @@ fn on_button_release(tx: &Sender<Operation>, button: &EventButton, pressed_at: A
     Inhibit(true)
 }
 
-fn on_configure(mut sender: LazySender, ev: &EventConfigure, last_window_size: ArcLastWindowSize) -> bool {
+fn on_configure(mut sender: LazySender, tx: &Sender<Operation>, ev: &EventConfigure, conf: ArcConf) -> bool {
     let (w, h) = ev.get_size();
-    let (lw, lh) = last_window_size.get();
+    let mut c = conf.get();
 
-    if lw != w || lh != h {
-        sender.request(EventName::ResizeWindow.operation(false));
-        (*last_window_size).set((w, h));
+    trace!("configure: w={} h={} lw={} lh={}", w, h, c.width, c.height);
+
+    if c.width == w && c.height == h {
+        return false;
     }
+
+    if 0 < c.skip {
+        c.skip -= 1;
+        trace!("on_configure/skip: remain={:?}", c.skip);
+    } else {
+        if c.spawned {
+            sender.request(EventName::ResizeWindow.operation());
+        } else {
+            tx.send(EventName::Spawn.operation()).unwrap();
+            c.spawned = true;
+        }
+    }
+    c.width = w;
+    c.height = h;
+
+    conf.set(c);
 
     false
 }
 
 fn on_delete(tx: &Sender<Operation>) -> Inhibit {
-    tx.send(EventName::Quit.operation(true)).unwrap();
+    tx.send(EventName::Quit.operation()).unwrap();
     Inhibit(false)
 }
 

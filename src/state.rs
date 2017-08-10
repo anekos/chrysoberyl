@@ -12,22 +12,22 @@ use size::{FitTo, Region};
 
 
 pub struct States {
-    pub initialized: bool,
-    pub spawned: bool,
-    pub status_bar: bool,
-    pub reverse: bool,
+    pub abbrev_length: usize,
     pub auto_paging: bool,
-    pub view: ViewState,
-    pub go: Option<SearchKey>,
-    pub status_format: StatusFormat,
-    pub title_format: TitleFormat,
     pub drawing: DrawingState,
-    pub pre_fetch: PreFetchState,
+    pub go: Option<SearchKey>,
     pub last_direction: Direction,
     pub last_filter: Filters,
     pub log_file: logger::file::File,
+    pub pre_fetch: PreFetchState,
+    pub reverse: bool,
+    pub skip_resize_window: usize,
+    pub spawned: bool,
+    pub status_bar: bool,
+    pub status_format: StatusFormat,
     pub stdout: Option<logger::Handle>,
-    pub abbrev_length: usize,
+    pub title_format: TitleFormat,
+    pub view: ViewState,
 }
 
 pub struct ViewState {
@@ -78,22 +78,22 @@ pub struct Filters {
 impl Default for States {
     fn default() -> Self {
         States {
-            initialized: false,
-            spawned: false,
-            status_bar: true,
-            reverse: false,
+            abbrev_length: 30,
             auto_paging: false,
-            status_format: StatusFormat::default(),
-            title_format: TitleFormat::default(),
-            view: ViewState::default(),
-            go: None,
             drawing: DrawingState::default(),
-            pre_fetch: PreFetchState::default(),
+            go: None,
             last_direction: Direction::Forward,
             last_filter: Filters::default(),
             log_file: logger::file::File::new(),
+            pre_fetch: PreFetchState::default(),
+            reverse: false,
+            skip_resize_window: 0,
+            spawned: false,
+            status_bar: true,
+            status_format: StatusFormat::default(),
             stdout: None,
-            abbrev_length: 30,
+            title_format: TitleFormat::default(),
+            view: ViewState::default(),
         }
     }
 

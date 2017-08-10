@@ -45,7 +45,7 @@ impl ImageCache {
     }
 
     pub fn mark_fetching(&mut self, key: Key) -> bool {
-        trace!("image_cache/fetching: key={:?}", key);
+        trace!("image_cache/mark_fetching: key={:?}", key);
 
         let &(ref fetching, _) = &*self.fetching;
         let mut fetching = fetching.lock().unwrap();

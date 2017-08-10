@@ -66,6 +66,7 @@ pub struct App {
     pub entries: EntryContainer,
     pub gui: Gui,
     pub tx: Sender<Operation>,
+    pub primary_tx: Sender<Operation>,
     pub states: States
 }
 
@@ -107,6 +108,7 @@ impl App {
             entries: EntryContainer::new(),
             gui: Gui::new(),
             tx: tx.clone(),
+            primary_tx: primary_tx,
             http_cache: HttpCache::new(initial.http_threads, tx.clone(), sorting_buffer.clone()),
             states: states,
             encodings: initial.encodings,
@@ -130,8 +132,6 @@ impl App {
         script::load(&app.tx, &config::get_config_source());
 
         app.reset_view();
-
-        ui_event::register(&app.gui, &primary_tx);
 
         app.update_label_visibility();
 
@@ -177,8 +177,15 @@ impl App {
         (app, primary_rx, rx)
     }
 
-    pub fn fire_event(&mut self, event_name: EventName, async: bool) {
-        self.operate(event_name.operation(async));
+    pub fn fire_event(&mut self, event_name: EventName) {
+        use self::EventName::*;
+
+        let op = event_name.operation();
+
+        match event_name {
+            Initialize => self.tx.send(op).unwrap(),
+            _ => self.operate(op),
+        }
     }
 
     pub fn operate(&mut self, operation: Operation) {
@@ -189,14 +196,16 @@ impl App {
         use self::Operation::*;
         use self::on_events::*;
 
+        trace!("operate_with_context: operation={:?}", operation);
+
         let mut updated = Updated { pointer: false, label: false, image: false, image_options: false, message: false };
         let mut to_end = false;
         let len = self.entries.len();
 
         {
             match operation {
-                AppEvent(event_name, async) =>
-                    on_app_event(self, &mut updated, &event_name, async),
+                AppEvent(event_name) =>
+                    on_app_event(self, &mut updated, &event_name),
                 Cherenkov(ref parameter) =>
                     on_cherenkov(self, &mut updated, parameter, context),
                 Clear =>
@@ -330,14 +339,12 @@ impl App {
             }
         }
 
-        self.after_operate(&mut updated, len, to_end);
+        if self.states.spawned {
+            self.after_operate(&mut updated, len, to_end);
+        }
     }
 
     fn after_operate(&mut self, updated: &mut Updated, len: usize, to_end: bool) {
-        if !self.states.initialized {
-            return
-        }
-
         if self.entries.len() != len {
             let gui_len = self.gui.len();
             if let Some(index) = self.paginator.current_index() {
@@ -356,9 +363,9 @@ impl App {
                 self.update_message(None);
             }
             if self.paginator.at_last() {
-                self.fire_event(EventName::AtLast, false);
+                self.fire_event(EventName::AtLast);
             } else if self.paginator.at_first() {
-                self.fire_event(EventName::AtFirst, false);
+                self.fire_event(EventName::AtFirst);
             }
         }
 
@@ -450,6 +457,8 @@ impl App {
         self.draw_serial += 1;
         let op = Operation::LazyDraw(self.draw_serial, to_end);
 
+        trace!("send_lazy_draw: delay={:?}", delay);
+
         if let Some(delay) = delay {
             let tx = self.tx.clone();
             spawn(move || {
@@ -534,9 +543,10 @@ impl App {
         }
 
         if showed {
-            self.fire_event(EventName::ShowImage, false);
+            trace!("showed");
+            self.fire_event(EventName::ShowImage);
             if invalid_all {
-                self.fire_event(EventName::InvalidAll, false);
+                self.fire_event(EventName::InvalidAll);
             }
         }
 

@@ -42,12 +42,20 @@ use app::*;
 
 
 
-pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName, async: bool) {
+pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName) {
     use self::EventName::*;
+
+    let async = match *event_name {
+        Spawn => true,
+        _ => false,
+    };
+
+    trace!("on_app_event: event={}, async={}", event_name, async);
 
     match *event_name {
         ResizeWindow => on_window_resized(app, updated),
         Initialize => on_initialized(app),
+        Spawn => on_spawn(app),
         _ => ()
     }
 
@@ -60,10 +68,6 @@ pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName
 
     match *event_name {
         Quit => on_quit(),
-        ResizeWindow if !app.states.spawned => {
-            app.fire_event(EventName::Spawn, true);
-            app.states.spawned = true;
-        },
         _ => ()
     }
 }
@@ -248,10 +252,9 @@ pub fn on_go(app: &mut App, updated: &mut Updated, key: &SearchKey) {
 }
 
 pub fn on_initialized(app: &mut App) {
-    app.states.initialized = true;
-
     app.tx.send(Operation::UpdateUI).unwrap();
 
+    ui_event::register(&app.gui, app.states.skip_resize_window, &app.primary_tx.clone());
     app.gui.update_colors();
     app.gui.show();
 }
@@ -740,6 +743,11 @@ pub fn on_sort(app: &mut App, updated: &mut Updated) {
     updated.image = true;
 }
 
+pub fn on_spawn(app: &mut App) {
+    app.states.spawned = true;
+    app.operate(Operation::Draw);
+}
+
 pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f64, button: u32) {
     let (mx, my) = (left as i32, top as i32);
     for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
@@ -825,6 +833,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 PreFetchLimit => &mut app.states.pre_fetch.limit_of_items,
                 PreFetchPageSize => &mut app.states.pre_fetch.page_size,
                 Reverse => &mut app.states.reverse,
+                SkipResizeWindow => &mut app.states.skip_resize_window,
                 Scaling => &mut app.states.drawing.scaling,
                 StatusBar => &mut app.states.status_bar,
                 StatusFormat => &mut app.states.status_format,
@@ -856,7 +865,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
         };
 
         if let Err(error) = result {
-            puts_error!("at" => "update_option", "reason" => error);
+            puts_error!("at" => "update_option", "reason" => error, "for" => d!(option_name));
             return;
         }
     }

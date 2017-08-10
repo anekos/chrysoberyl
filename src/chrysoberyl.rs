@@ -58,9 +58,9 @@ fn parse_arguments() -> (app::App, Receiver<Operation>, Receiver<Operation>) {
         exit(1);
     });
 
-    let (mut app, primary_rx, rx) = app::App::new(initial);
+    let (app, primary_rx, rx) = app::App::new(initial);
 
-    app.fire_event(EventName::Initialize, true);
+    app.tx.send(EventName::Initialize.operation()).unwrap();
 
     (app, primary_rx, rx)
 }

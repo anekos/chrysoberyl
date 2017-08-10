@@ -48,5 +48,11 @@ pub fn search_path<T: AsRef<Path>>(filename: &T) -> PathBuf {
         return share;
     }
 
+    let mut cache = get_app_root(AppDataType::UserCache, &APP_INFO).unwrap();
+    cache.push(path.clone());
+    if cache.exists() {
+        return cache;
+    }
+
     path
 }

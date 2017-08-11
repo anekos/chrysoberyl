@@ -993,6 +993,7 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
     }
 
     app.update_paginator_condition();
+    app.http_cache.update_sorting_buffer_len();
 
     if before_len == 0 && 0 < app.entries.len() {
         updated.pointer |= app.paginator.reset_level()

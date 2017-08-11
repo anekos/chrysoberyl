@@ -71,12 +71,16 @@ impl HttpCache {
         if filepath.exists() {
             let result = self.sorting_buffer.push_with_reserve(
                 make_queued_operation(filepath, url, meta, force, entry_type));
-            env::set_var(env_name("dl_buffer"), s!(self.sorting_buffer.len()));
+            self.update_sorting_buffer_len();
             result
         } else {
             self.main_tx.send(Getter::Queue(url, filepath, meta, force, entry_type)).unwrap();
             vec![]
         }
+    }
+
+    pub fn update_sorting_buffer_len(&self) {
+        env::set_var(env_name("dl_buffer"), s!(self.sorting_buffer.len()));
     }
 }
 

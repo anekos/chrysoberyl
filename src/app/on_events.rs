@@ -386,7 +386,7 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) {
         let result = match entry.content {
             Image(ref path) => file_operation.execute(path),
             Archive(ref path , ref entry) => file_operation.execute_with_buffer(&entry.content.clone(), path),
-            _ => not_implemented!(),
+            _ => return puts_error!("at" => "on_operate_file", "reason" => "Not implemented", "for" => "File operation for not image or archive"),
         };
         let text = format!("{:?}", file_operation);
         match result {

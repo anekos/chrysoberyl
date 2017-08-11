@@ -306,7 +306,6 @@ impl EventName {
 
 fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
     use self::Operation::*;
-    use filer::FileOperation::{Copy, Move};
     use self::parser::*;
 
     if let Some(head) = whole.get(0) {
@@ -326,7 +325,6 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@cherenkov"                    => parse_cherenkov(whole),
             "@clear"                        => Ok(Clear),
             "@clip"                         => parse_clip(whole),
-            "@copy-file"                    => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Copy(path, if_exist))),
             "@count"                        => parse_count(whole),
             "@cycle"                        => parse_option_cycle(whole),
             "@default"                      => Ok(LoadDefault),
@@ -337,6 +335,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@enable"                       => parse_option_1(whole, OptionUpdater::Enable),
             "@entries"                      => Ok(PrintEntries),
             "@expand"                       => parse_expand(whole),
+            "@file"                         => parse_file(whole),
             "@fill"                         => parse_fill(whole),
             "@filter"                       => parse_filter(whole),
             "@first" | "@f"                 => parse_move(whole, First),
@@ -348,7 +347,6 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@load"                         => parse_load(whole),
             "@map"                          => parse_map(whole, true),
             "@move-again"                   => parse_move(whole, MoveAgain),
-            "@move-file"                    => parse_copy_or_move(whole).map(|(path, if_exist)| OperateFile(Move(path, if_exist))),
             "@multi"                        => parse_multi(whole),
             "@next" | "@n"                  => parse_move(whole, Next),
             "@page"                         => parse_page(whole),

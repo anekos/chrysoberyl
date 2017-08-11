@@ -10,7 +10,6 @@ use cherenkov::Filler;
 use color::Color;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta, EntryType};
 use expandable::Expandable;
-use filer;
 use mapping::{Input, InputType};
 use shellexpand_wrapper as sh;
 use utils::join;
@@ -80,21 +79,35 @@ pub fn parse_cherenkov(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_copy_or_move(args: &[String]) -> Result<(PathBuf, filer::IfExist), String> {
-    let mut destination = "".to_owned();
-    let mut if_exist = filer::IfExist::NewFileName;
+pub fn parse_file(args: &[String]) -> Result<Operation, String> {
+    use filer::{IfExist, FileOperation};
 
-    {
-        let mut ap = ArgumentParser::new();
-        ap.refer(&mut if_exist)
-            .add_option(&["--fail", "-f"], StoreConst(filer::IfExist::Fail), "Fail if file exists")
-            .add_option(&["--overwrite", "-o"], StoreConst(filer::IfExist::Overwrite), "Overwrite the file if file exists")
-            .add_option(&["--new", "--new-file-name", "-n"], StoreConst(filer::IfExist::NewFileName), "Generate new file name if file exists (default)");
-        ap.refer(&mut destination).add_argument("destination", Store, "Destination directory").required();
-        parse_args(&mut ap, args)
-    } .map(|_| {
-        (o!(sh::expand_to_pathbuf(&destination)), if_exist)
-    })
+    fn parse<T>(args: &[String], op: T) -> Result<Operation, String> where T: FnOnce(PathBuf, IfExist) -> FileOperation {
+        let mut destination = "".to_owned();
+        let mut if_exist = IfExist::NewFileName;
+
+        {
+            let mut ap = ArgumentParser::new();
+            ap.refer(&mut if_exist)
+                .add_option(&["--fail", "-f"], StoreConst(IfExist::Fail), "Fail if file exists")
+                .add_option(&["--overwrite", "-o"], StoreConst(IfExist::Overwrite), "Overwrite the file if file exists")
+                .add_option(&["--new", "--new-file-name", "-n"], StoreConst(IfExist::NewFileName), "Generate new file name if file exists (default)");
+            ap.refer(&mut destination).add_argument("destination", Store, "Destination directory").required();
+            parse_args(&mut ap, args)
+        } .map(|_| {
+            Operation::OperateFile(
+                op(sh::expand_to_pathbuf(&destination), if_exist))
+        })
+    }
+
+    if_let_some!(op = args.get(1), Err(o!("Not enough arguments")));
+    let args = &args[1..];
+    let op = match &**op {
+        "copy" => FileOperation::Copy,
+        "move" => FileOperation::Move,
+        _ => return Err(format!("Invalid file operation: {}", op))
+    };
+    parse(args, op)
 }
 
 pub fn parse_clip(args: &[String]) -> Result<Operation, String> {
@@ -421,6 +434,7 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, String> {
             }
         })
     }
+
     if let Some(target) = args.get(1) {
         let args = &args[1..];
         match &**target {

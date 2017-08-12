@@ -10,12 +10,13 @@ use cmdline_parser::Parser;
 use archive::ArchiveEntry;
 use cherenkov::Filler;
 use color::Color;
+use command_line;
+use entry::filter::expression::Expr as FilterExpr;
 use entry::{Meta, EntryType};
 use entry;
 use events::EventName;
 use expandable::Expandable;
 use filer;
-use entry::filter::expression::Expr as FilterExpr;
 use gui::Direction;
 use mapping;
 use poppler;
@@ -45,6 +46,7 @@ pub enum Operation {
     Fragile(Expandable),
     Go(entry::SearchKey),
     Input(mapping::Input),
+    InitialProcess(Vec<command_line::Entry>, bool), /* command_lin::entries, shuffle */
     KillTimer(String),
     Last(Option<usize>, bool, MoveBy, bool),
     LazyDraw(u64, bool), /* serial, to_end */
@@ -414,6 +416,7 @@ impl fmt::Debug for Operation {
             Filter(_, _) => "Filter",
             Fragile(_) => "Fragile",
             Go(_) => "Go",
+            InitialProcess(_, _) => "InitialProcess",
             Input(_) => "Input",
             KillTimer(_) => "KillTimer",
             Last(_, _, _, _) => "Last",

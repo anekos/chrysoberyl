@@ -9,7 +9,6 @@ use gtk;
 
 use app;
 use command_line;
-use events::EventName;
 use operation::Operation;
 
 
@@ -59,8 +58,6 @@ fn parse_arguments() -> (app::App, Receiver<Operation>, Receiver<Operation>) {
     });
 
     let (app, primary_rx, rx) = app::App::new(initial);
-
-    app.tx.send(EventName::Initialize.operation()).unwrap();
 
     (app, primary_rx, rx)
 }

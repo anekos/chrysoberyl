@@ -16,6 +16,7 @@ use app_path;
 use archive;
 use cherenkov::Filler;
 use color::Color;
+use command_line;
 use config::DEFAULT_CONFIG;
 use constant::VARIABLE_PREFIX;
 use editor;
@@ -127,6 +128,57 @@ pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region, context: Opt
     app.states.drawing.clipping = Some(current + inner);
     updated.image_options = true;
 }
+
+
+pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuffle: bool) {
+    use command_line::{Entry as CLE};
+
+    app.reset_view();
+
+    app.update_label_visibility();
+
+    let mut first_path = None;
+
+    {
+        let mut updated = Updated::default();
+        for entry in entries {
+            match entry {
+                CLE::Path(file) => {
+                    if first_path.is_none() {
+                        first_path = Some(file.clone());
+                    }
+                    on_events::on_push(app, &mut updated, file.clone(), None, false);
+                }
+                CLE::Input(file) => {
+                    controller::register_file(app.tx.clone(), file);
+                },
+                CLE::Expand(file, recursive) => {
+                    on_events::on_push(app, &mut updated, file.clone(), None, false);
+                    app.tx.send(Operation::Expand(recursive, Some(Path::new(&file).to_path_buf()))).unwrap();
+                },
+                CLE::Operation(op) => {
+                    match Operation::parse_from_vec(&op) {
+                        Ok(op) => app.tx.send(op).unwrap(),
+                        Err(err) => puts_error!("at" => "operation", "reason" => o!(err), "for" => join(&op, ' ')),
+                    }
+                }
+            }
+        }
+    }
+
+    controller::register_stdin(app.tx.clone());
+
+    if shuffle {
+        let fix = first_path.map(|it| Path::new(&it).is_file()).unwrap_or(false);
+        app.tx.send(Operation::Shuffle(fix)).unwrap();
+    }
+
+    app.initialize_envs_for_options();
+    app.update_paginator_condition();
+
+    app.tx.send(EventName::Initialize.operation()).unwrap();
+}
+
 
 pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Expandable], sessions: &[Session]) {
     let tx = app.tx.clone();

@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::env;
 use std::ops::Range;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::{sleep, spawn};
 use std::time::Duration;
@@ -13,7 +13,7 @@ use gtk::prelude::*;
 use libc;
 use rand::{self, ThreadRng};
 
-use command_line::{Initial, Entry as CLEntry};
+use command_line::Initial;
 use config;
 use constant;
 use controller;
@@ -104,14 +104,14 @@ impl App {
 
         let sorting_buffer = SortingBuffer::new();
 
-        let mut app = App {
+        let app = App {
             entries: EntryContainer::new(),
             gui: Gui::new(),
             tx: tx.clone(),
             primary_tx: primary_tx,
             http_cache: HttpCache::new(initial.http_threads, tx.clone(), sorting_buffer.clone()),
             states: states,
-            encodings: initial.encodings,
+            encodings: initial.encodings.clone(),
             mapping: Mapping::new(),
             draw_serial: 0,
             pre_fetch_serial: 0,
@@ -130,49 +130,7 @@ impl App {
         };
 
         script::load(&app.tx, &config::get_config_source());
-
-        app.reset_view();
-
-        app.update_label_visibility();
-
-        let mut first_path = None;
-
-        {
-            let mut updated = Updated::default();
-            for file in initial.entries {
-                match file {
-                    CLEntry::Path(file) => {
-                        if first_path.is_none() {
-                            first_path = Some(file.clone());
-                        }
-                        on_events::on_push(&mut app, &mut updated, file.clone(), None, false);
-                    }
-                    CLEntry::Input(file) => {
-                        controller::register_file(tx.clone(), file);
-                    },
-                    CLEntry::Expand(file, recursive) => {
-                        on_events::on_push(&mut app, &mut updated, file.clone(), None, false);
-                        tx.send(Operation::Expand(recursive, Some(Path::new(&file).to_path_buf()))).unwrap();
-                    },
-                    CLEntry::Operation(op) => {
-                        match Operation::parse_from_vec(&op) {
-                            Ok(op) => app.operate(op),
-                            Err(err) => puts_error!("at" => "operation", "reason" => o!(err), "for" => join(&op, ' ')),
-                        }
-                    }
-                }
-            }
-        }
-
-        controller::register_stdin(tx.clone());
-
-        if initial.shuffle {
-            let fix = first_path.map(|it| Path::new(&it).is_file()).unwrap_or(false);
-            tx.send(Operation::Shuffle(fix)).unwrap();
-        }
-
-        app.initialize_envs_for_options();
-        app.update_paginator_condition();
+        app.tx.send(Operation::InitialProcess(initial.entries, initial.shuffle)).unwrap();
 
         (app, primary_rx, rx)
     }
@@ -236,6 +194,8 @@ impl App {
                     on_fragile(self, path),
                 Go(ref key) =>
                     on_go(self, &mut updated, key),
+                InitialProcess(entries, shuffle) =>
+                    on_initial_process(self, entries, shuffle),
                 Input(ref input) =>
                     on_input(self, input),
                 KillTimer(ref name) =>

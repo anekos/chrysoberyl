@@ -51,13 +51,13 @@ impl fmt::Display for EventName {
             match *self {
                 AtFirst => "at-first",
                 AtLast => "at-last",
-                Spawn => "spawn",
                 DownloadAll => "download-all",
                 Initialize => "initialize",
                 InvalidAll => "invalid-all",
                 Quit => "quit",
                 ResizeWindow => "resize-window",
                 ShowImage => "show-image",
+                Spawn => "spawn",
                 Void => "void",
                 User(ref name) => name,
             }

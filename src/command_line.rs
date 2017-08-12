@@ -9,6 +9,7 @@ use app_path;
 
 
 
+#[derive(Clone)]
 pub struct Initial {
     pub http_threads: u8,
     pub shuffle: bool,
@@ -17,7 +18,7 @@ pub struct Initial {
     pub silent: bool,
 }
 
-
+#[derive(Clone)]
 pub enum Entry {
     Operation(Vec<String>),
     Path(String),

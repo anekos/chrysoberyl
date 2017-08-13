@@ -38,7 +38,7 @@ impl FromStr for Expr {
  * Cond ← 'if' Expr Expr Expr | 'when' Expr Expr | 'unless' Expr Expr
  * BoolOp ← 'and' | 'or'
  * Compare ← Value CmpOp Value
- * CmpOp ← '<' | '<=' | '>' | '>=' | '=' | '==' | '!=' | '=~'
+ * CmpOp ← '<' | '<=' | '>' | '>=' | '=' | '==' | '!=' | '=*' | '!*'
  * Value ← Glob | Integer | Variable
  * Variable ← 'type' | 'width' | 'height' | 'path' | 'ext' | 'extension' | 'dimensions' | 'name' | 'filesize'
  * Glob ← '<' string '>'
@@ -103,9 +103,9 @@ fn comp_op() -> Parser<u8, ECompOp> {
 
     let eq = sym(b'=') * {
         let eq2 = sym(b'=').map(|_| i(EICompOp::Eq));
-        let eq1 = empty().map(|_| i(EICompOp::Eq));
         let glob = sym(b'*').map(|_| ECompOp::GlobMatch(false));
-        eq2 | eq1 | glob
+        let eq1 = empty().map(|_| i(EICompOp::Eq));
+        eq2 | glob | eq1
     };
 
     let lt = sym(b'<') * {
@@ -260,6 +260,9 @@ fn test_parser() {
     assert_parse2("dim == 12345", "dimensions == 12345");
     assert_parse("extension == <hoge>");
     assert_parse2("ext == <hoge>", "extension == <hoge>");
+
+    assert_parse("path =* <hoge>");
+    assert_parse("path !* <hoge>");
 
     assert_parse("width < 2K");
     assert_parse("width < 2Ki");

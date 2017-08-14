@@ -81,10 +81,12 @@ pub fn parse_cherenkov(args: &[String]) -> Result<Operation, String> {
 
 pub fn parse_file(args: &[String]) -> Result<Operation, String> {
     use filer::{IfExist, FileOperation};
+    use size::Size;
 
-    fn parse<T>(args: &[String], op: T) -> Result<Operation, String> where T: FnOnce(PathBuf, IfExist) -> FileOperation {
+    fn parse<T>(args: &[String], op: T) -> Result<Operation, String> where T: FnOnce(PathBuf, IfExist, Option<Size>) -> FileOperation {
         let mut destination = "".to_owned();
         let mut if_exist = IfExist::NewFileName;
+        let mut size = None;
 
         {
             let mut ap = ArgumentParser::new();
@@ -92,19 +94,21 @@ pub fn parse_file(args: &[String]) -> Result<Operation, String> {
                 .add_option(&["--fail", "-f"], StoreConst(IfExist::Fail), "Fail if file exists")
                 .add_option(&["--overwrite", "-o"], StoreConst(IfExist::Overwrite), "Overwrite the file if file exists")
                 .add_option(&["--new", "--new-file-name", "-n"], StoreConst(IfExist::NewFileName), "Generate new file name if file exists (default)");
+            ap.refer(&mut size)
+                .add_option(&["--size", "-s"], StoreOption, "Fit to this size (only for PDF)");
             ap.refer(&mut destination).add_argument("destination", Store, "Destination directory").required();
             parse_args(&mut ap, args)
         } .map(|_| {
             Operation::OperateFile(
-                op(sh::expand_to_pathbuf(&destination), if_exist))
+                op(sh::expand_to_pathbuf(&destination), if_exist, size))
         })
     }
 
     if_let_some!(op = args.get(1), Err(o!("Not enough arguments")));
     let args = &args[1..];
     let op = match &**op {
-        "copy" => FileOperation::Copy,
-        "move" => FileOperation::Move,
+        "copy" => FileOperation::new_copy,
+        "move" => FileOperation::new_move,
         _ => return Err(format!("Invalid file operation: {}", op))
     };
     parse(args, op)

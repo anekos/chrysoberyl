@@ -444,7 +444,7 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) {
             },
             Pdf(ref path, index) => {
                 let name = entry.page_filename();
-                let png = PopplerDocument::new_from_file(&**path).nth_page(index).get_png_data();
+                let png = PopplerDocument::new_from_file(&**path).nth_page(index).get_png_data(&file_operation.size);
                 file_operation.execute_with_buffer(png.as_ref(), &name)
             },
         };

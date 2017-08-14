@@ -5,6 +5,7 @@ use std::str::FromStr;
 
 use gdk_pixbuf::Pixbuf;
 
+use resolution;
 use state::DrawingState;
 use utils::feq;
 
@@ -144,7 +145,7 @@ impl Size {
         (scale, self.scaled(scale))
     }
 
-    fn fit_to_fixed(&self, w: i32, h: i32) -> (f64, Size) {
+    pub fn fit_to_fixed(&self, w: i32, h: i32) -> (f64, Size) {
         let mut scale = w as f64 / self.width as f64;
         let result_height = (self.height as f64 * scale) as i32;
         if result_height > h {
@@ -248,5 +249,23 @@ impl fmt::Display for Region {
 impl FitTo {
     pub fn is_scrollable(&self) -> bool {
         *self != FitTo::Cell
+    }
+}
+
+impl FromStr for Size {
+    type Err = String;
+
+    fn from_str(src: &str) -> Result<Self, String> {
+        let size: Vec<&str> = src.split_terminator('x').collect();
+        if size.len() == 2 {
+            if let (Ok(w), Ok(h)) = (size[0].parse(), size[1].parse()) {
+                return Ok(Size::new(w, h));
+            }
+        }
+        if let Ok((w, h)) = resolution::from(src.as_bytes().to_vec()) {
+            return Ok(Size::new(w as i32, h as i32));
+        }
+
+        return Err(format!("Invalid size format: {}", src))
     }
 }

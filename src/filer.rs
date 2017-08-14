@@ -4,6 +4,7 @@ use std::fs::{self, File, create_dir_all};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+use size::Size;
 use utils::{s, mangle};
 
 
@@ -16,25 +17,45 @@ pub enum IfExist {
 
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum FileOperation {
-    Copy(PathBuf, IfExist),
-    Move(PathBuf, IfExist),
+pub struct FileOperation {
+    action: FileOperationAction,
+    destination_directory: PathBuf,
+    if_exist: IfExist,
+    pub size: Option<Size>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum FileOperationAction {
+    Copy,
+    Move,
 }
 
 
 
 impl FileOperation {
-    pub fn execute(&self, source: &PathBuf) -> Result<(), String> {
-        use self::FileOperation::*;
+    pub fn new_move(destination_directory: PathBuf, if_exist: IfExist, size: Option<Size>) -> FileOperation {
+        FileOperation::new(FileOperationAction::Move, destination_directory, if_exist, size)
+    }
 
-        match *self {
-            Copy(ref destination, ref if_exist) => {
-                destination_path(source, destination, if_exist).and_then(|dest| {
+    pub fn new_copy(destination_directory: PathBuf, if_exist: IfExist, size: Option<Size>) -> FileOperation {
+        FileOperation::new(FileOperationAction::Copy, destination_directory, if_exist, size)
+    }
+
+    fn new(action: FileOperationAction, destination_directory: PathBuf, if_exist: IfExist, size: Option<Size>) -> FileOperation {
+        FileOperation { action: action, destination_directory: destination_directory, if_exist: if_exist, size: size }
+    }
+
+    pub fn execute(&self, source: &PathBuf) -> Result<(), String> {
+        use self::FileOperationAction::*;
+
+        match self.action {
+            Copy => {
+                destination_path(source, &self.destination_directory, &self.if_exist).and_then(|dest| {
                     fs::copy(source, dest).map_err(|it| s(&it)).map(mangle)
                 })
             }
-            Move(ref destination, ref if_exist) => {
-                destination_path(source, destination, if_exist).and_then(|dest| {
+            Move => {
+                destination_path(source, &self.destination_directory, &self.if_exist).and_then(|dest| {
                     fs::rename(source, dest).map_err(|it| s(&it)).map(mangle)
                 })
             }
@@ -42,26 +63,20 @@ impl FileOperation {
     }
 
     pub fn execute_with_buffer(&self, source: &[u8], source_name: &PathBuf) -> Result<(), String> {
-        use self::FileOperation::*;
-
-        match *self {
-            Copy(ref destination, ref if_exist) | Move(ref destination, ref if_exist) => {
-                destination_path(source_name, destination, if_exist).and_then(|dest| {
-                    File::create(dest).map_err(|it| s(&it)).and_then(|mut file| {
-                        file.write_all(source).map_err(|it| s(&it))
-                    })
-                })
-            }
-        }
+        destination_path(source_name, &self.destination_directory, &self.if_exist).and_then(|dest| {
+            File::create(dest).map_err(|it| s(&it)).and_then(|mut file| {
+                file.write_all(source).map_err(|it| s(&it))
+            })
+        })
     }
 }
 
 
-fn destination_path(source: &PathBuf, destination: &PathBuf, if_exist: &IfExist) -> Result<PathBuf, String> {
+fn destination_path(source: &PathBuf, destination_directory: &PathBuf, if_exist: &IfExist) -> Result<PathBuf, String> {
     use self::IfExist::*;
 
     let file_name = source.file_name().unwrap();
-    let mut path = destination.clone();
+    let mut path = destination_directory.clone();
 
     if !path.exists() {
         if let Err(error) = create_dir_all(&path) {
@@ -80,7 +95,7 @@ fn destination_path(source: &PathBuf, destination: &PathBuf, if_exist: &IfExist)
             let ext = Path::new(file_name).extension().map(os);
             while path.exists() {
                 suffix += 1;
-                path = destination.clone();
+                path = destination_directory.clone();
                 path.push({
                     if let Some(ext) = ext {
                         format!("{}_{}.{}", stem, suffix, ext)

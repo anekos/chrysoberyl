@@ -518,7 +518,7 @@ pub fn on_pull(app: &mut App, updated: &mut Updated) {
 }
 
 pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<Meta>, force: bool) {
-    if path.starts_with("http://") || path.starts_with("https://") {
+    if is_url(&path) {
         app.tx.send(Operation::PushURL(path, meta, force, None)).unwrap();
         return;
     }
@@ -1074,4 +1074,9 @@ fn extract_region_from_context(context: Option<OperationContext>) -> Option<(Reg
 fn set_count_env(app: &mut App) {
     let count = app.counter.pop();
     env::set_var(format!("{}COUNT", VARIABLE_PREFIX), s!(count));
+}
+
+fn is_url(path: &str) -> bool {
+    if_let_some!(index = path.find("://"), false);
+    index < 10
 }

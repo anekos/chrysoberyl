@@ -483,6 +483,26 @@ impl Entry {
             shorten_path(&Path::new(&self.key.1), max)
         }
     }
+
+    pub fn page_filename(&self) -> PathBuf {
+        use self::EntryContent::*;
+
+        fn gen<T: AsRef<Path>>(filename: &T, index: usize, fixed_ext: Option<&str>) -> String {
+            let stem = filename.as_ref().file_stem().and_then(|it| it.to_str()).unwrap();
+            let ext = fixed_ext.unwrap_or_else(|| filename.as_ref().extension().and_then(|it| it.to_str()).unwrap());
+            format!("{}.{:04}.{}", stem, index + 1, ext)
+        }
+
+        let ref result = match self.content {
+            Archive(_, ArchiveEntry { index, ref name, ..}) =>
+                gen(&Path::new(name), index, None),
+            Pdf(ref path, index) =>
+                gen(&**path, index, Some("png")),
+            _ => self.display_path(),
+        };
+
+        Path::new(result).to_path_buf()
+    }
 }
 
 

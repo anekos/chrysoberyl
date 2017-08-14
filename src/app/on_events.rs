@@ -433,12 +433,20 @@ pub fn on_next(app: &mut App, updated: &mut Updated, count: Option<usize>, ignor
 
 pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) {
     use entry::EntryContent::*;
+    use archive::ArchiveEntry;
 
     if let Some((entry, _)) = app.current() {
         let result = match entry.content {
             Image(ref path) => file_operation.execute(path),
-            Archive(ref path , ref entry) => file_operation.execute_with_buffer(&entry.content.clone(), path),
-            _ => return puts_error!("at" => "on_operate_file", "reason" => "Not implemented", "for" => "File operation for not image or archive"),
+            Archive(_ , ArchiveEntry { ref content, .. }) => {
+                let name = entry.page_filename();
+                file_operation.execute_with_buffer(content, &name)
+            },
+            Pdf(ref path, index) => {
+                let name = entry.page_filename();
+                let png = PopplerDocument::new_from_file(&**path).nth_page(index).get_png_data();
+                file_operation.execute_with_buffer(png.as_ref(), &name)
+            },
         };
         let text = format!("{:?}", file_operation);
         match result {

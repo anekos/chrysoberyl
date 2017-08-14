@@ -101,6 +101,16 @@ impl PopplerPage {
         }
     }
 
+    pub fn get_png_data(&self) -> Vec<u8> {
+        let size = self.get_size();
+        let surface = ImageSurface::create(Format::ARgb32, size.width, size.height);
+        let context = Context::new(&surface);
+        self.render(&context);
+        let mut result = vec![];
+        surface.write_to_png(&mut result).expect("get_png_data");
+        result
+    }
+
     pub fn get_size(&self) -> Size {
         let (mut width, mut height): (c_double, c_double) = (0.0, 0.0);
         unsafe { sys::poppler_page_get_size(self.0, &mut width, &mut height) };

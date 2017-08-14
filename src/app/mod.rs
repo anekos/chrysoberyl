@@ -21,7 +21,7 @@ use counter::Counter;
 use entry::{Entry, EntryContainer, EntryContent, Serial};
 use events::EventName;
 use gui::Gui;
-use http_cache::HttpCache;
+use remote_cache::RemoteCache;
 use image_cache::ImageCache;
 use image_fetcher::ImageFetcher;
 use logger;
@@ -46,7 +46,7 @@ mod on_events;
 
 
 pub struct App {
-    http_cache: HttpCache,
+    remote_cache: RemoteCache,
     encodings: Vec<EncodingRef>,
     draw_serial: u64,
     pre_fetch_serial: u64,
@@ -109,7 +109,7 @@ impl App {
             gui: Gui::new(),
             tx: tx.clone(),
             primary_tx: primary_tx,
-            http_cache: HttpCache::new(initial.http_threads, tx.clone(), sorting_buffer.clone()),
+            remote_cache: RemoteCache::new(initial.curl_threads, tx.clone(), sorting_buffer.clone()),
             states: states,
             encodings: initial.encodings.clone(),
             mapping: Mapping::new(),

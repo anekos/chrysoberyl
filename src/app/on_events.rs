@@ -611,7 +611,7 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
 }
 
 pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) {
-    let buffered = app.http_cache.fetch(url, meta, force, entry_type);
+    let buffered = app.remote_cache.fetch(url, meta, force, entry_type);
     push_buffered(app, updated, buffered);
 }
 
@@ -1053,7 +1053,7 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
     }
 
     app.update_paginator_condition();
-    app.http_cache.update_sorting_buffer_len();
+    app.remote_cache.update_sorting_buffer_len();
 
     if before_len == 0 && 0 < app.entries.len() {
         updated.pointer |= app.paginator.reset_level()

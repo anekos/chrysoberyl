@@ -11,7 +11,7 @@ use app_path;
 
 #[derive(Clone)]
 pub struct Initial {
-    pub http_threads: u8,
+    pub curl_threads: u8,
     pub shuffle: bool,
     pub encodings: Vec<EncodingRef>,
     pub entries: Vec<Entry>,
@@ -29,7 +29,7 @@ pub enum Entry {
 impl Default for Initial {
     fn default() -> Self {
         Initial {
-            http_threads: 3,
+            curl_threads: 3,
             shuffle: false,
             encodings: vec![],
             entries: vec![],
@@ -101,9 +101,9 @@ fn parse_option(arg: &str, args: &mut Args, init: &mut Initial) -> Result<bool, 
         } else {
             return not_enough();
         },
-        "--max-http-threads" | "-t" => if let Some(value) = args.next() {
+        "--max-curl-threads" | "-t" => if let Some(value) = args.next() {
             match value.parse() {
-                Ok(value) => init.http_threads = value,
+                Ok(value) => init.curl_threads = value,
                 Err(err) => return Err(s!(err)),
             }
         } else {

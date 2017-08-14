@@ -26,7 +26,7 @@ use sorting_buffer::SortingBuffer;
 type TID = usize;
 
 #[derive(Clone)]
-pub struct HttpCache {
+pub struct RemoteCache {
     app_tx: Sender<Operation>,
     main_tx: Sender<Getter>,
     sorting_buffer: SortingBuffer<QueuedOperation>,
@@ -59,10 +59,10 @@ enum SP {
 }
 
 
-impl HttpCache {
-    pub fn new(max_threads: u8, app_tx: Sender<Operation>, sorting_buffer: SortingBuffer<QueuedOperation>) -> HttpCache {
+impl RemoteCache {
+    pub fn new(max_threads: u8, app_tx: Sender<Operation>, sorting_buffer: SortingBuffer<QueuedOperation>) -> Self {
         let main_tx = main(max_threads, app_tx.clone(), sorting_buffer.clone());
-        HttpCache { app_tx: app_tx, main_tx: main_tx, sorting_buffer: sorting_buffer  }
+        RemoteCache { app_tx: app_tx, main_tx: main_tx, sorting_buffer: sorting_buffer  }
     }
 
     pub fn fetch(&mut self, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) -> Vec<QueuedOperation> {
@@ -80,7 +80,7 @@ impl HttpCache {
     }
 
     pub fn update_sorting_buffer_len(&self) {
-        env::set_var(env_name("dl_buffer"), s!(self.sorting_buffer.len()));
+        env::set_var(env_name("remote_buffer"), s!(self.sorting_buffer.len()));
     }
 }
 
@@ -153,7 +153,7 @@ fn processor(thread_id: usize, main_tx: Sender<Getter>) -> Sender<Request> {
         while let Ok(request) = getter_rx.recv() {
             let request: Request = request;
 
-            puts!("event" => "http/get", "thread_id" => s!(thread_id), "url" => o!(&request.url));
+            puts!("event" => "remote/get", "thread_id" => s!(thread_id), "url" => o!(&request.url));
 
             let mut buf = vec![];
             match curl_get(&mut curl, &request.url, &mut buf) {
@@ -184,7 +184,7 @@ fn curl_get(curl: &mut EasyCurl, url: &str, buf: &mut Vec<u8>) -> Result<(), cur
 }
 
 fn generate_temporary_filename(url: &str) -> PathBuf {
-    let mut result = app_path::cache_dir("http");
+    let mut result = app_path::cache_dir("remote");
     let url = Url::parse(url).unwrap();
     let path = url.path();
     if path.len() <= 1 { // e.g.  "http://example.com" "http://example.com/"
@@ -234,14 +234,14 @@ fn log_status(sp: SP, queues: usize, buffers: usize, waitings: usize, threads: u
     match sp {
         Initial => (),
         Queue(ref url) =>
-            puts_event!("http/queue", "url" => url, "queue" => q, "buffer" => b, "waiting" => w),
+            puts_event!("remote/queue", "url" => url, "queue" => q, "buffer" => b, "waiting" => w),
         Complete(ref thread_id) =>
-            puts_event!("http/complete", "thread_id" => s!(thread_id), "queue" => q, "buffer" => b, "waiting" => w),
+            puts_event!("remote/complete", "thread_id" => s!(thread_id), "queue" => q, "buffer" => b, "waiting" => w),
         Fail(ref thread_id, ref error, ref url) =>
-            puts_event!("http/fail", "thread_id" => s!(thread_id), "reason" => error, "url" => url, "queue" => q, "buffer" => b, "waiting" => w),
+            puts_event!("remote/fail", "thread_id" => s!(thread_id), "reason" => error, "url" => url, "queue" => q, "buffer" => b, "waiting" => w),
     }
-    env::set_var(env_name("dl_queue"), q);
-    env::set_var(env_name("dl_buffer"), b);
-    env::set_var(env_name("dl_waiting"), w);
-    env::set_var(env_name("dl_thread"), t);
+    env::set_var(env_name("remote_queue"), q);
+    env::set_var(env_name("remote_buffer"), b);
+    env::set_var(env_name("remote_waiting"), w);
+    env::set_var(env_name("remote_thread"), t);
 }

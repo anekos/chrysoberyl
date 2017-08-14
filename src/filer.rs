@@ -1,6 +1,6 @@
 
 use std::ffi::OsStr;
-use std::fs::{self, File};
+use std::fs::{self, File, create_dir_all};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
@@ -62,6 +62,12 @@ fn destination_path(source: &PathBuf, destination: &PathBuf, if_exist: &IfExist)
 
     let file_name = source.file_name().unwrap();
     let mut path = destination.clone();
+
+    if !path.exists() {
+        if let Err(error) = create_dir_all(&path) {
+            return Err(s!(error));
+        }
+    }
 
     path.push(file_name);
 

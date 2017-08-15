@@ -43,6 +43,7 @@ shellexpand = "*"
 tldextract = "*"
 url = "*"
 
+# https://github.com/gtk-rs/gtk/blob/master/Cargo.toml
 [dependencies.gtk]
 version = "0.1"
 features = ["v3_22"]

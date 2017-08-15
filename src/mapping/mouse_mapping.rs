@@ -23,7 +23,7 @@ impl MouseMapping {
     pub fn register(&mut self, button: u32, region: Option<Region>, operation: Vec<String>) {
         let entry = WithRegion { operation: operation.to_vec(), region: region };
         if region.is_some() {
-            if let Some(mut entries) = self.table.get_mut(&button) {
+            if let Some(entries) = self.table.get_mut(&button) {
                 entries.retain(|it| it.region != region);
                 entries.push(entry);
                 return;

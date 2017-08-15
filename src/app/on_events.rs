@@ -68,9 +68,8 @@ pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName
         app.operate(op);
     }
 
-    match *event_name {
-        Quit => on_quit(),
-        _ => ()
+    if *event_name == Quit {
+        on_quit();
     }
 }
 

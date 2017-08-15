@@ -266,6 +266,6 @@ impl FromStr for Size {
             return Ok(Size::new(w as i32, h as i32));
         }
 
-        return Err(format!("Invalid size format: {}", src))
+        Err(format!("Invalid size format: {}", src))
     }
 }

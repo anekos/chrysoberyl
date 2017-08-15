@@ -110,7 +110,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
             waiting.push(thread_id);
         }
 
-        log_status(SP::Initial, queued.len(), buffer.len(), waiting.len(), threads.len());
+        log_status(&SP::Initial, queued.len(), buffer.len(), waiting.len(), threads.len());
 
         while let Ok(it) = main_rx.recv() {
             match it {
@@ -123,7 +123,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                         threads[worker].send(request).unwrap();
                     } else {
                         queued.push_back(request);
-                        log_status(SP::Queue(url), queued.len(), buffer.len(), waiting.len(), threads.len());
+                        log_status(&SP::Queue(url), queued.len(), buffer.len(), waiting.len(), threads.len());
                     }
                 }
                 Done(thread_id, request) => {
@@ -132,13 +132,13 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                         make_queued_operation(request.cache_filepath, request.url, request.meta, request.force, request.entry_type));
                     app_tx.send(Operation::Pull).unwrap();
                     try_next(&app_tx, thread_id, queued.pop_front(), &mut threads, &mut waiting);
-                    log_status(SP::Complete(thread_id), queued.len(), buffer.len(), waiting.len(), threads.len());
+                    log_status(&SP::Complete(thread_id), queued.len(), buffer.len(), waiting.len(), threads.len());
                 }
                 Fail(thread_id, err, request) => {
                     buffer.skip(request.ticket);
                     app_tx.send(Operation::Pull).unwrap();
                     try_next(&app_tx, thread_id, queued.pop_front(), &mut threads, &mut waiting);
-                    log_status(SP::Fail(thread_id, err, request.url), queued.len(), buffer.len(), waiting.len(), threads.len());
+                    log_status(&SP::Fail(thread_id, err, request.url), queued.len(), buffer.len(), waiting.len(), threads.len());
                 }
                 UpdateCurlOptions(new_options) => {
                     println!("new_options: {:?}", new_options);
@@ -233,11 +233,11 @@ fn try_next(app_tx: &Sender<Operation>, thread_id: TID, next: Option<Request>, t
     }
 }
 
-fn log_status(sp: SP, queues: usize, buffers: usize, waitings: usize, threads: usize) {
+fn log_status(sp: &SP, queues: usize, buffers: usize, waitings: usize, threads: usize) {
     use self::SP::*;
 
     let (q, b, w, t) = (s!(queues), s!(buffers), s!(waitings), s!((threads - waitings)));
-    match sp {
+    match *sp {
         Initial => (),
         Queue(ref url) =>
             puts_event!("remote/queue", "url" => url, "queue" => q, "buffer" => b, "waiting" => w),

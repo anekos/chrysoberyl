@@ -35,7 +35,7 @@ pub fn shorten_url(url: Url, max: usize) -> String {
     let path_max = max.checked_sub(host.len()).unwrap_or(0);
     let path = shorten_path(&path, path_max);
 
-    if path.starts_with("/") {
+    if path.starts_with('/') {
         format!("{}{}", host, path)
     } else {
         format!("{}/{}", host, path)

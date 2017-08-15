@@ -66,7 +66,7 @@ pub fn get_animation_buffer(entry: &Entry) -> Result<AnimationBuffer, Error> {
             AnimationBuffer::new_from_file(path),
         Archive(_, ref entry) =>
             Ok(AnimationBuffer::new_from_slice(&*entry.content)),
-        _ => Err(s!("Not implemented: get_animation_buffer")),
+        _ => Err(o!("Not implemented: get_animation_buffer")),
     }
 }
 

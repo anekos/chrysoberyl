@@ -88,13 +88,11 @@ fn on_configure(mut sender: LazySender, tx: &Sender<Operation>, ev: &EventConfig
     if 0 < c.skip {
         c.skip -= 1;
         trace!("on_configure/skip: remain={:?}", c.skip);
+    } else if c.spawned {
+        sender.request(EventName::ResizeWindow.operation());
     } else {
-        if c.spawned {
-            sender.request(EventName::ResizeWindow.operation());
-        } else {
-            tx.send(EventName::Spawn.operation()).unwrap();
-            c.spawned = true;
-        }
+        tx.send(EventName::Spawn.operation()).unwrap();
+        c.spawned = true;
     }
     c.width = w;
     c.height = h;

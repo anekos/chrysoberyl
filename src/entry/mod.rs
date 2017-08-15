@@ -493,7 +493,7 @@ impl Entry {
             format!("{}.{:04}.{}", stem, index + 1, ext)
         }
 
-        let ref result = match self.content {
+        let result = &match self.content {
             Archive(_, ArchiveEntry { index, ref name, ..}) =>
                 gen(&Path::new(name), index, None),
             Pdf(ref path, index) =>

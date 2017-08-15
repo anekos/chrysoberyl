@@ -268,7 +268,7 @@ pub fn parse_go(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut key.index).add_argument("page", StoreOption, "Page");
         parse_args(&mut ap, args)
     } .and_then(|_| {
-        if let Some(mut index) = key.index.as_mut() {
+        if let Some(index) = key.index.as_mut() {
             if *index == 0 {
                 return Err(o!("Page is 1 origin"))
             }

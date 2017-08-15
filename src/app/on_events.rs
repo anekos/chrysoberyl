@@ -29,7 +29,8 @@ use filer;
 use fragile_input::new_fragile_input;
 use gui::Direction;
 use logger;
-use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, OptionName, OptionUpdater};
+use operation::{self, Operation, OperationContext, MappingTarget, MoveBy};
+use operation::option::{OptionName, OptionUpdater};
 use option::user::DummySwtich;
 use poppler::{PopplerDocument, self};
 use script;
@@ -873,9 +874,9 @@ pub fn on_unmap(app: &mut App, target: MappingTarget) {
 
 pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &OptionName, updater: &OptionUpdater) {
     use option::OptionValue;
-    use operation::OptionName::*;
-    use operation::PreDefinedOptionName::*;
-    use operation::OptionUpdater::*;
+    use operation::option::OptionName::*;
+    use operation::option::OptionUpdater::*;
+    use operation::option::PreDefinedOptionName::*;
 
     let mut dummy_switch = DummySwtich::new();
 
@@ -885,6 +886,11 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 AbbrevLength => &mut app.states.abbrev_length,
                 AutoPaging => &mut app.states.auto_paging,
                 CenterAlignment => &mut app.states.view.center_alignment,
+                CurlConnectTimeout => &mut app.states.curl_options.connect_timeout,
+                CurlFollowLocation => &mut app.states.curl_options.follow_location,
+                CurlLowSpeedLimit => &mut app.states.curl_options.low_speed_limit,
+                CurlLowSpeedTime => &mut app.states.curl_options.low_speed_time,
+                CurlTimeout => &mut app.states.curl_options.timeout,
                 FitTo => &mut app.states.drawing.fit_to,
                 HorizontalViews => &mut app.states.view.cols,
                 LogFile => &mut app.states.log_file,
@@ -934,6 +940,9 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
 
     if let PreDefined(ref option_name) = *option_name {
         app.update_env_for_option(option_name);
+        if option_name.is_for_curl() {
+            app.remote_cache.update_curl_options(app.states.curl_options.clone());
+        }
         match *option_name {
             AbbrevLength =>
                 updated.label = true,

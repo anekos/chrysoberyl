@@ -7,6 +7,7 @@ use gdk_pixbuf::InterpType;
 use entry::SearchKey;
 use entry::filter::expression::Expr as FilterExpr;
 use logger;
+use remote_cache::curl_options::CurlOptions;
 use size::{FitTo, Region};
 
 
@@ -14,6 +15,7 @@ use size::{FitTo, Region};
 pub struct States {
     pub abbrev_length: usize,
     pub auto_paging: bool,
+    pub curl_options: CurlOptions,
     pub drawing: DrawingState,
     pub go: Option<SearchKey>,
     pub last_direction: Direction,
@@ -80,6 +82,7 @@ impl Default for States {
         States {
             abbrev_length: 30,
             auto_paging: false,
+            curl_options: CurlOptions::default(),
             drawing: DrawingState::default(),
             go: None,
             last_direction: Direction::Forward,
@@ -149,7 +152,7 @@ impl ViewState {
 
 impl Default for StatusFormat {
     fn default() -> Self {
-        StatusFormat(o!("<span background=\"red\">$CHRY_MESSAGE</span><span background=\"#005050\"> $CHRY_PAGING/$CHRY_PAGES </span> $CHRY_PATH <span foreground=\"grey\">$CHRY_FLAGS</span>"))
+        StatusFormat(o!("<span background=\"red\">$CHRY_MESSAGE</span><span background=\"#005050\"> $CHRY_PAGING/$CHRY_PAGES </span> $CHRY_ABBREV_PATH <span foreground=\"grey\">$CHRY_FLAGS</span> <span foreground=\"rosybrown\">${CHRY_REMOTE_QUEUE}q${CHRY_REMOTE_BUFFER}b${CHRY_REMOTE_THREAD}t</span>"))
     }
 }
 

@@ -62,6 +62,42 @@ impl OptionValue for usize {
 }
 
 
+macro_rules! def_uint {
+    ($type:ty) => {
+        impl OptionValue for Option<$type> {
+            fn cycle(&mut self, reverse: bool) -> Result {
+                if_let_some!(v = self.as_mut(), Ok(()));
+
+                if reverse {
+                    if *v != 0 {
+                        *v -= 1;
+                    }
+                } else {
+                    *v += 1;
+                }
+
+                Ok(())
+            }
+
+            fn unset(&mut self) -> Result {
+                *self = None;
+                Ok(())
+            }
+
+            fn set(&mut self, value: &str) -> Result {
+                value.parse().map(|value| {
+                    *self = Some(value);
+                }).map_err(|it| s!(it))
+            }
+        }
+    }
+}
+
+def_uint!(usize);
+def_uint!(u64);
+def_uint!(u32);
+
+
 impl OptionValue for Color {
     // CSS Color names
     // fn cycle(&mut self) -> Result {

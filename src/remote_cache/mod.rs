@@ -6,7 +6,6 @@ use std::io::{BufWriter, Write};
 use std::path::{PathBuf};
 use std::sync::mpsc::{channel, Sender};
 use std::thread::spawn;
-use std::time::Duration;
 
 use curl::easy::Easy as EasyCurl;
 use curl;
@@ -20,6 +19,10 @@ use file_extension::get_entry_type_from_filename;
 use mapping;
 use operation::{Operation, QueuedOperation};
 use sorting_buffer::SortingBuffer;
+
+pub mod curl_options;
+
+use self::curl_options::CurlOptions;
 
 
 
@@ -40,6 +43,7 @@ struct Request {
     meta: Option<Meta>,
     force: bool,
     entry_type: Option<EntryType>,
+    options: CurlOptions,
 }
 
 
@@ -47,6 +51,7 @@ struct Request {
 enum Getter {
     Queue(String, PathBuf, Option<Meta>, bool, Option<EntryType>),
     Done(usize, Request),
+    UpdateCurlOptions(CurlOptions),
     Fail(usize, String, Request),
 }
 
@@ -82,6 +87,10 @@ impl RemoteCache {
     pub fn update_sorting_buffer_len(&self) {
         env::set_var(env_name("remote_buffer"), s!(self.sorting_buffer.len()));
     }
+
+    pub fn update_curl_options(&self, options: CurlOptions) {
+        self.main_tx.send(Getter::UpdateCurlOptions(options)).unwrap();
+    }
 }
 
 
@@ -94,6 +103,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
         let mut threads: Vec<Sender<Request>> = vec![];
         let mut waiting: Vec<TID> = vec![];
         let mut queued = VecDeque::<Request>::new();
+        let mut options = CurlOptions::default();
 
         for thread_id in 0..max_threads as usize {
             threads.push(processor(thread_id, main_tx.clone()));
@@ -107,7 +117,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                 Queue(url, cache_filepath, meta, force, entry_type) => {
                     let ticket = buffer.reserve();
 
-                    let request = Request { ticket: ticket, url: url.clone(), cache_filepath: cache_filepath, meta: meta, force: force, entry_type: entry_type };
+                    let request = Request { ticket: ticket, url: url.clone(), cache_filepath: cache_filepath, meta: meta, force: force, entry_type: entry_type, options: options.clone() };
 
                     if let Some(worker) = waiting.pop() {
                         threads[worker].send(request).unwrap();
@@ -130,6 +140,9 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                     try_next(&app_tx, thread_id, queued.pop_front(), &mut threads, &mut waiting);
                     log_status(SP::Fail(thread_id, err, request.url), queued.len(), buffer.len(), waiting.len(), threads.len());
                 }
+                UpdateCurlOptions(new_options) => {
+                    options = new_options;
+                }
             }
         }
     }));
@@ -141,17 +154,9 @@ fn processor(thread_id: usize, main_tx: Sender<Getter>) -> Sender<Request> {
     let (getter_tx, getter_rx) = channel();
 
     spawn(move || {
-        let mut curl = EasyCurl::new();
-
-        // http://php.net/manual/ja/function.curl-setopt.php
-        curl.connect_timeout(Duration::from_secs(10)).unwrap(); // CURLOPT_CONNECTTIMEOUT_MS
-        curl.low_speed_time(Duration::from_secs(10)).unwrap();  // CURLOPT_LOW_SPEED_TIME=10sec
-        curl.low_speed_limit(1024).unwrap();                    // CURLOPT_LOW_SPEED_LIMIT=1024
-        curl.follow_location(true).unwrap();                    // Follow Redirection
-        // curl.timeout(Duration::from_secs(60));               // CURLOPT_TIMEOUT=60
-
         while let Ok(request) = getter_rx.recv() {
             let request: Request = request;
+            let mut curl =  request.options.generate();
 
             puts!("event" => "remote/get", "thread_id" => s!(thread_id), "url" => o!(&request.url));
 

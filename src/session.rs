@@ -115,11 +115,11 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         ColorStatusBar => gen("status-bar-color", &c2s(&gui.colors.status_bar), context),
         ColorStatusBarBackground => gen("status-bar-background-color", &c2s(&gui.colors.status_bar_background), context),
         ColorWindowBackground => gen("window-background-color", &c2s(&gui.colors.window_background), context),
-        CurlConnectTimeout => geno("connect-timeout", &st.curl_options.connect_timeout, context),
-        CurlFollowLocation => gen("follow-location", &b2s(st.curl_options.follow_location), context),
-        CurlLowSpeedLimit => geno("low-speed-limit", &st.curl_options.low_speed_limit, context),
-        CurlLowSpeedTime => geno("low-speed-time", &st.curl_options.low_speed_time, context),
-        CurlTimeout => geno("timeout", &st.curl_options.connect_timeout, context),
+        CurlConnectTimeout => geno("curl-connect-timeout", &st.curl_options.connect_timeout, context),
+        CurlFollowLocation => gen("curl-follow-location", &b2s(st.curl_options.follow_location), context),
+        CurlLowSpeedLimit => geno("curl-low-speed-limit", &st.curl_options.low_speed_limit, context),
+        CurlLowSpeedTime => geno("curl-low-speed-time", &st.curl_options.low_speed_time, context),
+        CurlTimeout => geno("curl-timeout", &st.curl_options.connect_timeout, context),
         FitTo => gen("fit-to", &st.drawing.fit_to, context),
         HorizontalViews => gen("horizontal-views", &st.view.cols, context),
         LogFile => gen("log-file", &st.log_file, context),
@@ -140,8 +140,8 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
 pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
     use self::PreDefinedOptionName::*;
 
-    let write = |out: &mut String, name: PreDefinedOptionName| {
-        let (name, value) = generate_option_value(&name, st, gui, WriteContext::Session);
+    let write = |out: &mut String, name: &PreDefinedOptionName| {
+        let (name, value) = generate_option_value(name, st, gui, WriteContext::Session);
         if let Some(value) = value {
             sprintln!(out, "@set {} {}", name, value);
         } else {
@@ -149,31 +149,15 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
         }
     };
 
-    write(out, AbbrevLength);
-    write(out, AutoPaging);
-    write(out, CenterAlignment);
-    write(out, ColorError);
-    write(out, ColorErrorBackground);
-    write(out, ColorStatusBar);
-    write(out, ColorStatusBarBackground);
-    write(out, ColorWindowBackground);
-    write(out, FitTo);
-    write(out, LogFile);
-    write(out, MaskOperator);
-    write(out, PreFetchEnabled);
-    write(out, PreFetchLimit);
-    write(out, PreFetchPageSize);
-    write(out, Reverse);
-    write(out, Scaling);
-    write(out, SkipResizeWindow);
-    write(out, StatusBar);
-    write(out, StatusFormat);
-    write(out, TitleFormat);
-
-    // write(out, HorizontalViews);
-    // write(out, VerticalViews);
+    for option_name in PreDefinedOptionName::iterator() {
+        match *option_name {
+            HorizontalViews | VerticalViews => (),
+            _ => write(out, option_name),
+        }
+    }
 
     sprintln!(out, "@views {} {}", gui.cols(), gui.rows());
+
     if let Some(c) = st.drawing.clipping {
         sprintln!(out, "@clip {} {} {} {}", c.left, c.top, c.right, c.bottom);
     } else {

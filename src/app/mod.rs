@@ -205,8 +205,8 @@ impl App {
                     on_last(self, &mut updated, count, ignore_views, move_by),
                 LazyDraw(serial, new_to_end) =>
                     on_lazy_draw(self, &mut updated, &mut to_end, serial, new_to_end),
-                Load(ref file) =>
-                    on_load(self, file),
+                Load(ref file, search_path) =>
+                    on_load(self, file, search_path),
                 LoadDefault =>
                     on_load_default(self),
                 Map(target, remain, mapped_operation) =>
@@ -236,13 +236,13 @@ impl App {
                 Push(path, meta, force) =>
                     on_push(self, &mut updated, path.to_string(), meta, force),
                 PushArchive(file, meta, force) =>
-                    on_push_archive(self, &file.to_path_buf(), meta, force, None),
+                    on_push_archive(self, &file.expand(), meta, force, None),
                 PushDirectory(file, meta, force) =>
-                    on_push_directory(self, &mut updated, file.to_path_buf(), meta, force),
+                    on_push_directory(self, &mut updated, file.expand(), meta, force),
                 PushImage(file, meta, force, expand_level) =>
-                    on_push_image(self, &mut updated, file.to_path_buf(), meta, force, expand_level, None),
+                    on_push_image(self, &mut updated, file.expand(), meta, force, expand_level, None),
                 PushPdf(file, meta, force) =>
-                    on_push_pdf(self, &mut updated, file.to_path_buf(), meta, force, None),
+                    on_push_pdf(self, &mut updated, file.expand(), meta, force, None),
                 PushSibling(next, meta, force, show) =>
                     on_push_sibling(self, &mut updated, next, meta, force, show),
                 PushURL(url, meta, force, entry_type) =>
@@ -384,7 +384,7 @@ impl App {
         use constant::OPTION_VARIABLE_PREFIX;
 
         let (name, value) = generate_option_value(option_name, &self.states, &self.gui, WriteContext::ENV);
-        env::set_var(format!("{}{}", OPTION_VARIABLE_PREFIX, name), value.unwrap_or_else(|| o!("")));
+        env::set_var(format!("{}{}", OPTION_VARIABLE_PREFIX, name), value.unwrap_or_else(||  o!("")));
     }
 
     pub fn paging(&mut self, wrap: bool, ignore_sight: bool) -> Paging {

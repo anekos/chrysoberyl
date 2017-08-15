@@ -53,7 +53,7 @@ pub enum Operation {
     KillTimer(String),
     Last(Option<usize>, bool, MoveBy, bool),
     LazyDraw(u64, bool), /* serial, to_end */
-    Load(PathBuf),
+    Load(Expandable, bool), /* path, search_path */
     LoadDefault,
     Map(MappingTarget, Option<usize>, Vec<String>), /* target, remain, operation */
     MoveAgain(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
@@ -329,7 +329,7 @@ impl fmt::Debug for Operation {
             KillTimer(_) => "KillTimer",
             Last(_, _, _, _) => "Last",
             LazyDraw(_, _) => "LazyDraw",
-            Load(_) => "Load",
+            Load(_, _) => "Load",
             LoadDefault => "LoadDefault ",
             Map(_, _, _) => "Map",
             MoveAgain(_, _, _, _) => "MoveAgain",

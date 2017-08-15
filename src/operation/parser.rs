@@ -333,13 +333,16 @@ pub fn parse_kill_timer(args: &[String]) -> Result<Operation, String> {
 
 pub fn parse_load(args: &[String]) -> Result<Operation, String> {
     let mut file: String = o!("");
+    let mut search_path = false;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut file).add_argument("file-path", Store, "File path").required();
+        ap.refer(&mut search_path).add_option(&["--search-path", "-p"], StoreTrue, SEARCH_PATH_DESC);
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Load(sh::expand_to_pathbuf(&file))
+        println!("file: {:?}", file);
+        Operation::Load(Expandable(file), search_path)
     })
 }
 

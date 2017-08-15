@@ -62,7 +62,7 @@ impl OptionValue for usize {
 }
 
 
-macro_rules! def_uint {
+macro_rules! def_opt_uint {
     ($type:ty) => {
         impl OptionValue for Option<$type> {
             fn cycle(&mut self, reverse: bool) -> Result {
@@ -93,9 +93,9 @@ macro_rules! def_uint {
     }
 }
 
-def_uint!(usize);
-def_uint!(u64);
-def_uint!(u32);
+def_opt_uint!(usize);
+def_opt_uint!(u64);
+def_opt_uint!(u32);
 
 
 impl OptionValue for Color {

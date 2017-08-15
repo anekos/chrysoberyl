@@ -41,8 +41,10 @@ fn load_from_str(tx: &Sender<Operation>, source: &str) {
 
 fn process(tx: &Sender<Operation>, operation: Operation) {
     match operation {
-        Operation::Load(ref file) =>
-            load_from_file(tx, file),
+        Operation::Load(ref file, search_path) => {
+            let path = if search_path { file.search_path() } else { file.expand() };
+            load_from_file(tx, &path);
+        },
         Operation::LoadDefault =>
             load(tx, DEFAULT_CONFIG),
         op =>

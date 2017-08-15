@@ -185,7 +185,7 @@ pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Exp
     let tx = app.tx.clone();
     let source = with_ouput_string!(out, {
         for file in files {
-            if let Err(err) = File::open(file.to_path_buf()).and_then(|mut file| file.read_to_string(out)) {
+            if let Err(err) = File::open(file.expand()).and_then(|mut file| file.read_to_string(out)) {
                 puts_error!("at" => o!("on_load"), "reason" => s!(err));
             }
         }
@@ -289,7 +289,7 @@ pub fn on_first(app: &mut App, updated: &mut Updated, count: Option<usize>, igno
 }
 
 pub fn on_fragile(app: &mut App, path: &Expandable) {
-    new_fragile_input(app.tx.clone(), &path.to_path_buf());
+    new_fragile_input(app.tx.clone(), &path.expand());
 }
 
 pub fn on_go(app: &mut App, updated: &mut Updated, key: &SearchKey) {
@@ -364,8 +364,9 @@ pub fn on_lazy_draw(app: &mut App, updated: &mut Updated, to_end: &mut bool, ser
     }
 }
 
-pub fn on_load(app: &mut App, file: &Path) {
-    script::load_from_file(&app.tx, file);
+pub fn on_load(app: &mut App, file: &Expandable, search_path: bool) {
+    let path = if search_path { file.search_path() } else { file.expand() };
+    script::load_from_file(&app.tx, &path);
 }
 
 pub fn on_load_default(app: &mut App) {

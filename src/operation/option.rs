@@ -98,8 +98,8 @@ impl PreDefinedOptionName {
                 ColorError | ColorErrorBackground | ColorStatusBar | ColorStatusBarBackground | ColorWindowBackground |
                 FitTo | HorizontalViews | LogFile | MaskOperator |
                 PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
-                Reverse | Scaling | SkipResizeWindow | StatusBar | StatusFormat | TitleFormat | VerticalViews => true,
-            CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => false,
+                Reverse | Scaling | SkipResizeWindow | StatusBar | StatusFormat | TitleFormat | VerticalViews => false,
+            CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => true,
         }
     }
 }

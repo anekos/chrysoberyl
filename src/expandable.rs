@@ -29,8 +29,13 @@ impl FromStr for Expandable {
 }
 
 impl Expandable {
-    pub fn to_path_buf(&self) -> PathBuf {
+    pub fn expand(&self) -> PathBuf {
         sh::expand_to_pathbuf(&self.0)
+    }
+
+    pub fn search_path(&self) -> PathBuf {
+        let base = self.expand();
+        app_path::search_path(&base)
     }
 }
 
@@ -38,7 +43,7 @@ impl Expandable {
 pub fn expand_all(xs: &[Expandable], search_path: bool) -> Vec<String> {
     xs.iter().enumerate().map(|(index, it)| {
         if search_path && index == 0 {
-            path_to_string(&app_path::search_path(&it.to_path_buf()))
+            path_to_string(&app_path::search_path(&it.expand()))
         } else {
             it.to_string()
         }

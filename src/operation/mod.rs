@@ -24,6 +24,9 @@ use session::Session;
 use size::Region;
 
 mod parser;
+pub mod option;
+
+use self::option::{OptionName, OptionUpdater};
 
 
 
@@ -135,47 +138,6 @@ pub enum MoveBy {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum OptionUpdater {
-    Set(String),
-    Unset,
-    Enable,
-    Disable,
-    Toggle,
-    Cycle(bool), /* reverse */
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum OptionName {
-    PreDefined(PreDefinedOptionName),
-    UserDefined(String),
-}
-
-iterable_enum!(PreDefinedOptionName =>
-    AbbrevLength,
-    AutoPaging,
-    CenterAlignment,
-    ColorError,
-    ColorErrorBackground,
-    ColorStatusBar,
-    ColorStatusBarBackground,
-    ColorWindowBackground,
-    FitTo,
-    HorizontalViews,
-    LogFile,
-    MaskOperator,
-    PreFetchEnabled,
-    PreFetchLimit,
-    PreFetchPageSize,
-    Reverse,
-    Scaling,
-    SkipResizeWindow,
-    StatusBar,
-    StatusFormat,
-    TitleFormat,
-    VerticalViews,
-);
-
-#[derive(Clone, Debug, PartialEq)]
 pub enum QueuedOperation {
     PushImage(PathBuf, Option<Meta>, bool, Option<u8>, Option<String>), /* path, meta, force, expand-level, remote-url */
     PushDirectory(PathBuf, Option<Meta>, bool), /* path, meta, force */
@@ -191,60 +153,6 @@ impl FromStr for Operation {
 
     fn from_str(src: &str) -> Result<Self, ParsingError> {
         Operation::parse(src)
-    }
-}
-
-impl FromStr for PreDefinedOptionName {
-    type Err = ParsingError;
-
-    fn from_str(src: &str) -> Result<Self, ParsingError> {
-        use self::PreDefinedOptionName::*;
-
-        match src {
-            "abbrev-length" | "abbr-length"        => Ok(AbbrevLength),
-            "auto-page" | "auto-paging" | "paging" => Ok(AutoPaging),
-            "center" | "center-alignment"          => Ok(CenterAlignment),
-            "fit" | "fit-to"                       => Ok(FitTo),
-            "horizontal-views"                     => Ok(HorizontalViews),
-            "log-file" | "log"                     => Ok(LogFile),
-            "mask-operator"                        => Ok(MaskOperator),
-            "pre-render"                           => Ok(PreFetchEnabled),
-            "pre-render-limit"                     => Ok(PreFetchLimit),
-            "pre-render-pages"                     => Ok(PreFetchPageSize),
-            "reverse" | "rev"                      => Ok(Reverse),
-            "scaling"                              => Ok(Scaling),
-            "status-bar" | "status"                => Ok(StatusBar),
-            "status-format"                        => Ok(StatusFormat),
-            "title-format"                         => Ok(TitleFormat),
-            "vertical-views"                       => Ok(VerticalViews),
-            "window-background-color"              => Ok(ColorWindowBackground),
-            "skip-resize-window"                   => Ok(SkipResizeWindow),
-            "status-bar-color"                     => Ok(ColorStatusBar),
-            "status-bar-background-color"          => Ok(ColorStatusBarBackground),
-            "error-color"                          => Ok(ColorError),
-            "error-background-color"               => Ok(ColorErrorBackground),
-            _                                      => Err(ParsingError::InvalidOperation(format!("Invalid option name: {}", src)))
-        }
-    }
-}
-
-impl FromStr for OptionName {
-    type Err = ParsingError;
-
-    fn from_str(src: &str) -> Result<Self, ParsingError> {
-        use self::OptionName::*;
-
-        Ok({
-            src.parse().map(PreDefined).unwrap_or_else(|_| {
-                UserDefined(o!(src))
-            })
-        })
-    }
-}
-
-impl Default for OptionName {
-    fn default() -> Self {
-        OptionName::PreDefined(PreDefinedOptionName::StatusBar)
     }
 }
 

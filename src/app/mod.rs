@@ -26,7 +26,8 @@ use image_cache::ImageCache;
 use image_fetcher::ImageFetcher;
 use logger;
 use mapping::{Mapping, Input};
-use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy, PreDefinedOptionName};
+use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy};
+use operation::option::PreDefinedOptionName;
 use option::user::UserSwitchManager;
 use paginator::values::Index;
 use paginator::{self, Paginator, Paging};
@@ -383,7 +384,7 @@ impl App {
         use constant::OPTION_VARIABLE_PREFIX;
 
         let (name, value) = generate_option_value(option_name, &self.states, &self.gui, WriteContext::ENV);
-        env::set_var(format!("{}{}", OPTION_VARIABLE_PREFIX, name), value);
+        env::set_var(format!("{}{}", OPTION_VARIABLE_PREFIX, name), value.unwrap_or_else(|| o!("")));
     }
 
     pub fn paging(&mut self, wrap: bool, ignore_sight: bool) -> Paging {

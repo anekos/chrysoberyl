@@ -5,7 +5,6 @@ use std::sync::mpsc::Sender;
 use std::thread::spawn;
 
 use operation::Operation;
-use termination;
 use utils::join;
 
 
@@ -20,9 +19,11 @@ pub fn call(async: bool, command_line: &[String], stdin: Option<String>, tx: Opt
 }
 
 fn run(tx: Option<Sender<Operation>>, command_line: &[String], stdin: Option<String>) {
-    let mut command = Command::new("setsid");
+    let (command_name, args) = command_line.split_first().expect("WTF: Empty command line");
+
+    let mut command = Command::new(command_name);
     command
-        .args(command_line);
+        .args(args);
     command
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -31,9 +32,9 @@ fn run(tx: Option<Sender<Operation>>, command_line: &[String], stdin: Option<Str
 
     let child = command.spawn().unwrap();
 
-    let terminator = termination::Process::Kill(child.id());
-    termination::register(terminator.clone());
-
+    // let terminator = termination::Process::Kill(child.id());
+    // termination::register(terminator.clone());
+    //
     puts_event!("shell/open");
     if process_stdout(tx, child, stdin) {
         puts_event!("shell/close");
@@ -41,7 +42,7 @@ fn run(tx: Option<Sender<Operation>>, command_line: &[String], stdin: Option<Str
         puts_error!("at" => "shell", "for" => join(command_line, ','));
     }
 
-    termination::unregister(&terminator);
+    // termination::unregister(&terminator);
 }
 
 fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<String>) -> bool {

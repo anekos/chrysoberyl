@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Chrysoberyl
+Comment=Image, PDF, Archive Viewer
+Path=/usr/bin
+Exec=chrysoberyl
+Icon=chrysoberyl
+Terminal=false
+Categories=Graphics

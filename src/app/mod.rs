@@ -26,7 +26,7 @@ use image_cache::ImageCache;
 use image_fetcher::ImageFetcher;
 use logger;
 use mapping::{Mapping, Input};
-use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy};
+use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy, Updated};
 use operation::option::PreDefinedOptionName;
 use option::user::UserSwitchManager;
 use paginator::values::Index;
@@ -69,15 +69,6 @@ pub struct App {
     pub tx: Sender<Operation>,
     pub primary_tx: Sender<Operation>,
     pub states: States
-}
-
-#[derive(Default, Debug)]
-pub struct Updated {
-    pointer: bool,
-    label: bool,
-    image: bool,
-    image_options: bool,
-    message: bool,
 }
 
 
@@ -157,7 +148,7 @@ impl App {
 
         trace!("operate_with_context: operation={:?}", operation);
 
-        let mut updated = Updated { pointer: false, label: false, image: false, image_options: false, message: false };
+        let mut updated = Updated::default();
         let mut to_end = false;
         let len = self.entries.len();
 
@@ -283,6 +274,8 @@ impl App {
                     on_undo(self, &mut updated, count),
                 Unmap(target) =>
                     on_unmap(self, target),
+                Update(new_updated) =>
+                    updated = new_updated,
                 UpdateUI =>
                     panic!("WTF"),
                 UpdateOption(ref option_name, ref updater) =>

@@ -92,6 +92,7 @@ pub enum Operation {
     Unclip,
     Undo(Option<usize>),
     Unmap(MappingTarget),
+    Update(Updated),
     UpdateOption(OptionName, OptionUpdater),
     UpdateUI,
     User(Vec<(String, String)>),
@@ -146,6 +147,15 @@ pub enum QueuedOperation {
     PushArchiveEntry(PathBuf, ArchiveEntry, Option<Meta>, bool, Option<String>), /* path, archive-entry, meta, force, remote-url */
     PushPdf(PathBuf, Option<Meta>, bool, Option<String>), /* path, meta, force, remote-url */
     PushPdfEntries(PathBuf, usize, Option<Meta>, bool, Option<String>), /* path, pages, meta, force, remote-url */
+}
+
+#[derive(Default, Debug, Clone)]
+pub struct Updated {
+    pub pointer: bool,
+    pub label: bool,
+    pub image: bool,
+    pub image_options: bool,
+    pub message: bool,
 }
 
 
@@ -293,6 +303,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@unless"                       => parse_when(whole, true),
             "@unmap"                        => parse_map(whole, false),
             "@unset"                        => parse_option_1(whole, OptionUpdater::Unset),
+            "@update"                       => parse_update(whole),
             "@user"                         => Ok(Operation::user(args.to_vec())),
             "@views"                        => parse_views(whole),
             "@when"                         => parse_when(whole, false),
@@ -370,6 +381,7 @@ impl fmt::Debug for Operation {
             Unclip => "Unclip ",
             Undo(_) => "Undo",
             Unmap(_) => "Unmap",
+            Update(_) => "Update",
             UpdateOption(ref name, _) => return write!(f, "UpdateOption({:?})", name),
             UpdateUI => "UpdateUI ",
             User(_) => "User",

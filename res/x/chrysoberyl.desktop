@@ -2,7 +2,8 @@
 Type=Application
 Version=1.0
 Name=Chrysoberyl
-Comment=Image, PDF, Archive Viewer
+GenericName=Image Viewer
+Comment=Viewer for (local|remote) (image|PDF|images in archive)
 Path=/usr/bin
 Exec=chrysoberyl
 Icon=chrysoberyl

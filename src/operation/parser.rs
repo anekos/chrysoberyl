@@ -240,13 +240,13 @@ pub fn parse_fill(args: &[String]) -> Result<Operation, String> {
 
 pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
     let mut expr = vec![];
-    let mut dynamic = false;
+    let mut dynamic = true;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut dynamic)
-            .add_option(&["--dynamic", "-d"], StoreTrue, "Update dynamic filter")
-            .add_option(&["--static", "-s"], StoreFalse, "Update static filter (default)");
+            .add_option(&["--dynamic", "-d"], StoreTrue, "Update dynamic filter (default)")
+            .add_option(&["--static", "-s"], StoreFalse, "Update static filter");
         ap.refer(&mut expr).add_argument("expression", Collect, "Filter expression");
         parse_args(&mut ap, args)
     } .and_then(|_| {

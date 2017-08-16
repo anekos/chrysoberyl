@@ -8,6 +8,7 @@ use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse
 
 use cherenkov::Filler;
 use color::Color;
+use entry::filter::expression::Expr as FilterExpr;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta, EntryType};
 use expandable::Expandable;
 use mapping::{Input, InputType};
@@ -170,6 +171,19 @@ pub fn parse_define_switch(args: &[String]) -> Result<Operation, String> {
         }
 
         Operation::DefineUserSwitch(name, values)
+    })
+}
+
+pub fn parse_delete(args: &[String]) -> Result<Operation, String> {
+    let mut expr = vec![];
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut expr).add_argument("expression", Collect, "Filter expression");
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        let op = join(&expr, ' ').parse().map(|it: FilterExpr| Operation::Delete(Box::new(it.not())));
+        op.map(|op| Operation::WithMessage(Some(o!("Deleting")), Box::new(op)))
     })
 }
 

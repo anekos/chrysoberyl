@@ -1,6 +1,7 @@
 
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::mem::swap;
 use std::rc::Rc;
 use std::slice;
 
@@ -156,6 +157,14 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
             self.static_pred = pred;
         }
         self.filter(index_before_filter)
+    }
+
+    pub fn delete(&mut self, index_before_filter: Option<usize>, pred: Pred<T>) -> Option<usize> {
+        let mut pred = Some(pred);
+        swap(&mut pred, &mut self.static_pred);
+        let result = self.filter(index_before_filter);
+        swap(&mut pred, &mut self.static_pred);
+        result
     }
 
     pub fn filter(&mut self, index_before_filter: Option<usize>) -> Option<usize> {

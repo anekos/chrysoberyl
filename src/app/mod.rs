@@ -179,6 +179,8 @@ impl App {
                     self.counter.push_digit(digit),
                 DefineUserSwitch(name, values) =>
                     on_define_switch(self, name, values),
+                Delete(expr) =>
+                    on_delete(self, &mut updated, expr),
                 Draw =>
                     updated.image = true,
                 Editor(ref editor_command, ref files, ref sessions) =>

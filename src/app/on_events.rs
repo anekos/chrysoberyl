@@ -220,6 +220,24 @@ pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) {
     }
 }
 
+pub fn on_delete(app: &mut App, updated: &mut Updated, expr: Box<FilterExpr>) {
+    let current_index = app.paginator.current_index();
+
+    let after_index = app.entries.delete(current_index, Box::new(move |ref mut entry| expr.evaluate(entry)));
+
+    if let Some(after_index) = after_index {
+        app.paginator.update_index(Index(after_index));
+    } else {
+        app.paginator.reset_level();
+    }
+
+    app.update_paginator_condition();
+
+    updated.pointer = true;
+    updated.image = true;
+    updated.message = true;
+}
+
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 pub fn on_fill(app: &mut App, updated: &mut Updated, filler: Filler, region: Option<Region>, color: Color, mask: bool, cell_index: usize, context: Option<OperationContext>) {
     use cherenkov::{Modifier, Che};

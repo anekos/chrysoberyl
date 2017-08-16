@@ -40,6 +40,7 @@ pub enum Operation {
     Count(Option<usize>),
     CountDigit(u8),
     DefineUserSwitch(String, Vec<Vec<String>>),
+    Delete(Box<entry::filter::expression::Expr>),
     Draw,
     Editor(Option<Expandable>, Vec<Expandable>, Vec<Session>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
@@ -239,6 +240,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@cycle"                        => parse_option_cycle(whole),
             "@default"                      => Ok(LoadDefault),
             "@define-switch"                => parse_define_switch(whole),
+            "@delete"                       => parse_delete(whole),
             "@disable"                      => parse_option_1(whole, OptionUpdater::Disable),
             "@draw"                         => Ok(Draw),
             "@editor"                       => parse_editor(whole),
@@ -316,6 +318,7 @@ impl fmt::Debug for Operation {
             Count(_) => "Count",
             CountDigit(_) => "CountDigit",
             DefineUserSwitch(_, _) => "DefineUserSwitch",
+            Delete(_) => "delete",
             Draw => "Draw ",
             Editor(_, _, _) => "Editor",
             Expand(_, _) => "Expand",

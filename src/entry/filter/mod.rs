@@ -32,6 +32,8 @@ fn eval(info: &mut EntryInfo, content: &EntryContent, expr: &Expr) -> bool {
             eval_bool(info, content, b),
         Logic(ref l, ref op, ref r) =>
             eval_logic(info, content, l, op, r),
+        Not(ref expr) =>
+            !eval(info, content, expr),
     }
 }
 

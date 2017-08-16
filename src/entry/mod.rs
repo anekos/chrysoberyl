@@ -14,7 +14,7 @@ use url::Url;
 use archive::ArchiveEntry;
 use entry::filter::expression::Expr as FilterExpr;
 use file_extension::{is_valid_image_filename};
-use filterable_vec::FilterableVec;
+use filterable_vec::{FilterableVec, Pred};
 use shorter::*;
 use utils::path_to_str;
 
@@ -461,8 +461,12 @@ impl EntryContainer {
         }
     }
 
-    pub fn update_filter(&mut self, dynamic: bool, current_index: Option<usize>, pred: Option<Box<FnMut(&mut Entry) -> bool>>) -> Option<usize> {
+    pub fn update_filter(&mut self, dynamic: bool, current_index: Option<usize>, pred: Option<Pred<Entry>>) -> Option<usize> {
         self.entries.update_filter(dynamic, current_index, pred)
+    }
+
+    pub fn delete(&mut self, current_index: Option<usize>, pred: Pred<Entry>) -> Option<usize> {
+        self.entries.delete(current_index, pred)
     }
 }
 

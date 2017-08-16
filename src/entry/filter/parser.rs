@@ -31,7 +31,7 @@ impl FromStr for Expr {
 
 #[cfg_attr(feature = "cargo-clippy", allow(doc_markdown))]
 /**
- * Expr ← Block | Bool | Cond | Logic
+ * Expr ← Block | Bool | Cond | Logic | 'not' Expr
  * Block ← '(' Expr ')' | '{' Expr '}'
  * Logic ← Bool LogicOp Expr
  * Bool ← Compare | BoolVariable | 'true' | 'false'
@@ -208,8 +208,12 @@ fn block() -> Parser<u8, Expr> {
     block_paren() | block_curly()
 }
 
+fn not() -> Parser<u8, Expr> {
+    seq(b"not") * spaces() * expr_item().map(|expr| Expr::Not(Box::new(expr)))
+}
+
 fn expr_item() -> Parser<u8, Expr> {
-    block() | call(logic) | boolean() | call(if_) | call(when)
+    block() | call(logic) | boolean() | call(if_) | call(when) | call(not)
 }
 
 
@@ -269,6 +273,8 @@ fn test_parser() {
     assert_parse2("width < 2000", "width < 2K");
     assert_parse2("width < 2048", "width < 2Ki");
     assert_parse2("width < -2048", "width < -2Ki");
+
+    assert_parse("not (width < 200 and height < 400)");
 
     for c in "KMGTP".chars() {
         assert_parse(&format!("width < 9{}", c));

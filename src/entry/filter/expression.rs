@@ -11,6 +11,7 @@ pub enum Expr {
     Boolean(EBool),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
     When(bool,Box<Expr>, Box<Expr>),
+    Not(Box<Expr>),
 }
 
 #[derive(Clone, Debug)]
@@ -73,5 +74,11 @@ pub enum EBVariable {
 impl Default for Expr {
     fn default() -> Self {
         Expr::Boolean(EBool::True)
+    }
+}
+
+impl Expr {
+    pub fn not(self) -> Self {
+        Expr::Not(Box::new(self))
     }
 }

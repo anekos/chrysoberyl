@@ -19,6 +19,8 @@ pub fn write(expr: &Expr, out: &mut String) {
             write_logic(l, op, r, out),
         Boolean(ref v) =>
             write_bool(v, out),
+        Not(ref expr) =>
+            write_not(expr, out),
     }
 }
 
@@ -126,6 +128,12 @@ fn write_value(v: &EValue, out: &mut String) {
             sprint!(out, ">");
         }
     }
+}
+
+fn write_not(expr: &Expr, out: &mut String) {
+    sprint!(out, "not (");
+    write(expr, out);
+    sprint!(out, ")");
 }
 
 fn write_space(out: &mut String) {

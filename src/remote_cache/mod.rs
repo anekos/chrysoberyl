@@ -101,16 +101,16 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
         use self::Getter::*;
 
         let mut threads: Vec<Sender<Request>> = vec![];
-        let mut waiting: Vec<TID> = vec![];
+        let mut idles: Vec<TID> = vec![];
         let mut queued = VecDeque::<Request>::new();
         let mut options = CurlOptions::default();
 
         for thread_id in 0..max_threads as usize {
             threads.push(processor(thread_id, main_tx.clone()));
-            waiting.push(thread_id);
+            idles.push(thread_id);
         }
 
-        log_status(&SP::Initial, queued.len(), buffer.len(), waiting.len(), threads.len());
+        log_status(&SP::Initial, queued.len(), buffer.len(), idles.len(), threads.len());
 
         while let Ok(it) = main_rx.recv() {
             match it {
@@ -119,11 +119,11 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
 
                     let request = Request { ticket: ticket, url: url.clone(), cache_filepath: cache_filepath, meta: meta, force: force, entry_type: entry_type, options: options.clone() };
 
-                    if let Some(worker) = waiting.pop() {
+                    if let Some(worker) = idles.pop() {
                         threads[worker].send(request).unwrap();
                     } else {
                         queued.push_back(request);
-                        log_status(&SP::Queue(url), queued.len(), buffer.len(), waiting.len(), threads.len());
+                        log_status(&SP::Queue(url), queued.len(), buffer.len(), idles.len(), threads.len());
                     }
                 }
                 Done(thread_id, request) => {
@@ -131,14 +131,14 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                         request.ticket,
                         make_queued_operation(request.cache_filepath, request.url, request.meta, request.force, request.entry_type));
                     app_tx.send(Operation::Pull).unwrap();
-                    try_next(&app_tx, thread_id, queued.pop_front(), &mut threads, &mut waiting);
-                    log_status(&SP::Complete(thread_id), queued.len(), buffer.len(), waiting.len(), threads.len());
+                    try_next(&app_tx, thread_id, queued.pop_front(), &mut threads, &mut idles);
+                    log_status(&SP::Complete(thread_id), queued.len(), buffer.len(), idles.len(), threads.len());
                 }
                 Fail(thread_id, err, request) => {
                     buffer.skip(request.ticket);
                     app_tx.send(Operation::Pull).unwrap();
-                    try_next(&app_tx, thread_id, queued.pop_front(), &mut threads, &mut waiting);
-                    log_status(&SP::Fail(thread_id, err, request.url), queued.len(), buffer.len(), waiting.len(), threads.len());
+                    try_next(&app_tx, thread_id, queued.pop_front(), &mut threads, &mut idles);
+                    log_status(&SP::Fail(thread_id, err, request.url), queued.len(), buffer.len(), idles.len(), threads.len());
                 }
                 UpdateCurlOptions(new_options) => {
                     println!("new_options: {:?}", new_options);
@@ -221,33 +221,33 @@ fn make_queued_operation(file: PathBuf, url: String, meta: Option<Meta>, force: 
     }
 }
 
-fn try_next(app_tx: &Sender<Operation>, thread_id: TID, next: Option<Request>, threads: &mut Vec<Sender<Request>>, waiting: &mut Vec<TID>) {
+fn try_next(app_tx: &Sender<Operation>, thread_id: TID, next: Option<Request>, threads: &mut Vec<Sender<Request>>, idles: &mut Vec<TID>) {
     if let Some(next) = next {
         threads[thread_id].send(next).unwrap();
     } else {
-        waiting.push(thread_id);
+        idles.push(thread_id);
     }
 
-    if waiting.len() == threads.len() {
+    if idles.len() == threads.len() {
         app_tx.send(Operation::Input(mapping::Input::Event(EventName::DownloadAll))).unwrap();
     }
 }
 
-fn log_status(sp: &SP, queues: usize, buffers: usize, waitings: usize, threads: usize) {
+fn log_status(sp: &SP, queues: usize, buffers: usize, idles: usize, threads: usize) {
     use self::SP::*;
 
-    let (q, b, w, t) = (s!(queues), s!(buffers), s!(waitings), s!((threads - waitings)));
+    let (q, b, w, t) = (s!(queues), s!(buffers), s!(idles), s!((threads - idles)));
     match *sp {
         Initial => (),
         Queue(ref url) =>
-            puts_event!("remote/queue", "url" => url, "queue" => q, "buffer" => b, "waiting" => w),
+            puts_event!("remote/queue", "url" => url, "queue" => q, "buffer" => b, "idles" => w),
         Complete(ref thread_id) =>
-            puts_event!("remote/complete", "thread_id" => s!(thread_id), "queue" => q, "buffer" => b, "waiting" => w),
+            puts_event!("remote/complete", "thread_id" => s!(thread_id), "queue" => q, "buffer" => b, "idles" => w),
         Fail(ref thread_id, ref error, ref url) =>
-            puts_event!("remote/fail", "thread_id" => s!(thread_id), "reason" => error, "url" => url, "queue" => q, "buffer" => b, "waiting" => w),
+            puts_event!("remote/fail", "thread_id" => s!(thread_id), "reason" => error, "url" => url, "queue" => q, "buffer" => b, "idles" => w),
     }
     env::set_var(env_name("remote_queue"), q);
     env::set_var(env_name("remote_buffer"), b);
-    env::set_var(env_name("remote_waiting"), w);
+    env::set_var(env_name("remote_idles"), w);
     env::set_var(env_name("remote_thread"), t);
 }

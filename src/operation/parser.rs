@@ -158,7 +158,7 @@ pub fn parse_define_switch(args: &[String]) -> Result<Operation, String> {
         let mut value = vec![];
 
         for it in values_source {
-            if it == "--" {
+            if it == "@@" {
                 values.push(value);
                 value = vec![];
             } else {

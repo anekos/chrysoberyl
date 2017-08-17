@@ -54,7 +54,7 @@ pub fn parse_args() -> Result<Initial, String> {
             Err(err) => return Err(err),
         }
 
-        if arg.starts_with("@@") || arg == "--" {
+        if arg.starts_with("@@") || arg == "@@" {
             if let Some(ref op) = op {
                 result.entries.push(Entry::Operation(op.clone()));
             }

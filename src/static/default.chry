@@ -1,74 +1,83 @@
 # scroll or move
-@map key h @scroll --size 0.8 left  @previous
-@map key j @scroll --size 0.8 down  @next
-@map key k @scroll --size 0.8 up    @previous
-@map key l @scroll --size 0.8 right @next
+@map key h            @scroll --size 0.8 left  @previous
+@map key j            @scroll --size 0.8 down  @next
+@map key k            @scroll --size 0.8 up    @previous
+@map key l            @scroll --size 0.8 right @next
+@map key space        @next
+@map key BackSpace    @previous
+
+# move --ignore-views
+@map key J            @next --ignore-views
+@map key K            @previous --ignore-views
+@map key w,j          @next --wrap
+@map key w,k          @previous --wrap
+
+# move --archive
+@map key C-n          @next --archive
+@map key C-p          @previous --archive
 
 # move
-@map key asciicircum @first
-@map key dollar      @last
-@map key g           @first
-@map key G           @last
+@map key asciicircum  @first # ^
+@map key dollar       @last
+@map key g            @first
+@map key G            @last
 
 # move (ignore views)
-@map key H @previous --ignore-views
-@map key J @next     --ignore-views
-@map key K @previous --ignore-views
-@map key L @next     --ignore-views
+@map key H            @previous --ignore-views
+@map key J            @next     --ignore-views
+@map key K            @previous --ignore-views
+@map key L            @next     --ignore-views
 
 # move (archive)
-@map key p @previous --archive
-@map key n @next     --archive
-
-# push
-@map key C-n @push-next --show
-@map key C-p @push-previous --show
+@map key p            @previous --archive
+@map key n            @next     --archive
 
 # toggle a option
-@map key t,a @toggle auto-paging
-@map key t,s @toggle status-bar
-@map key t,r @toggle reverse
-@map key t,c @toggle center
+@map key t,a          @toggle auto-paging
+@map key t,s          @toggle status-bar
+@map key t,r          @toggle reverse
+@map key t,c          @toggle center
 
 # option (fit-to)
-@map key f,w @set fit-to width
-@map key f,h @set fit-to height
-@map key f,o @set fit-to original-or-cell
-@map key f,O @set fit-to original
-@map key f,c @set fit-to cell
+@map key f,w          @set fit-to width
+@map key f,h          @set fit-to height
+@map key f,o          @set fit-to original-or-cell
+@map key f,O          @set fit-to original
+@map key f,c          @set fit-to cell
 
 # views
-@map key v @views
-@map key V @views --rows
+@map key v            @views
+@map key V            @views --rows
 
 # entries
-@map key z @shuffle
-@map key e @expand
-@map key E @expand --recursive
-@map key R @refresh
-@map key X @clear
+@map key C-N          @push-next --show
+@map key C-P          @push-previous --show
+@map key z            @shuffle
+@map key e            @expand
+@map key E            @expand --recursive
+@map key R            @refresh
+@map key X            @clear
 
 # misc
-@map key q @quit
-@map key q @quit
-@map key Escape @count
-@map key c @unclip
-@map key C @reset-image
-@map key u @undo
+@map key q            @quit
+@map key Escape       @count
+@map key c            @unclip
+@map key C            @reset-image
+@map key u            @undo
 
 # Mouse
-@map mouse 1 @scroll --size 0.8 down  @next
-@map mouse 2 @cherenkov --radius 0.02 --color random --spokes 50
-@map mouse 3 @scroll --size 0.8 up    @previous
+@map mouse 1          @scroll --size 0.8 down @next
+@map mouse 2          @cherenkov --radius 0.02 --color random --spokes 50
+@map mouse 3          @scroll --size 0.8 up @previous
 
 # Region
-@map region 1 @clip
-@map region 3 @fill
+@map region 1         @clip
+@map region 3         @fill
 
 # script
-@map key o @shell --operation --search-path script/open-dialog.sh
-@map key i @shell --operation --search-path script/pdf-index.sh
-@map key a @shell --operation --search-path script/shell.sh
+@map key o            @shell --operation --search-path script/open-dialog.sh
+@map key i            @shell --operation --search-path script/pdf-index.sh
+@map key a            @shell --operation --search-path script/shell.sh
 
 # pre-redner
 @set pre-render yes

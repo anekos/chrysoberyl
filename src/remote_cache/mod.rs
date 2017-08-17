@@ -19,6 +19,7 @@ use file_extension::get_entry_type_from_filename;
 use mapping;
 use operation::{Operation, QueuedOperation};
 use sorting_buffer::SortingBuffer;
+use utils::s;
 
 pub mod curl_options;
 
@@ -162,14 +163,15 @@ fn processor(thread_id: usize, main_tx: Sender<Getter>) -> Sender<Request> {
             puts!("event" => "remote/get", "thread_id" => s!(thread_id), "url" => o!(&request.url));
 
             let mut buf = vec![];
-            match curl_get(&mut curl, &request.url, &mut buf) {
-                Ok(_) => {
-                    let mut writer = BufWriter::new(File::create(&request.cache_filepath).unwrap());
-                    writer.write_all(buf.as_slice()).unwrap();
-                    main_tx.send(Getter::Done(thread_id, request)).unwrap();
-                }
-                Err(err) =>
-                    main_tx.send(Getter::Fail(thread_id, format!("{}", err), request)).unwrap(),
+            let result = curl_get(&mut curl, &request.url, &mut buf).map_err(s).and_then(|_| {
+                File::create(&request.cache_filepath).and_then(|file| {
+                    let mut writer = BufWriter::new(file);
+                    writer.write_all(buf.as_slice())
+                }).map_err(s)
+            });
+            match result {
+                Ok(_) => main_tx.send(Getter::Done(thread_id, request)).unwrap(),
+                Err(err) => main_tx.send(Getter::Fail(thread_id, format!("{}", err), request)).unwrap(),
             }
         }
     });

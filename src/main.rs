@@ -21,6 +21,7 @@ extern crate libarchive3_sys;
 extern crate libarchive;
 extern crate libc;
 extern crate lru_cache;
+extern crate md5;
 extern crate mkstemp;
 extern crate natord;
 extern crate num_cpus;

@@ -35,7 +35,6 @@ impl CurlOptions {
     pub fn generate(&self) -> EasyCurl {
         let mut curl = EasyCurl::new();
         self.apply(&mut curl);
-        println!("curl: {:?}", self);
         curl
     }
 

@@ -143,7 +143,6 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                     log_status(&SP::Fail(thread_id, err, request.url), queued.len(), buffer.len(), idles.len(), threads.len());
                 }
                 UpdateCurlOptions(new_options) => {
-                    println!("new_options: {:?}", new_options);
                     options = new_options;
                 }
             }

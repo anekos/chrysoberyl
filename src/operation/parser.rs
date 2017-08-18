@@ -355,7 +355,6 @@ pub fn parse_load(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut search_path).add_option(&["--search-path", "-p"], StoreTrue, SEARCH_PATH_DESC);
         parse_args(&mut ap, args)
     } .map(|_| {
-        println!("file: {:?}", file);
         Operation::Load(Expandable(file), search_path)
     })
 }

@@ -9,7 +9,8 @@ use std::thread::spawn;
 
 use curl::easy::Easy as EasyCurl;
 use curl;
-use md5;
+use r2d2;
+use r2d2_sqlite::SqliteConnectionManager;
 use url::Url;
 
 use app_path;
@@ -23,12 +24,14 @@ use sorting_buffer::SortingBuffer;
 use utils::s;
 
 pub mod curl_options;
+mod db;
 
 use self::curl_options::CurlOptions;
 
 
 
 type TID = usize;
+
 
 #[derive(Clone)]
 pub struct RemoteCache {
@@ -73,7 +76,7 @@ impl RemoteCache {
     }
 
     pub fn fetch(&mut self, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) -> Vec<QueuedOperation> {
-        let filepath = generate_temporary_filename(&url);
+        let filepath = db::get_cached_filename(&url);
 
         if filepath.exists() {
             let result = self.sorting_buffer.push_with_reserve(
@@ -190,41 +193,6 @@ fn curl_get(curl: &mut EasyCurl, url: &str, buf: &mut Vec<u8>) -> Result<(), cur
         })
     };
     transfer.perform()
-}
-
-fn fix_path_segment(s: &str, last: bool) -> String {
-    if s.len() > 32 {
-        if last {
-            let ext = Path::new(s).extension().and_then(|it| it.to_str()).unwrap_or("");
-            format!("{:x}.{}", md5::compute(s.as_bytes()), ext)
-        } else {
-            format!("{:x}", md5::compute(s.as_bytes()))
-        }
-    } else {
-        o!(s)
-    }
-}
-
-fn generate_temporary_filename(url: &str) -> PathBuf {
-    let mut result = app_path::cache_dir("remote");
-    let url = Url::parse(url).unwrap();
-    let host = url.host().unwrap();
-
-    match url.path_segments() {
-        Some(segs) => {
-            let len = segs.clone().count();
-            result.push(s!(host));
-            for seg in segs.enumerate().map(|(i, it)| fix_path_segment(it, i == len - 1)) {
-                result.push(seg);
-            }
-        },
-        None => {
-            result.push(format!("{}.png", url.host().unwrap()));
-        }
-    }
-
-    create_dir_all(&result.parent().unwrap()).unwrap();
-    result
 }
 
 fn make_queued_operation(file: PathBuf, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) -> QueuedOperation {

@@ -27,6 +27,8 @@ extern crate natord;
 extern crate num_cpus;
 extern crate onig;
 extern crate pom;
+extern crate r2d2;
+extern crate r2d2_sqlite;
 extern crate rand;
 extern crate regex;
 extern crate shell_escape;

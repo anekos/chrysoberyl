@@ -266,8 +266,8 @@ impl EntryContainer {
         self.entries.shuffle()
     }
 
-    pub fn sort(&mut self, current_index: Option<usize>) -> Option<usize> {
-        self.entries.sort(current_index)
+    pub fn sort(&mut self) -> Option<usize> {
+        self.entries.sort()
     }
 
     pub fn find_page_in_archive(&self, current: usize, page_number: usize) -> Option<usize> {

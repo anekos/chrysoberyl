@@ -788,16 +788,17 @@ pub fn parse_shell_filter(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_shuffle(args: &[String]) -> Result<Operation, String> {
+pub fn parse_modify_entry_order<T>(args: &[String], op: T) -> Result<Operation, String>
+where T: FnOnce(bool) -> Operation {
     let mut fix = false;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut fix)
-            .add_option(&["--fix", "-a"], StoreTrue, "Fix current page");
+            .add_option(&["--fix", "-f"], StoreTrue, "Fix current page");
         parse_args(&mut ap, args)
     } .and_then(|_| {
-        Ok(Operation::Shuffle(fix))
+        Ok(op(fix))
     })
 }
 

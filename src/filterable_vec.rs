@@ -76,9 +76,9 @@ impl<T: Clone + Hash + Eq + Sized + Ord> FilterableVec<T> {
         self.original_indices.clear();
     }
 
-    pub fn sort(&mut self, index_before_filter: Option<usize>) -> Option<usize> {
+    pub fn sort(&mut self) -> Option<usize> {
         self.original.sort();
-        self.filter(index_before_filter)
+        self.filter(None)
     }
 
     // Shuffle **original** entries

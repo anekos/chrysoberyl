@@ -811,15 +811,18 @@ pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) {
     updated.label = true;
 }
 
-pub fn on_sort(app: &mut App, updated: &mut Updated) {
-    if let Some(after_index) = app.entries.sort(app.paginator.current_index()) {
-        let paging = app.paging_with_index(false, true, after_index);
-        updated.pointer = app.paginator.show(paging);
+pub fn on_sort(app: &mut App, updated: &mut Updated, fix_current: bool) {
+    let serial = app.store();
+
+    app.entries.sort();
+
+    if fix_current {
+        app.restore_or_first(updated, serial);
+        updated.image = 1 < app.gui.len();
     } else {
-        let paging = app.paging_with_index(false, true, 0);
-        app.paginator.show(paging);
+        updated.image = true;
+        updated.pointer = true;
     }
-    updated.image = true;
 }
 
 pub fn on_spawn(app: &mut App) {

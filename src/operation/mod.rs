@@ -86,7 +86,7 @@ pub enum Operation {
     ShellFilter(Vec<Expandable>, bool), /* path, search_path */
     Show(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Shuffle(bool), /* Fix current */
-    Sort,
+    Sort(bool), /* fix */
     TellRegion(f64, f64, f64, f64, u32), /* lef,t top, right, bottom, mousesbutton */
     Timer(String, Vec<String>, Duration, Option<usize>),
     Unclip,
@@ -294,8 +294,8 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@shell"                        => parse_shell(whole),
             "@shell-filter"                 => parse_shell_filter(whole),
             "@show"                         => parse_move(whole, Show),
-            "@shuffle"                      => parse_shuffle(whole),
-            "@sort"                         => Ok(Sort),
+            "@shuffle"                      => parse_modify_entry_order(whole, Operation::Shuffle),
+            "@sort"                         => parse_modify_entry_order(whole, Operation::Sort),
             "@timer"                        => parse_timer(whole),
             "@toggle"                       => parse_option_1(whole, OptionUpdater::Toggle),
             "@unclip"                       => Ok(Unclip),
@@ -375,7 +375,7 @@ impl fmt::Debug for Operation {
             ShellFilter(_, _) => "ShellFilter",
             Show(_, _, _, _) => "Show",
             Shuffle(_) => "Shuffle",
-            Sort => "Sort ",
+            Sort(_) => "Sort ",
             TellRegion(_, _, _, _, _) => "TellRegion",
             Timer(_, _, _, _) => "Timer",
             Unclip => "Unclip ",

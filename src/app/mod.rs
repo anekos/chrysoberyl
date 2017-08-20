@@ -522,6 +522,10 @@ impl App {
     }
 
     fn update_message(&self, message: Option<String>) {
+        if !self.states.spawned {
+            return;
+        }
+
         let name = constant::env_name("MESSAGE");
 
         if let Some(message) = message {

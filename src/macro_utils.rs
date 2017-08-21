@@ -75,7 +75,7 @@ macro_rules! through {
         {
             match $e {
                 Ok($name) => through!([$($rest_n = $rest_e),*] $body),
-                Err(err) => puts_error!("reason" => s!(err))
+                Err(err) => puts_error!(s!(err)),
             }
         }
     }

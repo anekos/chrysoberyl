@@ -159,7 +159,7 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
                 CLE::Operation(op) => {
                     match Operation::parse_from_vec(&op) {
                         Ok(op) => app.tx.send(op).unwrap(),
-                        Err(err) => puts_error!("at" => "operation", "reason" => o!(err), "for" => join(&op, ' ')),
+                        Err(err) => puts_error!(o!(err), "at" => "operation", "for" => join(&op, ' ')),
                     }
                 }
             }
@@ -185,7 +185,7 @@ pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Exp
     let source = with_ouput_string!(out, {
         for file in files {
             if let Err(err) = File::open(file.expand()).and_then(|mut file| file.read_to_string(out)) {
-                puts_error!("at" => o!("on_load"), "reason" => s!(err));
+                puts_error!(s!(err), "at" => o!("on_load"));
             }
         }
         write_sessions(app, sessions, out);
@@ -216,7 +216,7 @@ pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Op
 
 pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) {
     if let Err(error) = app.user_switches.register(name, values) {
-        puts_error!("at" => "on_define_switch", "reason" => error);
+        puts_error!(error, "at" => "on_define_switch");
     }
 }
 
@@ -343,7 +343,7 @@ pub fn on_input(app: &mut App, input: &Input) {
             Ok(op) =>
                 app.operate(Operation::Context(OperationContext { input: input.clone(), cell_index: None }, Box::new(op))),
             Err(err) =>
-                puts_error!("at" => "input", "reason" => err)
+                puts_error!(err, "at" => "input")
         }
     }
 }
@@ -470,7 +470,7 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) {
         let text = format!("{:?}", file_operation);
         match result {
             Ok(_) => puts_event!("operate_file", "status" => "ok", "operation" => text),
-            Err(err) => puts_event!("operate_file", "status" => "fail", "reason" => err, "operation" => text),
+            Err(err) => puts_error!(err, "at" => "operate_file", "status" => "fail", "operation" => text),
         }
     }
 }
@@ -488,7 +488,7 @@ pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, search_path: 
         PopplerDocument::new_from_file(&*path).index().write(fmt, separator, &mut stdin);
         shell::call(async, &expand_all(command_line, search_path), Some(stdin), option!(read_operations, app.tx.clone()));
     } else {
-        puts_error!("at" => "on_pdf_index", "reason" => "current entry is not PDF");
+        puts_error!("current entry is not PDF", "at" => "on_pdf_index");
     }
 }
 
@@ -663,7 +663,7 @@ pub fn on_save(app: &mut App, path: &Option<PathBuf>, sessions: &[Session]) {
     });
 
     if let Err(err) = result {
-        puts_error!("at" => "save_session", "reason" => s!(err))
+        puts_error!(s!(err), "at" => "save_session")
     }
 }
 
@@ -763,7 +763,7 @@ pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scr
                 app.counter = saved;
                 app.operate(op);
             },
-            Err(err) => puts_error!("at" => "scroll", "reason" => err),
+            Err(err) => puts_error!(err, "at" => "scroll"),
         }
     }
 }
@@ -952,7 +952,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
         };
 
         if let Err(error) = result {
-            puts_error!("at" => "update_option", "reason" => error, "for" => d!(option_name));
+            puts_error!(error, "at" => "update_option", "for" => d!(option_name));
             return;
         }
     }
@@ -1023,7 +1023,7 @@ pub fn on_when(app: &mut App, filter: FilterExpr, unless: bool, op: &[String]) {
             Ok(op) =>
                 app.operate(op),
             Err(err) =>
-                puts_error!("at" => "input", "reason" => err)
+                puts_error!(err, "at" => "input")
         }
     }
 }
@@ -1044,7 +1044,7 @@ pub fn on_with_message(app: &mut App, updated: &mut Updated, message: Option<Str
 pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) {
     let count = index.unwrap_or_else(|| app.counter.pop()) - 1;
     if let Err(error) = app.gui.save(path, count) {
-        puts_error!("at" => "save", "reason" => error)
+        puts_error!(error, "at" => "save")
     }
 }
 

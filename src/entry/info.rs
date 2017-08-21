@@ -94,7 +94,7 @@ impl LazyEntryInfo {
             file_size: match metadata(&path)  {
                 Ok(meta) => meta.len(),
                 Err(error) => {
-                    puts_error!("at" => "LazyEntryInfo::new/file_size", "reason" => s!(error), "for" => path_to_str(&path));
+                    puts_error!(s!(error), "at" => "LazyEntryInfo::new/file_size", "for" => path_to_str(&path));
                     0
                 }
             }

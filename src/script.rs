@@ -21,7 +21,7 @@ pub fn load_from_file(tx: &Sender<Operation>, file: &Path) {
     let mut source = o!("");
     match File::open(file).and_then(|mut file| file.read_to_string(&mut source)) {
         Ok(_) => load_from_str(tx, &source),
-        Err(err) => puts_error!("at" => o!("on_load"), "reason" => s!(err)),
+        Err(err) => puts_error!(s!(err), "at" => o!("on_load")),
     }
     puts_event!("script/close", "file" => path_to_string(&file));
 }
@@ -34,7 +34,7 @@ fn load_from_str(tx: &Sender<Operation>, source: &str) {
             Ok(op) =>
                 process(tx, op),
             Err(err) =>
-                puts_error!("at" => "script/line", "reason" => s!(err), "for" => o!(line)),
+                puts_error!(s!(err), "at" => "script/line", "for" => o!(line)),
         }
     }
 }

@@ -32,7 +32,7 @@ fn main(command_line: Vec<String>, tx: Sender<Operation>) {
                     Ok(op) =>
                         tx.send(op).unwrap(),
                     Err(err) =>
-                        puts_error!("at" => "filter", "reason" => s!(err), "for" => &line),
+                        puts_error!(s!(err), "at" => "filter", "for" => &line),
                 }
             }
         }

@@ -15,7 +15,7 @@ pub fn register_file(tx: Sender<Operation>, filepath: String) {
             read_operations("file", file, &tx);
             puts_event!("input/file/close");
         } else {
-            puts_error!("at" => "input/file", "reason" => "Could not open file", "for" => filepath);
+            puts_error!("Could not open file", "at" => "input/file", "for" => filepath);
         }
     });
 }
@@ -31,7 +31,7 @@ pub fn register_stdin(tx: Sender<Operation>) {
             let line = line.unwrap();
             match Operation::parse_fuzziness(&line) {
                 Ok(op) => tx.send(op).unwrap(),
-                Err(err) => puts_error!("at" => "input/stdin", "reason" => err, "for" => &line)
+                Err(err) => puts_error!(err, "at" => "input/stdin", "for" => &line)
             }
         }
         puts_event!("input/stdin/close");

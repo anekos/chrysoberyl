@@ -50,7 +50,7 @@ impl TimerManager {
                 timer.tx.send(TimerOperation::Kill).unwrap();
             }
             None => {
-                puts_error!("at" => "timer/kill", "reason" => format!("timer `{}` is not found", name));
+                puts_error!(format!("timer `{}` is not found", name), "at" => "timer/kill");
             }
         }
     }
@@ -76,7 +76,7 @@ impl Timer {
                         puts_event!("timer/fire", "name" => name);
                         match Operation::parse_from_vec(&op) {
                             Ok(op) => app_tx.send(op).unwrap(),
-                            Err(err) => puts_error!("at" => "timer/fire", "reason" => err),
+                            Err(err) => puts_error!(err, "at" => "timer/fire"),
                         }
                         if let Some(repeat) = repeat.as_mut() {
                             *repeat -= 1;

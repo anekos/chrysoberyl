@@ -11,7 +11,7 @@ pub fn read_operations<T: Read>(at: &str, source: T, tx: &Sender<Operation>) {
         let line = line.unwrap();
         match Operation::parse_fuzziness(&line) {
             Ok(op) => tx.send(op).unwrap(),
-            Err(err) => puts_error!("at" => at, "reason" => err, "for" => &line)
+            Err(err) => puts_error!(err, "at" => at, "for" => &line)
         }
     }
 }

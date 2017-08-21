@@ -101,7 +101,7 @@ fn extract_action(action: *const sys::action_t) -> Option<IndexEntry> {
                 child: None,
             }
         }).map_err(|err| {
-            puts_error!("at" => "poppler/extract_action", "reason" => s!(err))
+            puts_error!(s!(err), "at" => "poppler/extract_action")
         }).ok()
     }
 }

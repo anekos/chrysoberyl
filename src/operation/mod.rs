@@ -43,9 +43,10 @@ pub enum Operation {
     Delete(Box<entry::filter::expression::Expr>),
     Draw,
     Editor(Option<Expandable>, Vec<Expandable>, Vec<Session>),
+    Error(String),
     Expand(bool, Option<PathBuf>), /* recursive, base */
-    First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Fill(Filler, Option<Region>, Color, bool, usize), /* region, mask, cell index */
+    First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Filter(bool, Box<Option<entry::filter::expression::Expr>>), /* dynamic, filter expression */
     Fragile(Expandable),
     Go(entry::SearchKey),
@@ -332,6 +333,7 @@ impl fmt::Debug for Operation {
             Delete(_) => "delete",
             Draw => "Draw ",
             Editor(_, _, _) => "Editor",
+            Error(ref error) => return write!(f, "Error({:?})", error),
             Expand(_, _) => "Expand",
             First(_, _, _, _) => "First",
             Fill(_, _, _, _, _) => "Fill",

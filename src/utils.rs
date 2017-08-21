@@ -14,6 +14,7 @@ pub fn path_to_string<T: AsRef<Path>>(path: &T) -> String {
     path.as_ref().to_str().unwrap().to_owned()
 }
 
+#[cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))]
 pub fn s<T: Display>(x: T) -> String {
     format!("{}", x)
 }

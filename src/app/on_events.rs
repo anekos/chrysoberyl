@@ -159,7 +159,7 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
                 CLE::Operation(op) => {
                     match Operation::parse_from_vec(&op) {
                         Ok(op) => app.tx.send(op).unwrap(),
-                        Err(err) => puts_error!(o!(err), "at" => "operation", "for" => join(&op, ' ')),
+                        Err(err) => puts_error!(err, "at" => "operation", "for" => join(&op, ' ')),
                     }
                 }
             }
@@ -193,6 +193,11 @@ pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Exp
     spawn(move || editor::start_edit(&tx, editor_command.map(|it| it.to_string()), &source));
 }
 
+pub fn on_error(app: &mut App, updated: &mut Updated, error: String) {
+    app.update_message(Some(error));
+    updated.message = true;
+}
+
 pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Option<PathBuf>) {
     let count = app.counter.pop();
 
@@ -220,7 +225,7 @@ pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) {
     }
 }
 
-pub fn on_delete(app: &mut App, updated: &mut Updated, expr: Box<FilterExpr>) {
+pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) {
     let current_index = app.paginator.current_index();
 
     let after_index = app.entries.delete(current_index, Box::new(move |ref mut entry| expr.evaluate(entry)));

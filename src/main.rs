@@ -36,6 +36,7 @@ extern crate url;
 
 #[macro_use] mod macro_utils;
 #[macro_use] mod logger;
+#[macro_use] mod error;
 
 mod app;
 mod app_path;

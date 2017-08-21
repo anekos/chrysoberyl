@@ -182,7 +182,7 @@ pub fn parse_delete(args: &[String]) -> Result<Operation, String> {
         ap.refer(&mut expr).add_argument("expression", Collect, "Filter expression");
         parse_args(&mut ap, args)
     } .and_then(|_| {
-        let op = join(&expr, ' ').parse().map(|it: FilterExpr| Operation::Delete(Box::new(it.not())));
+        let op = join(&expr, ' ').parse().map(|it: FilterExpr| Operation::Delete(Box::new(it.apply_not())));
         op.map(|op| Operation::WithMessage(Some(o!("Deleting")), Box::new(op)))
     })
 }

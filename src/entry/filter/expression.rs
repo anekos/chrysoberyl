@@ -78,7 +78,7 @@ impl Default for Expr {
 }
 
 impl Expr {
-    pub fn not(self) -> Self {
+    pub fn apply_not(self) -> Self {
         Expr::Not(Box::new(self))
     }
 }

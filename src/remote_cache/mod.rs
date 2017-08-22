@@ -171,7 +171,7 @@ fn processor(thread_id: usize, main_tx: Sender<Getter>) -> Sender<Request> {
             });
             match result {
                 Ok(_) => main_tx.send(Getter::Done(thread_id, request)).unwrap(),
-                Err(err) => main_tx.send(Getter::Fail(thread_id, format!("{}", err), request)).unwrap(),
+                Err(err) => main_tx.send(Getter::Fail(thread_id, err, request)).unwrap(),
             }
         }
     });

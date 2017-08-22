@@ -41,7 +41,7 @@ pub fn start_edit(tx: &Sender<Operation>, editor_command: Option<String>, defaul
             let line = line.unwrap();
             match Operation::parse_fuzziness(&line) {
                 Ok(op) => tx.send(op).unwrap(),
-                Err(err) => puts_error!("at" => "editor", "reason" => err, "for" => &line)
+                Err(err) => puts_error!(err, "at" => "editor", "for" => &line)
             }
         }
     }

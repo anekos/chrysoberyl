@@ -15,9 +15,3 @@ macro_rules! puts_event {
         puts!("event" => $event $(, $name => $value)*)
     }
 }
-
-macro_rules! puts_error {
-    ( $($name:expr => $value:expr),* ) => {
-        puts!("event" => "error" $(, $name => $value)*)
-    }
-}

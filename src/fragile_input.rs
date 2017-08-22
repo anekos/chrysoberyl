@@ -24,8 +24,8 @@ pub fn new_fragile_input<T: AsRef<Path>>(tx: Sender<Operation>, path: &T) {
 
     if res != 0 {
         puts_error!(
+            format!("Could not mkfifo {:?} {}", path.as_ref(), Error::last_os_error().raw_os_error().unwrap()),
             "at" => "fragile_controller",
-            "reason" => format!("Could not mkfifo {:?} {}", path.as_ref(), Error::last_os_error().raw_os_error().unwrap()),
             "for" => d!(path.as_ref()));
         return
     }
@@ -39,6 +39,6 @@ pub fn new_fragile_input<T: AsRef<Path>>(tx: Sender<Operation>, path: &T) {
             read_operations("fragile", file, &tx);
             puts_event!("input/fragile/close");
         }
-        puts_error!("at" => "fragile_controller", "reason" => "Could not open file", "for" => path_to_str(&path));
+        puts_error!("Could not open file", "at" => "fragile_controller", "for" => path_to_str(&path));
     });
 }

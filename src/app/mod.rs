@@ -19,18 +19,19 @@ use constant;
 use controller;
 use counter::Counter;
 use entry::{Entry, EntryContainer, EntryContent, Serial};
+use error;
 use events::EventName;
 use gui::Gui;
-use remote_cache::RemoteCache;
 use image_cache::ImageCache;
 use image_fetcher::ImageFetcher;
 use logger;
 use mapping::{Mapping, Input};
-use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy, Updated};
 use operation::option::PreDefinedOptionName;
+use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy, Updated};
 use option::user::UserSwitchManager;
 use paginator::values::Index;
 use paginator::{self, Paginator, Paging};
+use remote_cache::RemoteCache;
 use script;
 use shellexpand_wrapper as sh;
 use size::{Size, FitTo, Region};
@@ -123,6 +124,7 @@ impl App {
 
         script::load(&app.tx, &config::get_config_source());
         app.tx.send(Operation::InitialProcess(initial.entries, initial.shuffle)).unwrap();
+        error::register(app.tx.clone());
 
         (app, primary_rx, rx)
     }
@@ -171,11 +173,13 @@ impl App {
                 DefineUserSwitch(name, values) =>
                     on_define_switch(self, name, values),
                 Delete(expr) =>
-                    on_delete(self, &mut updated, expr),
+                    on_delete(self, &mut updated, *expr),
                 Draw =>
                     updated.image = true,
                 Editor(ref editor_command, ref files, ref sessions) =>
                    on_editor(self, editor_command.clone(), files, sessions),
+                Error(error) =>
+                    on_error(self, &mut updated, error),
                 Expand(recursive, ref base) =>
                     on_expand(self, &mut updated, recursive, base.clone()),
                 Fill(filler, region, color, mask, cell_index) =>

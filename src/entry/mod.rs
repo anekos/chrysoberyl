@@ -413,7 +413,7 @@ impl EntryContainer {
 
     pub fn push_image(&mut self, file: &PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) {
         if_let_some!(file = file.canonicalize().ok(), {
-            puts_error!("at" => "push_image", "reason" => o!("Failed to canonicalize"), "for" => path_to_str(&file));
+            puts_error!("Failed to canonicalize", "at" => "push_image", "for" => path_to_str(&file));
         });
 
         if let Some(expand_level) = expand_level {
@@ -425,7 +425,7 @@ impl EntryContainer {
                         }
                     },
                     Err(err) => {
-                        puts_error!("at" => "push_image", "reason" => s!(err), "for" => path_to_str(&file));
+                        puts_error!(s!(err), "at" => "push_image", "for" => path_to_str(&file));
                         return;
                     }
                 }

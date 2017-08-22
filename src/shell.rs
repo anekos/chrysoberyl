@@ -36,16 +36,14 @@ fn run(tx: Option<Sender<Operation>>, command_line: &[String], stdin: Option<Str
     // termination::register(terminator.clone());
     //
     puts_event!("shell/open");
-    if process_stdout(tx, child, stdin) {
-        puts_event!("shell/close");
-    } else {
-        puts_error!("at" => "shell", "for" => join(command_line, ','));
+    match process_stdout(tx, child, stdin) {
+        Ok(_) => puts_event!("shell/close"),
+        Err(err) => puts_error!(err, "at" => "shell", "for" => join(command_line, ',')),
     }
-
     // termination::unregister(&terminator);
 }
 
-fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<String>) -> bool {
+fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<String>) -> Result<(), &'static str> {
     use std::io::Write;
 
     if let Some(stdin) = stdin {
@@ -61,18 +59,18 @@ fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<Str
                 puts_event!("shell/stdout", "line" => line);
                 match Operation::parse_fuzziness(&line) {
                     Ok(op) => tx.send(op).unwrap(),
-                    Err(err) => puts_error!("at" => "shell_stdout", "reason" => err, "for" => &line)
+                    Err(err) => puts_error!(err, "at" => "shell_stdout", "for" => &line)
                 }
             }
         } else {
-            return false
+            return Err("Could not get stdout");
         }
     } else {
         let stderr = child.stderr;
         spawn(move || pass("stderr", stderr));
         pass("stdout", child.stdout);
     }
-    true
+    Ok(())
 }
 
 fn pass<T: Read + Send>(source: &str, out: Option<T>) {

@@ -45,6 +45,8 @@ use version;
 
 
 mod on_events;
+mod error_loop_detector;
+
 
 
 pub struct App {
@@ -63,6 +65,7 @@ pub struct App {
     search_text: Option<String>,
     found_on: Option<Range<usize>>,
     counter: Counter,
+    error_loop_detector: error_loop_detector::Detector,
     pub mapping: Mapping,
     pub paginator: Paginator,
     pub entries: EntryContainer,
@@ -120,6 +123,7 @@ impl App {
             search_text: None,
             found_on: None,
             counter: Counter::new(),
+            error_loop_detector: error_loop_detector::Detector::default(),
         };
 
         script::load(&app.tx, &config::get_config_source());

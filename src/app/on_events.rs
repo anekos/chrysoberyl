@@ -194,6 +194,10 @@ pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Exp
 }
 
 pub fn on_error(app: &mut App, updated: &mut Updated, error: String) {
+    if app.error_loop_detector.in_loop(&error) {
+        return;
+    }
+
     env::set_var(constant::env_name("ERROR"), &error);
     app.update_message(Some(error));
     updated.message = true;

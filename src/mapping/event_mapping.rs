@@ -37,14 +37,16 @@ impl EventMapping {
         match *event_name {
             Some(ref event_name) => {
                 if_let_some!(entries = self.table.get_mut(event_name), ());
-                entries.retain(|it| it.group == *group)
+                entries.retain(|it| it.group != *group);
             },
             None => {
                 for entries in self.table.values_mut() {
-                    entries.retain(|it| it.group == *group)
+                    entries.retain(|it| it.group != *group)
                 }
             }
         }
+
+        self.table.retain(|_, it| !it.is_empty());
     }
 
     pub fn matched(&mut self, event_name: &EventName, decrease_remain: bool) -> Vec<Vec<String>> {

@@ -1,4 +1,6 @@
 
+use std::collections::HashMap;
+use std::env;
 use std::io::{BufReader, BufRead, Read};
 use std::process::{Command, Stdio, Child};
 use std::sync::mpsc::Sender;
@@ -9,16 +11,20 @@ use utils::join;
 
 
 
+type Envs = HashMap<String, String>;
+
 pub fn call(async: bool, command_line: &[String], stdin: Option<String>, tx: Option<Sender<Operation>>) {
+    let envs = if async { Some(store_envs()) } else { None };
+
     if async {
         let command_line = command_line.to_vec();
-        spawn(move || run(tx, &command_line, stdin));
+        spawn(move || run(tx, envs, &command_line, stdin));
     } else {
-        run(tx, command_line, stdin);
+        run(tx, envs, command_line, stdin);
     }
 }
 
-fn run(tx: Option<Sender<Operation>>, command_line: &[String], stdin: Option<String>) {
+fn run(tx: Option<Sender<Operation>>, envs: Option<Envs>, command_line: &[String], stdin: Option<String>) {
     let (command_name, args) = command_line.split_first().expect("WTF: Empty command line");
 
     let mut command = Command::new(command_name);
@@ -29,6 +35,10 @@ fn run(tx: Option<Sender<Operation>>, command_line: &[String], stdin: Option<Str
         .stderr(Stdio::piped());
 
     command.stdin(if stdin.is_some() { Stdio::piped() } else { Stdio::null() });
+
+    if let Some(envs) = envs {
+        command.env_clear().envs(envs);
+    }
 
     let child = command.spawn().unwrap();
 
@@ -80,4 +90,16 @@ fn pass<T: Read + Send>(source: &str, out: Option<T>) {
             puts_event!(format!("shell/{}", source), "line" => line);
         }
     }
+}
+
+fn store_envs() -> Envs {
+    let mut result = HashMap::new();
+
+    for (key, value) in env::vars_os() {
+        if let (Ok(key), Ok(value)) = (key.into_string(), value.into_string()) {
+            result.insert(key, value);
+        }
+    }
+
+    result
 }

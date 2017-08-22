@@ -194,8 +194,10 @@ pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Exp
 }
 
 pub fn on_error(app: &mut App, updated: &mut Updated, error: String) {
+    env::set_var(constant::env_name("ERROR"), &error);
     app.update_message(Some(error));
     updated.message = true;
+    app.fire_event(EventName::Error);
 }
 
 pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Option<PathBuf>) {

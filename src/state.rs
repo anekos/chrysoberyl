@@ -33,9 +33,9 @@ pub struct States {
 }
 
 pub struct ViewState {
+    pub center_alignment: bool,
     pub cols: usize,
     pub rows: usize,
-    pub center_alignment: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -43,17 +43,17 @@ pub struct ScalingMethod(pub InterpType);
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DrawingState {
-    pub fit_to: FitTo,
-    pub scaling: ScalingMethod,
     pub clipping: Option<Region>,
+    pub fit_to: FitTo,
     pub mask_operator: MaskOperator,
+    pub scaling: ScalingMethod,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PreFetchState {
     pub enabled: bool,
-    pub page_size: usize,
     pub limit_of_items: usize,
+    pub page_size: usize,
 }
 
 #[derive(Clone, Debug, PartialEq)]

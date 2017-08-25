@@ -30,7 +30,7 @@ build() {
 package() {
   cd $_pkgname
   install -D -m755 "$srcdir/$_pkgname/target/release/chrysoberyl" "$pkgdir/usr/bin/chrysoberyl"
-  install -Dm644 "../$_pkgname.desktop" "$pkgdir/usr/share/applications/$_pkgname.desktop"
+  install -Dm644 "../../$_pkgname.desktop" "$pkgdir/usr/share/applications/$_pkgname.desktop"
   install -Dm644 -t "$pkgdir/usr/share/$_pkgname/script" "$srcdir/$_pkgname/res/dot.config/script/"*
 }
 

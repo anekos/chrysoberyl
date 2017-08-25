@@ -4,6 +4,7 @@ use std::default::Default;
 use cairo;
 use gdk_pixbuf::InterpType;
 
+use app_path::PathList;
 use entry::SearchKey;
 use entry::filter::expression::Expr as FilterExpr;
 use logger;
@@ -21,6 +22,7 @@ pub struct States {
     pub last_direction: Direction,
     pub last_filter: Filters,
     pub log_file: logger::file::File,
+    pub path_list: PathList,
     pub pre_fetch: PreFetchState,
     pub reverse: bool,
     pub skip_resize_window: usize,
@@ -88,6 +90,7 @@ impl Default for States {
             last_direction: Direction::Forward,
             last_filter: Filters::default(),
             log_file: logger::file::File::new(),
+            path_list: PathList::default(),
             pre_fetch: PreFetchState::default(),
             reverse: false,
             skip_resize_window: 0,

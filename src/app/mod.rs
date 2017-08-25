@@ -565,14 +565,17 @@ impl App {
             // Path means local file path, url, or pdf file path
             match entry.content {
                 Image(ref path) => {
+                    envs.push((o!("type"), o!("image")));
                     envs.push((o!("file"), o!(path_to_str(path))));
                 }
                 Archive(ref archive_file, ref entry) => {
+                    envs.push((o!("type"), o!("archive")));
                     envs.push((o!("file"), entry.name.clone()));
                     envs.push((o!("archive_file"), o!(path_to_str(&**archive_file))));
                     envs.push((o!("archive_page"), s!(entry.index + 1)));
                 },
                 Pdf(ref pdf_file, index) => {
+                    envs.push((o!("type"), o!("pdf")));
                     envs.push((o!("file"), o!(path_to_str(&**pdf_file))));
                     envs.push((o!("archive_page"), s!(index + 1)));
                 }
@@ -582,6 +585,7 @@ impl App {
                 envs.push((o!("url"), o!(*url)));
             }
 
+            envs.push((o!("page"), s!(index + 1)));
             envs.push((o!("begin_page"), s!(index + 1)));
             envs.push((o!("end_page"), s!(index + pages)));
             envs.push((o!("pages"), s!(len)));

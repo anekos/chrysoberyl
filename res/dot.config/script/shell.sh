@@ -8,6 +8,6 @@ set -euC
 
 check_app
 
-zenity --entry
+yanity --entry
 
 

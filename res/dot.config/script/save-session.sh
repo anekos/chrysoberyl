@@ -13,7 +13,8 @@ DIR=~/.cache/chrysoberyl/session
 mkdir -p "$DIR"
 
 function dialog {
-  zenity --file-selection --multiple \
+  yanity --file-selection \
+    --multiple \
     --filename="$DIR/session.chry" \
     --confirm-overwrite \
     --save \

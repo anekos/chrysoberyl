@@ -24,3 +24,12 @@ function check_app {
     exit 1
   fi
 }
+
+function yanity {
+  if has_command yad
+  then
+    yad "$@"
+  else
+    zenity "$@"
+  fi
+}

@@ -11,7 +11,8 @@ check_app
 DIR=~/.cache/chrysoberyl/session
 
 function dialog {
-  zenity --file-selection --multiple \
+  yanity --file-selection \
+    --multiple \
     --filename="$DIR/session.chry" \
     --file-filter "Chrysoberyl | *.chry" \
     --file-filter "All files (*.*)"

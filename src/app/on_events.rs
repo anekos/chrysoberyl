@@ -393,12 +393,12 @@ pub fn on_lazy_draw(app: &mut App, updated: &mut Updated, to_end: &mut bool, ser
 }
 
 pub fn on_load(app: &mut App, file: &Expandable, search_path: bool) {
-    let path = if search_path { file.search_path() } else { file.expand() };
-    script::load_from_file(&app.tx, &path);
+    let path = if search_path { file.search_path(&app.states.path_list) } else { file.expand() };
+    script::load_from_file(&app.tx, &path, &app.states.path_list);
 }
 
 pub fn on_load_default(app: &mut App) {
-    script::load(&app.tx, DEFAULT_CONFIG);
+    script::load(&app.tx, DEFAULT_CONFIG, &app.states.path_list);
 }
 
 pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, operation: Vec<String>) {
@@ -497,7 +497,7 @@ pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, search_path: 
     if let EntryContent::Pdf(path, _) = entry.content {
         let mut stdin = o!("");
         PopplerDocument::new_from_file(&*path).index().write(fmt, separator, &mut stdin);
-        shell::call(async, &expand_all(command_line, search_path), Some(stdin), option!(read_operations, app.tx.clone()));
+        shell::call(async, &expand_all(command_line, search_path, &app.states.path_list), Some(stdin), option!(read_operations, app.tx.clone()));
     } else {
         puts_error!("current entry is not PDF", "at" => "on_pdf_index");
     }
@@ -788,12 +788,12 @@ pub fn on_shell(app: &mut App, async: bool, read_operations: bool, search_path: 
 
     set_count_env(app);
     let tx = app.tx.clone();
-    shell::call(async, &expand_all(command_line, search_path), stdin, option!(read_operations, tx));
+    shell::call(async, &expand_all(command_line, search_path, &app.states.path_list), stdin, option!(read_operations, tx));
 }
 
 pub fn on_shell_filter(app: &mut App, command_line: &[Expandable], search_path: bool) {
     set_count_env(app);
-    shell_filter::start(expand_all(command_line, search_path), app.tx.clone());
+    shell_filter::start(expand_all(command_line, search_path, &app.states.path_list), app.tx.clone());
 }
 
 pub fn on_show(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {
@@ -927,6 +927,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 HorizontalViews => &mut app.states.view.cols,
                 LogFile => &mut app.states.log_file,
                 MaskOperator => &mut app.states.drawing.mask_operator,
+                PathList => &mut app.states.path_list,
                 PreFetchEnabled => &mut app.states.pre_fetch.enabled,
                 PreFetchLimit => &mut app.states.pre_fetch.limit_of_items,
                 PreFetchPageSize => &mut app.states.pre_fetch.page_size,

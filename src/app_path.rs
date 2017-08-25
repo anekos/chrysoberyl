@@ -1,13 +1,24 @@
 
+use std::default::Default;
+use std::fmt;
 use std::fs::create_dir_all;
 use std::path::{PathBuf, Path};
 
 use app_dirs::*;
 
+use option::{OptionValue, Result as OptionValueResult};
+use shellexpand_wrapper as sh;
+use utils::path_to_str;
+
+
 
 const APP_INFO: AppInfo = AppInfo { name: "chrysoberyl", author: "anekos" };
 pub const DEFAULT_SESSION_FILENAME: &'static str = "default";
 
+
+pub struct PathList {
+    pub entries: Vec<PathBuf>
+}
 
 
 pub fn cache_dir(path: &str) -> PathBuf {
@@ -33,26 +44,53 @@ pub fn config_file(filename: Option<&str>) -> PathBuf {
     file
 }
 
-pub fn search_path<T: AsRef<Path>>(filename: &T) -> PathBuf {
-    let path = filename.as_ref().to_path_buf();
-
-    let mut conf = config_dir();
-    conf.push(path.clone());
-    if conf.exists() {
-        return conf;
+pub fn search_path<T: AsRef<Path>>(filename: &T, path_list: &PathList) -> PathBuf {
+    for path in &path_list.entries {
+        let mut path = path.clone();
+        path.push(filename);
+        if path.exists() {
+            return path;
+        }
     }
 
-    let mut share = Path::new("/usr/share/chrysoberyl").to_path_buf();
-    share.push(path.clone());
-    if share.exists() {
-        return share;
-    }
-
-    let mut cache = get_app_root(AppDataType::UserCache, &APP_INFO).unwrap();
-    cache.push(path.clone());
-    if cache.exists() {
-        return cache;
-    }
-
-    path
+    Path::new(filename.as_ref()).to_path_buf()
 }
+
+
+impl OptionValue for PathList {
+    fn unset(&mut self) -> OptionValueResult {
+        *self = PathList::default();
+        Ok(())
+    }
+
+    fn set(&mut self, value: &str) -> OptionValueResult {
+        self.entries = value.split(':').map(sh::expand_to_pathbuf).collect();
+        Ok(())
+    }
+}
+
+impl Default for PathList {
+    fn default() -> Self {
+        let mut entries = vec![];
+        entries.push(config_dir());
+        entries.push(Path::new("/usr/share/chrysoberyl").to_path_buf());
+        if let Ok(entry) = get_app_root(AppDataType::UserCache, &APP_INFO) {
+            entries.push(entry);
+        }
+        PathList { entries: entries }
+    }
+}
+
+impl fmt::Display for PathList {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let last = self.entries.len() - 1;
+        for (i, entry) in self.entries.iter().enumerate() {
+            let result = write!(f, "{}{}", path_to_str(entry), if i == last { "" } else { ":" });
+            if result.is_err() {
+                return result;
+            }
+        }
+        Ok(())
+    }
+}
+

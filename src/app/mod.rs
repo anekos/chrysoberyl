@@ -126,7 +126,7 @@ impl App {
             user_switches: UserSwitchManager::new(tx.clone()),
         };
 
-        script::load(&app.tx, &config::get_config_source());
+        script::load(&app.tx, &config::get_config_source(), &app.states.path_list);
         app.tx.send(Operation::InitialProcess(initial.entries, initial.shuffle)).unwrap();
         error::register(app.tx.clone());
 

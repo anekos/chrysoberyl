@@ -36,6 +36,7 @@ iterable_enum!(PreDefinedOptionName =>
     HorizontalViews,
     LogFile,
     MaskOperator,
+    PathList,
     PreFetchEnabled,
     PreFetchLimit,
     PreFetchPageSize,
@@ -68,6 +69,7 @@ impl FromStr for PreDefinedOptionName {
             "horizontal-views"                     => HorizontalViews,
             "log-file" | "log"                     => LogFile,
             "mask-operator"                        => MaskOperator,
+            "path"                                 => PathList,
             "pre-render"                           => PreFetchEnabled,
             "pre-render-limit"                     => PreFetchLimit,
             "pre-render-pages"                     => PreFetchPageSize,
@@ -97,7 +99,7 @@ impl PreDefinedOptionName {
             AbbrevLength | AutoPaging | CenterAlignment |
                 ColorError | ColorErrorBackground | ColorStatusBar | ColorStatusBarBackground | ColorWindowBackground |
                 FitTo | HorizontalViews | LogFile | MaskOperator |
-                PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
+                PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
                 Reverse | Scaling | SkipResizeWindow | StatusBar | StatusFormat | TitleFormat | VerticalViews => false,
             CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => true,
         }

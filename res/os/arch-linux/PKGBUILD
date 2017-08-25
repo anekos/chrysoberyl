@@ -21,7 +21,7 @@ prepare() {
     --genericname 'Image viewer' \
     --categories='Graphics;2DGraphics;Viewer;' \
     --mimetypes='image/bmp;image/gif;image/jpeg;image/jpg;image/pjpeg;image/png;image/tiff;image/x-bmp;image/x-pcx;image/x-png;image/x-portable-anymap;image/x-portable-bitmap;image/x-portable-graymap;image/x-portable-pixmap;image/x-tga;image/x-xbitmap;application/pdf' \
-    --exec 'chrysoberyl %f'
+    --exec 'chrysoberyl %F'
 }
 
 pkgver() {
@@ -38,6 +38,6 @@ package() {
   cd $_pkgname
   install -D -m755 "$srcdir/$_pkgname/target/release/chrysoberyl" "$pkgdir/usr/bin/chrysoberyl"
   install -Dm644 "$srcdir/$_pkgname.desktop" "$pkgdir/usr/share/applications/$_pkgname.desktop"
-  install -Dm644 -t "$pkgdir/usr/share/$_pkgname/script" "$srcdir/$_pkgname/res/script/"*
+  install -Dm644 -t "$pkgdir/usr/share/$_pkgname/script" "$srcdir/$_pkgname/res/dot.config/script/"*
 }
 

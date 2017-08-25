@@ -8,10 +8,6 @@ set -euC
 
 check_app
 
-function dialog {
-  zenity --entry
-}
-
-dialog
+zenity --entry
 
 

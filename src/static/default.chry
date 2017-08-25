@@ -78,6 +78,7 @@
 @map key o            @shell --operation --search-path script/open-dialog.sh
 @map key i            @shell --operation --search-path script/pdf-index.sh
 @map key a            @shell --operation --search-path script/shell.sh
+@map key C-g          @shell --operation --search-path script/go-page.sh
 
 # pre-redner
 @set pre-render yes

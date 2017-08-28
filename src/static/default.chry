@@ -29,8 +29,8 @@
 @map key L            @next     --ignore-views
 
 # move (archive)
-@map key p            @previous --archive
-@map key n            @next     --archive
+@map key P            @previous --archive
+@map key N            @next     --archive
 
 # toggle a option
 @map key t,a          @toggle auto-paging

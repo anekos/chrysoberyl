@@ -1,0 +1,36 @@
+# Contributor: anekos
+# Maintainer: anekos
+pkgname=chrysoberyl-git
+_pkgname=chrysoberyl
+pkgdesc="Viewer for (local/remote) (images|PDFs|images in archive)"
+pkgver=0.1.0.916
+pkgrel=1
+arch=('x86_64')
+conflicts=("chrysoberyl")
+provides=("chrysoberyl")
+url="https://github.com/anekos/chrysoberyl"
+license=('GPL')
+source=('git://github.com/anekos/chrysoberyl.git')
+sha256sums=('SKIP')
+
+prepare() {
+  :
+}
+
+pkgver() {
+  cd $_pkgname
+  echo $(grep '^version =' Cargo.toml|head -n1|cut -d\" -f2).$(git rev-list --count HEAD)
+}
+
+build() {
+  cd $_pkgname
+  cargo build --release
+}
+
+package() {
+  cd $_pkgname
+  install -D -m755 "$srcdir/$_pkgname/target/release/chrysoberyl" "$pkgdir/usr/bin/chrysoberyl"
+  install -Dm644 "../../$_pkgname.desktop" "$pkgdir/usr/share/applications/$_pkgname.desktop"
+  install -Dm644 -t "$pkgdir/usr/share/$_pkgname/script" "$srcdir/$_pkgname/res/dot.config/script/"*
+}
+

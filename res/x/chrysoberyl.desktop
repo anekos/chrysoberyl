@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Chrysoberyl
+GenericName=Image Viewer
+Comment=Viewer for (local|remote) (image|PDF|images in archive)
+Path=/usr/bin
+Exec=chrysoberyl
+Icon=chrysoberyl
+Terminal=false
+Categories=Graphics

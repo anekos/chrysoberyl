@@ -15,7 +15,7 @@ pub fn get_entry_type_from_filename<T: AsRef<Path>>(path: &T) -> Option<EntryTyp
             Some(EntryType::Archive),
         "pdf" =>
             Some(EntryType::PDF),
-        "jpeg" | "jpg" | "png" | "gif" =>
+        "ani" | "bmp" | "cur" | "gif" | "icns" | "ico" | "j2k" | "jp2" | "jpc" | "jpe" | "jpeg" | "jpf" | "jpg" | "jpx" | "pbm" | "pgm" | "png" | "pnm" | "ppm" | "qif" | "qtif" | "svg" | "svg.gz" | "svgz" | "targa" | "tga" | "tif" | "tiff" | "xbm" | "xpm" =>
             Some(EntryType::Image),
         _ =>
             None

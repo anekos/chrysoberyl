@@ -11,7 +11,7 @@ pub fn get_entry_type_from_filename<T: AsRef<Path>>(path: &T) -> Option<EntryTyp
     let ext = ext.to_lowercase();
 
     match &*ext {
-        "zip" | "rar" | "tar.gz" | "lzh" | "lha" =>
+        "7z" | "ar" | "cab" | "cpio" | "iso9660" | "lha" | "lzh" | "mtree" | "pax" | "rar" | "shar" | "tar" | "xar" | "zip" =>
             Some(EntryType::Archive),
         "pdf" =>
             Some(EntryType::PDF),

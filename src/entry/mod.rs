@@ -381,7 +381,7 @@ impl EntryContainer {
     fn push_entry(&mut self, entry: Entry, force: bool) {
         let entry = Rc::new(entry);
 
-        if self.is_valid_image(&entry) && (force || !self.is_duplicated(&entry)) {
+        if force || !self.is_duplicated(&entry) {
             self.entries.push(entry);
         }
     }

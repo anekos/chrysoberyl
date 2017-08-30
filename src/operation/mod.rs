@@ -79,6 +79,7 @@ pub enum Operation {
     Random,
     Refresh,
     ResetImage,
+    ResetScrolls(bool), /* to_end */
     Save(Option<PathBuf>, Vec<Session>),
     SearchText(Option<String>, bool, Color), /* text, backward */
     Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
@@ -369,6 +370,7 @@ impl fmt::Debug for Operation {
             Random => "Random ",
             Refresh => "Refresh ",
             ResetImage => "ResetImage ",
+            ResetScrolls(_) => "ResetScrolls",
             Save(_, _) => "Save",
             SearchText(_, _, _) => "SearchText",
             Scroll(_, _, _) => "Scroll",

@@ -254,6 +254,8 @@ impl App {
                     updated.pointer = true,
                 ResetImage =>
                     on_reset_image(self, &mut updated),
+                ResetScrolls(to_end) =>
+                    on_reset_scrolls(self, to_end),
                 Save(ref path, ref sources) =>
                     on_save(self, path, sources),
                 SearchText(text, backward, color) =>
@@ -464,10 +466,6 @@ impl App {
         let mut image_size = None;
         let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
 
-        if self.states.drawing.fit_to.is_scrollable() {
-            self.gui.reset_scrolls(to_end);
-        }
-
         if self.states.pre_fetch.enabled {
             self.pre_fetch(cell_size, 0..1);
         }
@@ -494,6 +492,11 @@ impl App {
             } else {
                 cell.image.set_from_pixbuf(None);
             }
+        }
+
+        if self.states.drawing.fit_to.is_scrollable() {
+            self.tx.send(Operation::UpdateUI).unwrap();
+            self.tx.send(Operation::ResetScrolls(to_end)).unwrap();
         }
 
         if self.states.pre_fetch.enabled {

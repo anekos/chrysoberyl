@@ -665,6 +665,10 @@ pub fn on_reset_image(app: &mut App, updated: &mut Updated) {
     }
 }
 
+pub fn on_reset_scrolls(app: &mut App, to_end: bool) {
+    app.gui.reset_scrolls(to_end);
+}
+
 pub fn on_save(app: &mut App, path: &Option<PathBuf>, sessions: &[Session]) {
     let default = app_path::config_file(Some(app_path::DEFAULT_SESSION_FILENAME));
     let path = path.as_ref().unwrap_or(&default);

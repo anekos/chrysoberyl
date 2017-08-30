@@ -1,15 +1,17 @@
 
 use std::collections::VecDeque;
 use std::env;
-use std::fs::{File, create_dir_all};
-use std::io::{BufWriter, Write};
+use std::fs::{self, File, create_dir_all};
+use std::io::{BufWriter, Write, Error as IOError};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Sender};
 use std::thread::spawn;
 
 use curl::easy::Easy as EasyCurl;
 use curl;
+use filetime::{FileTime, set_file_times};
 use md5;
+use time;
 use url::Url;
 
 use app_path;
@@ -35,6 +37,7 @@ pub struct RemoteCache {
     app_tx: Sender<Operation>,
     main_tx: Sender<Getter>,
     sorting_buffer: SortingBuffer<QueuedOperation>,
+    pub do_update_atime: bool,
 }
 
 #[derive(Clone)]
@@ -69,13 +72,18 @@ enum SP {
 impl RemoteCache {
     pub fn new(max_threads: u8, app_tx: Sender<Operation>, sorting_buffer: SortingBuffer<QueuedOperation>) -> Self {
         let main_tx = main(max_threads, app_tx.clone(), sorting_buffer.clone());
-        RemoteCache { app_tx: app_tx, main_tx: main_tx, sorting_buffer: sorting_buffer  }
+        RemoteCache { app_tx: app_tx, main_tx: main_tx, sorting_buffer: sorting_buffer, do_update_atime: false }
     }
 
     pub fn fetch(&mut self, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) -> Vec<QueuedOperation> {
         let filepath = generate_temporary_filename(&url);
 
         if filepath.exists() {
+            if self.do_update_atime {
+                if let Err(e) = update_atime(&filepath) {
+                    puts_error!(s!(e), "at" => "update_atime");
+                }
+            }
             let result = self.sorting_buffer.push_with_reserve(
                 make_queued_operation(filepath, url, meta, force, entry_type));
             self.update_sorting_buffer_len();
@@ -272,4 +280,13 @@ fn log_status(sp: &SP, queues: usize, buffers: usize, idles: usize, threads: usi
     env::set_var(env_name("remote_buffer"), b);
     env::set_var(env_name("remote_idles"), w);
     env::set_var(env_name("remote_thread"), t);
+}
+
+
+fn update_atime<T: AsRef<Path>>(path: &T) -> Result<(), IOError> {
+    let meta = try!(fs::metadata(path));
+    let ts = time::now().to_timespec();
+    let mtime = FileTime::from_last_modification_time(&meta);
+    let atime = FileTime::from_seconds_since_1970(ts.sec as u64, ts.nsec as u32);
+    set_file_times(path, atime, mtime)
 }

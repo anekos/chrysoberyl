@@ -45,6 +45,7 @@ iterable_enum!(PreDefinedOptionName =>
     SkipResizeWindow,
     StatusBar,
     StatusFormat,
+    UpdateCacheAccessTime,
     TitleFormat,
     VerticalViews,
 );
@@ -79,6 +80,7 @@ impl FromStr for PreDefinedOptionName {
             "status-format"                        => StatusFormat,
             "title-format"                         => TitleFormat,
             "vertical-views"                       => VerticalViews,
+            "update-cache-atime"                   => UpdateCacheAccessTime,
             "window-background-color"              => ColorWindowBackground,
             "skip-resize-window"                   => SkipResizeWindow,
             "status-bar-color"                     => ColorStatusBar,
@@ -100,7 +102,7 @@ impl PreDefinedOptionName {
                 ColorError | ColorErrorBackground | ColorStatusBar | ColorStatusBarBackground | ColorWindowBackground |
                 FitTo | HorizontalViews | LogFile | MaskOperator |
                 PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
-                Reverse | Scaling | SkipResizeWindow | StatusBar | StatusFormat | TitleFormat | VerticalViews => false,
+                Reverse | Scaling | SkipResizeWindow | StatusBar | StatusFormat | UpdateCacheAccessTime | TitleFormat | VerticalViews => false,
             CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => true,
         }
     }

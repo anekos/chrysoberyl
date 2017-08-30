@@ -11,6 +11,7 @@ extern crate ctrlc;
 extern crate curl;
 extern crate encoding;
 extern crate env_logger;
+extern crate filetime;
 extern crate gdk;
 extern crate gdk_pixbuf;
 extern crate glib;
@@ -31,6 +32,7 @@ extern crate rand;
 extern crate regex;
 extern crate shell_escape;
 extern crate shellexpand;
+extern crate time;
 extern crate tldextract;
 extern crate url;
 

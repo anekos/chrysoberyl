@@ -31,6 +31,7 @@ pub struct States {
     pub status_format: StatusFormat,
     pub stdout: Option<logger::Handle>,
     pub title_format: TitleFormat,
+    pub update_cache_atime: bool,
     pub view: ViewState,
 }
 
@@ -99,6 +100,7 @@ impl Default for States {
             status_format: StatusFormat::default(),
             stdout: None,
             title_format: TitleFormat::default(),
+            update_cache_atime: false,
             view: ViewState::default(),
         }
     }

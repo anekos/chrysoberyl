@@ -941,6 +941,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 StatusBar => &mut app.states.status_bar,
                 StatusFormat => &mut app.states.status_format,
                 TitleFormat => &mut app.states.title_format,
+                UpdateCacheAccessTime => &mut app.states.update_cache_atime,
                 VerticalViews => &mut app.states.view.rows,
                 ColorWindowBackground => &mut app.gui.colors.window_background,
                 ColorStatusBar => &mut app.gui.colors.status_bar,
@@ -999,6 +1000,8 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 app.gui.update_colors(),
             VerticalViews | HorizontalViews =>
                 on_update_views(app, updated),
+            UpdateCacheAccessTime =>
+                app.remote_cache.do_update_atime = app.states.update_cache_atime,
             _ => ()
         }
     }

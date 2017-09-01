@@ -11,6 +11,7 @@ use std::sync::Arc;
 use natord;
 use url::Url;
 
+use app::info::AppInfo;
 use archive::ArchiveEntry;
 use entry::filter::expression::Expr as FilterExpr;
 use file_extension::{is_valid_image_filename};
@@ -26,9 +27,11 @@ use self::info::EntryInfo;
 
 
 
+type FilterPred = Pred<Entry, AppInfo>;
+
 pub struct EntryContainer {
     serial: Serial,
-    entries: FilterableVec<Entry>,
+    entries: FilterableVec<Entry, AppInfo>,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -194,6 +197,10 @@ impl EntryContainer {
         self.entries.len()
     }
 
+    pub fn real_len(&self) -> usize {
+        self.entries.real_len()
+    }
+
     pub fn nth(&self, index: usize) -> Option<Entry> {
         self.entries.get(index).map(|it: &Rc<Entry>| {
             (**it).clone()
@@ -204,11 +211,11 @@ impl EntryContainer {
         self.entries.iter().map(|it: &Rc<Entry>| (**it).display_path()).collect()
     }
 
-    pub fn validate_nth(&mut self, index: usize, expr: FilterExpr) -> Option<bool> {
-        self.entries.validate_nth(index, Box::new(move |ref mut entry| expr.evaluate(entry)))
+    pub fn validate_nth(&mut self, index: usize, expr: FilterExpr, app_info: &AppInfo) -> Option<bool> {
+        self.entries.validate_nth(index, app_info, Box::new(move |ref mut entry, ref app_info| expr.evaluate(entry, app_info)))
     }
 
-    pub fn expand(&mut self, center: Option<(PathBuf, usize, Entry)>, dir: Option<PathBuf>, n: u8, recursive: u8) -> bool {
+    pub fn expand(&mut self, app_info: &AppInfo, center: Option<(PathBuf, usize, Entry)>, dir: Option<PathBuf>, n: u8, recursive: u8) -> bool {
         let result =
             if let Some((file, index, current_entry)) = center {
                 let dir = n_parents(file.clone(), n);
@@ -254,20 +261,20 @@ impl EntryContainer {
 
         if let Some(expanded) = result {
             self.entries.clear();
-            self.entries.extend_from_slice(expanded.as_slice());
-            self.entries.filter(None);
+            self.entries.extend_from_slice(app_info, expanded.as_slice());
+            self.entries.filter(app_info, None);
             true
         } else {
             false
         }
     }
 
-    pub fn shuffle(&mut self) {
-        self.entries.shuffle()
+    pub fn shuffle(&mut self, app_info: &AppInfo) {
+        self.entries.shuffle(app_info)
     }
 
-    pub fn sort(&mut self) -> Option<usize> {
-        self.entries.sort()
+    pub fn sort(&mut self, app_info: &AppInfo) -> Option<usize> {
+        self.entries.sort(app_info)
     }
 
     pub fn find_page_in_archive(&self, current: usize, page_number: usize) -> Option<usize> {
@@ -378,17 +385,18 @@ impl EntryContainer {
         })
     }
 
-    fn push_entry(&mut self, entry: Entry, force: bool) {
+    fn push_entry(&mut self, app_info: &AppInfo, entry: Entry, force: bool) {
         let entry = Rc::new(entry);
 
         if force || !self.is_duplicated(&entry) {
-            self.entries.push(entry);
+            self.entries.push(&app_info, entry);
         }
     }
 
-    pub fn push_archive_entry(&mut self, archive_path: &PathBuf, entry: &ArchiveEntry, meta: Option<Meta>, force: bool, url: Option<String>) {
+    pub fn push_archive_entry(&mut self, app_info: &AppInfo, archive_path: &PathBuf, entry: &ArchiveEntry, meta: Option<Meta>, force: bool, url: Option<String>) {
         let serial = self.new_serial();
         self.push_entry(
+            app_info,
             Entry::new(
                 serial,
                 EntryContent::Archive(Arc::new(archive_path.clone()), entry.clone()),
@@ -397,10 +405,10 @@ impl EntryContainer {
             force);
     }
 
-    pub fn push_pdf_entry(&mut self, pdf_path: Arc<PathBuf>, index: usize, meta: Option<Meta>, force: bool, url: Option<String>) {
+    pub fn push_pdf_entry(&mut self, app_info: &AppInfo, pdf_path: Arc<PathBuf>, index: usize, meta: Option<Meta>, force: bool, url: Option<String>) {
         let content = EntryContent::Pdf(pdf_path.clone(), index);
         let serial = self.new_serial();
-        self.push_entry(Entry::new(serial, content, meta, url), force);
+        self.push_entry(&app_info, Entry::new(serial, content, meta, url), force);
     }
 
     pub fn search(&self, key: &SearchKey) -> Option<usize> {
@@ -411,7 +419,7 @@ impl EntryContainer {
         self.entries.iter().position(|it| it.serial == serial)
     }
 
-    pub fn push_image(&mut self, file: &PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) {
+    pub fn push_image(&mut self, app_info: &AppInfo, file: &PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) {
         if_let_some!(file = file.canonicalize().ok(), {
             puts_error!(format!("Invalid file path: {:?}", file), "at" => "push_image", "for" => path_to_str(&file));
         });
@@ -421,7 +429,7 @@ impl EntryContainer {
                 match expand(dir, expand_level) {
                     Ok(files) => {
                         for file in files {
-                            self.push_image(&file, meta.clone(), force, None, None);
+                            self.push_image(app_info, &file, meta.clone(), force, None, None);
                         }
                     },
                     Err(err) => {
@@ -434,16 +442,17 @@ impl EntryContainer {
 
         let serial = self.new_serial();
         self.push_entry(
+            app_info,
             Entry::new(serial, EntryContent::Image(file), meta, url),
             force);
     }
 
-    pub fn push_directory(&mut self, dir: &PathBuf, meta: Option<Meta>, force: bool) {
+    pub fn push_directory(&mut self, app_info: &AppInfo, dir: &PathBuf, meta: Option<Meta>, force: bool) {
         through!([expanded = expand(dir, <u8>::max_value())] {
             let mut expanded = expanded;
             expanded.sort_by(|a, b| natord::compare(path_to_str(a), path_to_str(b)));
             for file in expanded {
-                self.push_image(&file, meta.clone(), force, None, None);
+                self.push_image(app_info, &file, meta.clone(), force, None, None);
             }
         });
     }
@@ -461,12 +470,12 @@ impl EntryContainer {
         }
     }
 
-    pub fn update_filter(&mut self, dynamic: bool, current_index: Option<usize>, pred: Option<Pred<Entry>>) -> Option<usize> {
-        self.entries.update_filter(dynamic, current_index, pred)
+    pub fn update_filter(&mut self, app_info: &AppInfo, dynamic: bool, current_index: Option<usize>, pred: Option<FilterPred>) -> Option<usize> {
+        self.entries.update_filter(app_info, dynamic, current_index, pred)
     }
 
-    pub fn delete(&mut self, current_index: Option<usize>, pred: Pred<Entry>) -> Option<usize> {
-        self.entries.delete(current_index, pred)
+    pub fn delete(&mut self, app_info: &AppInfo, current_index: Option<usize>, pred: FilterPred) -> Option<usize> {
+        self.entries.delete(app_info, current_index, pred)
     }
 }
 

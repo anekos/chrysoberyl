@@ -325,7 +325,7 @@ fn write_envs(out: &mut String) {
 }
 
 pub fn write_filters(filters: &Filters, out: &mut String) {
-    write_filter(&filters.static_filter, "--static", out);
+    write_filter(&filters.static_filter, " --static", out);
     write_filter(&filters.dynamic_filter, " --dynamic", out);
 }
 

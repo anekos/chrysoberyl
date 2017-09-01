@@ -50,6 +50,7 @@ pub struct DrawingState {
     pub fit_to: FitTo,
     pub mask_operator: MaskOperator,
     pub scaling: ScalingMethod,
+    pub rotation: u8,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -115,6 +116,7 @@ impl Default for DrawingState {
             scaling: ScalingMethod::default(),
             clipping: None,
             mask_operator: MaskOperator(cairo::Operator::DestIn),
+            rotation: 0,
         }
     }
 }

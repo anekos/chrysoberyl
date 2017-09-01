@@ -129,6 +129,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         PreFetchLimit => gen("pre-render-limit", &st.pre_fetch.limit_of_items, context),
         PreFetchPageSize => gen("pre-render-pages", &st.pre_fetch.page_size, context),
         Reverse => gen("reverse", &b2s(st.reverse), context),
+        Rotation => gen("rotation", &st.drawing.rotation, context),
         Scaling => gen("scaling", &st.drawing.scaling, context),
         SkipResizeWindow => gen("skip-resize-window", &st.skip_resize_window, context),
         StatusBar => gen("status-bar", &b2s(st.status_bar), context),

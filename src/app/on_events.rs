@@ -936,6 +936,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 PreFetchLimit => &mut app.states.pre_fetch.limit_of_items,
                 PreFetchPageSize => &mut app.states.pre_fetch.page_size,
                 Reverse => &mut app.states.reverse,
+                Rotation => &mut app.states.drawing.rotation,
                 SkipResizeWindow => &mut app.states.skip_resize_window,
                 Scaling => &mut app.states.drawing.scaling,
                 StatusBar => &mut app.states.status_bar,
@@ -992,7 +993,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 app.reset_view();
                 updated.image_options = true;
             }
-            FitTo =>
+            FitTo | Rotation =>
                 updated.image_options = true,
             PreFetchLimit =>
                 app.cache.update_limit(app.states.pre_fetch.limit_of_items),

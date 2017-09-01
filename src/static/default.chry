@@ -64,6 +64,7 @@
 @map key c            @unclip
 @map key C            @reset-image
 @map key u            @undo
+@map key R            @cycle rotation
 
 # Mouse
 @map mouse 1          @scroll --size 0.8 down @next

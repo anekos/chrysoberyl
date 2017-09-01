@@ -42,25 +42,36 @@ impl OptionValue for bool {
 }
 
 
-impl OptionValue for usize {
-    fn cycle(&mut self, reverse: bool) -> Result {
-        if reverse {
-            if *self != 0 {
-                *self -= 1;
-            }
-        } else {
-            *self += 1;
-        }
-        Ok(())
-    }
+macro_rules! def_uint {
+    ($type:ty) => {
+        impl OptionValue for $type {
+            fn cycle(&mut self, reverse: bool) -> Result {
+                if reverse {
+                    if *self != 0 {
+                        *self -= 1;
+                    }
+                } else if *self < <$type>::max_value() {
+                    *self += 1;
+                } else {
+                    *self = 0
+                }
 
-    fn set(&mut self, value: &str) -> Result {
-        value.parse().map(|value| {
-            *self = value;
-        }).map_err(|it| s!(it))
+                Ok(())
+            }
+
+            fn unset(&mut self) -> Result {
+                *self = 0;
+                Ok(())
+            }
+
+            fn set(&mut self, value: &str) -> Result {
+                value.parse().map(|value| {
+                    *self = value;
+                }).map_err(|it| s!(it))
+            }
+        }
     }
 }
-
 
 macro_rules! def_opt_uint {
     ($type:ty) => {
@@ -96,6 +107,8 @@ macro_rules! def_opt_uint {
 def_opt_uint!(usize);
 def_opt_uint!(u64);
 def_opt_uint!(u32);
+def_uint!(usize);
+def_uint!(u8);
 
 
 impl OptionValue for Color {

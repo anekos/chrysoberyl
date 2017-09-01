@@ -398,6 +398,7 @@ impl App {
         AppInfo {
             pages: self.entries.len(),
             real_pages: self.entries.real_len(),
+            current_page: self.current().map(|it| it.1 + 1),
         }
     }
 

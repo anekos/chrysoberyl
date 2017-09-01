@@ -54,17 +54,18 @@ pub enum EValue {
 
 #[derive(Clone, Debug, Copy)]
 pub enum EVariable {
-    Width,
-    Height,
-    Path,
-    Name,
-    Page,
-    Extension,
-    Type,
+    ArchivePage,
+    CurrentPage,
     Dimentions,
+    Extension,
     FileSize,
+    Height,
+    Name,
     Pages,
+    Path,
     RealPages,
+    Type,
+    Width,
 }
 
 #[derive(Clone, Debug, Copy)]

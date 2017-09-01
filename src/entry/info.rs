@@ -32,12 +32,12 @@ pub struct StrictEntryInfo {
     pub name: String, // local filepath, inner filename in archive filepath or url
     pub extension: Option<String>,
     pub entry_type: &'static str,
-    pub page: i64,
+    pub archive_page: i64, // page number in archive
 }
 
 
 impl EntryInfo {
-    pub fn new(content: &EntryContent, path: &str, page: usize) -> EntryInfo {
+    pub fn new(content: &EntryContent, path: &str, archive_page: usize) -> EntryInfo {
         use self::EntryContent::*;
 
         let extension = Path::new(path).extension().and_then(|it| it.to_str().map(|it| it.to_owned()));
@@ -60,7 +60,7 @@ impl EntryInfo {
                 extension: extension,
                 path: o!(path),
                 name: name,
-                page: page as i64,
+                archive_page: archive_page as i64,
             },
             lazy_info: Lazy::default()
         }

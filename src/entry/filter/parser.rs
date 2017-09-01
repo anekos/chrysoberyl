@@ -80,6 +80,8 @@ fn variable() -> Parser<u8, EValue> {
     }
 
     gen(b"type", Type) |
+        gen(b"archive-page", ArchivePage) |
+        gen(b"current-page", CurrentPage) |
         gen(b"dimensions", Dimentions) |
         gen(b"dim", Dimentions) |
         gen(b"extension", Extension) |
@@ -87,7 +89,6 @@ fn variable() -> Parser<u8, EValue> {
         gen(b"height", Height) |
         gen(b"name", Name) |
         gen(b"pages", Pages) |
-        gen(b"page", Page) |
         gen(b"path", Path) |
         gen(b"real-pages", RealPages) |
         gen(b"width", Width) |

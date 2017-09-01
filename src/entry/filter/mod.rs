@@ -158,10 +158,11 @@ fn eval_variable(info: &mut Info, content: &EntryContent, v: &EVariable) -> Opti
     use self::EVariable::*;
 
     match *v {
+        ArchivePage => Some(info.entry.strict.archive_page),
+        CurrentPage => info.app.current_page.map(|it| it as i64),
         Width => info.entry.lazy(content).dimensions.map(|it| it.width as i64),
         Height => info.entry.lazy(content).dimensions.map(|it| it.height as i64),
         Dimentions => info.entry.lazy(content).dimensions.map(|it| it.dimensions() as i64),
-        Page => Some(info.entry.strict.page),
         Pages => Some(info.app.pages as i64),
         RealPages => Some(info.app.real_pages as i64),
         FileSize => Some(info.entry.lazy(content).file_size as i64),
@@ -177,7 +178,7 @@ fn eval_variable_as_s(info: &Info, v: &EVariable) -> Option<String> {
         Extension => info.entry.strict.extension.clone(),
         Type => Some(o!(info.entry.strict.entry_type)),
         Name => Some(info.entry.strict.name.clone()),
-        Page | Pages | RealPages | Dimentions | Width | Height | FileSize => None,
+        ArchivePage | CurrentPage | Pages | RealPages | Dimentions | Width | Height | FileSize => None,
     }
 }
 

@@ -107,10 +107,11 @@ fn write_value(v: &EValue, out: &mut String) {
     match *v {
         Integer(v) => sprint!(out, &suffixed_integer(v)),
         Variable(ref v) => match *v {
+            ArchivePage => sprint!(out, "archive-page"),
+            CurrentPage => sprint!(out, "current-page"),
             Dimentions => sprint!(out, "dimensions"),
             Extension => sprint!(out, "extension"),
             Height => sprint!(out, "height"),
-            Page => sprint!(out, "page"),
             Pages => sprint!(out, "pages"),
             RealPages => sprint!(out, "real-pages"),
             Path => sprint!(out, "path"),

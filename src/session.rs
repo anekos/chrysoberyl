@@ -15,6 +15,7 @@ use entry::{Entry, EntryContainer, EntryType, Key};
 use gui::Gui;
 use mapping::{Mapping, key_mapping as kmap, mouse_mapping as mmap, region_mapping as rmap};
 use operation::option::PreDefinedOptionName;
+use paginator::Paginator;
 use size::FitTo;
 use state::{self, States, ScalingMethod, Filters};
 use utils::path_to_str;
@@ -30,6 +31,7 @@ pub enum Session {
     Mappings,
     Envs,
     Filter,
+    Reading,
     All,
 }
 
@@ -50,20 +52,26 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
     use self::Session::*;
 
     match *session {
-        Options => write_options(&app.states, &app.gui, out),
+        Options => write_options(&app.states, &app.gui, false, out),
         Entries => write_entries(&app.entries, out),
         Paths => write_paths(&app.entries, out),
-        Position => write_paginator(&app.current().map(|it| it.0), out),
+        Position => write_paginator(&app.current().map(|it| it.0), &app.paginator, out),
         Mappings => write_mappings(&app.mapping, out),
         Envs => write_envs(out),
         Filter => write_filters(&app.states.last_filter, out),
+        Reading => {
+            write_options(&app.states, &app.gui, true, out);
+            write_entries(&app.entries, out);
+            write_mappings(&app.mapping, out);
+            write_paginator(&app.current().map(|it| it.0), &app.paginator, out);
+        }
         All => {
-            write_options(&app.states, &app.gui, out);
+            write_options(&app.states, &app.gui, false, out);
             write_entries(&app.entries, out);
             write_mappings(&app.mapping, out);
             write_envs(out);
             write_filters(&app.states.last_filter, out);
-            write_paginator(&app.current().map(|it| it.0), out);
+            write_paginator(&app.current().map(|it| it.0), &app.paginator, out);
         }
     }
 }
@@ -140,7 +148,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
     }
 }
 
-pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
+pub fn write_options(st: &States, gui: &Gui, reading: bool, out: &mut String) {
     use self::PreDefinedOptionName::*;
 
     let write = |out: &mut String, name: &PreDefinedOptionName| {
@@ -153,6 +161,13 @@ pub fn write_options(st: &States, gui: &Gui, out: &mut String) {
     };
 
     for option_name in PreDefinedOptionName::iterator() {
+        if reading {
+            match *option_name {
+                Reverse | Rotation | Scaling | StatusBar | FitTo => (),
+                _ => continue,
+            }
+        }
+
         match *option_name {
             HorizontalViews | VerticalViews => (),
             _ => write(out, option_name),
@@ -247,11 +262,12 @@ fn write_path(entry: &Entry, out: &mut String) {
     out.push_str("\n");
 }
 
-pub fn write_paginator(entry: &Option<Entry>, out: &mut String) {
+pub fn write_paginator(entry: &Option<Entry>, paginator: &Paginator, out: &mut String) {
     if let Some(ref entry) = *entry {
         let (_, ref path, index) = entry.key;
         sprintln!(out, "@go {} {}", escape(path), index + 1);
     }
+    sprintln!(out, "@fly-leaves {}", paginator.fly_leaves());
 }
 
 pub fn write_mappings(mappings: &Mapping, out: &mut String) {

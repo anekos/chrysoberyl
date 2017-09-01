@@ -273,6 +273,18 @@ pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
     })
 }
 
+pub fn parse_fly_leaves(args: &[String]) -> Result<Operation, String> {
+    let mut n = 0;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut n).add_argument("fly-leaves", Store, "Number of fly-leaves");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::FlyLeaves(n)
+    })
+}
+
 pub fn parse_go(args: &[String]) -> Result<Operation, String> {
     let mut key = SearchKey { path: o!(""), index: None };
 
@@ -932,6 +944,8 @@ impl FromStr for Session {
                 Ok(Session::Envs),
             "filter" | "f" =>
                 Ok(Session::Filter),
+            "reading" | "read" | "r" =>
+                Ok(Session::Reading),
             "all" | "a" =>
                 Ok(Session::All),
             _ =>

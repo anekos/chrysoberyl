@@ -318,6 +318,10 @@ pub fn on_first(app: &mut App, updated: &mut Updated, count: Option<usize>, igno
     }
 }
 
+pub fn on_fly_leaves(app: &mut App, updated: &mut Updated, n: usize) {
+    updated.pointer = app.paginator.set_fly_leaves(n);
+}
+
 pub fn on_fragile(app: &mut App, path: &Expandable) {
     new_fragile_input(app.tx.clone(), &path.expand());
 }

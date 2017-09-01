@@ -48,6 +48,7 @@ pub enum Operation {
     Fill(Filler, Option<Region>, Color, bool, usize), /* region, mask, cell index */
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Filter(bool, Box<Option<entry::filter::expression::Expr>>), /* dynamic, filter expression */
+    FlyLeaves(usize),
     Fragile(Expandable),
     Go(entry::SearchKey),
     Input(mapping::Input),
@@ -263,6 +264,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@fill"                         => parse_fill(whole),
             "@filter"                       => parse_filter(whole),
             "@first" | "@f"                 => parse_move(whole, First),
+            "@fly-leaves"                   => parse_fly_leaves(whole),
             "@fragile"                      => parse_command1(whole, |it| Fragile(Expandable(it))),
             "@go"                           => parse_go(whole),
             "@input"                        => parse_input(whole),
@@ -339,6 +341,7 @@ impl fmt::Debug for Operation {
             First(_, _, _, _) => "First",
             Fill(_, _, _, _, _) => "Fill",
             Filter(_, _) => "Filter",
+            FlyLeaves(_) => "FlyLeaves",
             Fragile(_) => "Fragile",
             Go(_) => "Go",
             InitialProcess(_, _) => "InitialProcess",

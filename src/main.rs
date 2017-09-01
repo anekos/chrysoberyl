@@ -26,7 +26,6 @@ extern crate md5;
 extern crate mkstemp;
 extern crate natord;
 extern crate num_cpus;
-extern crate onig;
 extern crate pom;
 extern crate rand;
 extern crate regex;

@@ -42,6 +42,10 @@ impl Paginator {
         PseudoLen(self.len + self.fly_leaves.0)
     }
 
+    pub fn fly_leaves(&self) -> usize {
+        self.fly_leaves.0
+    }
+
     fn position(&self) -> Option<Position> {
         self.level.map(|level| level.to_position(self.sight_size))
     }
@@ -200,6 +204,20 @@ impl Paginator {
 
     pub fn show(&mut self, paging: Paging) -> bool {
         self.update_index(Index(paging.count - 1))
+    }
+
+    pub fn set_fly_leaves(&mut self, n: usize) -> bool {
+        let n = n % self.sight_size.0;
+
+        if self.fly_leaves.0 < n {
+            let d = n - self.fly_leaves.0;
+            self.increase_fly_leaves(d)
+        } else if n < self.fly_leaves.0 {
+            let d = self.fly_leaves.0 - n;
+            self.decrease_fly_leaves(d)
+        } else {
+            false
+        }
     }
 
     fn increase_level(&mut self, delta: usize, wrap: bool) -> bool {

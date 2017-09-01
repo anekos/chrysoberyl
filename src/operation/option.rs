@@ -41,6 +41,7 @@ iterable_enum!(PreDefinedOptionName =>
     PreFetchLimit,
     PreFetchPageSize,
     Reverse,
+    Rotation,
     Scaling,
     SkipResizeWindow,
     StatusBar,
@@ -75,6 +76,7 @@ impl FromStr for PreDefinedOptionName {
             "pre-render-limit"                     => PreFetchLimit,
             "pre-render-pages"                     => PreFetchPageSize,
             "reverse" | "rev"                      => Reverse,
+            "rotation"                             => Rotation,
             "scaling"                              => Scaling,
             "status-bar" | "status"                => StatusBar,
             "status-format"                        => StatusFormat,
@@ -102,7 +104,7 @@ impl PreDefinedOptionName {
                 ColorError | ColorErrorBackground | ColorStatusBar | ColorStatusBarBackground | ColorWindowBackground |
                 FitTo | HorizontalViews | LogFile | MaskOperator |
                 PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
-                Reverse | Scaling | SkipResizeWindow | StatusBar | StatusFormat | UpdateCacheAccessTime | TitleFormat | VerticalViews => false,
+                Reverse | Rotation | Scaling | SkipResizeWindow | StatusBar | StatusFormat | UpdateCacheAccessTime | TitleFormat | VerticalViews => false,
             CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => true,
         }
     }

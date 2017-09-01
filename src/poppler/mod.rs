@@ -17,7 +17,7 @@ use glib::translate::ToGlibPtr;
 use libc::{c_int, c_double, c_void};
 use self::glib_sys::{g_list_free, g_list_length, g_list_nth_data};
 
-use gtk_utils::new_pixbuf_from_surface;
+use gtk_utils::{new_pixbuf_from_surface, context_rotate};
 use size::{Size, Region};
 use state::DrawingState;
 
@@ -125,7 +125,7 @@ impl PopplerPage {
     pub fn get_pixbuf(&self, cell: &Size, drawing: &DrawingState) -> Pixbuf {
         let page = self.get_size();
 
-        let (scale, fitted, clipped_region) = page.fit_with_clipping(cell, drawing);
+        let (scale, fitted, clipped_region) = page.rotate(drawing.rotation).fit_with_clipping(cell, drawing);
         let surface = ImageSurface::create(Format::ARgb32, fitted.width, fitted.height);
 
         {
@@ -137,6 +137,7 @@ impl PopplerPage {
                 context.rectangle(r.left as f64, r.top as f64, r.right as f64, r.bottom as f64);
                 context.clip();
             }
+            context_rotate(&context, &page, drawing.rotation);
             context.paint();
             self.render(&context);
         }

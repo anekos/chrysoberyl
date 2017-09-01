@@ -62,6 +62,14 @@ impl Size {
         (self.width as f64, self.height as f64)
     }
 
+    pub fn rotate(&self, n: u8) -> Self {
+        if n % 2 == 1 {
+            Size { width: self.height, height: self.width }
+        } else {
+            *self
+        }
+    }
+
     pub fn scaled(&self, scale: f64) -> Size {
         Size {
             width: (self.width as f64 * scale) as i32,

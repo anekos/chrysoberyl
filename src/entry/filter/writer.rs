@@ -111,6 +111,8 @@ fn write_value(v: &EValue, out: &mut String) {
             Extension => sprint!(out, "extension"),
             Height => sprint!(out, "height"),
             Page => sprint!(out, "page"),
+            Pages => sprint!(out, "pages"),
+            RealPages => sprint!(out, "real-pages"),
             Path => sprint!(out, "path"),
             Type => sprint!(out, "type"),
             Width => sprint!(out, "width"),

@@ -63,6 +63,8 @@ pub enum EVariable {
     Type,
     Dimentions,
     FileSize,
+    Pages,
+    RealPages,
 }
 
 #[derive(Clone, Debug, Copy)]

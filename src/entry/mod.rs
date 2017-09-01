@@ -197,6 +197,10 @@ impl EntryContainer {
         self.entries.len()
     }
 
+    pub fn real_len(&self) -> usize {
+        self.entries.real_len()
+    }
+
     pub fn nth(&self, index: usize) -> Option<Entry> {
         self.entries.get(index).map(|it: &Rc<Entry>| {
             (**it).clone()

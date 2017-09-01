@@ -14,14 +14,20 @@ use self::expression::*;
 
 
 
+struct Info<'a> {
+    app: &'a AppInfo,
+    entry: &'a mut EntryInfo,
+}
+
 impl Expr {
     pub fn evaluate(&self, entry: &mut Entry, app_info: &AppInfo) -> bool {
-        eval(&mut entry.info, &entry.content, self)
+        let mut info = Info { app: app_info, entry: &mut entry.info };
+        eval(&mut info, &entry.content, self)
     }
 }
 
 
-fn eval(info: &mut EntryInfo, content: &EntryContent, expr: &Expr) -> bool {
+fn eval(info: &mut Info, content: &EntryContent, expr: &Expr) -> bool {
     use self::Expr::*;
 
     match *expr {
@@ -38,7 +44,7 @@ fn eval(info: &mut EntryInfo, content: &EntryContent, expr: &Expr) -> bool {
     }
 }
 
-fn eval_if(info: &mut EntryInfo, content: &EntryContent, cond: &Expr, true_clause: &Expr, false_clause: &Expr) -> bool {
+fn eval_if(info: &mut Info, content: &EntryContent, cond: &Expr, true_clause: &Expr, false_clause: &Expr) -> bool {
     if eval(info, content, cond) {
         eval(info, content, true_clause)
     } else {
@@ -46,7 +52,7 @@ fn eval_if(info: &mut EntryInfo, content: &EntryContent, cond: &Expr, true_claus
     }
 }
 
-fn eval_when(info: &mut EntryInfo, content: &EntryContent, reverse: bool, cond: &Expr, clause: &Expr) -> bool {
+fn eval_when(info: &mut Info, content: &EntryContent, reverse: bool, cond: &Expr, clause: &Expr) -> bool {
     if reverse ^ eval(info, content, cond) {
         eval(info, content, clause)
     } else {
@@ -54,7 +60,7 @@ fn eval_when(info: &mut EntryInfo, content: &EntryContent, reverse: bool, cond: 
     }
 }
 
-fn eval_bool(info: &mut EntryInfo, content: &EntryContent, b: &EBool) -> bool {
+fn eval_bool(info: &mut Info, content: &EntryContent, b: &EBool) -> bool {
     use self::EBool::*;
     use self::ECompOp::*;
     use self::EICompOp::*;
@@ -87,11 +93,11 @@ fn eval_bool(info: &mut EntryInfo, content: &EntryContent, b: &EBool) -> bool {
         },
         Variable(ref name) => {
             return match *name {
-                Animation => info.lazy(content).is_animated
+                Animation => info.entry.lazy(content).is_animated
             }
         },
         Resolution(w, h) =>
-            return resolution_match(info.lazy(content), w, h),
+            return resolution_match(info.entry.lazy(content), w, h),
         True =>
             return true,
         False =>
@@ -101,7 +107,7 @@ fn eval_bool(info: &mut EntryInfo, content: &EntryContent, b: &EBool) -> bool {
     true
 }
 
-fn eval_logic(info: &mut EntryInfo, content: &EntryContent, l: &Expr, op: &ELogicOp, r: &Expr) -> bool {
+fn eval_logic(info: &mut Info, content: &EntryContent, l: &Expr, op: &ELogicOp, r: &Expr) -> bool {
     use self::ELogicOp::*;
 
     let l = eval(info, content, l);
@@ -113,7 +119,7 @@ fn eval_logic(info: &mut EntryInfo, content: &EntryContent, l: &Expr, op: &ELogi
     }
 }
 
-fn eval_value_as_i(info: &mut EntryInfo, content: &EntryContent, v: &EValue) -> Option<i64> {
+fn eval_value_as_i(info: &mut Info, content: &EntryContent, v: &EValue) -> Option<i64> {
     use self::EValue::*;
 
     match *v {
@@ -137,7 +143,7 @@ fn eval_value_as_g(v: &EValue) -> Option<Vec<GlobMatcher>> {
     }
 }
 
-fn eval_value_as_s(info: &EntryInfo, v: &EValue) -> Option<String> {
+fn eval_value_as_s(info: &Info, v: &EValue) -> Option<String> {
     use self::EValue::*;
 
     match *v {
@@ -148,28 +154,30 @@ fn eval_value_as_s(info: &EntryInfo, v: &EValue) -> Option<String> {
     }
 }
 
-fn eval_variable(info: &mut EntryInfo, content: &EntryContent, v: &EVariable) -> Option<i64> {
+fn eval_variable(info: &mut Info, content: &EntryContent, v: &EVariable) -> Option<i64> {
     use self::EVariable::*;
 
     match *v {
-        Width => info.lazy(content).dimensions.map(|it| it.width as i64),
-        Height => info.lazy(content).dimensions.map(|it| it.height as i64),
-        Dimentions => info.lazy(content).dimensions.map(|it| it.dimensions() as i64),
-        Page => Some(info.strict.page),
-        FileSize => Some(info.lazy(content).file_size as i64),
+        Width => info.entry.lazy(content).dimensions.map(|it| it.width as i64),
+        Height => info.entry.lazy(content).dimensions.map(|it| it.height as i64),
+        Dimentions => info.entry.lazy(content).dimensions.map(|it| it.dimensions() as i64),
+        Page => Some(info.entry.strict.page),
+        Pages => Some(info.app.pages as i64),
+        RealPages => Some(info.app.real_pages as i64),
+        FileSize => Some(info.entry.lazy(content).file_size as i64),
         Type | Path | Name | Extension => None,
     }
 }
 
-fn eval_variable_as_s(info: &EntryInfo, v: &EVariable) -> Option<String> {
+fn eval_variable_as_s(info: &Info, v: &EVariable) -> Option<String> {
     use self::EVariable::*;
 
     match *v {
-        Path => Some(info.strict.path.clone()),
-        Extension => info.strict.extension.clone(),
-        Type => Some(o!(info.strict.entry_type)),
-        Name => Some(info.strict.name.clone()),
-        Page | Dimentions | Width | Height | FileSize => None,
+        Path => Some(info.entry.strict.path.clone()),
+        Extension => info.entry.strict.extension.clone(),
+        Type => Some(o!(info.entry.strict.entry_type)),
+        Name => Some(info.entry.strict.name.clone()),
+        Page | Pages | RealPages | Dimentions | Width | Height | FileSize => None,
     }
 }
 

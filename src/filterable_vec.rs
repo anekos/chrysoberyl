@@ -39,6 +39,10 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
         self.filtered.len()
     }
 
+    pub fn real_len(&self) -> usize {
+        self.original.len()
+    }
+
     pub fn contains(&self, entry: &T) -> bool {
         self.get_index(entry).is_some()
     }

@@ -395,7 +395,10 @@ impl App {
     }
 
     pub fn app_info(&self) -> AppInfo {
-        AppInfo { }
+        AppInfo {
+            pages: self.entries.len(),
+            real_pages: self.entries.real_len(),
+        }
     }
 
     pub fn paging(&mut self, wrap: bool, ignore_sight: bool) -> Paging {

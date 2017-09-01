@@ -43,9 +43,11 @@ use ui_event;
 use utils::{path_to_str, join};
 use version;
 
-
-mod on_events;
 mod error_loop_detector;
+mod on_events;
+pub mod info;
+
+use self::info::AppInfo;
 
 
 
@@ -390,6 +392,10 @@ impl App {
 
         let (name, value) = generate_option_value(option_name, &self.states, &self.gui, WriteContext::ENV);
         env::set_var(format!("{}{}", OPTION_VARIABLE_PREFIX, name), value.unwrap_or_else(||  o!("")));
+    }
+
+    pub fn app_info(&self) -> AppInfo {
+        AppInfo { }
     }
 
     pub fn paging(&mut self, wrap: bool, ignore_sight: bool) -> Paging {

@@ -206,14 +206,14 @@ pub fn on_error(app: &mut App, updated: &mut Updated, error: String) {
 
 pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Option<PathBuf>) {
     let count = app.counter.pop();
-
     let center = app.current_for_file();
     let serial = app.store();
+    let app_info = app.app_info();
 
     let expanded = if recursive {
-        app.entries.expand(center, base, 1, count as u8)
+        app.entries.expand(&app_info, center, base, 1, count as u8)
     } else {
-        app.entries.expand(center, base, count as u8, count as u8- 1)
+        app.entries.expand(&app_info, center, base, count as u8, count as u8- 1)
     };
 
     app.update_paginator_condition();
@@ -233,8 +233,9 @@ pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) {
 
 pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) {
     let current_index = app.paginator.current_index();
+    let app_info = app.app_info();
 
-    let after_index = app.entries.delete(current_index, Box::new(move |ref mut entry| expr.evaluate(entry)));
+    let after_index = app.entries.delete(&app_info, current_index, Box::new(move |ref mut entry, ref app_info| expr.evaluate(entry, app_info)));
 
     if let Some(after_index) = after_index {
         app.paginator.update_index(Index(after_index));
@@ -278,11 +279,12 @@ pub fn on_filter(app: &mut App, updated: &mut Updated, dynamic: bool, expr: Opti
         app.states.last_filter.static_filter = expr.clone();
     }
 
+    let app_info = app.app_info();
     let current_index = app.paginator.current_index();
     let after_index = if let Some(expr) = expr {
-        app.entries.update_filter(dynamic, current_index, Some(Box::new(move |ref mut entry| expr.evaluate(entry))))
+        app.entries.update_filter(&app_info, dynamic, current_index, Some(Box::new(move |ref mut entry, ref app_info| expr.evaluate(entry, app_info))))
     } else {
-        app.entries.update_filter(dynamic, current_index, None)
+        app.entries.update_filter(&app_info, dynamic, current_index, None)
     };
 
     app.update_paginator_condition();
@@ -814,7 +816,8 @@ pub fn on_show(app: &mut App, updated: &mut Updated, count: Option<usize>, ignor
 
 pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) {
     let serial = app.store();
-    app.entries.shuffle();
+    let app_info = app.app_info();
+    app.entries.shuffle(&app_info);
 
     if fix_current {
         app.restore_or_first(updated, serial);
@@ -828,8 +831,9 @@ pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) {
 
 pub fn on_sort(app: &mut App, updated: &mut Updated, fix_current: bool) {
     let serial = app.store();
+    let app_info = app.app_info();
 
-    app.entries.sort();
+    app.entries.sort(&app_info);
 
     if fix_current {
         app.restore_or_first(updated, serial);
@@ -1034,8 +1038,9 @@ pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool) {
 }
 
 pub fn on_when(app: &mut App, filter: FilterExpr, unless: bool, op: &[String]) {
+    let app_info = app.app_info();
     if_let_some!((_, index, _) = app.current_non_fly_leave(), ());
-    if_let_some!(r = app.entries.validate_nth(index, filter), ());
+    if_let_some!(r = app.entries.validate_nth(index, filter, &app_info), ());
 
     if r ^ unless {
         match Operation::parse_from_vec(op) {
@@ -1078,23 +1083,24 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
     use operation::QueuedOperation::*;
 
     let before_len = app.entries.len();
+    let app_info = app.app_info();
 
     for op in ops {
         match op {
             PushImage(path, meta, force, expand_level, url) =>
-                app.entries.push_image(&path, meta, force, expand_level, url),
+                app.entries.push_image(&app_info, &path, meta, force, expand_level, url),
             PushDirectory(path, meta, force) =>
-                app.entries.push_directory(&path, meta, force),
+                app.entries.push_directory(&app_info, &path, meta, force),
             PushArchive(archive_path, meta, force, url) =>
                 on_push_archive(app, &archive_path, meta, force, url),
             PushArchiveEntry(archive_path, entry, meta, force, url) =>
-                app.entries.push_archive_entry(&archive_path, &entry, meta, force, url),
+                app.entries.push_archive_entry(&app_info, &archive_path, &entry, meta, force, url),
             PushPdf(pdf_path, meta, force, url) =>
                 on_push_pdf(app, updated, pdf_path, meta, force, url),
             PushPdfEntries(pdf_path, pages, meta, force, url) => {
                 let pdf_path = Arc::new(pdf_path.clone());
                 for index in 0 .. pages {
-                    app.entries.push_pdf_entry(pdf_path.clone(), index, meta.clone(), force, url.clone());
+                    app.entries.push_pdf_entry(&app_info, pdf_path.clone(), index, meta.clone(), force, url.clone());
                 }
             }
         }

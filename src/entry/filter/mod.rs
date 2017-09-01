@@ -1,8 +1,9 @@
 
 use globset::GlobMatcher;
 
-use entry::{Entry, EntryContent};
+use app::info::AppInfo;
 use entry::info::{EntryInfo, LazyEntryInfo};
+use entry::{Entry, EntryContent};
 use resolution;
 
 pub mod expression;
@@ -14,7 +15,7 @@ use self::expression::*;
 
 
 impl Expr {
-    pub fn evaluate(&self, entry: &mut Entry) -> bool {
+    pub fn evaluate(&self, entry: &mut Entry, app_info: &AppInfo) -> bool {
         eval(&mut entry.info, &entry.content, self)
     }
 }

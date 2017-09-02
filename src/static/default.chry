@@ -29,8 +29,8 @@
 @map key L            @next     --ignore-views
 
 # move (archive)
-@map key P            @previous --archive
-@map key N            @next     --archive
+@map key p            @previous --archive
+@map key n            @next     --archive
 
 # toggle a option
 @map key t,a          @toggle auto-paging
@@ -64,7 +64,6 @@
 @map key c            @unclip
 @map key C            @reset-image
 @map key u            @undo
-@map key R            @cycle rotation
 
 # Mouse
 @map mouse 1          @scroll --size 0.8 down @next
@@ -76,9 +75,10 @@
 @map region 3         @fill
 
 # script
-@map key o            @shell --operation --search-path script/open-dialog.sh
-@map key i            @shell --operation --search-path script/pdf-index.sh
-@map key a            @shell --operation --search-path script/shell.sh
+@map key at           @shell --operation --search-path script/shell.sh
+@map key C-o          @shell --operation --search-path script/open-file-dialog.sh
+@map key C-d          @shell --operation --search-path script/open-directory-dialog.sh
+@map key C-i          @shell --operation --search-path script/pdf-index.sh
 @map key C-g          @shell --operation --search-path script/go-page.sh
 @map key C-s          @shell --operation --search-path script/save-session.sh
 @map key C-l          @shell --operation --search-path script/load-session.sh

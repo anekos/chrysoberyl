@@ -12,7 +12,9 @@ function dialog {
   IMAGES='*.png *.gif *.jpg *.jpeg *.bmp'
   ARCHIVES='*.zip *.lha *.rar *.lzh *.pdf'
 
-  zenity --file-selection --multiple \
+  zenity --file-selection \
+    --multiple \
+    --separator="\n" \
     --file-filter "Supported files | $ARCHIVES $IMAGES" \
     --file-filter "PDF | *.pdf" \
     --file-filter "Archive | $ARCHIVES" \
@@ -20,6 +22,7 @@ function dialog {
     --file-filter "All files (*.*)"
 }
 
-path="$(dialog)"
-
-printf '@push %q\n' "$path"
+for it in $(dialog)
+do
+  printf '@push %q\n' "$it"
+done

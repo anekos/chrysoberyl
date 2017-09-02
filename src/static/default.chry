@@ -37,6 +37,7 @@
 @map key t,s          @toggle status-bar
 @map key t,r          @toggle reverse
 @map key t,c          @toggle center
+@map key t,R          @cycle rotation
 
 # option (fit-to)
 @map key f,w          @set fit-to width

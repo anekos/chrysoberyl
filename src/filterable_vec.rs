@@ -104,7 +104,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
                 let entries = entries.to_vec();
                 let mut targets = vec![];
                 for mut entry in &mut entries.into_iter() {
-                    if (static_pred)(Rc::make_mut(&mut entry), &info) {
+                    if (static_pred)(Rc::make_mut(&mut entry), info) {
                         targets.push(entry.clone());
                     }
                 }
@@ -118,7 +118,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
         let targets = if let Some(ref mut dynamic_pred) = self.dynamic_pred {
             let mut targets = vec![];
             for (index, mut entry) in &mut entries.into_iter().enumerate() {
-                if (dynamic_pred)(Rc::make_mut(&mut entry), &info) {
+                if (dynamic_pred)(Rc::make_mut(&mut entry), info) {
                     self.original_indices.insert(entry.clone(), len + index);
                     targets.push(entry.clone());
                 }

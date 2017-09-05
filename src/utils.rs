@@ -24,7 +24,7 @@ pub fn mangle<T>(_: T) -> () {
 }
 
 pub fn duration_to_string(t: Duration) -> String {
-    let msec: u64 = t.as_secs() * 1000 + t.subsec_nanos() as u64 / 1_000_000;
+    let msec: u64 = t.as_secs() * 1000 + u64!(t.subsec_nanos()) / 1_000_000;
 
     if 60 * 1000 <= msec {
         format!("{} min {} sec", msec / 60 / 1000, msec % (60 * 1000) / 1000)

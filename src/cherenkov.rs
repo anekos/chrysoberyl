@@ -300,8 +300,8 @@ fn clamp<T: PartialOrd>(v: T, from: T, to: T) -> T {
 #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
 fn nova(che: &CheNova, pixels: &mut [u8], rowstride: i32, width: i32, height: i32) {
     let (cx, cy) = che.center;
-    let (cx, cy) = ((width as f64 * cx) as i32, (height as f64 * cy) as i32);
-    let radius = clamp(((width * width + height * height) as f64).sqrt() * che.radius, 0.00000001, 100.0);
+    let (cx, cy) = ((f64!(width) * cx) as i32, (f64!(height) * cy) as i32);
+    let radius = clamp((f64!(width * width + height * height)).sqrt() * che.radius, 0.00000001, 100.0);
 
     let (spokes, spoke_colors) = {
         let mut rng = rand::thread_rng();
@@ -328,8 +328,8 @@ fn nova(che: &CheNova, pixels: &mut [u8], rowstride: i32, width: i32, height: i3
 
     for y in 0..height {
         for x in 0..width {
-            let u = (x - cx) as f64 / radius;
-            let v = (y - cy) as f64 / radius;
+            let u = f64!(x - cx) / radius;
+            let v = f64!(y - cy) / radius;
             let l = (u * u + v * v).sqrt();
 
             let t = (u.atan2(v) / (2.0 * PI) + 0.51) * che.n_spokes as f64;
@@ -346,7 +346,7 @@ fn nova(che: &CheNova, pixels: &mut [u8], rowstride: i32, width: i32, height: i3
             let ptr = (y * rowstride + x * 4 /* RGB+ALPHA */) as usize;
 
             for ci in 0..3 {
-                let in_color = pixels[ptr + ci] as f64 / 255.0;
+                let in_color = f64!(pixels[ptr + ci]) / 255.0;
                 let spoke_color = spoke_colors[i][ci] * (1.0 - t) + spoke_colors[(i + 1) % che.n_spokes][ci] * t;
 
                 let mut out_color = if w > 1.0 {
@@ -397,7 +397,7 @@ fn context_fill(context: &Context, filler: Filler, region: &Region, color: &Colo
 
     match filler {
         Filler::Rectangle => {
-            let (w, h) = (w as f64, h as f64);
+            let (w, h) = (f64!(w), f64!(h));
             context.rectangle(
                 region.left * w,
                 region.top * h,
@@ -405,7 +405,7 @@ fn context_fill(context: &Context, filler: Filler, region: &Region, color: &Colo
                 (region.bottom - region.top) * h);
         },
         Filler::Circle => {
-            let (w, h) = (w as f64, h as f64);
+            let (w, h) = (f64!(w), f64!(h));
             let (rw, rh) = (region.width(), region.height());
             let r = min!(rw * w, rh * h) / 2.0;
             context.arc(
@@ -416,7 +416,7 @@ fn context_fill(context: &Context, filler: Filler, region: &Region, color: &Colo
                 2.0 * PI);
         },
         Filler::Ellipse => {
-            let (w, h) = (w as f64, h as f64);
+            let (w, h) = (f64!(w), f64!(h));
             let (rw, rh) = (region.width(), region.height());
             context.translate(
                 (region.left + rw / 2.0) * w,

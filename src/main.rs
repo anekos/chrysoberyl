@@ -28,7 +28,6 @@ extern crate natord;
 extern crate num_cpus;
 extern crate pom;
 extern crate rand;
-extern crate regex;
 extern crate shell_escape;
 extern crate shellexpand;
 extern crate time;
@@ -38,6 +37,7 @@ extern crate url;
 #[macro_use] mod macro_utils;
 #[macro_use] mod logger;
 #[macro_use] mod error;
+#[macro_use] mod from_macro;
 
 mod app;
 mod app_path;

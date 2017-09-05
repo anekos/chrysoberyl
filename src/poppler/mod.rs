@@ -1,6 +1,4 @@
 
-extern crate gdk_sys;
-extern crate glib;
 extern crate glib_sys;
 extern crate gobject_sys;
 
@@ -181,7 +179,7 @@ impl Drop for PopplerPage {
 }
 
 fn new_region_on(pdf_region: &sys::rectangle_t, size: &Size) -> Region {
-    let (w, h) = (size.width as f64, size.height as f64);
+    let (w, h) = (f64!(size.width), f64!(size.height));
     Region {
         left: pdf_region.x1 / w,
         top: 1.0 - (pdf_region.y1 / h),

@@ -160,9 +160,9 @@ fn eval_variable(info: &mut Info, content: &EntryContent, v: &EVariable) -> Opti
     match *v {
         ArchivePage => Some(info.entry.strict.archive_page),
         CurrentPage => info.app.current_page.map(|it| it as i64),
-        Width => info.entry.lazy(content).dimensions.map(|it| it.width as i64),
-        Height => info.entry.lazy(content).dimensions.map(|it| it.height as i64),
-        Dimentions => info.entry.lazy(content).dimensions.map(|it| it.dimensions() as i64),
+        Width => info.entry.lazy(content).dimensions.map(|it| i64!(it.width)),
+        Height => info.entry.lazy(content).dimensions.map(|it| i64!(it.height)),
+        Dimentions => info.entry.lazy(content).dimensions.map(|it| i64!(it.dimensions())),
         Pages => Some(info.app.pages as i64),
         RealPages => Some(info.app.real_pages as i64),
         FileSize => Some(info.entry.lazy(content).file_size as i64),
@@ -184,5 +184,5 @@ fn eval_variable_as_s(info: &Info, v: &EVariable) -> Option<String> {
 
 fn resolution_match(info: &LazyEntryInfo, w: i64, h: i64) -> bool {
     if_let_some!(dim = info.dimensions, false);
-    dim.width as i64 == w && dim.height as i64 == h
+    i64!(dim.width) == w && i64!(dim.height) == h
 }

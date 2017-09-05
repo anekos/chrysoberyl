@@ -212,7 +212,7 @@ impl EntryContainer {
     }
 
     pub fn validate_nth(&mut self, index: usize, expr: FilterExpr, app_info: &AppInfo) -> Option<bool> {
-        self.entries.validate_nth(index, app_info, Box::new(move |ref mut entry, ref app_info| expr.evaluate(entry, app_info)))
+        self.entries.validate_nth(index, app_info, Box::new(move |ref mut entry, app_info| expr.evaluate(entry, app_info)))
     }
 
     pub fn expand(&mut self, app_info: &AppInfo, center: Option<(PathBuf, usize, Entry)>, dir: Option<PathBuf>, n: u8, recursive: u8) -> bool {
@@ -389,7 +389,7 @@ impl EntryContainer {
         let entry = Rc::new(entry);
 
         if force || !self.is_duplicated(&entry) {
-            self.entries.push(&app_info, entry);
+            self.entries.push(app_info, entry);
         }
     }
 
@@ -408,7 +408,7 @@ impl EntryContainer {
     pub fn push_pdf_entry(&mut self, app_info: &AppInfo, pdf_path: Arc<PathBuf>, index: usize, meta: Option<Meta>, force: bool, url: Option<String>) {
         let content = EntryContent::Pdf(pdf_path.clone(), index);
         let serial = self.new_serial();
-        self.push_entry(&app_info, Entry::new(serial, content, meta, url), force);
+        self.push_entry(app_info, Entry::new(serial, content, meta, url), force);
     }
 
     pub fn search(&self, key: &SearchKey) -> Option<usize> {

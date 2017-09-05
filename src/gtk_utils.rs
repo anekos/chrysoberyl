@@ -1,7 +1,5 @@
 
 extern crate gdk_sys;
-extern crate glib;
-extern crate gobject_sys;
 
 use std::f64::consts::PI;
 
@@ -28,13 +26,13 @@ pub fn context_rotate(context: &Context, page: &Size, rotation: u8) {
 
     match rotation {
         0 => (),
-        1 => context.translate(page.height as f64, 0.0),
-        2 => context.translate(page.width as f64, page.height as f64),
-        3 => context.translate(0.0, page.width as f64),
+        1 => context.translate(f64!(page.height), 0.0),
+        2 => context.translate(f64!(page.width), f64!(page.height)),
+        3 => context.translate(0.0, f64!(page.width)),
         _ => panic!("WTF"),
     };
 
     if rotation > 0 {
-        context.rotate(PI / 2.0 * rotation as f64);
+        context.rotate(PI / 2.0 * f64!(rotation));
     }
 }

@@ -92,8 +92,8 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
                 let (x2, y2) = (x1 + w, y1 + h);
                 if x1 <= mx && mx <= x2 && y1 <= my && my <= y2 {
                     let center = (
-                        parameter.x.unwrap_or_else(|| mx - x1) as f64 / w as f64,
-                        parameter.y.unwrap_or_else(|| my - y1) as f64 / h as f64);
+                        f64!(parameter.x.unwrap_or_else(|| mx - x1)) / f64!(h),
+                        f64!(parameter.y.unwrap_or_else(|| my - y1)) / f64!(w));
                     app.cache.cherenkov(
                         &entry,
                         &cell_size,
@@ -235,7 +235,7 @@ pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) {
     let current_index = app.paginator.current_index();
     let app_info = app.app_info();
 
-    let after_index = app.entries.delete(&app_info, current_index, Box::new(move |ref mut entry, ref app_info| expr.evaluate(entry, app_info)));
+    let after_index = app.entries.delete(&app_info, current_index, Box::new(move |ref mut entry, app_info| expr.evaluate(entry, app_info)));
 
     if let Some(after_index) = after_index {
         app.paginator.update_index(Index(after_index));
@@ -282,7 +282,7 @@ pub fn on_filter(app: &mut App, updated: &mut Updated, dynamic: bool, expr: Opti
     let app_info = app.app_info();
     let current_index = app.paginator.current_index();
     let after_index = if let Some(expr) = expr {
-        app.entries.update_filter(&app_info, dynamic, current_index, Some(Box::new(move |ref mut entry, ref app_info| expr.evaluate(entry, app_info))))
+        app.entries.update_filter(&app_info, dynamic, current_index, Some(Box::new(move |ref mut entry, app_info| expr.evaluate(entry, app_info))))
     } else {
         app.entries.update_filter(&app_info, dynamic, current_index, None)
     };
@@ -867,12 +867,12 @@ pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f6
             };
             let (x2, y2) = (x1 + w, y1 + h);
             if x1 <= mx && mx <= x2 && y1 <= my && my <= y2 {
-                let (w, h) = (w as f64, h as f64);
+                let (w, h) = (f64!(w) , f64!(h));
                 let region = Region::new(
-                    (mx - x1) as f64 / w,
-                    (my - y1) as f64 / h,
-                    (right - x1 as f64) / w,
-                    (bottom - y1 as f64) / h);
+                    f64!(mx - x1) / w,
+                    f64!(my - y1) / h,
+                    (right - f64!(x1)) / w,
+                    (bottom - f64!(y1)) / h);
                 let op = Operation::Input(Input::Region(region, button, index));
                 app.tx.send(op).unwrap();
             }

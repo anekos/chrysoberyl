@@ -59,7 +59,7 @@ impl Size {
     // }
 
     pub fn floated(&self) -> (f64, f64) {
-        (self.width as f64, self.height as f64)
+        (f64!(self.width), f64!(self.height))
     }
 
     pub fn rotate(&self, n: u8) -> Self {
@@ -72,8 +72,8 @@ impl Size {
 
     pub fn scaled(&self, scale: f64) -> Size {
         Size {
-            width: (self.width as f64 * scale) as i32,
-            height: (self.height as f64 * scale) as i32,
+            width: (f64!(self.width) * scale) as i32,
+            height: (f64!(self.height) * scale) as i32,
         }
     }
 
@@ -135,29 +135,29 @@ impl Size {
     }
 
     fn fit_to_cell(&self, cell: &Size) -> (f64, Size) {
-        let mut scale = cell.width as f64 / self.width as f64;
-        let result_height = (self.height as f64 * scale) as i32;
+        let mut scale = f64!(cell.width) / f64!(self.width);
+        let result_height = (f64!(self.height) * scale) as i32;
         if result_height > cell.height {
-            scale = cell.height as f64 / self.height as f64;
+            scale = f64!(cell.height) / f64!(self.height);
         }
         (scale, self.scaled(scale))
     }
 
     fn fit_to_width(&self, cell: &Size) -> (f64, Size) {
-        let scale = cell.width as f64 / self.width as f64;
+        let scale = f64!(cell.width) / f64!(self.width);
         (scale, self.scaled(scale))
     }
 
     fn fit_to_height(&self, cell: &Size) -> (f64, Size) {
-        let scale = cell.height as f64 / self.height as f64;
+        let scale = f64!(cell.height) / f64!(self.height);
         (scale, self.scaled(scale))
     }
 
     pub fn fit_to_fixed(&self, w: i32, h: i32) -> (f64, Size) {
-        let mut scale = w as f64 / self.width as f64;
-        let result_height = (self.height as f64 * scale) as i32;
+        let mut scale = f64!(w) / f64!(self.width);
+        let result_height = (f64!(self.height) * scale) as i32;
         if result_height > h {
-            scale = h as f64 / self.height as f64;
+            scale = f64!(h) / f64!(self.height);
         }
         (scale, self.scaled(scale))
     }
@@ -187,10 +187,10 @@ impl Region {
     }
 
     pub fn contains(&self, x: i32, y: i32, width: i32, height: i32) -> bool {
-        let l = (width as f64 * self.left) as i32;
-        let r = (width as f64 * self.right) as i32;
-        let t = (height as f64 * self.top) as i32;
-        let b = (height as f64 * self.bottom) as i32;
+        let l = (f64!(width) * self.left) as i32;
+        let r = (f64!(width) * self.right) as i32;
+        let t = (f64!(height) * self.top) as i32;
+        let b = (f64!(height) * self.bottom) as i32;
         (l <= x && x <= r && t <= y && y <= b)
     }
 }

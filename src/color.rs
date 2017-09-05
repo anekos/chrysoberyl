@@ -52,7 +52,7 @@ impl Color {
             red: to_f(self.r),
             green: to_f(self.g),
             blue: to_f(self.b),
-            alpha: self.a as f64
+            alpha: f64!(self.a),
         }
     }
 }
@@ -71,13 +71,13 @@ impl FromStr for Color {
 
 impl fmt::Display for Color {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "rgba({}, {}, {}, {})", self.r, self.g, self.b, self.a as f32 / 255.0 )
+        write!(f, "rgba({}, {}, {}, {})", self.r, self.g, self.b, f32!(self.a) / 255.0 )
     }
 }
 
 
 
 fn to_f(v: u8) -> f64 {
-    v as f64 / 255.0
+    f64!(v) / 255.0
 }
 

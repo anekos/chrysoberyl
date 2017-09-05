@@ -1,9 +1,6 @@
 
 extern crate cairo_sys;
-extern crate glib;
 extern crate glib_sys;
-extern crate gobject_sys;
-extern crate libc;
 
 use libc::{c_int, c_char, c_double, c_void, c_uint};
 use self::glib_sys::{gboolean, GList};

@@ -83,7 +83,8 @@ pub struct CacheEntry {
     image: Option<StaticImageBuffer>,
     cell_size: Size,
     drawing: DrawingState,
-    modifiers: Vec<Modifier>
+    modifiers: Vec<Modifier>,
+    expired: bool,
 }
 
 
@@ -150,6 +151,7 @@ impl Cherenkoved {
                 cell_size: *cell_size,
                 drawing: drawing.clone(),
                 modifiers: modifiers,
+                expired: false,
             });
     }
 }
@@ -157,7 +159,7 @@ impl Cherenkoved {
 
 impl CacheEntry {
     pub fn get(&self, cell_size: &Size, drawing: &DrawingState) -> Option<StaticImageBuffer> {
-        if self.cell_size == *cell_size && self.drawing.fit_to == drawing.fit_to && self.drawing.clipping == drawing.clipping && self.drawing.mask_operator == drawing.mask_operator {
+        if !self.expired && self.cell_size == *cell_size && self.drawing.fit_to == drawing.fit_to && self.drawing.clipping == drawing.clipping && self.drawing.mask_operator == drawing.mask_operator {
             if let Some(ref image) = self.image {
                 return Some(image.clone());
             }
@@ -167,8 +169,10 @@ impl CacheEntry {
 
     pub fn clear_search_highlights(&mut self) -> bool {
         let before = self.modifiers.len();
-        self.modifiers.retain(|it| it.search_highlight);
-        before != self.modifiers.len()
+        self.modifiers.retain(|it| !it.search_highlight);
+        let changed = before != self.modifiers.len();
+        self.expired = changed;
+        changed
     }
 }
 

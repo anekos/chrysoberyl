@@ -8,7 +8,7 @@ use std::time::Duration;
 use cmdline_parser::Parser;
 
 use archive::ArchiveEntry;
-use cherenkov::Filler;
+use cherenkov::fill::Shape;
 use color::Color;
 use command_line;
 use entry::filter::expression::Expr as FilterExpr;
@@ -45,7 +45,7 @@ pub enum Operation {
     Editor(Option<Expandable>, Vec<Expandable>, Vec<Session>),
     Error(String),
     Expand(bool, Option<PathBuf>), /* recursive, base */
-    Fill(Filler, Option<Region>, Color, bool, usize), /* region, mask, cell index */
+    Fill(Shape, Option<Region>, Color, bool, usize), /* region, mask, cell index */
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Filter(bool, Box<Option<entry::filter::expression::Expr>>), /* dynamic, filter expression */
     FlyLeaves(usize),

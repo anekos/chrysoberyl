@@ -14,7 +14,7 @@ use rand::distributions::{IndependentSample, Range as RandRange};
 
 use app_path;
 use archive;
-use cherenkov::Filler;
+use cherenkov::fill::Shape;
 use color::Color;
 use command_line;
 use config::DEFAULT_CONFIG;
@@ -74,7 +74,8 @@ pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName
 }
 
 pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<OperationContext>) {
-    use cherenkov::{Che, CheNova, Modifier};
+    use cherenkov::{Che, Modifier};
+    use cherenkov::nova::Nova;
 
     if let Some(Input::MouseButton((mx, my), _)) = context.map(|it| it.input) {
         let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
@@ -99,7 +100,7 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
                         &cell_size,
                         Modifier {
                             search_highlight: false,
-                            che: Che::Nova(CheNova {
+                            che: Che::Nova(Nova {
                                 center: center,
                                 n_spokes: parameter.n_spokes,
                                 radius: parameter.radius,
@@ -251,7 +252,7 @@ pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) {
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
-pub fn on_fill(app: &mut App, updated: &mut Updated, filler: Filler, region: Option<Region>, color: Color, mask: bool, cell_index: usize, context: Option<OperationContext>) {
+pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Option<Region>, color: Color, mask: bool, cell_index: usize, context: Option<OperationContext>) {
     use cherenkov::{Modifier, Che};
 
     let (region, cell_index) = extract_region_from_context(context)
@@ -265,7 +266,7 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, filler: Filler, region: Opt
             &cell_size,
             Modifier {
                 search_highlight: false,
-                che: Che::Fill(filler, region, color, mask),
+                che: Che::Fill(shape, region, color, mask),
             },
             &app.states.drawing);
         updated.image = true;
@@ -748,7 +749,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
                 app.cache.cherenkov(
                     &entry,
                     &cell_size,
-                    Modifier { search_highlight: true, che: Che::Fill(Filler::Rectangle, *region, color, false) },
+                    Modifier { search_highlight: true, che: Che::Fill(Shape::Rectangle, *region, color, false) },
                     &app.states.drawing);
             }
 

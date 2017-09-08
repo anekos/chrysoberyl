@@ -188,8 +188,8 @@ impl App {
                     on_error(self, &mut updated, error),
                 Expand(recursive, ref base) =>
                     on_expand(self, &mut updated, recursive, base.clone()),
-                Fill(filler, region, color, mask, cell_index) =>
-                    on_fill(self, &mut updated, filler, region, color, mask, cell_index, context),
+                Fill(shape, region, color, mask, cell_index) =>
+                    on_fill(self, &mut updated, shape, region, color, mask, cell_index, context),
                 Filter(dynamic, expr) =>
                     on_filter(self, &mut updated, dynamic, *expr),
                 First(count, ignore_views, move_by, _) =>

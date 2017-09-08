@@ -29,6 +29,8 @@ use rand::{self, Rng, ThreadRng};
 use color::Color;
 use utils::feq;
 
+use cherenkov::modified::Modified;
+
 
 
 type SliceColor = [f64;3];
@@ -46,6 +48,21 @@ pub struct Nova {
     pub color: Color,
 }
 
+
+#[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
+pub fn nova_(nv: &Nova, modified: Modified) -> Modified {
+    let pixbuf = modified.get_pixbuf();
+    let channels = pixbuf.get_n_channels();
+
+    if channels == 4 {
+        let (width, height) = (pixbuf.get_width(), pixbuf.get_height());
+        let rowstride = pixbuf.get_rowstride();
+        let pixels: &mut [u8] = unsafe { pixbuf.get_pixels() };
+        nova(nv, pixels, rowstride, width, height);
+    }
+
+    Modified::P(pixbuf)
+}
 
 #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
 pub fn nova(nv: &Nova, pixels: &mut [u8], rowstride: i32, width: i32, height: i32) {

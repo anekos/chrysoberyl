@@ -14,8 +14,10 @@ use state::DrawingState;
 
 pub mod fill;
 pub mod nova;
+pub mod modified;
 
 use self::fill::Shape;
+use self::modified::Modified;
 
 
 
@@ -46,6 +48,7 @@ pub struct CacheEntry {
 }
 
 
+
 impl Cherenkoved {
     pub fn new() -> Cherenkoved {
         Cherenkoved { cache: HashMap::new() }
@@ -60,7 +63,7 @@ impl Cherenkoved {
 
         let modifiers = cache_entry.modifiers.clone();
 
-        if_let_ok!(image = re_cherenkov(entry, cell_size, drawing, &modifiers), |err| Some(Err(err)));
+        if_let_ok!(image = re_cherenkov_(entry, cell_size, drawing, &modifiers), |err| Some(Err(err)));
 
         cache_entry.image = Some(image.clone());
         cache_entry.drawing = drawing.clone();
@@ -100,7 +103,7 @@ impl Cherenkoved {
 
         modifiers.push(modifier);
 
-        if_let_ok!(image_buffer = re_cherenkov(entry, cell_size, drawing, &modifiers), |_| ());
+        if_let_ok!(image_buffer = re_cherenkov_(entry, cell_size, drawing, &modifiers), |_| ());
 
         self.cache.insert(
             entry.key.clone(),
@@ -135,6 +138,29 @@ impl CacheEntry {
 }
 
 
+fn re_cherenkov_(entry: &Entry, cell_size: &Size, drawing: &DrawingState, modifiers: &[Modifier]) -> Result<StaticImageBuffer, String> {
+    entry::image::get_image_buffer(entry, cell_size, drawing).and_then(|image_buffer| {
+        if let ImageBuffer::Static(buf) = image_buffer {
+            let mut mask = None;
+            let mut modified = Modified::P(buf.get_pixbuf());
+            for modifier in modifiers {
+                let (_modified, _mask) = cherenkov_pixbuf_(modified, mask, &modifier.che);
+                modified = _modified;
+                mask = _mask;
+            }
+            let pixbuf = modified.get_pixbuf();
+            let pixbuf = if let Some(mask) = mask {
+                apply_mask(&pixbuf, mask, drawing.mask_operator.0)
+            } else {
+                pixbuf
+            };
+            Ok(StaticImageBuffer::new_from_pixbuf(&pixbuf, buf.original_size))
+        } else {
+            Err(o!("Not static image"))
+        }
+    })
+}
+
 fn re_cherenkov(entry: &Entry, cell_size: &Size, drawing: &DrawingState, modifiers: &[Modifier]) -> Result<StaticImageBuffer, String> {
     entry::image::get_image_buffer(entry, cell_size, drawing).and_then(|image_buffer| {
         if let ImageBuffer::Static(buf) = image_buffer {
@@ -155,6 +181,18 @@ fn re_cherenkov(entry: &Entry, cell_size: &Size, drawing: &DrawingState, modifie
             Err(o!("Not static image"))
         }
     })
+}
+
+fn cherenkov_pixbuf_(modified: Modified, mask_surface: Option<ImageSurface>, che: &Che) -> (Modified, Option<ImageSurface>) {
+    match *che {
+        Che::Nova(ref che) => (nova::nova_(che, modified), mask_surface),
+        Che::Fill(shape, ref region, ref color, false) =>
+            (fill::fill_(shape, region, color, modified), mask_surface),
+        Che::Fill(shape, ref region, ref color, true) => {
+            let mask_surface = fill::mask_(mask_surface, shape, region, color, &modified);
+            (modified, Some(mask_surface))
+        }
+    }
 }
 
 fn cherenkov_pixbuf(pixbuf: Pixbuf, mask_surface: Option<ImageSurface>, che: &Che) -> (Pixbuf, Option<ImageSurface>) {

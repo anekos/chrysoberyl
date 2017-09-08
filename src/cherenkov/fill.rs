@@ -9,6 +9,8 @@ use color::Color;
 use gtk_utils::new_pixbuf_from_surface;
 use size::Region;
 
+use cherenkov::modified::Modified;
+
 
 
 #[derive(Debug, Clone, Copy)]
@@ -18,6 +20,16 @@ pub enum Shape {
     Ellipse,
 }
 
+
+#[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
+pub fn fill_(shape: Shape, che: &Region, color: &Color, modified: Modified) -> Modified {
+    let surface = modified.get_image_surface();
+    let context = Context::new(&surface);
+
+    context_fill(&context, shape, che, color, surface.get_width(), surface.get_height());
+
+    Modified::S(surface)
+}
 
 #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
 pub fn fill(shape: Shape, che: &Region, color: &Color, pixbuf: &Pixbuf) -> Pixbuf {
@@ -31,6 +43,16 @@ pub fn fill(shape: Shape, che: &Region, color: &Color, pixbuf: &Pixbuf) -> Pixbu
     context_fill(&context, shape, che, color, w, h);
 
     new_pixbuf_from_surface(&surface)
+}
+
+pub fn mask_(surface: Option<ImageSurface>, shape: Shape, che: &Region, color: &Color, modified: &Modified) -> ImageSurface {
+    let size = modified.get_size();
+    let surface = surface.unwrap_or_else(|| ImageSurface::create(Format::ARgb32, size.width, size.height));
+    let context = Context::new(&surface);
+
+    context_fill(&context, shape, che, color, size.width, size.height);
+
+    surface
 }
 
 pub fn mask(surface: Option<ImageSurface>, shape: Shape, che: &Region, color: &Color, pixbuf: Pixbuf) -> (Pixbuf, ImageSurface) {

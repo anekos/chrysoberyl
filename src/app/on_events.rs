@@ -95,7 +95,7 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
                     let center = (
                         f64!(parameter.x.unwrap_or_else(|| mx - x1)) / f64!(h),
                         f64!(parameter.y.unwrap_or_else(|| my - y1)) / f64!(w));
-                    app.cache.cherenkov(
+                    app.cache.cherenkov1(
                         &entry,
                         &cell_size,
                         Modifier {
@@ -261,7 +261,7 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Optio
 
     if let Some((entry, _)) = app.current_with(cell_index) {
         let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
-        app.cache.cherenkov(
+        app.cache.cherenkov1(
             &entry,
             &cell_size,
             Modifier {
@@ -745,13 +745,12 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
             let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
 
             app.cache.clear_entry_search_highlights(&entry);
-            for region in &regions {
-                app.cache.cherenkov(
-                    &entry,
-                    &cell_size,
-                    Modifier { search_highlight: true, che: Che::Fill(Shape::Rectangle, *region, color, false) },
-                    &app.states.drawing);
-            }
+            let modifiers: Vec<Modifier> = regions.iter().map(|region| Modifier { search_highlight: true, che: Che::Fill(Shape::Rectangle, *region, color, false) }).collect();
+            app.cache.cherenkov(
+                &entry,
+                &cell_size,
+                modifiers.as_slice(),
+                &app.states.drawing);
 
             if !regions.is_empty() && new_found_on.is_none() {
                 updated.pointer = app.paginator.update_index(Index(index));

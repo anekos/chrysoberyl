@@ -80,9 +80,14 @@ impl ImageCache {
         })
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, modifier: Modifier, drawing: &DrawingState) {
+    pub fn cherenkov1(&mut self, entry: &Entry, cell_size: &Size, modifier: Modifier, drawing: &DrawingState) {
         let mut cherenkoved = self.cherenkoved.lock().unwrap();
-        cherenkoved.cherenkov(entry, cell_size, modifier, drawing)
+        cherenkoved.cherenkov1(entry, cell_size, modifier, drawing)
+    }
+
+    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, modifiers: &[Modifier], drawing: &DrawingState) {
+        let mut cherenkoved = self.cherenkoved.lock().unwrap();
+        cherenkoved.cherenkov(entry, cell_size, modifiers, drawing)
     }
 
     pub fn uncherenkov(&mut self, key: &Key) {

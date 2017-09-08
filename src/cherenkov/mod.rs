@@ -98,10 +98,14 @@ impl Cherenkoved {
         }
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, modifier: Modifier, drawing: &DrawingState) {
+    pub fn cherenkov1(&mut self, entry: &Entry, cell_size: &Size, modifier: Modifier, drawing: &DrawingState) {
+        self.cherenkov(entry, cell_size, &[modifier], drawing)
+    }
+
+    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, new_modifiers: &[Modifier], drawing: &DrawingState) {
         let mut modifiers = self.cache.get(&entry.key).map(|it| it.modifiers.clone()).unwrap_or_else(|| vec![]);
 
-        modifiers.push(modifier);
+        modifiers.extend_from_slice(new_modifiers);
 
         if_let_ok!(image_buffer = time!("re_cherenkov" => re_cherenkov_(entry, cell_size, drawing, &modifiers)), |_| ());
 

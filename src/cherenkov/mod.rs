@@ -103,7 +103,7 @@ impl Cherenkoved {
 
         modifiers.push(modifier);
 
-        if_let_ok!(image_buffer = re_cherenkov_(entry, cell_size, drawing, &modifiers), |_| ());
+        if_let_ok!(image_buffer = time!("re_cherenkov" => re_cherenkov_(entry, cell_size, drawing, &modifiers)), |_| ());
 
         self.cache.insert(
             entry.key.clone(),

@@ -63,7 +63,7 @@ impl Cherenkoved {
 
         let modifiers = cache_entry.modifiers.clone();
 
-        if_let_ok!(image = re_cherenkov_(entry, cell_size, drawing, &modifiers), |err| Some(Err(err)));
+        if_let_ok!(image = re_cherenkov(entry, cell_size, drawing, &modifiers), |err| Some(Err(err)));
 
         cache_entry.image = Some(image.clone());
         cache_entry.drawing = drawing.clone();
@@ -107,7 +107,7 @@ impl Cherenkoved {
 
         modifiers.extend_from_slice(new_modifiers);
 
-        if_let_ok!(image_buffer = time!("re_cherenkov" => re_cherenkov_(entry, cell_size, drawing, &modifiers)), |_| ());
+        if_let_ok!(image_buffer = time!("re_cherenkov" => re_cherenkov(entry, cell_size, drawing, &modifiers)), |_| ());
 
         self.cache.insert(
             entry.key.clone(),
@@ -142,13 +142,13 @@ impl CacheEntry {
 }
 
 
-fn re_cherenkov_(entry: &Entry, cell_size: &Size, drawing: &DrawingState, modifiers: &[Modifier]) -> Result<StaticImageBuffer, String> {
+fn re_cherenkov(entry: &Entry, cell_size: &Size, drawing: &DrawingState, modifiers: &[Modifier]) -> Result<StaticImageBuffer, String> {
     entry::image::get_image_buffer(entry, cell_size, drawing).and_then(|image_buffer| {
         if let ImageBuffer::Static(buf) = image_buffer {
             let mut mask = None;
             let mut modified = Modified::P(buf.get_pixbuf());
             for modifier in modifiers {
-                let (_modified, _mask) = cherenkov_pixbuf_(modified, mask, &modifier.che);
+                let (_modified, _mask) = cherenkov_pixbuf(modified, mask, &modifier.che);
                 modified = _modified;
                 mask = _mask;
             }
@@ -165,57 +165,14 @@ fn re_cherenkov_(entry: &Entry, cell_size: &Size, drawing: &DrawingState, modifi
     })
 }
 
-fn re_cherenkov(entry: &Entry, cell_size: &Size, drawing: &DrawingState, modifiers: &[Modifier]) -> Result<StaticImageBuffer, String> {
-    entry::image::get_image_buffer(entry, cell_size, drawing).and_then(|image_buffer| {
-        if let ImageBuffer::Static(buf) = image_buffer {
-            let mut pixbuf = buf.get_pixbuf();
-            let mut mask = None;
-            for modifier in modifiers {
-                let (_pixbuf, _mask) = cherenkov_pixbuf(pixbuf, mask, &modifier.che);
-                pixbuf = _pixbuf;
-                mask = _mask;
-            }
-            let pixbuf = if let Some(mask) = mask {
-                apply_mask(&pixbuf, mask, drawing.mask_operator.0)
-            } else {
-                pixbuf
-            };
-            Ok(StaticImageBuffer::new_from_pixbuf(&pixbuf, buf.original_size))
-        } else {
-            Err(o!("Not static image"))
-        }
-    })
-}
-
-fn cherenkov_pixbuf_(modified: Modified, mask_surface: Option<ImageSurface>, che: &Che) -> (Modified, Option<ImageSurface>) {
+fn cherenkov_pixbuf(modified: Modified, mask_surface: Option<ImageSurface>, che: &Che) -> (Modified, Option<ImageSurface>) {
     match *che {
         Che::Nova(ref che) => (nova::nova_(che, modified), mask_surface),
         Che::Fill(shape, ref region, ref color, false) =>
-            (fill::fill_(shape, region, color, modified), mask_surface),
+            (fill::fill(shape, region, color, modified), mask_surface),
         Che::Fill(shape, ref region, ref color, true) => {
-            let mask_surface = fill::mask_(mask_surface, shape, region, color, &modified);
+            let mask_surface = fill::mask(mask_surface, shape, region, color, &modified);
             (modified, Some(mask_surface))
-        }
-    }
-}
-
-fn cherenkov_pixbuf(pixbuf: Pixbuf, mask_surface: Option<ImageSurface>, che: &Che) -> (Pixbuf, Option<ImageSurface>) {
-    match *che {
-        Che::Nova(ref che) => {
-            let (width, height) = (pixbuf.get_width(), pixbuf.get_height());
-            let rowstride = pixbuf.get_rowstride();
-            let channels = pixbuf.get_n_channels();
-            if channels == 4 {
-                let pixels: &mut [u8] = unsafe { pixbuf.get_pixels() };
-                nova::nova(che, pixels, rowstride, width, height);
-            }
-            (pixbuf, mask_surface)
-        },
-        Che::Fill(shape, ref region, ref color, false) =>
-            (fill::fill(shape, region, color, &pixbuf), mask_surface),
-        Che::Fill(shape, ref region, ref color, true) => {
-            let (pixbuf, mask_surface) = fill::mask(mask_surface, shape, region, color, pixbuf);
-            (pixbuf, Some(mask_surface))
         }
     }
 }

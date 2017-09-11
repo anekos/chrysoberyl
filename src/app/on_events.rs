@@ -702,6 +702,12 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
         }
         app.found_on = None;
         app.search_text = Some(text);
+    } else if let Some(new_value) = app.found_on.as_ref().and_then(|found_on| {
+        app.current().map(|(_, index)| index .. index + app.gui.len() - 1).and_then(|current| {
+            if current != *found_on { Some(current) } else { None }
+        })
+    }) {
+        app.found_on = Some(new_value);
     }
 
     updated.message = true;

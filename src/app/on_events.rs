@@ -697,6 +697,10 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
     }
 
     if let Some(text) = text {
+        if text.trim() == "" {
+            return;
+        }
+
         if app.cache.clear_search_highlights() {
             updated.image = true;
         }

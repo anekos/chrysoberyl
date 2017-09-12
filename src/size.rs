@@ -270,7 +270,7 @@ impl FromStr for Size {
                 return Ok(Size::new(w, h));
             }
         }
-        if let Ok((w, h)) = resolution::from(src.as_bytes().to_vec()) {
+        if let Ok((w, h)) = resolution::from(src) {
             return Ok(Size::new(w as i32, h as i32));
         }
 

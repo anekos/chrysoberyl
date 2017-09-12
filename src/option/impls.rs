@@ -175,7 +175,7 @@ impl FromStr for FitTo {
                         return Ok(Fixed(w, h));
                     }
                 }
-                if let Ok((w, h)) = resolution::from(src.as_bytes().to_vec()) {
+                if let Ok((w, h)) = resolution::from(src) {
                     return Ok(Fixed(w as i32, h as i32));
                 }
                 return Err(format!("Invalid target name: {}", src))

@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use globset;
 use pom::parser::*;
-use pom::{Parser, DataInput};
+use pom::{Parser, TextInput};
 
 use entry::filter::expression::*;
 use entry::filter::resolution;
@@ -16,7 +16,7 @@ use entry::filter::resolution;
  * width <= 400 and height <= 400 and filename matches <foo/bar>
  */
 pub fn parse(input: &str) -> Result<Expr, String> {
-    let mut input = DataInput::new(input.as_bytes());
+    let mut input = TextInput::new(input);
     expr().parse(&mut input).map_err(|it| s!(it))
 }
 
@@ -45,21 +45,25 @@ impl FromStr for Expr {
  * BoolVariable ← 'animation'
  */
 
-fn spaces() -> Parser<u8, ()> {
-    one_of(b" \t\r\n").repeat(0..).discard()
+fn from_vec_char(src: Vec<char>) -> String {
+   src.into_iter().collect()
 }
 
-fn number() -> Parser<u8, EValue> {
-    let integer = one_of(b"0123456789").repeat(1..);
-    let number = sym(b'-').opt() + integer;
-    let suffix = (one_of(b"KMGTP") + sym(b'i').opt()).opt().map(|suffix| {
+fn spaces() -> Parser<char, ()> {
+    one_of(" \t\r\n").repeat(0..).discard()
+}
+
+fn number() -> Parser<char, EValue> {
+    let integer = one_of("0123456789").repeat(1..);
+    let number = sym('-').opt() + integer;
+    let suffix = (one_of("KMGTP") + sym('i').opt()).opt().map(|suffix| {
         if let Some((c, i)) = suffix {
             let p = match c {
-                b'K' => 1,
-                b'M' => 2,
-                b'G' => 3,
-                b'T' => 4,
-                b'P' => 5,
+                'K' => 1,
+                'M' => 2,
+                'G' => 3,
+                'T' => 4,
+                'P' => 5,
                 _ => panic!("Unexpected char for integer suffix: {}", c)
             };
             let base: i64 = if i.is_some() { 1024 } else { 1000 };
@@ -68,159 +72,162 @@ fn number() -> Parser<u8, EValue> {
             1
         }
     });
-    let number = number.collect().convert(String::from_utf8).convert(|s|i64::from_str(&s));
+    let number = number.collect().map(from_vec_char).convert(|s|i64::from_str(&s));
     (number + suffix).map(|(n, s)| EValue::Integer(n * s))
 }
 
-fn variable() -> Parser<u8, EValue> {
+fn variable() -> Parser<char, EValue> {
     use self::EVariable::*;
 
-    fn gen(name: &'static [u8], var: EVariable) -> Parser<u8, EValue> {
+    fn gen(name: &'static str, var: EVariable) -> Parser<char, EValue> {
         seq(name).map(move |_| EValue::Variable(var))
     }
 
-    gen(b"type", Type) |
-        gen(b"archive-page", ArchivePage) |
-        gen(b"current-page", CurrentPage) |
-        gen(b"dimensions", Dimentions) |
-        gen(b"dim", Dimentions) |
-        gen(b"extension", Extension) |
-        gen(b"ext", Extension) |
-        gen(b"height", Height) |
-        gen(b"name", Name) |
-        gen(b"pages", Pages) |
-        gen(b"path", Path) |
-        gen(b"real-pages", RealPages) |
-        gen(b"width", Width) |
-        gen(b"filesize", FileSize)
+    gen("type", Type) |
+        gen("archive-page", ArchivePage) |
+        gen("current-page", CurrentPage) |
+        gen("dimensions", Dimentions) |
+        gen("dim", Dimentions) |
+        gen("extension", Extension) |
+        gen("ext", Extension) |
+        gen("height", Height) |
+        gen("name", Name) |
+        gen("pages", Pages) |
+        gen("path", Path) |
+        gen("real-pages", RealPages) |
+        gen("width", Width) |
+        gen("filesize", FileSize)
 }
 
-fn value() -> Parser<u8, EValue> {
+fn value() -> Parser<char, EValue> {
      variable() | number() | glob()
 }
 
-fn comp_op() -> Parser<u8, ECompOp> {
+fn comp_op() -> Parser<char, ECompOp> {
     fn i(v: EICompOp) -> ECompOp {
         ECompOp::ForInt(v)
     }
 
-    let eq = sym(b'=') * {
-        let eq2 = sym(b'=').map(|_| i(EICompOp::Eq));
-        let glob = sym(b'*').map(|_| ECompOp::GlobMatch(false));
+    let eq = sym('=') * {
+        let eq2 = sym('=').map(|_| i(EICompOp::Eq));
+        let glob = sym('*').map(|_| ECompOp::GlobMatch(false));
         let eq1 = empty().map(|_| i(EICompOp::Eq));
         eq2 | glob | eq1
     };
 
-    let lt = sym(b'<') * {
-        let le = sym(b'=').map(|_| i(EICompOp::Le));
+    let lt = sym('<') * {
+        let le = sym('=').map(|_| i(EICompOp::Le));
         let lt = empty().map(|_| i(EICompOp::Lt));
         le | lt
     };
 
-    let gt = sym(b'>') * {
-        let ge = sym(b'=').map(|_| i(EICompOp::Ge));
+    let gt = sym('>') * {
+        let ge = sym('=').map(|_| i(EICompOp::Ge));
         let gt = empty().map(|_| i(EICompOp::Gt));
         ge | gt
     };
 
-    let not = sym(b'!') * {
-        let ne = sym(b'=').map(|_| i(EICompOp::Ne));
-        let glob_not = sym(b'*').map(|_| ECompOp::GlobMatch(true));
+    let not = sym('!') * {
+        let ne = sym('=').map(|_| i(EICompOp::Ne));
+        let glob_not = sym('*').map(|_| ECompOp::GlobMatch(true));
         ne | glob_not
     };
 
     eq | lt | gt | not
 }
 
-fn compare() -> Parser<u8, EBool> {
+fn compare() -> Parser<char, EBool> {
     (value() + (spaces() * comp_op() - spaces()) + value()).map(|((l, op), r)| {
         EBool::Compare(l, op, r)
     })
 }
 
-fn bool_variable() -> Parser<u8, EBool> {
-    seq(b"animation").map(|_| EBool::Variable(EBVariable::Animation))
+fn bool_variable() -> Parser<char, EBool> {
+    seq("animation").map(|_| EBool::Variable(EBVariable::Animation))
 }
 
-fn lit_true() -> Parser<u8, EBool> {
-    seq(b"true").map(|_| EBool::True)
+fn lit_true() -> Parser<char, EBool> {
+    seq("true").map(|_| EBool::True)
 }
 
-fn lit_false() -> Parser<u8, EBool> {
-    seq(b"false").map(|_| EBool::False)
+fn lit_false() -> Parser<char, EBool> {
+    seq("false").map(|_| EBool::False)
 }
 
-fn boolean() -> Parser<u8, Expr> {
+fn boolean() -> Parser<char, Expr> {
     (bool_variable() | compare() | resolution() | lit_true() | lit_false()).map(Expr::Boolean)
 }
 
-fn logic_op() -> Parser<u8, ELogicOp> {
-    let and = seq(b"and").map(|_| (ELogicOp::And));
-    let or = seq(b"or").map(|_| (ELogicOp::Or));
+fn logic_op() -> Parser<char, ELogicOp> {
+    let and = seq("and").map(|_| (ELogicOp::And));
+    let or = seq("or").map(|_| (ELogicOp::Or));
 
     and | or
 }
 
-fn logic() -> Parser<u8, Expr> {
+fn logic() -> Parser<char, Expr> {
     (boolean() + (spaces() * logic_op() - spaces()) + call(expr_item)).map(|((l, op), r)| {
         Expr::Logic(Box::new(l), op, Box::new(r))
     })
 }
 
-fn glob() -> Parser<u8, EValue> {
-    (sym(b'<') * list(call(glob_entry), sym(b',')) - sym(b'>')).map(|entries| {
+fn glob() -> Parser<char, EValue> {
+    (sym('<') * list(call(glob_entry), sym(',')) - sym('>')).map(|entries| {
         EValue::Glob(entries.into_iter().map(|(m, src)| (m, src)).collect())
     })
 }
 
-fn glob_entry() -> Parser<u8, (globset::GlobMatcher, String)> {
-    none_of(b",>").repeat(0..).convert(String::from_utf8).convert(|src| {
+fn glob_entry() -> Parser<char, (globset::GlobMatcher, String)> {
+    none_of(",>").repeat(0..).map(from_vec_char).convert(|src| {
         globset::Glob::new(&src).map(|it| {
             (it.compile_matcher(), src)
         })
     })
 }
 
-fn resolution() -> Parser<u8, EBool> {
-    let integer = || one_of(b"0123456789").repeat(1..).convert(String::from_utf8).convert(|s|i64::from_str(&s));
-    let ixi = integer() + (sym(b'x') * integer());
-    let name = none_of(b" ").repeat(1..).convert(resolution::from);
+fn resolution() -> Parser<char, EBool> {
+    let integer = || one_of("0123456789").repeat(1..).map(from_vec_char).convert(|s|i64::from_str(&s));
+    let ixi = integer() + (sym('x') * integer());
+    let name = none_of(" ").repeat(1..).convert(resolution::from_vec);
 
-    (sym(b'?') * (name | ixi)).map(|(w, h)| EBool::Resolution(w, h))
+    (sym('?') * (name | ixi)).map(|(w, h)| EBool::Resolution(w, h))
 }
 
-fn when() -> Parser<u8, Expr> {
-    let p = (seq(b"when") | seq(b"unless")) - spaces() + (call(expr_item) + (spaces() * call(expr_item)));
-    p.map(|(when_unless, (cond, clause))| Expr::When(when_unless == b"unless", Box::new(cond), Box::new(clause)))
+fn when() -> Parser<char, Expr> {
+    let p = (seq("when") | seq("unless")) - spaces() + (call(expr_item) + (spaces() * call(expr_item)));
+    p.map(|(when_unless, (cond, clause))| {
+        let when_unless = from_vec_char(when_unless);
+        Expr::When(when_unless == "unless", Box::new(cond), Box::new(clause))
+    })
 }
 
-fn if_() -> Parser<u8, Expr> {
-    let p = seq(b"if") * spaces() * (call(expr_item) + (spaces() * call(expr_item)) + (spaces() * call(expr_item)));
+fn if_() -> Parser<char, Expr> {
+    let p = seq("if") * spaces() * (call(expr_item) + (spaces() * call(expr_item)) + (spaces() * call(expr_item)));
     p.map(|((cond, true_clause), false_clause)| Expr::If(Box::new(cond), Box::new(true_clause), Box::new(false_clause)))
 }
 
-fn block_paren() -> Parser<u8, Expr> {
-    sym(b'(') * spaces() * call(expr_item) - spaces() - sym(b')')
+fn block_paren() -> Parser<char, Expr> {
+    sym('(') * spaces() * call(expr_item) - spaces() - sym(')')
 }
 
-fn block_curly() -> Parser<u8, Expr> {
-    sym(b'{') * spaces() * call(expr_item) - spaces() - sym(b'}')
+fn block_curly() -> Parser<char, Expr> {
+    sym('{') * spaces() * call(expr_item) - spaces() - sym('}')
 }
 
-fn block() -> Parser<u8, Expr> {
+fn block() -> Parser<char, Expr> {
     block_paren() | block_curly()
 }
 
-fn not() -> Parser<u8, Expr> {
-    seq(b"not") * spaces() * expr_item().map(|expr| Expr::Not(Box::new(expr)))
+fn not() -> Parser<char, Expr> {
+    seq("not") * spaces() * expr_item().map(|expr| Expr::Not(Box::new(expr)))
 }
 
-fn expr_item() -> Parser<u8, Expr> {
+fn expr_item() -> Parser<char, Expr> {
     block() | call(logic) | boolean() | call(if_) | call(when) | call(not)
 }
 
 
-fn expr() -> Parser<u8, Expr> {
+fn expr() -> Parser<char, Expr> {
     spaces() * expr_item() - spaces()
 }
 

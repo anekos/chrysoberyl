@@ -69,7 +69,6 @@ impl EntryInfo {
 
     pub fn lazy(&mut self, content: &EntryContent) -> &LazyEntryInfo {
         self.lazy_info.get(|| LazyEntryInfo::new(content))
-
     }
 }
 

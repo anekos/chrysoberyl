@@ -754,6 +754,10 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
             let page = doc.unwrap().nth_page(*doc_index);
             let regions = page.find_text(&text);
 
+            if regions.is_empty() {
+                continue;
+            }
+
             let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
 
             app.cache.clear_entry_search_highlights(&entry);
@@ -764,7 +768,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
                 modifiers.as_slice(),
                 &app.states.drawing);
 
-            if !regions.is_empty() && new_found_on.is_none() {
+            if new_found_on.is_none() {
                 updated.pointer = app.paginator.update_index(Index(index));
                 updated.image = true;
                 app.update_message(Some(o!("Found!")));

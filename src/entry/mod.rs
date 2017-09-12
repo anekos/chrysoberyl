@@ -68,7 +68,7 @@ pub struct SearchKey {
     pub index: Option<usize>
 }
 
-pub type Key = (EntryType, String, usize);
+pub type Key = (EntryType, String, usize); /* usize = 0 origin page number */
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Copy)]
 pub enum EntryType {
@@ -83,7 +83,7 @@ impl Entry {
     fn new(serial: Serial, content: EntryContent, meta: Option<Meta>, url: Option<String>) -> Entry {
         let key = content.key(url.clone());
 
-        let info = EntryInfo::new(&content, &key.1, key.2);
+        let info = EntryInfo::new(&content, &key.1, key.2 + 1);
 
         Entry {
             serial: serial,
@@ -142,7 +142,7 @@ impl EntryContent {
             Image(ref path) =>
                 (EntryType::Image,
                  url.unwrap_or_else(|| path_to_str(path).to_owned()),
-                 1),
+                 0),
             Archive(ref path, ref entry) =>
                 (EntryType::Archive,
                  url.unwrap_or_else(|| path_to_str(&**path).to_owned()),

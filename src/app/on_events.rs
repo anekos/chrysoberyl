@@ -698,6 +698,8 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
 
     if let Some(text) = text {
         if text.trim() == "" {
+            app.update_message(None);
+            updated.message = true;
             return;
         }
 

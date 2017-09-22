@@ -408,6 +408,10 @@ pub fn on_load_default(app: &mut App) {
     script::load(&app.tx, DEFAULT_CONFIG, &app.states.path_list);
 }
 
+pub fn on_make_visibles(app: &mut App, regions: &[Option<Region>]) {
+    app.gui.make_visibles(regions);
+}
+
 pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, operation: Vec<String>) {
     use app::MappingTarget::*;
 
@@ -424,6 +428,12 @@ pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, opera
         Region(button) =>
             app.mapping.register_region(button, operation),
     }
+}
+
+#[allow(unused_variables)]
+pub fn on_meow(app: &mut App, updated: &mut Updated) {
+    /* for develop */
+    updated.image = false;
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
@@ -731,6 +741,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
     let mut previous: Option<(Rc<PopplerDocument>, PathBuf)> = None;
     let mut new_found_on = None;
     let cells = app.gui.len();
+    let mut first_regions = vec![];
 
     for (index, entry) in seq {
         if !opt_range_contains(&new_found_on, index, true) { break; }
@@ -755,8 +766,12 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
             let regions = page.find_text(&text);
 
             if regions.is_empty() {
+                if new_found_on.is_some() {
+                    first_regions.push(None);
+                }
                 continue;
             }
+            first_regions.push(Some(regions[0]));
 
             let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
 
@@ -780,6 +795,8 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
 
     if new_found_on.is_none() {
         app.update_message(Some(o!("Not found!")));
+    } else {
+        updated.target_regions = Some(first_regions);
     }
     app.found_on = new_found_on;
 }

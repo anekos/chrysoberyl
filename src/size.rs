@@ -191,6 +191,10 @@ impl Region {
         self.bottom - self.top
     }
 
+    pub fn centroids(&self) -> (f64, f64) {
+        (self.left - self.width() / 2.0, self.top - self.height() / 2.0)
+    }
+
     pub fn contains(&self, x: i32, y: i32, width: i32, height: i32) -> bool {
         let l = (f64!(width) * self.left) as i32;
         let r = (f64!(width) * self.right) as i32;

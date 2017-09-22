@@ -13,7 +13,7 @@ use color::Color;
 use constant;
 use gtk_utils::new_pixbuf_from_surface;
 use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
-use size::{FitTo, Size};
+use size::{FitTo, Size, Region};
 use state::ViewState;
 use utils::feq;
 
@@ -141,6 +141,14 @@ impl Gui {
             if let Some(adj) = cell.window.get_hadjustment() {
                 adj.set_value(if to_end { adj.get_upper() } else { 0.0 });
                 cell.window.set_hadjustment(&adj);
+            }
+        }
+    }
+
+    pub fn make_visibles(&self, regions: &[Option<Region>]) {
+        for (cell, region) in self.cells(false).zip(regions) {
+            if let Some(ref region) = *region {
+                cell.make_visible(region);
             }
         }
     }
@@ -344,6 +352,22 @@ impl Cell {
                 self.image.get_animation()
                     .map(|it| (it.get_width(), it.get_height()))
             })
+    }
+
+    pub fn make_visible(&self, region: &Region) {
+        let (h_center, v_center) = region.centroids();
+
+        if let Some(adj) = self.window.get_hadjustment() {
+            let (width, page_width) = (adj.get_upper(), adj.get_page_size());
+            adj.set_value(h_center * width - page_width / 2.0);
+            self.window.set_hadjustment(&adj);
+        }
+
+        if let Some(adj) = self.window.get_vadjustment() {
+            let (height, page_height) = (adj.get_upper(), adj.get_page_size());
+            adj.set_value(v_center * height - page_height / 2.0);
+            self.window.set_vadjustment(&adj);
+        }
     }
 }
 

@@ -214,8 +214,12 @@ impl App {
                     on_load(self, file, search_path),
                 LoadDefault =>
                     on_load_default(self),
+                MakeVisibles(ref regions) =>
+                    on_make_visibles(self, regions),
                 Map(target, remain, mapped_operation) =>
                     on_map(self, target, remain, mapped_operation),
+                Meow =>
+                    on_meow(self, &mut updated),
                 MoveAgain(count, ignore_views, move_by, wrap) =>
                     on_move_again(self, &mut updated, &mut to_end, count, ignore_views, move_by, wrap),
                 Multi(ops, async) =>
@@ -347,7 +351,7 @@ impl App {
         }
 
         if updated.image || updated.image_options {
-            let image_size = time!("show_image" => self.show_image(to_end));
+            let image_size = time!("show_image" => self.show_image(to_end, updated.target_regions.clone()));
             self.on_image_updated(image_size);
         }
 
@@ -448,6 +452,10 @@ impl App {
         }
     }
 
+    fn cancel_lazy_draw(&mut self) {
+        self.draw_serial += 1;
+    }
+
     fn do_go(&mut self, updated: &mut Updated) {
         let index = self.states.go.as_ref().and_then(|key| self.entries.search(key));
         if let Some(index) = index {
@@ -474,9 +482,11 @@ impl App {
         self.fetcher.new_target(entries, cell_size, self.states.drawing.clone());
     }
 
-    fn show_image(&mut self, to_end: bool) -> Option<Size> {
+    fn show_image(&mut self, to_end: bool, target_regions: Option<Vec<Option<Region>>>) -> Option<Size> {
         let mut image_size = None;
         let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
+
+        self.cancel_lazy_draw();
 
         if self.states.pre_fetch.enabled {
             self.pre_fetch(cell_size, 0..1);
@@ -508,7 +518,12 @@ impl App {
 
         if self.states.drawing.fit_to.is_scrollable() {
             self.tx.send(Operation::UpdateUI).unwrap();
-            self.tx.send(Operation::ResetScrolls(to_end)).unwrap();
+            let op = if let Some(target_regions) = target_regions {
+                Operation::MakeVisibles(target_regions)
+            } else {
+                Operation::ResetScrolls(to_end)
+            };
+            self.tx.send(op).unwrap();
         }
 
         if self.states.pre_fetch.enabled {

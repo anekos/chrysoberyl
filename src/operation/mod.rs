@@ -59,6 +59,8 @@ pub enum Operation {
     Load(Expandable, bool), /* path, search_path */
     LoadDefault,
     Map(MappingTarget, Option<usize>, Vec<String>), /* target, remain, operation */
+    MakeVisibles(Vec<Option<Region>>),
+    Meow,
     MoveAgain(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Multi(VecDeque<Operation>, bool), /* operations, async */
     Next(Option<usize>, bool, MoveBy, bool),
@@ -159,6 +161,7 @@ pub struct Updated {
     pub image: bool,
     pub image_options: bool,
     pub message: bool,
+    pub target_regions: Option<Vec<Option<Region>>>,
 }
 
 
@@ -272,6 +275,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@last" | "@l"                  => parse_move(whole, Last),
             "@load"                         => parse_load(whole),
             "@map"                          => parse_map(whole, true),
+            "@meow"                         => Ok(Meow),
             "@move-again"                   => parse_move(whole, MoveAgain),
             "@multi"                        => parse_multi(whole),
             "@next" | "@n"                  => parse_move(whole, Next),
@@ -351,7 +355,9 @@ impl fmt::Debug for Operation {
             LazyDraw(_, _) => "LazyDraw",
             Load(_, _) => "Load",
             LoadDefault => "LoadDefault ",
+            MakeVisibles(_) => "MakeVisibles",
             Map(_, _, _) => "Map",
+            Meow => "Meow",
             MoveAgain(_, _, _, _) => "MoveAgain",
             Multi(_, _) => "Multi",
             Next(_, _, _, _) => "Next",

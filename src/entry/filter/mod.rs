@@ -159,7 +159,6 @@ fn eval_variable(info: &mut Info, content: &EntryContent, v: &EVariable) -> Opti
 
     match *v {
         ArchivePage => Some(info.entry.strict.archive_page),
-        AspectRatio => Some(info.entry.strict.archive_page),
         CurrentPage => info.app.current_page.map(|it| it as i64),
         Width => info.entry.lazy(content).dimensions.map(|it| i64!(it.width)),
         Height => info.entry.lazy(content).dimensions.map(|it| i64!(it.height)),
@@ -167,7 +166,7 @@ fn eval_variable(info: &mut Info, content: &EntryContent, v: &EVariable) -> Opti
         Pages => Some(info.app.pages as i64),
         RealPages => Some(info.app.real_pages as i64),
         FileSize => Some(info.entry.lazy(content).file_size as i64),
-        Type | Path | Name | Extension => None,
+        AspectRatio | Type | Path | Name | Extension => None,
     }
 }
 

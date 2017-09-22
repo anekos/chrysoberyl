@@ -85,7 +85,7 @@ fn eval_bool(info: &mut Info, content: &EntryContent, b: &EBool) -> bool {
                     }
                 }
                 GlobMatch(inverse) => {
-                    if let (Some(ref l), Some(ref rs)) = (eval_value_as_s(info, l), eval_value_as_g(r)) {
+                    if let (Some(ref l), Some(ref rs)) = (eval_value_as_s(info, content, l), eval_value_as_g(r)) {
                         return rs.iter().any(|r| r.is_match(l)) ^ inverse;
                     }
                 }
@@ -143,14 +143,14 @@ fn eval_value_as_g(v: &EValue) -> Option<Vec<GlobMatcher>> {
     }
 }
 
-fn eval_value_as_s(info: &Info, v: &EValue) -> Option<String> {
+fn eval_value_as_s(info: &mut Info, content: &EntryContent, v: &EValue) -> Option<String> {
     use self::EValue::*;
 
     match *v {
         Integer(_) | Glob(_) =>
             None,
         Variable(ref v) =>
-            eval_variable_as_s(info, v)
+            eval_variable_as_s(info, content, v)
     }
 }
 
@@ -159,6 +159,7 @@ fn eval_variable(info: &mut Info, content: &EntryContent, v: &EVariable) -> Opti
 
     match *v {
         ArchivePage => Some(info.entry.strict.archive_page),
+        AspectRatio => Some(info.entry.strict.archive_page),
         CurrentPage => info.app.current_page.map(|it| it as i64),
         Width => info.entry.lazy(content).dimensions.map(|it| i64!(it.width)),
         Height => info.entry.lazy(content).dimensions.map(|it| i64!(it.height)),
@@ -170,10 +171,14 @@ fn eval_variable(info: &mut Info, content: &EntryContent, v: &EVariable) -> Opti
     }
 }
 
-fn eval_variable_as_s(info: &Info, v: &EVariable) -> Option<String> {
+fn eval_variable_as_s(info: &mut Info, content: &EntryContent, v: &EVariable) -> Option<String> {
     use self::EVariable::*;
 
     match *v {
+        AspectRatio => info.entry.lazy(content).dimensions.map(|it| {
+            let (w, h) = it.ratio();
+            format!("{}:{}", w, h)
+        }),
         Path => Some(info.entry.strict.path.clone()),
         Extension => info.entry.strict.extension.clone(),
         Type => Some(o!(info.entry.strict.entry_type)),

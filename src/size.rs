@@ -121,6 +121,11 @@ impl Size {
         self.width * self.height
     }
 
+    pub fn ratio(&self) -> (i32, i32) {
+        let divisor = gcd(self.width, self.height);
+        (self.width / divisor, self.height / divisor)
+    }
+
     fn fit_to_original(&self) -> (f64, Size) {
         (1.0, *self)
     }
@@ -275,5 +280,14 @@ impl FromStr for Size {
         }
 
         Err(format!("Invalid size format: {}", src))
+    }
+}
+
+
+fn gcd(x: i32, y: i32) -> i32 {
+    if y == 0 {
+        x
+    } else {
+        gcd(y, x % y)
     }
 }

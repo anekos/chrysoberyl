@@ -55,6 +55,7 @@ pub enum EValue {
 #[derive(Clone, Debug, Copy)]
 pub enum EVariable {
     ArchivePage,
+    AspectRatio,
     CurrentPage,
     Dimentions,
     Extension,

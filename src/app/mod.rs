@@ -608,6 +608,8 @@ impl App {
             if let Some(image_size) = image_size {
                 envs.push((o!("width"), s!(image_size.width)));
                 envs.push((o!("height"), s!(image_size.height)));
+                let (w, h) = image_size.ratio();
+                envs.push((o!("ratio"), format!("{}:{}", w, h)));
             }
 
             envs_sub.push((o!("paging"), {

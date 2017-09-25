@@ -1,6 +1,7 @@
 
 use std::default::Default;
 use std::fs::File;
+use std::io;
 use std::path::Path;
 use std::str::FromStr;
 
@@ -11,6 +12,7 @@ use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment};
 
 use color::Color;
 use constant;
+use errors::*;
 use gtk_utils::new_pixbuf_from_surface;
 use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use size::{FitTo, Size, Region};
@@ -247,8 +249,8 @@ impl Gui {
         self.cell_inners.clear();
     }
 
-    pub fn save<T: AsRef<Path>>(&self, path: &T, index: usize) -> Result<(), String> {
-        self.cells(false).nth(index).ok_or_else(|| o!("Out of index")).and_then(|cell| {
+    pub fn save<T: AsRef<Path>>(&self, path: &T, index: usize) -> Result<(), BoxedError> {
+        self.cells(false).nth(index).ok_or_else(|| ChryError::Fix("Out of index")).and_then(|cell| {
             save_image(&cell.image, path)
         })
     }
@@ -431,17 +433,17 @@ impl FromStr for Direction {
 }
 
 
-fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), String> {
+fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), BoxedError> {
     use gdk::prelude::ContextExt;
 
-    image.get_pixbuf().ok_or_else(|| o!("No pixbuf")).and_then(|pixbuf| {
+    image.get_pixbuf().ok_or_else(|| ChryError::Fix("No pixbuf")).and_then(|pixbuf| {
         let (width, height) = (pixbuf.get_width(), pixbuf.get_height());
         let surface = ImageSurface::create(Format::ARgb32, width, height);
         let context = Context::new(&surface);
         context.set_source_pixbuf(&pixbuf, 0.0, 0.0);
         context.paint();
-        File::create(path).map_err(|it| s!(it)).and_then(|mut file| {
-            surface.write_to_png(&mut file).map_err(|_| o!("IO Error"))
+        File::create(path).and_then(|mut file| {
+            surface.write_to_png(&mut file)
         })
     })
 }

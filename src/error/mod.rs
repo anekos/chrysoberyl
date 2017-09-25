@@ -1,4 +1,5 @@
 
+use std::error::Error;
 use std::sync::mpsc::{Sender, channel};
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -8,10 +9,8 @@ use operation::Operation;
 
 
 
-pub struct Error(pub String);
-
 enum ErrorChannel {
-    Push(Error),
+    Push(String),
     Register(Sender<Operation>),
 }
 
@@ -24,11 +23,11 @@ lazy_static! {
 
 
 macro_rules! puts_error {
-    ( $message:expr $(,$name:expr => $value:expr)* ) => {
+    ( $err:expr $(,$name:expr => $value:expr)* ) => {
         {
             use error;
-            error::push(error::Error(o!($message)));
-            puts!("event" => "error", "message" => $message $(, $name => $value)*)
+            error::push(o!($err.description()));
+            puts!("event" => "error", "message" => $err.description() $(, $name => $value)*)
         }
     }
 }
@@ -38,7 +37,7 @@ pub fn register(op_tx: Sender<Operation>) {
     tx.send(ErrorChannel::Register(op_tx)).unwrap()
 }
 
-pub fn push(error: Error) {
+pub fn push(error: String) {
     let tx = (*ERROR_CHANNEL).lock().unwrap();
     tx.send(ErrorChannel::Push(error)).unwrap()
 }
@@ -55,7 +54,7 @@ fn main() -> Sender<ErrorChannel> {
             match ec {
                 Push(error) => {
                     for target in &targets {
-                        target.send(Operation::Error(error.0.clone())).unwrap()
+                        target.send(Operation::Error(error.clone())).unwrap()
                     }
                 },
                 Register(tx) => targets.push(tx),

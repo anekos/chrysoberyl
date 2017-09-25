@@ -1,13 +1,15 @@
 
 use std::result;
 
+use errors::ChryError;
+
 pub mod impls;
 pub mod user;
 
 
 
 pub type StdResult<T, U> = result::Result<T, U>;
-pub type Result = StdResult<(), String>;
+pub type Result = StdResult<(), ChryError>;
 
 
 pub trait OptionValue {
@@ -22,26 +24,26 @@ pub trait OptionValue {
     }
 
     fn enable(&mut self) -> Result {
-        Err(o!("Not supported operation"))
+        chry_error!(o!("Not supported operation"))
     }
 
     fn disable(&mut self) -> Result {
-        Err(o!("Not supported operation"))
+        chry_error!(o!("Not supported operation"))
     }
 
     fn is_enabled(&self) -> StdResult<bool, String> {
-        Err(o!("Not supported operation"))
+        chry_error!(o!("Not supported operation"))
     }
 
     fn set(&mut self, _: &str) -> Result {
-        Err(o!("Not supported operation"))
+        chry_error!(o!("Not supported operation"))
     }
 
     fn unset(&mut self) -> Result {
-        Err(o!("Not supported operation"))
+        chry_error!(o!("Not supported operation"))
     }
 
     fn cycle(&mut self, _: bool) -> Result {
-        Err(o!("Not supported operation"))
+        chry_error!(o!("Not supported operation"))
     }
 }

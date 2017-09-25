@@ -1,5 +1,6 @@
 
 use std::collections::VecDeque;
+use std::error;
 use std::fmt;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -14,6 +15,7 @@ use command_line;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::{Meta, EntryType};
 use entry;
+use errors::ChryError;
 use events::EventName;
 use expandable::Expandable;
 use filer;
@@ -175,8 +177,8 @@ impl FromStr for Operation {
 
 
 impl Operation {
-    pub fn parse_from_vec(whole: &[String]) -> Result<Operation, String> {
-        _parse_from_vec(whole).map_err(|it| s!(it))
+    pub fn parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
+        _parse_from_vec(whole)
     }
 
     pub fn parse(s: &str) -> Result<Operation, ParsingError> {
@@ -184,9 +186,9 @@ impl Operation {
         _parse_from_vec(ps.as_slice())
     }
 
-    pub fn parse_fuzziness(s: &str) -> Result<Operation, String> {
+    pub fn parse_fuzziness(s: &str) -> Result<Operation, ChryError> {
         match Operation::parse(s) {
-            Err(ParsingError::InvalidOperation(err)) => Err(err),
+            Err(ParsingError::InvalidOperation(err)) => chry_error!(err),
             Err(ParsingError::NotOperation) => Ok(Operation::Push(Expandable(o!(s)), None, false)),
             Ok(op) => Ok(op)
         }
@@ -220,6 +222,16 @@ impl fmt::Display for ParsingError {
             ParsingError::NotOperation =>
                 write!(f, "Not operation")
         }
+    }
+}
+
+impl error::Error for ParsingError {
+    fn description(&self) -> &str {
+        s!(self).unwrap()
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        None
     }
 }
 

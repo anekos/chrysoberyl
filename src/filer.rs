@@ -1,9 +1,10 @@
 
 use std::ffi::OsStr;
 use std::fs::{self, File, create_dir_all};
-use std::io::Write;
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
+use errors::*;
 use size::Size;
 use utils::{s, mangle};
 
@@ -45,49 +46,43 @@ impl FileOperation {
         FileOperation { action: action, destination_directory: destination_directory, if_exist: if_exist, size: size }
     }
 
-    pub fn execute(&self, source: &PathBuf) -> Result<(), String> {
+    pub fn execute(&self, source: &PathBuf) -> Result<(), BoxedError> {
         use self::FileOperationAction::*;
 
         match self.action {
             Copy => {
-                destination_path(source, &self.destination_directory, &self.if_exist).and_then(|dest| {
-                    fs::copy(source, dest).map_err(|it| s(&it)).map(mangle)
-                })
+                let dest = destination_path(source, &self.destination_directory, &self.if_exist)?;
+                Ok(fs::copy(source, dest).map(mangle)?)
             }
             Move => {
-                destination_path(source, &self.destination_directory, &self.if_exist).and_then(|dest| {
-                    fs::rename(source, dest).map_err(|it| s(&it)).map(mangle)
-                })
+                let dest = destination_path(source, &self.destination_directory, &self.if_exist)?;
+                Ok(fs::rename(source, dest).map(mangle)?)
             }
         }
     }
 
-    pub fn execute_with_buffer(&self, source: &[u8], source_name: &PathBuf) -> Result<(), String> {
-        destination_path(source_name, &self.destination_directory, &self.if_exist).and_then(|dest| {
-            File::create(dest).map_err(|it| s(&it)).and_then(|mut file| {
-                file.write_all(source).map_err(|it| s(&it))
-            })
-        })
+    pub fn execute_with_buffer(&self, source: &[u8], source_name: &PathBuf) -> Result<(), BoxedError> {
+        let dest = destination_path(source_name, &self.destination_directory, &self.if_exist)?;
+        let mut file = File::create(dest)?;
+        Ok(file.write_all(source)?)
     }
 }
 
 
-fn destination_path(source: &PathBuf, destination_directory: &PathBuf, if_exist: &IfExist) -> Result<PathBuf, String> {
+fn destination_path(source: &PathBuf, destination_directory: &PathBuf, if_exist: &IfExist) -> Result<PathBuf, BoxedError> {
     use self::IfExist::*;
 
     let file_name = source.file_name().unwrap();
     let mut path = destination_directory.clone();
 
     if !path.exists() {
-        if let Err(error) = create_dir_all(&path) {
-            return Err(s!(error));
-        }
+        let _ = create_dir_all(&path)?;
     }
 
     path.push(file_name);
 
     match *if_exist {
-        Fail if path.exists() => Err(format!("File already exists: {:?}", path)),
+        Fail if path.exists() => Err(Box::new(chry_error!("File already exists: {:?}", path))),
         Fail | Overwrite  => Ok(path),
         NewFileName => {
             let mut suffix = 0;

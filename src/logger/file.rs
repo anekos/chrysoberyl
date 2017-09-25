@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Sender, channel};
 use std::thread::spawn;
 
+use errors::ChryError;
 use logger;
 use option::OptionValue;
 use shellexpand_wrapper as sh;
@@ -30,25 +31,22 @@ impl File {
         self.current = None;
     }
 
-    pub fn register<T: AsRef<Path>>(&mut self, path: &T) -> Result<(), String> {
+    pub fn register<T: AsRef<Path>>(&mut self, path: &T) -> Result<(), ChryError> {
         self.unregister();
 
-        match register(path) {
-            Ok(tx) => {
-                self.current = Some((logger::register(tx), path.as_ref().to_path_buf()));
-                Ok(())
-            }
-            Err(error) => Err(error)
-        }
+        register(path).map(|tx| {
+            self.current = Some((logger::register(tx), path.as_ref().to_path_buf()));
+            ()
+        })
     }
 }
 
 impl OptionValue for File {
-    fn set(&mut self, path: &str) -> Result<(), String> {
+    fn set(&mut self, path: &str) -> Result<(), ChryError> {
         self.register(&sh::expand_to_pathbuf(path))
     }
 
-    fn unset(&mut self) -> Result<(), String> {
+    fn unset(&mut self) -> Result<(), ChryError> {
         self.unregister();
         Ok(())
     }
@@ -65,25 +63,20 @@ impl fmt::Display for File {
 }
 
 
-pub fn register<T: AsRef<Path>>(path: &T) -> Result<Sender<String>, String> {
+pub fn register<T: AsRef<Path>>(path: &T) -> Result<Sender<String>, ChryError> {
     if let Some(parent) = path.as_ref().parent() {
         create_dir_all(parent).unwrap();
     }
 
-    OpenOptions::new()
-        .read(false)
-        .write(true)
-        .append(true)
-        .create(true)
-        .open(path).map(|mut file| {
-        let (tx, rx) = channel::<String>();
+    let mut file = OpenOptions::new().read(false).write(true).append(true).create(true).open(path)?;
 
-        spawn(move || {
-            while let Ok(s) = rx.recv() {
-                file.write_fmt(format_args!("{}\n", s)).unwrap();
-            }
-        });
+    let (tx, rx) = channel::<String>();
 
-        tx
-    }).map_err(|it| s!(it))
+    spawn(move || {
+        while let Ok(s) = rx.recv() {
+            file.write_fmt(format_args!("{}\n", s)).unwrap();
+        }
+    });
+
+    Ok(tx)
 }

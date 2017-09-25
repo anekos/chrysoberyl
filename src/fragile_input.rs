@@ -1,10 +1,11 @@
 
+use std::error::Error;
 use std::ffi::CString;
 use std::fs::File;
-use std::io::Error;
+use std::io;
+use std::path::Path;
 use std::sync::mpsc::Sender;
 use std::thread::spawn;
-use std::path::Path;
 
 use libc;
 
@@ -24,7 +25,7 @@ pub fn new_fragile_input<T: AsRef<Path>>(tx: Sender<Operation>, path: &T) {
 
     if res != 0 {
         puts_error!(
-            format!("Could not mkfifo {:?} {}", path.as_ref(), Error::last_os_error().raw_os_error().unwrap()),
+            chry_error!("Could not mkfifo {:?} {}", path.as_ref(), io::Error::last_os_error().raw_os_error().unwrap()),
             "at" => "fragile_controller",
             "for" => d!(path.as_ref()));
         return

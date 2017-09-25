@@ -1,5 +1,6 @@
 
 use std::env;
+use std::error::Error;
 use std::fs::File;
 use std::io::{Write, Read};
 use std::path::{Path, PathBuf};
@@ -22,6 +23,7 @@ use constant::VARIABLE_PREFIX;
 use editor;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::{Meta, SearchKey, Entry, EntryContent, EntryType};
+use errors::ChryError;
 use events::EventName;
 use expandable::{Expandable, expand_all};
 use file_extension::get_entry_type_from_filename;
@@ -29,8 +31,8 @@ use filer;
 use fragile_input::new_fragile_input;
 use gui::Direction;
 use logger;
-use operation::{self, Operation, OperationContext, MappingTarget, MoveBy};
 use operation::option::{OptionName, OptionUpdater};
+use operation::{self, Operation, OperationContext, MappingTarget, MoveBy};
 use option::user::DummySwtich;
 use poppler::{PopplerDocument, self};
 use script;
@@ -186,7 +188,7 @@ pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Exp
     let source = with_ouput_string!(out, {
         for file in files {
             if let Err(err) = File::open(file.expand()).and_then(|mut file| file.read_to_string(out)) {
-                puts_error!(s!(err), "at" => o!("on_load"));
+                puts_error!(err, "at" => o!("on_load"));
             }
         }
         write_sessions(app, sessions, out);
@@ -516,7 +518,7 @@ pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, search_path: 
         PopplerDocument::new_from_file(&*path).index().write(fmt, separator, &mut stdin);
         shell::call(async, &expand_all(command_line, search_path, &app.states.path_list), Some(stdin), option!(read_operations, app.tx.clone()));
     } else {
-        puts_error!("current entry is not PDF", "at" => "on_pdf_index");
+        puts_error!(ChryError::Fix("current entry is not PDF"), "at" => "on_pdf_index");
     }
 }
 
@@ -695,7 +697,7 @@ pub fn on_save(app: &mut App, path: &Option<PathBuf>, sessions: &[Session]) {
     });
 
     if let Err(err) = result {
-        puts_error!(s!(err), "at" => "save_session")
+        puts_error!(err, "at" => "save_session")
     }
 }
 

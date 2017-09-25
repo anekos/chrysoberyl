@@ -1,5 +1,6 @@
 
 use std::cmp::{PartialEq, PartialOrd, Ord, Ordering};
+use std::error::Error;
 use std::hash::{Hash, Hasher};
 use std::io;
 use std::ops;
@@ -421,7 +422,7 @@ impl EntryContainer {
 
     pub fn push_image(&mut self, app_info: &AppInfo, file: &PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) {
         if_let_some!(file = file.canonicalize().ok(), {
-            puts_error!(format!("Invalid file path: {:?}", file), "at" => "push_image", "for" => path_to_str(&file));
+            puts_error!(chry_error!("Invalid file path: {:?}", file), "at" => "push_image", "for" => path_to_str(&file));
         });
 
         if let Some(expand_level) = expand_level {
@@ -433,7 +434,7 @@ impl EntryContainer {
                         }
                     },
                     Err(err) => {
-                        puts_error!(s!(err), "at" => "push_image", "for" => path_to_str(&file));
+                        puts_error!(err, "at" => "push_image", "for" => path_to_str(&file));
                         return;
                     }
                 }

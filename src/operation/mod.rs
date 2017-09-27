@@ -217,18 +217,24 @@ impl Operation {
 
 impl fmt::Display for ParsingError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::ParsingError::*;
+
         match *self {
-            ParsingError::InvalidArgument(ref err) =>
+            Fixed(ref err) =>
+                write!(f, "{}", err),
+            InvalidArgument(ref err) =>
                 write!(f, "Invalid argument: {}", err),
-            ParsingError::NotOperation(name) =>
-                write!(f, "Not operation: {}", name)
+            NotOperation(ref name) =>
+                write!(f, "Not operation: {}", name),
+            TooFewArguments =>
+                write!(f, "Too few arguments"),
         }
     }
 }
 
 impl error::Error for ParsingError {
     fn description(&self) -> &str {
-        &s!(self)
+        "Parsing error"
     }
 
     fn cause(&self) -> Option<&error::Error> {

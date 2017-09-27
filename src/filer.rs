@@ -1,12 +1,12 @@
 
 use std::ffi::OsStr;
 use std::fs::{self, File, create_dir_all};
-use std::io::{self, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use errors::*;
 use size::Size;
-use utils::{s, mangle};
+use utils::mangle;
 
 
 #[derive(Clone, Debug, PartialEq, Copy)]

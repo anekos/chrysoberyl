@@ -1,5 +1,4 @@
 
-use std::error::Error;
 use std::sync::mpsc::{Sender, channel};
 use std::sync::Arc;
 use std::sync::Mutex;

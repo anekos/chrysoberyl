@@ -1,8 +1,9 @@
 
 use std::collections::VecDeque;
 use std::env;
+use std::error::Error;
 use std::fs::{self, File, create_dir_all};
-use std::io::{BufWriter, Write, Error as IOError};
+use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Sender};
 use std::thread::spawn;
@@ -82,7 +83,7 @@ impl RemoteCache {
         if filepath.exists() {
             if self.do_update_atime {
                 if let Err(e) = update_atime(&filepath) {
-                    puts_error!(s!(e), "at" => "update_atime");
+                    puts_error!(e, "at" => "update_atime");
                 }
             }
             let result = self.sorting_buffer.push_with_reserve(

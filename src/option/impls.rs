@@ -67,7 +67,7 @@ macro_rules! def_uint {
             fn set(&mut self, value: &str) -> Result {
                 value.parse().map(|value| {
                     *self = value;
-                }).map_err(|it| ChryError::Standard(format!("Invalid value: {}", value)))
+                }).map_err(|it| ChryError::Standard(format!("Invalid value: {} ({})", value, it)))
             }
         }
     }

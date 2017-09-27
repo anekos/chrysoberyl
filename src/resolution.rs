@@ -65,7 +65,7 @@ pub fn from(s: &str) -> Result<(i64, i64), ChryError> {
     Ok(ok)
 }
 
-pub fn to(w: i64, h: i64) -> ChryError {
+pub fn to(w: i64, h: i64) -> String {
     let result = match (w, h) {
         (1024, 600) => "WSVGA",
         (1024, 768) => "XGA",

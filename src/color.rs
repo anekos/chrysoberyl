@@ -3,6 +3,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use css_color_parser::Color as CssColor;
+use errors::ChryError;
 use gdk::RGBA;
 use rand::{thread_rng, Rng};
 
@@ -59,12 +60,12 @@ impl Color {
 
 
 impl FromStr for Color {
-    type Err = String;
+    type Err = ChryError;
 
-    fn from_str(src: &str) -> Result<Color, String> {
+    fn from_str(src: &str) -> Result<Color, ChryError> {
         match src {
             "random" => Ok(Color::new_random()),
-            _ => src.parse().map_err(|it| s!(it)).map(Color::new_from_css_color)
+            _ => src.parse().map_err(|it| ChryError::InvalidValue(s!(it))).map(Color::new_from_css_color)
         }
     }
 }

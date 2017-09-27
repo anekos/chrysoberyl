@@ -1,11 +1,13 @@
 
 use std::collections::HashMap;
 use std::env;
+use std::error::Error;
 use std::io::{BufReader, BufRead, Read};
 use std::process::{Command, Stdio, Child};
 use std::sync::mpsc::Sender;
 use std::thread::spawn;
 
+use errors::ChryError;
 use operation::Operation;
 use utils::join;
 
@@ -53,7 +55,7 @@ fn run(tx: Option<Sender<Operation>>, envs: Option<Envs>, command_line: &[String
     // termination::unregister(&terminator);
 }
 
-fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<String>) -> Result<(), &'static str> {
+fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<String>) -> Result<(), ChryError> {
     use std::io::Write;
 
     if let Some(stdin) = stdin {
@@ -73,7 +75,7 @@ fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<Str
                 }
             }
         } else {
-            return Err("Could not get stdout");
+            return Err(ChryError::Fixed("Could not get stdout"));
         }
     } else {
         let stderr = child.stderr;

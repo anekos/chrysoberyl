@@ -41,6 +41,6 @@ pub fn new_fragile_input<T: AsRef<Path>>(tx: Sender<Operation>, path: &T) {
             read_operations("fragile", file, &tx);
             puts_event!("input/fragile/close");
         }
-        puts_error!(ChryError::Fix("Could not open file"), "at" => "fragile_controller", "for" => path_to_str(&path));
+        puts_error!(ChryError::Fixed("Could not open file"), "at" => "fragile_controller", "for" => path_to_str(&path));
     });
 }

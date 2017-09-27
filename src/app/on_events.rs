@@ -518,7 +518,7 @@ pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, search_path: 
         PopplerDocument::new_from_file(&*path).index().write(fmt, separator, &mut stdin);
         shell::call(async, &expand_all(command_line, search_path, &app.states.path_list), Some(stdin), option!(read_operations, app.tx.clone()));
     } else {
-        puts_error!(ChryError::Fix("current entry is not PDF"), "at" => "on_pdf_index");
+        puts_error!(ChryError::Fixed("current entry is not PDF"), "at" => "on_pdf_index");
     }
 }
 

@@ -1,7 +1,6 @@
 
 use std::default::Default;
 use std::fs::File;
-use std::io;
 use std::path::Path;
 use std::str::FromStr;
 
@@ -250,7 +249,7 @@ impl Gui {
     }
 
     pub fn save<T: AsRef<Path>>(&self, path: &T, index: usize) -> Result<(), BoxedError> {
-        let cell = self.cells(false).nth(index).ok_or_else(|| ChryError::Fix("Out of index"))?;
+        let cell = self.cells(false).nth(index).ok_or_else(|| ChryError::Fixed("Out of index"))?;
         save_image(&cell.image, path)
     }
 }
@@ -435,7 +434,7 @@ impl FromStr for Direction {
 fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), BoxedError> {
     use gdk::prelude::ContextExt;
 
-    let pixbuf = image.get_pixbuf().ok_or_else(|| ChryError::Fix("No pixbuf"))?;
+    let pixbuf = image.get_pixbuf().ok_or_else(|| ChryError::Fixed("No pixbuf"))?;
     let (width, height) = (pixbuf.get_width(), pixbuf.get_height());
     let surface = ImageSurface::create(Format::ARgb32, width, height);
     let context = Context::new(&surface);

@@ -1,8 +1,9 @@
 
-use std::process::{Command, Stdio};
+use std::error::Error;
 use std::io::{Write, BufReader, BufRead, BufWriter};
-use std::thread::spawn;
+use std::process::{Command, Stdio};
 use std::sync::mpsc::{Sender, channel};
+use std::thread::spawn;
 
 use logger;
 use operation::Operation;

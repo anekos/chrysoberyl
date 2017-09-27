@@ -220,7 +220,7 @@ impl fmt::Display for ParsingError {
         use self::ParsingError::*;
 
         match *self {
-            Fixed(ref err) =>
+            Fixed(err) =>
                 write!(f, "{}", err),
             InvalidArgument(ref err) =>
                 write!(f, "Invalid argument: {}", err),

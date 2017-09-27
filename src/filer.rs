@@ -76,7 +76,7 @@ fn destination_path(source: &PathBuf, destination_directory: &PathBuf, if_exist:
     let mut path = destination_directory.clone();
 
     if !path.exists() {
-        let _ = create_dir_all(&path)?;
+        create_dir_all(&path)?;
     }
 
     path.push(file_name);

@@ -1,12 +1,14 @@
 
+use errors::ChryError;
 
 
-pub fn from_vec(s: Vec<char>) -> Result<(i64, i64), String> {
+
+pub fn from_vec(s: Vec<char>) -> Result<(i64, i64), ChryError> {
     let s: String = s.into_iter().collect();
     from(&s)
 }
 
-pub fn from(s: &str) -> Result<(i64, i64), String> {
+pub fn from(s: &str) -> Result<(i64, i64), ChryError> {
     let ok = match s {
         "2K" => (2048, 1080),
         "4K" => (3840, 2160),
@@ -58,12 +60,12 @@ pub fn from(s: &str) -> Result<(i64, i64), String> {
         "XGA+" => (1152, 864),
         "nHD" => (640, 360),
         "qHD" => (960, 540),
-        _ => return Err(format!("Invalid resolution name: {}", s))
+        _ => return Err(ChryError::InvalidValue(o!(s)))
     };
     Ok(ok)
 }
 
-pub fn to(w: i64, h: i64) -> String {
+pub fn to(w: i64, h: i64) -> ChryError {
     let result = match (w, h) {
         (1024, 600) => "WSVGA",
         (1024, 768) => "XGA",

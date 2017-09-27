@@ -3,6 +3,8 @@ use std::error;
 use std::fmt;
 use std::io;
 
+use cairo;
+
 
 pub type BoxedError = Box<error::Error>;
 
@@ -26,7 +28,10 @@ macro_rules! chry_error {
 #[derive(Debug)]
 pub enum ChryError {
     Standard(String),
-    Fix(&'static str)
+    Parse(String),
+    Fix(&'static str),
+    NotSupported(&'static str),
+    InvalidValue(String),
 }
 
 
@@ -59,5 +64,12 @@ impl error::Error for ChryError {
 impl From<io::Error> for ChryError {
     fn from(error: io::Error) -> Self {
         ChryError::Standard(s!(error))
+    }
+}
+
+
+impl From<cairo::IoError> for ChryError {
+    fn from(error: cairo::IoError) -> Self {
+        ChryError::Standard(d!(error))
     }
 }

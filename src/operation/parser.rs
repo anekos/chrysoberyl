@@ -23,16 +23,16 @@ use operation::option::*;
 const SEARCH_PATH_DESC: &'static str = "Search script path from ~/.config/chrysoberyl and /usr/share/chrysoberyl";
 
 
-pub fn parse_command1<T>(args: &[String], op: T) -> Result<Operation, String>
+pub fn parse_command1<T>(args: &[String], op: T) -> Result<Operation, ParsingError>
 where T: FnOnce(String) -> Operation {
     if let Some(arg) = args.get(1) {
         Ok(op(arg.to_owned()))
     } else {
-        Err("Not enough argument".to_owned())
+        Err(ParsingError::TooFewArguments)
     }
 }
 
-pub fn parse_move<T>(args: &[String], op: T) -> Result<Operation, String>
+pub fn parse_move<T>(args: &[String], op: T) -> Result<Operation, ParsingError>
 where T: FnOnce(Option<usize>, bool, MoveBy, bool) -> Operation {
     let mut ignore_views = false;
     let mut count = None;
@@ -51,7 +51,7 @@ where T: FnOnce(Option<usize>, bool, MoveBy, bool) -> Operation {
     })
 }
 
-pub fn parse_cherenkov(args: &[String]) -> Result<Operation, String> {
+pub fn parse_cherenkov(args: &[String]) -> Result<Operation, ParsingError> {
     let mut radius = 0.1;
     let mut random_hue = 0.0;
     let mut n_spokes = 50;
@@ -81,11 +81,11 @@ pub fn parse_cherenkov(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_file(args: &[String]) -> Result<Operation, String> {
+pub fn parse_file(args: &[String]) -> Result<Operation, ParsingError> {
     use filer::{IfExist, FileOperation};
     use size::Size;
 
-    fn parse<T>(args: &[String], op: T) -> Result<Operation, String> where T: FnOnce(PathBuf, IfExist, Option<Size>) -> FileOperation {
+    fn parse<T>(args: &[String], op: T) -> Result<Operation, ParsingError> where T: FnOnce(PathBuf, IfExist, Option<Size>) -> FileOperation {
         let mut destination = "".to_owned();
         let mut if_exist = IfExist::NewFileName;
         let mut size = None;
@@ -106,17 +106,17 @@ pub fn parse_file(args: &[String]) -> Result<Operation, String> {
         })
     }
 
-    if_let_some!(op = args.get(1), Err(o!("Not enough arguments")));
+    if_let_some!(op = args.get(1), Err(ParsingError::TooFewArguments));
     let args = &args[1..];
     let op = match &**op {
         "copy" => FileOperation::new_copy,
         "move" => FileOperation::new_move,
-        _ => return Err(format!("Invalid file operation: {}", op))
+        _ => return Err(ParsingError::InvalidArgument(format!("Invalid file operation: {}", op)))
     };
     parse(args, op)
 }
 
-pub fn parse_clip(args: &[String]) -> Result<Operation, String> {
+pub fn parse_clip(args: &[String]) -> Result<Operation, ParsingError> {
     let d = 0.05;
     let mut region = Region { left: d, top: d, right: 1.0 - d, bottom: 1.0 - d };
 
@@ -132,7 +132,7 @@ pub fn parse_clip(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_count(args: &[String]) -> Result<Operation, String> {
+pub fn parse_count(args: &[String]) -> Result<Operation, ParsingError> {
     let mut count: Option<usize> = None;
 
     {
@@ -144,7 +144,7 @@ pub fn parse_count(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_define_switch(args: &[String]) -> Result<Operation, String> {
+pub fn parse_define_switch(args: &[String]) -> Result<Operation, ParsingError> {
     let mut name: String = o!("");
     let mut values_source = Vec::<String>::new();
 
@@ -174,7 +174,7 @@ pub fn parse_define_switch(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_delete(args: &[String]) -> Result<Operation, String> {
+pub fn parse_delete(args: &[String]) -> Result<Operation, ParsingError> {
     let mut expr = vec![];
 
     {
@@ -183,11 +183,12 @@ pub fn parse_delete(args: &[String]) -> Result<Operation, String> {
         parse_args(&mut ap, args)
     } .and_then(|_| {
         let op = join(&expr, ' ').parse().map(|it: FilterExpr| Operation::Delete(Box::new(it.apply_not())));
+        let op = op.map_err(ParsingError::InvalidArgument);
         op.map(|op| Operation::WithMessage(Some(o!("Deleting")), Box::new(op)))
     })
 }
 
-pub fn parse_editor(args: &[String]) -> Result<Operation, String> {
+pub fn parse_editor(args: &[String]) -> Result<Operation, ParsingError> {
     let mut sessions: Vec<Session> = vec![];
     let mut files: Vec<Expandable> = vec![];
     let mut command_line: Option<Expandable> = None;
@@ -203,7 +204,7 @@ pub fn parse_editor(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_expand(args: &[String]) -> Result<Operation, String> {
+pub fn parse_expand(args: &[String]) -> Result<Operation, ParsingError> {
     let mut recursive = false;
     let mut base: Option<String> = None;
 
@@ -217,18 +218,18 @@ pub fn parse_expand(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_fill(args: &[String]) -> Result<Operation, String> {
+pub fn parse_fill(args: &[String]) -> Result<Operation, ParsingError> {
     impl FromStr for Shape {
-        type Err = String;
+        type Err = ParsingError;
 
-        fn from_str(src: &str) -> Result<Self, String> {
+        fn from_str(src: &str) -> Result<Self, ParsingError> {
             use cherenkov::fill::Shape::*;
 
             match src {
                 "rectangle" | "rect" | "r" => Ok(Rectangle),
                 "circle" | "c" => Ok(Circle),
                 "ellipse" | "e" => Ok(Ellipse),
-                _ => Err(format!("Invalid shape: {}", src)),
+                _ => Err(ParsingError::InvalidArgument(format!("Invalid shape: {}", src))),
             }
         }
     }
@@ -252,7 +253,7 @@ pub fn parse_fill(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
+pub fn parse_filter(args: &[String]) -> Result<Operation, ParsingError> {
     let mut expr = vec![];
     let mut dynamic = true;
 
@@ -269,11 +270,12 @@ pub fn parse_filter(args: &[String]) -> Result<Operation, String> {
         } else {
             join(&expr, ' ').parse().map(|it| Operation::Filter(dynamic, Box::new(Some(it))))
         };
+        let op = op.map_err(ParsingError::InvalidArgument);
         op.map(|op| Operation::WithMessage(Some(o!("Filtering")), Box::new(op)))
     })
 }
 
-pub fn parse_fly_leaves(args: &[String]) -> Result<Operation, String> {
+pub fn parse_fly_leaves(args: &[String]) -> Result<Operation, ParsingError> {
     let mut n = 0;
 
     {
@@ -285,7 +287,7 @@ pub fn parse_fly_leaves(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_go(args: &[String]) -> Result<Operation, String> {
+pub fn parse_go(args: &[String]) -> Result<Operation, ParsingError> {
     let mut key = SearchKey { path: o!(""), index: None };
 
     {
@@ -296,7 +298,7 @@ pub fn parse_go(args: &[String]) -> Result<Operation, String> {
     } .and_then(|_| {
         if let Some(index) = key.index.as_mut() {
             if *index == 0 {
-                return Err(o!("Page is 1 origin"))
+                return Err(ParsingError::Fixed("Page is 1 origin"))
             }
             *index -= 1;
         }
@@ -305,22 +307,22 @@ pub fn parse_go(args: &[String]) -> Result<Operation, String> {
 }
 
 
-pub fn parse_input(args: &[String]) -> Result<Operation, String> {
+pub fn parse_input(args: &[String]) -> Result<Operation, ParsingError> {
     impl InputType {
-        pub fn input_from_text(&self, text: &str) -> Result<Input, String> {
+        pub fn input_from_text(&self, text: &str) -> Result<Input, ParsingError> {
             match *self {
                 InputType::Key =>
                     Ok(Input::key(text)),
                 InputType::MouseButton => {
                     match text.parse() {
                         Ok(button) => Ok(Input::mouse_button(0, 0, button)),
-                        Err(err) => Err(s!(err)),
+                        Err(err) => Err(ParsingError::InvalidArgument(s!(err))),
                     }
                 }
                 InputType::Event => {
                     match text.parse() {
                         Ok(event) => Ok(Input::Event(event)),
-                        Err(err) => Err(o!(err)),
+                        Err(err) => Err(ParsingError::InvalidArgument(o!(err))),
                     }
                 }
             }
@@ -345,7 +347,7 @@ pub fn parse_input(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_kill_timer(args: &[String]) -> Result<Operation, String> {
+pub fn parse_kill_timer(args: &[String]) -> Result<Operation, ParsingError> {
     let mut name = o!("");
 
     {
@@ -357,7 +359,7 @@ pub fn parse_kill_timer(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_load(args: &[String]) -> Result<Operation, String> {
+pub fn parse_load(args: &[String]) -> Result<Operation, ParsingError> {
     let mut file: String = o!("");
     let mut search_path = false;
 
@@ -371,8 +373,8 @@ pub fn parse_load(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_map(args: &[String], register: bool) -> Result<Operation, String> {
-    fn parse_map_key(args: &[String], register: bool) -> Result<Operation, String> {
+pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingError> {
+    fn parse_map_key(args: &[String], register: bool) -> Result<Operation, ParsingError> {
         let mut from = "".to_owned();
         let mut to: Vec<String> = vec![];
         {
@@ -392,7 +394,7 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, String> {
         })
     }
 
-    fn parse_map_mouse(args: &[String], register: bool) -> Result<Operation, String> {
+    fn parse_map_mouse(args: &[String], register: bool) -> Result<Operation, ParsingError> {
         let mut from = 1;
         let mut to: Vec<String> = vec![];
         let mut region: Option<Region> = None;
@@ -415,7 +417,7 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, String> {
         })
     }
 
-    fn parse_map_event(args: &[String], register: bool) -> Result<Operation, String> {
+    fn parse_map_event(args: &[String], register: bool) -> Result<Operation, ParsingError> {
         let mut event_name = None;
         let mut group: Option<String> = None;
         let mut to: Vec<String> = vec![];
@@ -448,7 +450,7 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, String> {
         })
     }
 
-    fn parse_map_region(args: &[String], register: bool) -> Result<Operation, String> {
+    fn parse_map_region(args: &[String], register: bool) -> Result<Operation, ParsingError> {
         let mut from = 1;
         let mut to = vec![];
         {
@@ -475,14 +477,14 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, String> {
             "m" | "button" | "mouse" | "mouse-button" => parse_map_mouse(args, register),
             "e" | "event" => parse_map_event(args, register),
             "r" | "region" => parse_map_region(args, register),
-            _ => Err(format!("Invalid mapping target: {}", target))
+            _ => Err(ParsingError::InvalidArgument(format!("Invalid mapping target: {}", target)))
         }
     } else {
-        Err(o!("Not enough arguments"))
+        Err(ParsingError::TooFewArguments)
     }
 }
 
-pub fn parse_multi(args: &[String]) -> Result<Operation, String> {
+pub fn parse_multi(args: &[String]) -> Result<Operation, ParsingError> {
     let mut separator = "".to_owned();
     let mut commands: Vec<String> = vec![];
     let mut async = true;
@@ -500,7 +502,7 @@ pub fn parse_multi(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_multi_args(xs: &[String], separator: &str, async: bool) -> Result<Operation, String> {
+pub fn parse_multi_args(xs: &[String], separator: &str, async: bool) -> Result<Operation, ParsingError> {
     let mut ops: Vec<Vec<String>> = vec![];
     let mut buffer: Vec<String> = vec![];
 
@@ -520,7 +522,7 @@ pub fn parse_multi_args(xs: &[String], separator: &str, async: bool) -> Result<O
     let mut result: VecDeque<Operation> = VecDeque::new();
 
     for op in ops {
-        match Operation::parse_from_vec(&op) {
+        match _parse_from_vec(&op) {
             Ok(op) => result.push_back(op),
             err => return err
         }
@@ -529,7 +531,7 @@ pub fn parse_multi_args(xs: &[String], separator: &str, async: bool) -> Result<O
     Ok(Operation::Multi(result, async))
 }
 
-pub fn parse_option_cycle(args: &[String]) -> Result<Operation, String> {
+pub fn parse_option_cycle(args: &[String]) -> Result<Operation, ParsingError> {
     let mut option_name = OptionName::default();
     let mut reverse = false;
 
@@ -543,7 +545,7 @@ pub fn parse_option_cycle(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_option_set(args: &[String]) -> Result<Operation, String> {
+pub fn parse_option_set(args: &[String]) -> Result<Operation, ParsingError> {
     let mut option_name = OptionName::default();
     let mut option_value = o!("");
 
@@ -557,7 +559,7 @@ pub fn parse_option_set(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_option_1(args: &[String], updater: OptionUpdater) -> Result<Operation, String> {
+pub fn parse_option_1(args: &[String], updater: OptionUpdater) -> Result<Operation, ParsingError> {
     let mut option_name = OptionName::default();
 
     {
@@ -569,7 +571,7 @@ pub fn parse_option_1(args: &[String], updater: OptionUpdater) -> Result<Operati
     })
 }
 
-pub fn parse_page(args: &[String]) -> Result<Operation, String> {
+pub fn parse_page(args: &[String]) -> Result<Operation, ParsingError> {
     let mut page = 1;
 
     {
@@ -581,7 +583,7 @@ pub fn parse_page(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_pdf_index(args: &[String]) -> Result<Operation, String> {
+pub fn parse_pdf_index(args: &[String]) -> Result<Operation, ParsingError> {
     use poppler::index::Format;
 
     let mut async = true;
@@ -612,7 +614,7 @@ pub fn parse_pdf_index(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_push<T>(args: &[String], op: T) -> Result<Operation, String>
+pub fn parse_push<T>(args: &[String], op: T) -> Result<Operation, ParsingError>
 where T: Fn(String, Option<Meta>, bool) -> Operation {
     let mut meta: Vec<MetaEntry> = vec![];
     let mut paths = Vec::<String>::new();
@@ -631,7 +633,7 @@ where T: Fn(String, Option<Meta>, bool) -> Operation {
     })
 }
 
-pub fn parse_push_image(args: &[String]) -> Result<Operation, String> {
+pub fn parse_push_image(args: &[String]) -> Result<Operation, ParsingError> {
     let mut meta: Vec<MetaEntry> = vec![];
     let mut paths = Vec::<String>::new();
     let mut expand_level = None;
@@ -653,7 +655,7 @@ pub fn parse_push_image(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_push_sibling(args: &[String], next: bool) -> Result<Operation, String> {
+pub fn parse_push_sibling(args: &[String], next: bool) -> Result<Operation, ParsingError> {
     let mut meta: Vec<MetaEntry> = vec![];
     let mut force = false;
     let mut show = false;
@@ -669,7 +671,7 @@ pub fn parse_push_sibling(args: &[String], next: bool) -> Result<Operation, Stri
     })
 }
 
-pub fn parse_push_url(args: &[String]) -> Result<Operation, String> {
+pub fn parse_push_url(args: &[String]) -> Result<Operation, ParsingError> {
     let mut meta: Vec<MetaEntry> = vec![];
     let mut urls = Vec::<String>::new();
     let mut force = false;
@@ -689,7 +691,7 @@ pub fn parse_push_url(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_save(args: &[String]) -> Result<Operation, String> {
+pub fn parse_save(args: &[String]) -> Result<Operation, ParsingError> {
     let mut path: Option<String> = None;
     let mut sources: Vec<Session> = vec![];
 
@@ -706,7 +708,7 @@ pub fn parse_save(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_set_env(args: &[String]) -> Result<Operation, String> {
+pub fn parse_set_env(args: &[String]) -> Result<Operation, ParsingError> {
     use constant::*;
 
     let mut name = o!("");
@@ -726,7 +728,7 @@ pub fn parse_set_env(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_scroll(args: &[String]) -> Result<Operation, String> {
+pub fn parse_scroll(args: &[String]) -> Result<Operation, ParsingError> {
     let mut direction = Direction::Up;
     let mut operation = vec![];
     let mut scroll_size = 1.0;
@@ -742,7 +744,7 @@ pub fn parse_scroll(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_search(args: &[String]) -> Result<Operation, String> {
+pub fn parse_search(args: &[String]) -> Result<Operation, ParsingError> {
     let mut text = None;
     let mut backward = false;
     let mut color = Color::new4(255, 255, 0, 128);
@@ -760,7 +762,7 @@ pub fn parse_search(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
+pub fn parse_shell(args: &[String]) -> Result<Operation, ParsingError> {
     let mut async = true;
     let mut read_operations = false;
     let mut search_path = false;
@@ -785,7 +787,7 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_shell_filter(args: &[String]) -> Result<Operation, String> {
+pub fn parse_shell_filter(args: &[String]) -> Result<Operation, ParsingError> {
     let mut search_path = false;
     let mut command_line: Vec<String> = vec![];
 
@@ -800,7 +802,7 @@ pub fn parse_shell_filter(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_modify_entry_order<T>(args: &[String], op: T) -> Result<Operation, String>
+pub fn parse_modify_entry_order<T>(args: &[String], op: T) -> Result<Operation, ParsingError>
 where T: FnOnce(bool) -> Operation {
     let mut fix = false;
 
@@ -814,7 +816,7 @@ where T: FnOnce(bool) -> Operation {
     })
 }
 
-pub fn parse_timer(args: &[String]) -> Result<Operation, String> {
+pub fn parse_timer(args: &[String]) -> Result<Operation, ParsingError> {
     let mut interval_seconds = 1.0;
     let mut name = o!("");
     let mut op = Vec::<String>::new();
@@ -834,7 +836,7 @@ pub fn parse_timer(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_undo(args: &[String]) -> Result<Operation, String> {
+pub fn parse_undo(args: &[String]) -> Result<Operation, ParsingError> {
     let mut count = None;
 
     {
@@ -846,7 +848,7 @@ pub fn parse_undo(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_update(args: &[String]) -> Result<Operation, String> {
+pub fn parse_update(args: &[String]) -> Result<Operation, ParsingError> {
     let mut updated = Updated::default();
 
     {
@@ -862,7 +864,7 @@ pub fn parse_update(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_views(args: &[String]) -> Result<Operation, String> {
+pub fn parse_views(args: &[String]) -> Result<Operation, ParsingError> {
     let mut for_rows = false;
     let mut rows = None;
     let mut cols = None;
@@ -875,7 +877,7 @@ pub fn parse_views(args: &[String]) -> Result<Operation, String> {
         parse_args(&mut ap, args)
     } .and_then(|_| {
         if Some(0) == cols || Some(0) == rows {
-            return Err(o!("Columns / rows must be greater than 0"))
+            return Err(ParsingError::Fixed("Columns / rows must be greater than 0"))
         }
         Ok(
             if cols.is_some() || rows.is_some() {
@@ -891,7 +893,7 @@ pub fn parse_views(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_when(args: &[String], unless: bool) -> Result<Operation, String> {
+pub fn parse_when(args: &[String], unless: bool) -> Result<Operation, ParsingError> {
     let mut op = Vec::<String>::new();
     let mut filter = FilterExpr::default();
 
@@ -905,7 +907,7 @@ pub fn parse_when(args: &[String], unless: bool) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_write(args: &[String]) -> Result<Operation, String> {
+pub fn parse_write(args: &[String]) -> Result<Operation, ParsingError> {
     let mut index = None;
     let mut path = o!("");
 
@@ -919,16 +921,16 @@ pub fn parse_write(args: &[String]) -> Result<Operation, String> {
     })
 }
 
-pub fn parse_args(parser: &mut ArgumentParser, args: &[String]) -> Result<(), String> {
+pub fn parse_args(parser: &mut ArgumentParser, args: &[String]) -> Result<(), ParsingError> {
     parser.stop_on_first_argument(true);
-    parser.parse(args.to_vec(), &mut sink(), &mut sink()).map_err(|code| s!(code))
+    parser.parse(args.to_vec(), &mut sink(), &mut sink()).map_err(|code| ParsingError::InvalidArgument(s!(code)))
 }
 
 
 impl FromStr for Session {
-    type Err = String;
+    type Err = ParsingError;
 
-    fn from_str(src: &str) -> Result<Self, String> {
+    fn from_str(src: &str) -> Result<Self, ParsingError> {
         match src {
             "options" | "option" | "o" =>
                 Ok(Session::Options),
@@ -949,16 +951,16 @@ impl FromStr for Session {
             "all" | "a" =>
                 Ok(Session::All),
             _ =>
-                Err(format!("Invalid stdin source: {}", src))
+                Err(ParsingError::InvalidArgument(format!("Invalid stdin source: {}", src)))
         }
     }
 }
 
 
 impl FromStr for MetaEntry {
-    type Err = String;
+    type Err = ParsingError;
 
-    fn from_str(src: &str) -> Result<MetaEntry, String> {
+    fn from_str(src: &str) -> Result<MetaEntry, ParsingError> {
         Ok({
             if let Some(sep) = src.find('=') {
                 let (key, value) = src.split_at(sep);

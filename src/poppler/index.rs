@@ -1,8 +1,10 @@
 
 use std::default::Default;
+use std::error::Error;
 use std::ffi::CStr;
 use std::str::FromStr;
 
+use errors::ChryError;
 use poppler::sys;
 
 
@@ -101,7 +103,7 @@ fn extract_action(action: *const sys::action_t) -> Option<IndexEntry> {
                 child: None,
             }
         }).map_err(|err| {
-            puts_error!(s!(err), "at" => "poppler/extract_action")
+            puts_error!(ChryError::Standard(s!(err)), "at" => "poppler/extract_action")
         }).ok()
     }
 }

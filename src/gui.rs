@@ -250,9 +250,8 @@ impl Gui {
     }
 
     pub fn save<T: AsRef<Path>>(&self, path: &T, index: usize) -> Result<(), BoxedError> {
-        self.cells(false).nth(index).ok_or_else(|| ChryError::Fix("Out of index")).and_then(|cell| {
-            save_image(&cell.image, path)
-        })
+        let cell = self.cells(false).nth(index).ok_or_else(|| ChryError::Fix("Out of index"))?;
+        save_image(&cell.image, path)
     }
 }
 
@@ -436,16 +435,15 @@ impl FromStr for Direction {
 fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), BoxedError> {
     use gdk::prelude::ContextExt;
 
-    image.get_pixbuf().ok_or_else(|| ChryError::Fix("No pixbuf")).and_then(|pixbuf| {
-        let (width, height) = (pixbuf.get_width(), pixbuf.get_height());
-        let surface = ImageSurface::create(Format::ARgb32, width, height);
-        let context = Context::new(&surface);
-        context.set_source_pixbuf(&pixbuf, 0.0, 0.0);
-        context.paint();
-        File::create(path).and_then(|mut file| {
-            surface.write_to_png(&mut file)
-        })
-    })
+    let pixbuf = image.get_pixbuf().ok_or_else(|| ChryError::Fix("No pixbuf"))?;
+    let (width, height) = (pixbuf.get_width(), pixbuf.get_height());
+    let surface = ImageSurface::create(Format::ARgb32, width, height);
+    let context = Context::new(&surface);
+    context.set_source_pixbuf(&pixbuf, 0.0, 0.0);
+    context.paint();
+    let mut file = File::create(path)?;
+    surface.write_to_png(&mut file).map_err(ChryError::from)?;
+    Ok(())
 }
 
 fn scroll_window(window: &ScrolledWindow, direction: &Direction, scroll_size_ratio: f64, count: usize) -> bool {

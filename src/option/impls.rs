@@ -13,7 +13,7 @@ use state::{ScalingMethod, StatusFormat, TitleFormat, MaskOperator};
 
 
 impl OptionValue for bool {
-    fn is_enabled(&self) -> StdResult<bool, String> {
+    fn is_enabled(&self) -> StdResult<bool, ChryError> {
         Ok(*self)
     }
 
@@ -35,7 +35,7 @@ impl OptionValue for bool {
         *self = match value {
             "true" | "yes" | "on" | "1" => true,
             "false" | "no" | "off" | "0" => false,
-            _ => return Err(format!("Invalid value: {}", value))
+            _ => return Err(ChryError::InvalidValue(o!(value)))
         };
         Ok(())
     }
@@ -67,7 +67,7 @@ macro_rules! def_uint {
             fn set(&mut self, value: &str) -> Result {
                 value.parse().map(|value| {
                     *self = value;
-                }).map_err(|it| s!(it))
+                }).map_err(|it| ChryError::Standard(format!("Invalid value: {}", value)))
             }
         }
     }
@@ -98,7 +98,7 @@ macro_rules! def_opt_uint {
             fn set(&mut self, value: &str) -> Result {
                 value.parse().map(|value| {
                     *self = Some(value);
-                }).map_err(|it| s!(it))
+                }).map_err(|it| ChryError::InvalidValue(s!(it)))
             }
         }
     }
@@ -127,15 +127,15 @@ impl OptionValue for Color {
 
 
 impl FromStr for ScalingMethod {
-    type Err = String;
+    type Err = ChryError;
 
-    fn from_str(src: &str) -> StdResult<ScalingMethod, String> {
+    fn from_str(src: &str) -> StdResult<ScalingMethod, ChryError> {
         match src {
             "n" | "nearest" => Ok(InterpType::Nearest),
             "t" | "tiles" => Ok(InterpType::Tiles),
             "b" | "bilinear" => Ok(InterpType::Bilinear),
             "h" | "hyper" => Ok(InterpType::Hyper),
-            _ => Err(format!("Invalid scaling method name: {}", src))
+            _ => Err(ChryError::InvalidValue(o!(src)))
         } .map(ScalingMethod)
     }
 }
@@ -157,9 +157,9 @@ impl OptionValue for ScalingMethod {
 
 
 impl FromStr for FitTo {
-    type Err = String;
+    type Err = ChryError;
 
-    fn from_str(src: &str) -> StdResult<Self, String> {
+    fn from_str(src: &str) -> StdResult<Self, ChryError> {
         use self::FitTo::*;
 
         let result = match src {
@@ -178,7 +178,7 @@ impl FromStr for FitTo {
                 if let Ok((w, h)) = resolution::from(src) {
                     return Ok(Fixed(w as i32, h as i32));
                 }
-                return Err(format!("Invalid target name: {}", src))
+                return Err(ChryError::InvalidValue(o!(src)))
             }
         };
         Ok(result)
@@ -228,9 +228,9 @@ impl OptionValue for TitleFormat {
 
 
 impl FromStr for MaskOperator {
-    type Err = String;
+    type Err = ChryError;
 
-    fn from_str(src: &str) -> StdResult<Self, String> {
+    fn from_str(src: &str) -> StdResult<Self, ChryError> {
         use self::cairo::Operator::*;
 
         let result = match src {
@@ -263,7 +263,7 @@ impl FromStr for MaskOperator {
             "hsl-saturation" => HslSaturation,
             "hsl-color" => HslColor,
             "hsl-luminosity" => HslLuminosity,
-            _ => return Err(format!("invalid mask operator: {}", src)),
+            _ => return Err(ChryError::InvalidValue(o!(src))),
         };
 
         Ok(MaskOperator(result))

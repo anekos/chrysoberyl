@@ -136,8 +136,10 @@ pub enum MappingTarget {
 
 #[derive(Debug, PartialEq)]
 pub enum ParsingError {
-    NotOperation,
-    InvalidOperation(String),
+    NotOperation(String),
+    InvalidArgument(String),
+    Fixed(&'static str),
+    TooFewArguments,
 }
 
 #[derive(Clone, Debug, PartialEq, Copy)]
@@ -168,28 +170,27 @@ pub struct Updated {
 
 
 impl FromStr for Operation {
-    type Err = ParsingError;
+    type Err = ChryError;
 
-    fn from_str(src: &str) -> Result<Self, ParsingError> {
+    fn from_str(src: &str) -> Result<Self, ChryError> {
         Operation::parse(src)
     }
 }
 
 
 impl Operation {
-    pub fn parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
-        _parse_from_vec(whole)
+    pub fn parse_from_vec(whole: &[String]) -> Result<Operation, ChryError> {
+        _parse_from_vec(whole).map_err(ChryError::from)
     }
 
-    pub fn parse(s: &str) -> Result<Operation, ParsingError> {
-        let ps: Vec<String> = Parser::new(s).map(|(_, it)| it).collect();
-        _parse_from_vec(ps.as_slice())
+    pub fn parse(s: &str) -> Result<Operation, ChryError> {
+        _parse_from_str(s).map_err(ChryError::from)
     }
 
     pub fn parse_fuzziness(s: &str) -> Result<Operation, ChryError> {
-        match Operation::parse(s) {
-            Err(ParsingError::InvalidOperation(err)) => chry_error!(err),
-            Err(ParsingError::NotOperation) => Ok(Operation::Push(Expandable(o!(s)), None, false)),
+        match _parse_from_str(s) {
+            Err(ParsingError::NotOperation(_)) => Ok(Operation::Push(Expandable(o!(s)), None, false)),
+            Err(err) => Err(ChryError::from(err)),
             Ok(op) => Ok(op)
         }
     }
@@ -217,21 +218,27 @@ impl Operation {
 impl fmt::Display for ParsingError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            ParsingError::InvalidOperation(ref err) =>
-                write!(f, "Invalid operation: {}", err),
-            ParsingError::NotOperation =>
-                write!(f, "Not operation")
+            ParsingError::InvalidArgument(ref err) =>
+                write!(f, "Invalid argument: {}", err),
+            ParsingError::NotOperation(name) =>
+                write!(f, "Not operation: {}", name)
         }
     }
 }
 
 impl error::Error for ParsingError {
     fn description(&self) -> &str {
-        s!(self).unwrap()
+        &s!(self)
     }
 
     fn cause(&self) -> Option<&error::Error> {
         None
+    }
+}
+
+impl From<ParsingError> for ChryError {
+    fn from(error: ParsingError) -> Self {
+        ChryError::Parse(s!(error))
     }
 }
 
@@ -242,6 +249,11 @@ impl EventName {
     }
 }
 
+
+fn _parse_from_str(s: &str) -> Result<Operation, ParsingError> {
+    let ps: Vec<String> = Parser::new(s).map(|(_, it)| it).collect();
+    _parse_from_vec(ps.as_slice())
+}
 
 fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
     use self::Operation::*;
@@ -256,7 +268,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
         }
 
         if !(name.starts_with(';') || name.starts_with('@')) {
-            return Err(ParsingError::NotOperation)
+            return Err(ParsingError::NotOperation(o!(name)))
         }
 
         match name {
@@ -328,8 +340,8 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@views"                        => parse_views(whole),
             "@when"                         => parse_when(whole, false),
             "@write"                        => parse_write(whole),
-            _ => Err(format!("Unknown operation: {}", name))
-        } .map_err(ParsingError::InvalidOperation)
+            _ => Err(ParsingError::NotOperation(o!(name)))
+        }
     } else {
         Ok(Nop)
     }

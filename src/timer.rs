@@ -1,5 +1,6 @@
 
 use std::collections::HashMap;
+use std::error::Error;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Sender, channel};
@@ -50,7 +51,7 @@ impl TimerManager {
                 timer.tx.send(TimerOperation::Kill).unwrap();
             }
             None => {
-                puts_error!(format!("timer `{}` is not found", name), "at" => "timer/kill");
+                puts_error!(chry_error!("timer `{}` is not found", name), "at" => "timer/kill");
             }
         }
     }

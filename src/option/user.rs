@@ -94,7 +94,7 @@ impl DummySwtich {
 
 impl OptionValue for DummySwtich {
     fn toggle(&mut self) -> Result {
-        Err(format!("Invalid option name: {}", self.name))
+        Err(ChryError::InvalidValue(o!(self.name)))
     }
 
     fn cycle(&mut self, _: bool) -> Result {

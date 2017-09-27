@@ -78,7 +78,10 @@ impl RemoteCache {
     }
 
     pub fn fetch(&mut self, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) -> Vec<QueuedOperation> {
-        let filepath = generate_temporary_filename(&url);
+        if_let_ok!(filepath = generate_temporary_filename(&url), |err: Box<Error>| {
+            puts_error!(err, "at" => "generate_temporary_filename");
+            vec![]
+        });
 
         if filepath.exists() {
             if self.do_update_atime {
@@ -214,10 +217,10 @@ fn fix_path_segment(s: &str, last: bool) -> String {
     }
 }
 
-fn generate_temporary_filename(url: &str) -> PathBuf {
+fn generate_temporary_filename(url: &str) -> Result<PathBuf, Box<Error>> {
     let mut result = app_path::cache_dir("remote");
-    let url = Url::parse(url).unwrap();
-    let host = url.host().unwrap();
+    let url = Url::parse(url)?;
+    let host = url.host().ok_or(format!("URL does not have `host`: {}", url))?;
 
     match url.path_segments() {
         Some(segs) => {
@@ -233,7 +236,7 @@ fn generate_temporary_filename(url: &str) -> PathBuf {
     }
 
     create_dir_all(&result.parent().unwrap()).unwrap();
-    result
+    Ok(result)
 }
 
 fn make_queued_operation(file: PathBuf, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) -> QueuedOperation {

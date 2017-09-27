@@ -17,7 +17,7 @@ pub fn register_file(tx: Sender<Operation>, filepath: String) {
             read_operations("file", file, &tx);
             puts_event!("input/file/close");
         } else {
-            puts_error!(ChryError::Fixed("Could not open file"), "at" => "input/file", "for" => filepath);
+            puts_error!(ChryError::from("Could not open file"), "at" => "input/file", "for" => filepath);
         }
     });
 }

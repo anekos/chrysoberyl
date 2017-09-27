@@ -81,3 +81,9 @@ impl From<cairo::IoError> for ChryError {
         ChryError::Standard(d!(error))
     }
 }
+
+impl From<&'static str> for ChryError {
+    fn from(error: &'static str) -> Self {
+        ChryError::Fixed(error)
+    }
+}

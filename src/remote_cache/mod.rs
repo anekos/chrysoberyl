@@ -220,7 +220,7 @@ fn fix_path_segment(s: &str, last: bool) -> String {
 fn generate_temporary_filename(url: &str) -> Result<PathBuf, Box<Error>> {
     let mut result = app_path::cache_dir("remote");
     let url = Url::parse(url)?;
-    let host = url.host().ok_or(format!("URL does not have `host`: {}", url))?;
+    let host = url.host().ok_or_else(|| format!("URL does not have `host`: {}", url))?;
 
     match url.path_segments() {
         Some(segs) => {

@@ -75,7 +75,7 @@ fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<Str
                 }
             }
         } else {
-            return Err(ChryError::Fixed("Could not get stdout"));
+            return Err("Could not get stdout")?;
         }
     } else {
         let stderr = child.stderr;

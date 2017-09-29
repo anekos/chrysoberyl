@@ -235,4 +235,4 @@ gen_format!(
     "<span background=\"red\">$CHRY_MESSAGE</span><span background=\"#005050\"> $CHRY_PAGING/$CHRY_PAGES </span> $CHRY_ABBREV_PATH <span foreground=\"grey\">$CHRY_FLAGS</span> <span foreground=\"rosybrown\">${CHRY_REMOTE_QUEUE}q${CHRY_REMOTE_BUFFER}b${CHRY_REMOTE_THREAD}t</span>");
 gen_format!(
     TitleFormat,
-    "[$CHRY_PAGING/$CHRY_COUNT] $CHRY_PATH");
+    "[$CHRY_PAGING/$CHRY_PAGES] $CHRY_PATH");

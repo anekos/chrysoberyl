@@ -1,5 +1,8 @@
 
 use std::default::Default;
+use std::fmt;
+use std::fs::File;
+use std::io::Read;
 
 use cairo;
 use gdk_pixbuf::InterpType;
@@ -7,7 +10,9 @@ use gdk_pixbuf::InterpType;
 use app_path::PathList;
 use entry::SearchKey;
 use entry::filter::expression::Expr as FilterExpr;
+use errors::ChryError;
 use logger;
+use option::OptionValue;
 use remote_cache::curl_options::CurlOptions;
 use size::{FitTo, Region};
 
@@ -59,12 +64,6 @@ pub struct PreFetchState {
     pub limit_of_items: usize,
     pub page_size: usize,
 }
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct StatusFormat(pub String);
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct TitleFormat(pub String);
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MaskOperator(pub cairo::Operator);
@@ -157,18 +156,6 @@ impl ViewState {
 }
 
 
-impl Default for StatusFormat {
-    fn default() -> Self {
-        StatusFormat(o!("<span background=\"red\">$CHRY_MESSAGE</span><span background=\"#005050\"> $CHRY_PAGING/$CHRY_PAGES </span> $CHRY_ABBREV_PATH <span foreground=\"grey\">$CHRY_FLAGS</span> <span foreground=\"rosybrown\">${CHRY_REMOTE_QUEUE}q${CHRY_REMOTE_BUFFER}b${CHRY_REMOTE_THREAD}t</span>"))
-    }
-}
-
-impl Default for TitleFormat {
-    fn default() -> Self {
-        TitleFormat(o!("[$CHRY_PAGING/$CHRY_COUNT] $CHRY_PATH"))
-    }
-}
-
 impl Default for Filters {
     fn default() -> Self {
         Filters {
@@ -177,3 +164,75 @@ impl Default for Filters {
         }
     }
 }
+
+
+macro_rules! gen_format {
+    ($t:tt, $default:expr) => {
+
+        #[derive(Clone, Debug, PartialEq)]
+        pub enum $t {
+            Literal(String),
+            Script(String, String), /* filepath, source cache */
+        }
+
+        impl $t {
+            pub fn generate(&self) -> String {
+                use text_format;
+                use shellexpand_wrapper as sh;
+
+                match *self {
+                    $t::Script(_, ref script) => {
+                        text_format::generate(script).unwrap_or_else(|err| {
+                            puts_error!(err, "at" => "Evaluate format script", "script" => script);
+                            o!($default)
+                        })
+                    },
+                    $t::Literal(ref s) => sh::expand(s),
+                }
+            }
+        }
+
+        impl OptionValue for $t {
+            fn set(&mut self, value: &str) -> Result<(), ChryError> {
+                if value.starts_with('@') {
+                    let mut file = File::open(&value[1..])?;
+                    let mut script = o!("");
+                    file.read_to_string(&mut script)?;
+                    *self = $t::Script(o!(value), script);
+                } else {
+                    *self = $t::Literal(o!(value));
+                }
+                Ok(())
+            }
+
+            fn unset(&mut self) -> Result<(), ChryError> {
+                *self = $t::default();
+                Ok(())
+            }
+        }
+
+        impl Default for $t {
+            fn default() -> Self {
+                $t::Literal(o!($default))
+            }
+        }
+
+        impl fmt::Display for $t {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                use self::$t::*;
+
+                match *self {
+                    Script(ref filepath, _) => write!(f, "@{}", filepath),
+                    Literal(ref s) => write!(f, "{}", s),
+                }
+            }
+        }
+    }
+}
+
+gen_format!(
+    StatusFormat,
+    "<span background=\"red\">$CHRY_MESSAGE</span><span background=\"#005050\"> $CHRY_PAGING/$CHRY_PAGES </span> $CHRY_ABBREV_PATH <span foreground=\"grey\">$CHRY_FLAGS</span> <span foreground=\"rosybrown\">${CHRY_REMOTE_QUEUE}q${CHRY_REMOTE_BUFFER}b${CHRY_REMOTE_THREAD}t</span>");
+gen_format!(
+    TitleFormat,
+    "[$CHRY_PAGING/$CHRY_COUNT] $CHRY_PATH");

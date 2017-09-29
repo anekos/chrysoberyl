@@ -8,7 +8,7 @@ use color::Color;
 use option::*;
 use resolution;
 use size::FitTo;
-use state::{ScalingMethod, StatusFormat, TitleFormat, MaskOperator};
+use state::{ScalingMethod, MaskOperator};
 
 
 
@@ -196,32 +196,6 @@ impl OptionValue for FitTo {
     fn cycle(&mut self, reverse: bool) -> Result {
         use self::FitTo::*;
         *self = cycled(*self, &[Cell, OriginalOrCell, Original, Width, Height], reverse);
-        Ok(())
-    }
-}
-
-
-impl OptionValue for StatusFormat {
-    fn set(&mut self, value: &str) -> Result {
-        *self = StatusFormat(o!(value));
-        Ok(())
-    }
-
-    fn unset(&mut self) -> Result {
-        *self = StatusFormat::default();
-        Ok(())
-    }
-}
-
-
-impl OptionValue for TitleFormat {
-    fn set(&mut self, value: &str) -> Result {
-        *self = TitleFormat(o!(value));
-        Ok(())
-    }
-
-    fn unset(&mut self) -> Result {
-        *self = TitleFormat::default();
         Ok(())
     }
 }

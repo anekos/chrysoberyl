@@ -33,7 +33,6 @@ use paginator::values::Index;
 use paginator::{self, Paginator, Paging};
 use remote_cache::RemoteCache;
 use script;
-use shellexpand_wrapper as sh;
 use size::{Size, FitTo, Region};
 use sorting_buffer::SortingBuffer;
 use state::{States, PreFetchState};
@@ -669,7 +668,7 @@ impl App {
         if update_title {
             let text =
                 if self.current_non_fly_leave().is_some() {
-                    sh::expand(&self.states.title_format.0)
+                    self.states.title_format.generate()
                 } else {
                     o!(constant::DEFAULT_INFORMATION)
                 };
@@ -679,7 +678,7 @@ impl App {
         if self.states.status_bar {
             let text =
                 if self.current_non_fly_leave().is_some() {
-                    sh::expand(&self.states.status_format.0)
+                    self.states.status_format.generate()
                 } else {
                     o!(constant::DEFAULT_INFORMATION)
                 };

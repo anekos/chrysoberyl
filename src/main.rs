@@ -2,6 +2,7 @@
 #[macro_use] extern crate closet;
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate log;
+#[macro_use] extern crate mrusty;
 extern crate app_dirs;
 extern crate argparse;
 extern crate cairo;
@@ -85,6 +86,7 @@ mod size;
 mod sorting_buffer;
 mod state;
 mod termination;
+mod text_format;
 mod timer;
 mod ui_event;
 mod utils;

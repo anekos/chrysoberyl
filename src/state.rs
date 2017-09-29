@@ -194,8 +194,11 @@ macro_rules! gen_format {
 
         impl OptionValue for $t {
             fn set(&mut self, value: &str) -> Result<(), ChryError> {
+                use shellexpand_wrapper as sh;
+
                 if value.starts_with('@') {
-                    let mut file = File::open(&value[1..])?;
+                    let path = sh::expand(&value[1..]);
+                    let mut file = File::open(&path)?;
                     let mut script = o!("");
                     file.read_to_string(&mut script)?;
                     *self = $t::Script(o!(value), script);

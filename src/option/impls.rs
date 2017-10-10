@@ -1,5 +1,6 @@
 
 use std::str::FromStr;
+use std::path::{Path, PathBuf};
 
 use cairo;
 use gdk_pixbuf::InterpType;
@@ -37,6 +38,18 @@ impl OptionValue for bool {
             "false" | "no" | "off" | "0" => false,
             _ => return Err(ChryError::InvalidValue(o!(value)))
         };
+        Ok(())
+    }
+}
+
+impl OptionValue for Option<PathBuf> {
+    fn set(&mut self, value: &str) -> Result {
+        *self = Some(Path::new(value).to_path_buf());
+        Ok(())
+    }
+
+    fn unset(&mut self) -> Result {
+        *self = None;
         Ok(())
     }
 }

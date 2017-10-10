@@ -98,20 +98,24 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         esc(&format!("{}", c))
     };
 
-    fn gen<T: fmt::Display + Sized>(name: &str, value: &T, context: WriteContext) -> (String, Option<String>) {
-        let name = match context {
+    fn gen_name(name: &str, context: WriteContext) -> String {
+        match context {
             WriteContext::Session => o!(name),
             WriteContext::ENV => name.replace("-", "_").to_uppercase()
-        };;
-        (o!(name), Some(s!(value)))
+        }
+    }
+
+    fn gen<T: fmt::Display + Sized>(name: &str, value: &T, context: WriteContext) -> (String, Option<String>) {
+        (gen_name(name, context), Some(s!(value)))
     }
 
     fn geno<T: fmt::Display + Sized>(name: &str, value: &Option<T>, context: WriteContext) -> (String, Option<String>) {
-        let name = match context {
-            WriteContext::Session => o!(name),
-            WriteContext::ENV => name.replace("-", "_").to_uppercase()
-        };
-        (o!(name), value.as_ref().map(|it| s!(it)))
+        (gen_name(name, context), value.as_ref().map(|it| s!(it)))
+    }
+
+    fn genp(name: &str, value: &Option<PathBuf>, context: WriteContext) -> (String, Option<String>) {
+        if_let_some!(value = value.as_ref().and_then(|it| it.to_str()), (o!(name), None));
+        (gen_name(name, context), Some(o!(value)))
     }
 
     match *name {
@@ -129,6 +133,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         CurlLowSpeedTime => geno("curl-low-speed-time", &st.curl_options.low_speed_time, context),
         CurlTimeout => geno("curl-timeout", &st.curl_options.connect_timeout, context),
         FitTo => gen("fit-to", &st.drawing.fit_to, context),
+        HistoryFile => genp("history-file", &st.history_file, context),
         HorizontalViews => gen("horizontal-views", &st.view.cols, context),
         LogFile => gen("log-file", &st.log_file, context),
         MaskOperator => gen("mask-operator", &st.drawing.mask_operator, context),

@@ -33,6 +33,7 @@ iterable_enum!(PreDefinedOptionName =>
     CurlLowSpeedTime,
     CurlTimeout,
     FitTo,
+    HistoryFile,
     HorizontalViews,
     LogFile,
     MaskOperator,
@@ -68,6 +69,7 @@ impl FromStr for PreDefinedOptionName {
             "curl-low-speed-time-"                 => CurlLowSpeedTime,
             "curl-timeout"                         => CurlTimeout,
             "fit" | "fit-to"                       => FitTo,
+            "history-file"                         => HistoryFile,
             "horizontal-views"                     => HorizontalViews,
             "log-file" | "log"                     => LogFile,
             "mask-operator"                        => MaskOperator,
@@ -104,7 +106,7 @@ impl PreDefinedOptionName {
                 ColorError | ColorErrorBackground | ColorStatusBar | ColorStatusBarBackground | ColorWindowBackground |
                 FitTo | HorizontalViews | LogFile | MaskOperator |
                 PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
-                Reverse | Rotation | Scaling | SkipResizeWindow | StatusBar | StatusFormat | UpdateCacheAccessTime | TitleFormat | VerticalViews => false,
+                Reverse | Rotation | Scaling | SkipResizeWindow | StatusBar | StatusFormat | UpdateCacheAccessTime | TitleFormat | VerticalViews | HistoryFile => false,
             CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => true,
         }
     }

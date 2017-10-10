@@ -5,6 +5,7 @@
 #[macro_use] extern crate mrusty;
 extern crate app_dirs;
 extern crate argparse;
+extern crate atty;
 extern crate cairo;
 extern crate cmdline_parser;
 extern crate css_color_parser;
@@ -29,6 +30,7 @@ extern crate natord;
 extern crate num_cpus;
 extern crate pom;
 extern crate rand;
+extern crate readline;
 extern crate shell_escape;
 extern crate shellexpand;
 extern crate time;

@@ -3,11 +3,12 @@ use std::default::Default;
 use std::fmt;
 use std::fs::File;
 use std::io::Read;
+use std::path::PathBuf;
 
 use cairo;
 use gdk_pixbuf::InterpType;
 
-use app_path::PathList;
+use app_path::{PathList, cache_dir};
 use entry::SearchKey;
 use entry::filter::expression::Expr as FilterExpr;
 use errors::ChryError;
@@ -24,6 +25,7 @@ pub struct States {
     pub curl_options: CurlOptions,
     pub drawing: DrawingState,
     pub go: Option<SearchKey>,
+    pub history_file: Option<PathBuf>,
     pub last_direction: Direction,
     pub last_filter: Filters,
     pub log_file: logger::file::File,
@@ -82,12 +84,16 @@ pub struct Filters {
 
 impl Default for States {
     fn default() -> Self {
+        let mut history_file = cache_dir("history");
+        history_file.push("input.log");
+
         States {
             abbrev_length: 30,
             auto_paging: false,
             curl_options: CurlOptions::default(),
             drawing: DrawingState::default(),
             go: None,
+            history_file: Some(history_file),
             last_direction: Direction::Forward,
             last_filter: Filters::default(),
             log_file: logger::file::File::new(),

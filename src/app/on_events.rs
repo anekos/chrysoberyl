@@ -169,7 +169,7 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
         }
     }
 
-    controller::register_stdin(app.tx.clone());
+    controller::register_stdin(app.tx.clone(), app.states.history_file.clone());
 
     if shuffle {
         let fix = first_path.map(|it| Path::new(&it).is_file()).unwrap_or(false);
@@ -971,6 +971,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 CurlLowSpeedTime => &mut app.states.curl_options.low_speed_time,
                 CurlTimeout => &mut app.states.curl_options.timeout,
                 FitTo => &mut app.states.drawing.fit_to,
+                HistoryFile => &mut app.states.history_file,
                 HorizontalViews => &mut app.states.view.cols,
                 LogFile => &mut app.states.log_file,
                 MaskOperator => &mut app.states.drawing.mask_operator,

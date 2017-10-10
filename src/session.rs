@@ -141,8 +141,8 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         Scaling => gen("scaling", &st.drawing.scaling, context),
         SkipResizeWindow => gen("skip-resize-window", &st.skip_resize_window, context),
         StatusBar => gen("status-bar", &b2s(st.status_bar), context),
-        StatusFormat => gen("status-format", &esc(&st.status_format.0), context),
-        TitleFormat => gen("title-format", &esc(&st.title_format.0), context),
+        StatusFormat => gen("status-format", &st.status_format, context),
+        TitleFormat => gen("title-format", &st.title_format, context),
         UpdateCacheAccessTime => gen("update-cache-atime", &b2s(st.update_cache_atime), context),
         VerticalViews => gen("vertical-views", &st.view.rows, context),
     }

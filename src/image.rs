@@ -1,9 +1,10 @@
 
 use std::fs::File;
-use std::io::Read;
+use std::io::{Error as IoError, Read};
 use std::path::Path;
 
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, Colorspace, PixbufLoader};
+use glib;
 use immeta;
 
 use size::Size;
@@ -80,22 +81,21 @@ impl StaticImageBuffer {
 
 
 impl AnimationBuffer {
-    pub fn new_from_file<T: AsRef<Path>>(path: T) -> Result<AnimationBuffer, String> {
-        File::open(path).and_then(|mut file| {
-            let mut buffer = vec![];
-            file.read_to_end(&mut buffer).map(|_| AnimationBuffer { source: buffer })
-        }).map_err(|it| s!(it))
+    pub fn new_from_file<T: AsRef<Path>>(path: T) -> Result<AnimationBuffer, IoError> {
+        let mut file = File::open(path)?;
+        let mut buffer = vec![];
+        file.read_to_end(&mut buffer).map(|_| AnimationBuffer { source: buffer })
     }
 
     pub fn new_from_slice(source: &[u8]) -> AnimationBuffer {
         AnimationBuffer { source: source.to_vec() }
     }
 
-    pub fn get_pixbuf_animation(&self) -> Result<PixbufAnimation, String> {
+    pub fn get_pixbuf_animation(&self) -> Result<PixbufAnimation, glib::Error> {
         let loader = PixbufLoader::new();
         loader.loader_write(&*self.source.as_slice()).map(|_| {
             loader.close().unwrap();
             loader.get_animation().unwrap()
-        }).map_err(|it| s!(it))
+        })
     }
 }

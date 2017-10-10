@@ -1,4 +1,5 @@
 
+use std::error;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -10,6 +11,7 @@ use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
 
 use entry::{Entry, EntryContent};
+use errors::ChryError;
 use gtk_utils::{new_pixbuf_from_surface, context_rotate};
 use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use poppler::PopplerDocument;
@@ -17,9 +19,6 @@ use size::Size;
 use state::DrawingState;
 use utils::path_to_str;
 
-
-
-type Error = String;
 
 
 pub fn is_animation(entry: &Entry) -> bool {
@@ -35,16 +34,16 @@ pub fn is_animation(entry: &Entry) -> bool {
     false
 }
 
-pub fn get_image_buffer(entry: &Entry, cell: &Size, drawing: &DrawingState) -> Result<ImageBuffer, Error> {
+pub fn get_image_buffer(entry: &Entry, cell: &Size, drawing: &DrawingState) -> Result<ImageBuffer, Box<error::Error>> {
     if is_animation(entry) {
-        get_animation_buffer(entry).map(ImageBuffer::Animation)
+        Ok(get_animation_buffer(entry).map(ImageBuffer::Animation)?)
     } else {
         get_static_image_buffer(entry, cell, drawing).map(ImageBuffer::Static)
     }
 }
 
 
-pub fn get_static_image_buffer(entry: &Entry, cell: &Size, drawing: &DrawingState) -> Result<StaticImageBuffer, Error> {
+pub fn get_static_image_buffer(entry: &Entry, cell: &Size, drawing: &DrawingState) -> Result<StaticImageBuffer, Box<error::Error>> {
     use self::EntryContent::*;
 
     match (*entry).content {
@@ -58,57 +57,53 @@ pub fn get_static_image_buffer(entry: &Entry, cell: &Size, drawing: &DrawingStat
 }
 
 
-pub fn get_animation_buffer(entry: &Entry) -> Result<AnimationBuffer, Error> {
+pub fn get_animation_buffer(entry: &Entry) -> Result<AnimationBuffer, Box<error::Error>> {
     use self::EntryContent::*;
 
     match (*entry).content {
         Image(ref path) =>
-            AnimationBuffer::new_from_file(path),
+            Ok(AnimationBuffer::new_from_file(path)?),
         Archive(_, ref entry) =>
             Ok(AnimationBuffer::new_from_slice(&*entry.content)),
-        _ => Err(o!("Not implemented: get_animation_buffer")),
+        _ => Err(Box::new(ChryError::Fixed("Not implemented: get_animation_buffer"))),
     }
 }
 
-fn make_scaled(buffer: &[u8], cell: &Size, drawing: &DrawingState) -> Result<StaticImageBuffer, Error> {
+fn make_scaled(buffer: &[u8], cell: &Size, drawing: &DrawingState) -> Result<StaticImageBuffer, Box<error::Error>> {
     let loader = PixbufLoader::new();
-    loader.loader_write(buffer).map_err(|it| s!(it)).and_then(|_| {
-        if loader.close().is_err() {
-            return Err(o!("Invalid image data"))
-        }
-        if let Some(source) = loader.get_pixbuf() {
-            let original = Size::from_pixbuf(&source);
-            let (scale, fitted, clipped_region) = original.rotate(drawing.rotation).fit_with_clipping(cell, drawing);
+    loader.loader_write(buffer)?;
 
-            let result = {
-                let surface = ImageSurface::create(Format::ARgb32, fitted.width, fitted.height);
-                let context = Context::new(&surface);
-                context.scale(scale, scale);
-                if let Some(r) = clipped_region {
-                    context.translate(-r.left as f64, -r.top as f64);
-                    context.rectangle(r.left as f64, r.top as f64, r.right as f64, r.bottom as f64);
-                    context.clip();
-                }
-                context_rotate(&context, &original, drawing.rotation);
-                context.set_source_pixbuf(&source, 0.0, 0.0);
-                context.paint();
-                new_pixbuf_from_surface(&surface)
-            };
+    if loader.close().is_err() {
+        return Err(Box::new(ChryError::Fixed("Invalid image data")))
+    }
 
-            Ok(StaticImageBuffer::new_from_pixbuf(&result, Some(original)))
-        } else {
-            Err(o!("Invalid image"))
+    let source = loader.get_pixbuf().ok_or_else(|| Box::new(ChryError::Fixed("Invalid image")))?;
+    let original = Size::from_pixbuf(&source);
+    let (scale, fitted, clipped_region) = original.rotate(drawing.rotation).fit_with_clipping(cell, drawing);
+
+    let result = {
+        let surface = ImageSurface::create(Format::ARgb32, fitted.width, fitted.height).unwrap();
+        let context = Context::new(&surface);
+        context.scale(scale, scale);
+        if let Some(r) = clipped_region {
+            context.translate(-r.left as f64, -r.top as f64);
+            context.rectangle(r.left as f64, r.top as f64, r.right as f64, r.bottom as f64);
+            context.clip();
         }
-    })
+        context_rotate(&context, &original, drawing.rotation);
+        context.set_source_pixbuf(&source, 0.0, 0.0);
+        context.paint();
+        new_pixbuf_from_surface(&surface)
+    };
+
+    Ok(StaticImageBuffer::new_from_pixbuf(&result, Some(original)))
 }
 
-fn make_scaled_from_file(path: &str, cell: &Size, drawing: &DrawingState) -> Result<StaticImageBuffer, Error> {
-    File::open(path).map_err(|it| s!(it)).and_then(|mut file| {
-        let mut buffer: Vec<u8> = vec![];
-        file.read_to_end(&mut buffer).map_err(|it| s!(it)).and_then(|_| {
-            make_scaled(buffer.as_slice(), cell, drawing)
-        })
-    })
+fn make_scaled_from_file(path: &str, cell: &Size, drawing: &DrawingState) -> Result<StaticImageBuffer, Box<error::Error>> {
+    let mut file = File::open(path)?;
+    let mut buffer: Vec<u8> = vec![];
+    let _ = file.read_to_end(&mut buffer)?;
+    make_scaled(buffer.as_slice(), cell, drawing)
 }
 
 fn make_scaled_from_pdf<T: AsRef<Path>>(pdf_path: &T, index: usize, cell: &Size, drawing: &DrawingState) -> StaticImageBuffer {

@@ -29,7 +29,7 @@ impl Modified {
 
         match self {
             P(pixbuf) => {
-                let surface = ImageSurface::create(Format::ARgb32, pixbuf.get_width(), pixbuf.get_height());
+                let surface = ImageSurface::create(Format::ARgb32, pixbuf.get_width(), pixbuf.get_height()).unwrap();
                 let context = Context::new(&surface);
                 context.set_source_pixbuf(&pixbuf, 0.0, 0.0);
                 context.paint();

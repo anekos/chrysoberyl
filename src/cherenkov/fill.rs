@@ -30,7 +30,7 @@ pub fn fill(shape: Shape, che: &Region, color: &Color, modified: Modified) -> Mo
 
 pub fn mask(surface: Option<ImageSurface>, shape: Shape, che: &Region, color: &Color, modified: &Modified) -> ImageSurface {
     let size = modified.get_size();
-    let surface = surface.unwrap_or_else(|| ImageSurface::create(Format::ARgb32, size.width, size.height));
+    let surface = surface.unwrap_or_else(|| ImageSurface::create(Format::ARgb32, size.width, size.height).unwrap());
     let context = Context::new(&surface);
 
     context_fill(&context, shape, che, color, size.width, size.height);

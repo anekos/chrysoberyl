@@ -25,7 +25,7 @@ macro_rules! chry_error {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ChryError {
     Standard(String),
     Parse(String),
@@ -68,17 +68,21 @@ impl error::Error for ChryError {
     }
 }
 
-
 impl From<io::Error> for ChryError {
     fn from(error: io::Error) -> Self {
         ChryError::Standard(s!(error))
     }
 }
 
-
 impl From<cairo::IoError> for ChryError {
     fn from(error: cairo::IoError) -> Self {
         ChryError::Standard(d!(error))
+    }
+}
+
+impl From<cairo::Status> for ChryError {
+    fn from(status: cairo::Status) -> Self {
+        ChryError::Standard(d!(status))
     }
 }
 

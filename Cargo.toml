@@ -11,7 +11,7 @@ poppler_lock = []
 app_dirs = "*"
 argparse = "*"
 atty = "*"
-cairo-sys-rs = "*"
+cairo-sys-rs = "0.4.0"
 closet = "*"
 cmdline-parser = "*"
 css-color-parser = "*"
@@ -51,7 +51,7 @@ url = "*"
 
 # https://github.com/gtk-rs/gtk/blob/master/Cargo.toml
 [dependencies.gtk]
-version = "0.1"
+version = "0.2"
 features = ["v3_22"]
 
 [dependencies.cairo-rs]

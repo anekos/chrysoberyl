@@ -105,7 +105,7 @@ impl PopplerPage {
             Some(size) => page.fit_to_fixed(size.width, size.height),
             None => (1.0, page),
         };
-        let surface = ImageSurface::create(Format::ARgb32, fitted.width, fitted.height);
+        let surface = ImageSurface::create(Format::ARgb32, fitted.width, fitted.height).unwrap();
         let context = Context::new(&surface);
         context.scale(scale, scale);
         self.render(&context);
@@ -124,7 +124,7 @@ impl PopplerPage {
         let page = self.get_size();
 
         let (scale, fitted, clipped_region) = page.rotate(drawing.rotation).fit_with_clipping(cell, drawing);
-        let surface = ImageSurface::create(Format::ARgb32, fitted.width, fitted.height);
+        let surface = ImageSurface::create(Format::ARgb32, fitted.width, fitted.height).unwrap();
 
         {
             let context = Context::new(&surface);

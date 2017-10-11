@@ -507,7 +507,7 @@ impl App {
                         }
                     }
                     Err(error) =>
-                        cell.draw_text(&error, &cell_size, &fg, &bg),
+                        cell.draw_text(&error, &cell_size, &fg, &bg)
                 }
                 showed = true;
             } else {

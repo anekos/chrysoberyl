@@ -14,7 +14,7 @@ use state::DrawingState;
 #[derive(Clone)]
 pub struct ImageCache {
     cherenkoved: Arc<Mutex<Cherenkoved>>,
-    cache: Cache<Key, Result<ImageBuffer, String>>,
+    cache: Cache<Key, Result<ImageBuffer, String>>, /* String for display the error */
     fetching: Arc<(Mutex<HashMap<Key, bool>>, Condvar)>,
 }
 
@@ -71,11 +71,11 @@ impl ImageCache {
     pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: &Size, drawing: &DrawingState) -> Result<ImageBuffer, String> {
         {
             let mut cherenkoved = self.cherenkoved.lock().unwrap();
-            cherenkoved.get_image_buffer(entry, cell_size, drawing)
+            cherenkoved.get_image_buffer(entry, cell_size, drawing).map(|it| it.map_err(|it| s!(it)))
         }.unwrap_or_else(|| {
             self.wait(&entry.key);
             self.cache.get_or_update(entry.key.clone(), move |_| {
-                entry::image::get_image_buffer(entry, cell_size, drawing)
+                entry::image::get_image_buffer(entry, cell_size, drawing).map_err(|it| s!(it))
             })
         })
     }

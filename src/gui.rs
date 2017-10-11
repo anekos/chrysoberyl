@@ -270,7 +270,7 @@ impl Cell {
     }
 
     pub fn draw_text(&self, text: &str, cell_size: &Size, fg: &Color, bg: &Color) {
-        let surface = ImageSurface::create(Format::ARgb32, cell_size.width, cell_size.height);
+        let surface = ImageSurface::create(Format::ARgb32, cell_size.width, cell_size.height).unwrap();
 
         let (width, height) = cell_size.floated();
 
@@ -326,7 +326,7 @@ impl Cell {
                 self.window.set_size_request(w, h);
             }
             Err(ref error) =>
-                self.draw_text(error, cell_size, fg, bg)
+                self.draw_text(&s!(error), cell_size, fg, bg)
         }
     }
 
@@ -436,7 +436,7 @@ fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), BoxedError>
 
     let pixbuf = image.get_pixbuf().ok_or("No pixbuf")?;
     let (width, height) = (pixbuf.get_width(), pixbuf.get_height());
-    let surface = ImageSurface::create(Format::ARgb32, width, height);
+    let surface = ImageSurface::create(Format::ARgb32, width, height).unwrap();
     let context = Context::new(&surface);
     context.set_source_pixbuf(&pixbuf, 0.0, 0.0);
     context.paint();

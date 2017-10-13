@@ -90,8 +90,10 @@ impl App {
             initial.encodings.push(WINDOWS_31J);
         }
 
-        if !initial.silent {
-            states.stdout = Some(logger::register_stdout());
+        if initial.silent {
+            states.stdout.unregister();
+        } else {
+            states.stdout.register();
         }
 
         set_envs();

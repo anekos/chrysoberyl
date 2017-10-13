@@ -11,6 +11,8 @@ use resolution;
 use size::FitTo;
 use state::{ScalingMethod, MaskOperator};
 
+use option::common;
+
 
 
 impl OptionValue for bool {
@@ -33,12 +35,9 @@ impl OptionValue for bool {
     }
 
     fn set(&mut self, value: &str) -> Result {
-        *self = match value {
-            "true" | "yes" | "on" | "1" => true,
-            "false" | "no" | "off" | "0" => false,
-            _ => return Err(ChryError::InvalidValue(o!(value)))
-        };
-        Ok(())
+        common::parse_bool(value).map(|value| {
+            *self = value;
+        })
     }
 }
 

@@ -3,6 +3,7 @@ use std::result;
 
 use errors::ChryError;
 
+pub mod common;
 pub mod impls;
 pub mod user;
 

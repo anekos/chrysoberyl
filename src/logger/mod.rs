@@ -1,14 +1,13 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::io::{stdout, Write};
-use std::sync::mpsc::{Sender, channel};
+use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
-use std::thread::spawn;
 
 use shell_escape::escape;
 
 pub mod file;
+pub mod stdout;
 #[macro_use] pub mod macros;
 
 
@@ -74,11 +73,6 @@ pub fn unregister(handle: Handle) {
     out.unregister(handle);
 }
 
-pub fn register_stdout() -> Handle {
-    let mut out = (*OUTPUT_INSTANCE).lock().unwrap();
-    out.register(run_stdout_output())
-}
-
 fn generate_text(data: &[(String, String)]) -> String {
     let mut result = "".to_owned();
 
@@ -92,18 +86,4 @@ fn generate_text(data: &[(String, String)]) -> String {
     }
 
     result
-}
-
-fn run_stdout_output() -> Sender<String> {
-    let (tx, rx) = channel();
-
-    spawn(move || {
-        let stdout = stdout();
-        while let Ok(s) = rx.recv() {
-            let mut stdout = stdout.lock();
-            let _ = stdout.write_fmt(format_args!("{}\n", s));
-        }
-    });
-
-    tx
 }

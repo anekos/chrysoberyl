@@ -15,10 +15,12 @@ use entry::{Entry, EntryContainer, EntryType, Key};
 use gui::Gui;
 use mapping::{Mapping, key_mapping as kmap, mouse_mapping as mmap, region_mapping as rmap};
 use operation::option::PreDefinedOptionName;
+use option::common::{bool_to_str as b2s};
 use paginator::Paginator;
 use size::FitTo;
 use state::{self, States, ScalingMethod, Filters};
 use utils::path_to_str;
+
 
 
 
@@ -86,14 +88,6 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         }
     };
 
-    fn b2s(b: bool) -> &'static str {
-        if b {
-            "true"
-        } else {
-            "false"
-        }
-    }
-
     let c2s = |c: &Color| {
         esc(&format!("{}", c))
     };
@@ -146,6 +140,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         Scaling => gen("scaling", &st.drawing.scaling, context),
         SkipResizeWindow => gen("skip-resize-window", &st.skip_resize_window, context),
         StatusBar => gen("status-bar", &b2s(st.status_bar), context),
+        StdOut => gen("stdout", &st.stdout, context),
         StatusFormat => gen("status-format", &st.status_format, context),
         TitleFormat => gen("title-format", &st.title_format, context),
         UpdateCacheAccessTime => gen("update-cache-atime", &b2s(st.update_cache_atime), context),

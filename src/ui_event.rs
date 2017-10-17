@@ -27,13 +27,13 @@ struct Conf {
 }
 
 
-type ArcPressedAt = Arc<Cell<(f64, f64)>>;
+type ArcPressedAt = Arc<Cell<Option<(f64, f64)>>>;
 type ArcConf = Arc<Cell<Conf>>;
 
 
 pub fn register(gui: &Gui, skip: usize, tx: &Sender<Operation>) {
     let sender = LazySender::new(tx.clone(), Duration::from_millis(50));
-    let pressed_at = Arc::new(Cell::new((0.0, 0.0)));
+    let pressed_at = Arc::new(Cell::new(None));
     let conf = Arc::new(Cell::new(Conf { skip: skip, .. Conf::default() }));
 
     gui.window.connect_key_press_event(clone_army!([tx] move |_, key| on_key_press(&tx, key)));
@@ -57,13 +57,13 @@ fn on_key_press(tx: &Sender<Operation>, key: &EventKey) -> Inhibit {
 
 fn on_button_press(button: &EventButton, pressed_at: ArcPressedAt) -> Inhibit {
     let (x, y) = button.get_position();
-    (*pressed_at).set((x, y));
+    (*pressed_at).set(Some((x, y)));
     Inhibit(true)
 }
 
 fn on_button_release(tx: &Sender<Operation>, button: &EventButton, pressed_at: ArcPressedAt) -> Inhibit {
     let (x, y) = button.get_position();
-    let (px, py) = (*pressed_at).get();
+    if_let_some!((px, py) = (*pressed_at).get(), Inhibit(true));
     let button = button.get_button();
     if feq(x, px, 10.0) && feq(y, py, 10.0) {
         tx.send(

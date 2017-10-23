@@ -429,6 +429,8 @@ pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, opera
             panic!("WTF"),
         Region(button) =>
             app.mapping.register_region(button, operation),
+        Wheel(direction) =>
+            app.mapping.register_wheel(direction, operation),
     }
 }
 
@@ -948,6 +950,8 @@ pub fn on_unmap(app: &mut App, target: MappingTarget) {
             app.mapping.unregister_event(event_name, group),
         Region(ref button) =>
             app.mapping.unregister_region(button),
+        Wheel(direction) =>
+            app.mapping.unregister_wheel(direction),
     }
 }
 

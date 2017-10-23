@@ -6,6 +6,11 @@
 @map key space        @next
 @map key BackSpace    @previous
 
+@map wheel left       @scroll --size 0.2 left  @previous
+@map wheel down       @scroll --size 0.2 down  @next
+@map wheel up         @scroll --size 0.2 up    @previous
+@map wheel right      @scroll --size 0.2 right @next
+
 # move --ignore-views
 @map key J            @next --ignore-views
 @map key K            @previous --ignore-views

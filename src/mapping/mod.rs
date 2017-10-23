@@ -2,21 +2,24 @@
 use gdk;
 
 use events::EventName;
+use gtk_wrapper::ScrollDirection;
 use size::Region;
 
 pub mod event_mapping;
 pub mod key_mapping;
 pub mod mouse_mapping;
 pub mod region_mapping;
+pub mod wheel_mapping;
 
 
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Input {
+    Event(EventName),
     Key(String),
     MouseButton((i32, i32), u32), // (X, Y), Button
-    Event(EventName),
     Region(Region, u32, usize), // region, button, cell_index
+    Wheel(ScrollDirection),
 }
 
 #[derive(Clone, Copy)]
@@ -32,6 +35,7 @@ pub struct Mapping {
     pub mouse_mapping: mouse_mapping::MouseMapping,
     pub event_mapping: event_mapping::EventMapping,
     pub region_mapping: region_mapping::RegionMapping,
+    pub wheel_mapping: wheel_mapping::WheelMapping,
 }
 
 
@@ -43,6 +47,7 @@ impl Mapping {
             mouse_mapping: mouse_mapping::MouseMapping::new(),
             event_mapping: event_mapping::EventMapping::new(),
             region_mapping: region_mapping::RegionMapping::new(),
+            wheel_mapping: wheel_mapping::WheelMapping::new(),
         }
     }
 
@@ -62,6 +67,10 @@ impl Mapping {
         self.region_mapping.register(button, operation);
     }
 
+    pub fn register_wheel(&mut self, direction: ScrollDirection, operation: Vec<String>) {
+        self.wheel_mapping.register(direction, operation);
+    }
+
     pub fn unregister_key(&mut self, key: Vec<String>) {
         self.key_mapping.unregister(key);
     }
@@ -78,6 +87,10 @@ impl Mapping {
         self.region_mapping.unregister(button);
     }
 
+    pub fn unregister_wheel(&mut self, direction: ScrollDirection) {
+        self.wheel_mapping.unregister(direction);
+    }
+
     pub fn matched(&mut self, input: &Input, width: i32, height: i32, decrease_remain: bool) -> Vec<Vec<String>> {
         let found = match *input {
             Input::Key(ref key) => {
@@ -90,6 +103,8 @@ impl Mapping {
                 self.event_mapping.matched(event_name, decrease_remain),
             Input::Region(_, button, _) =>
                 self.region_mapping.matched(button).into_iter().collect(),
+            Input::Wheel(direction) =>
+                self.wheel_mapping.matched(direction).into_iter().collect(),
         };
 
         if found.is_empty() {
@@ -135,6 +150,7 @@ impl Input {
             Input::MouseButton(ref position, ref button) => format!("{:?}, {}", position, button),
             Input::Event(ref event_name) => s!(event_name),
             Input::Region(ref region, button, _) => format!("{}, {}", region, button),
+            Input::Wheel(direction) => format!("{}", direction),
         }
     }
 
@@ -144,6 +160,7 @@ impl Input {
             Input::MouseButton(_, _) => "mouse_button",
             Input::Event(_) => "event",
             Input::Region(_, _, _) => "region",
+            Input::Wheel(_) => "wheel",
         }
     }
 }

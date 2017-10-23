@@ -5,11 +5,12 @@ use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 
-use gdk::{EventButton, EventKey, EventConfigure};
+use gdk::{EventButton, EventKey, EventConfigure, EventScroll};
 use gtk::prelude::*;
 use gtk::Inhibit;
 
 use events::EventName;
+use gtk_wrapper::ScrollDirection;
 use gui::Gui;
 use lazy_sender::LazySender;
 use mapping::Input;
@@ -41,6 +42,7 @@ pub fn register(gui: &Gui, skip: usize, tx: &Sender<Operation>) {
     gui.window.connect_delete_event(clone_army!([tx] move |_, _| on_delete(&tx)));
     gui.window.connect_button_press_event(clone_army!([pressed_at] move |_, button| on_button_press(button, pressed_at.clone())));
     gui.window.connect_button_release_event(clone_army!([tx] move |_, button| on_button_release(&tx, button, pressed_at.clone())));
+    gui.window.connect_scroll_event(clone_army!([tx] move |_, scroll| on_scroll(&tx, scroll)));
 }
 
 
@@ -105,6 +107,19 @@ fn on_configure(mut sender: LazySender, tx: &Sender<Operation>, ev: &EventConfig
 fn on_delete(tx: &Sender<Operation>) -> Inhibit {
     tx.send(EventName::Quit.operation()).unwrap();
     Inhibit(false)
+}
+
+fn on_scroll(tx: &Sender<Operation>, scroll: &EventScroll) -> Inhibit {
+    use gdk::ScrollDirection::*;
+
+    let d = scroll.get_direction();
+    match d {
+        Up | Down | Left | Right =>
+            tx.send(Operation::Input(Input::Wheel(ScrollDirection(d)))).unwrap(),
+        _ =>
+            (),
+    }
+    Inhibit(true)
 }
 
 fn is_modifier_key(key: u32) -> bool {

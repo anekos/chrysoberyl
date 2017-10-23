@@ -19,6 +19,7 @@ use errors::ChryError;
 use events::EventName;
 use expandable::Expandable;
 use filer;
+use gtk_wrapper::ScrollDirection;
 use gui::Direction;
 use mapping;
 use poppler;
@@ -132,6 +133,7 @@ pub enum MappingTarget {
     Mouse(u32, Option<Region>),
     Event(Option<EventName>, Option<String>),
     Region(u32),
+    Wheel(ScrollDirection),
 }
 
 #[derive(Debug, PartialEq)]

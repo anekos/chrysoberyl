@@ -33,11 +33,13 @@ pub enum FitTo {
     Height,
     Cell,
     Fixed(i32, i32),
-    Scale(u16),
+    Scale(usize),
 }
 
 
 const FERROR: f64 = 0.000001;
+const MINIMUM_SCALE: usize = 10;
+const MAXIMUM_SCALE: usize = 1000;
 
 
 impl Size {
@@ -169,7 +171,7 @@ impl Size {
         (scale, self.scaled(scale))
     }
 
-    fn fit_to_scaled(&self, scale: u16) -> (f64, Size) {
+    fn fit_to_scaled(&self, scale: usize) -> (f64, Size) {
         let scale = scale as f64 / 100.0;
         (scale, self.scaled(scale))
     }
@@ -273,6 +275,10 @@ impl fmt::Display for Region {
 impl FitTo {
     pub fn is_scrollable(&self) -> bool {
         *self != FitTo::Cell
+    }
+
+    pub fn set_scale(&mut self, value: usize) {
+        *self = FitTo::Scale(clamp!(MINIMUM_SCALE, value, MAXIMUM_SCALE));
     }
 }
 

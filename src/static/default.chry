@@ -45,6 +45,7 @@
 @map key f,o          @set fit-to original-or-cell
 @map key f,O          @set fit-to original
 @map key f,c          @set fit-to cell
+@map key f,s          @set-by-count fit-to
 @map key plus         @increment fit-to 10
 @map key minus        @decrement fit-to 10
 

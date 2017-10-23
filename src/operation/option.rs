@@ -9,8 +9,9 @@ pub enum OptionUpdater {
     Enable,
     Disable,
     Toggle,
-    Increment(u16),
-    Decrement(u16),
+    SetByCount,
+    Increment(usize),
+    Decrement(usize),
     Cycle(bool), /* reverse */
 }
 

@@ -1012,8 +1012,9 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
             Set(ref arg) => value.set(arg),
             Toggle => value.toggle(),
             Unset => value.unset(),
-            Increment(delta) => value.increment(delta),
-            Decrement(delta) => value.decrement(delta),
+            SetByCount => value.set_from_count(app.counter.pop_option()),
+            Increment(delta) => value.increment(app.counter.pop_option().unwrap_or(delta)),
+            Decrement(delta) => value.decrement(app.counter.pop_option().unwrap_or(delta)),
         };
 
         if let Err(error) = result {

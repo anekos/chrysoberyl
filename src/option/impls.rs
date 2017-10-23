@@ -210,28 +210,31 @@ impl OptionValue for FitTo {
         })
     }
 
+    fn set_from_count(&mut self, value: Option<usize>) -> Result {
+        self.set_scale(value.unwrap_or(100));
+        Ok(())
+    }
+
     fn cycle(&mut self, reverse: bool) -> Result {
         use self::FitTo::*;
         *self = cycled(*self, &[Cell, OriginalOrCell, Original, Width, Height], reverse);
         Ok(())
     }
 
-    fn increment(&mut self, delta: u16) -> Result {
-        const LIMIT: u16 = 1000;
-        let scale = get_scale(self).checked_add(delta).unwrap_or(LIMIT);
-        *self = FitTo::Scale(min!(scale, LIMIT));
+    fn increment(&mut self, delta: usize) -> Result {
+        let value = get_scale(self).checked_add(delta).unwrap_or(<usize>::max_value());
+        self.set_scale(value);
         Ok(())
     }
 
-    fn decrement(&mut self, delta: u16) -> Result {
-        const LIMIT: u16 = 10;
-        let scale = get_scale(self).checked_sub(delta).unwrap_or(LIMIT);
-        *self = FitTo::Scale(max!(scale, LIMIT));
+    fn decrement(&mut self, delta: usize) -> Result {
+        let value = get_scale(self).checked_sub(delta).unwrap_or(<usize>::min_value());
+        self.set_scale(value);
         Ok(())
     }
 }
 
-fn get_scale(fit_to: &FitTo) -> u16 {
+fn get_scale(fit_to: &FitTo) -> usize {
     match *fit_to {
         FitTo::Scale(scale) => scale,
         _ => 100,

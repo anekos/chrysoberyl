@@ -14,6 +14,12 @@ impl Counter {
         self.value = value;
     }
 
+    pub fn pop_option(&mut self) -> Option<usize> {
+        if_let_some!(result = self.value, None);
+        self.set(None);
+        Some(result)
+    }
+
     pub fn pop(&mut self) -> usize {
         if_let_some!(result = self.value, 1);
         self.set(None);

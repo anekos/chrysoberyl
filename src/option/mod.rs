@@ -47,11 +47,15 @@ pub trait OptionValue {
         Err(ChryError::NotSupported("cycle"))
     }
 
-    fn increment(&mut self, _: u16) -> Result {
+    fn increment(&mut self, _: usize) -> Result {
         Err(ChryError::NotSupported("increment"))
     }
 
-    fn decrement(&mut self, _: u16) -> Result {
+    fn decrement(&mut self, _: usize) -> Result {
         Err(ChryError::NotSupported("decrement"))
+    }
+
+    fn set_from_count(&mut self, _: Option<usize>) -> Result {
+        Err(ChryError::NotSupported("set_from_count"))
     }
 }

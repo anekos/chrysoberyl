@@ -175,3 +175,9 @@ macro_rules! iterable_enum {
         }
     }
 }
+
+macro_rules! clamp {
+    ($min:expr, $value:expr, $max:expr) => {
+        min!(max!($min, $value), $max)
+    }
+}

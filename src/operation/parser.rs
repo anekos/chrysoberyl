@@ -32,8 +32,8 @@ where T: FnOnce(String) -> Operation {
     }
 }
 
-pub fn parse_u16<T>(args: &[String], op: T, mut delta: u16) -> Result<Operation, ParsingError>
-where T: FnOnce(u16) -> OptionUpdater {
+pub fn parse_usize<T>(args: &[String], op: T, mut delta: usize) -> Result<Operation, ParsingError>
+where T: FnOnce(usize) -> OptionUpdater {
     let mut option_name = OptionName::default();
     {
         let mut ap = ArgumentParser::new();

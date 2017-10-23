@@ -95,8 +95,8 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
                 let (x2, y2) = (x1 + w, y1 + h);
                 if x1 <= mx && mx <= x2 && y1 <= my && my <= y2 {
                     let center = (
-                        f64!(parameter.x.unwrap_or_else(|| mx - x1)) / f64!(h),
-                        f64!(parameter.y.unwrap_or_else(|| my - y1)) / f64!(w));
+                        f64!(parameter.x.unwrap_or_else(|| mx - x1)) / f64!(w),
+                        f64!(parameter.y.unwrap_or_else(|| my - y1)) / f64!(h));
                     app.cache.cherenkov1(
                         &entry,
                         &cell_size,

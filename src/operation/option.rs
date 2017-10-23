@@ -9,6 +9,8 @@ pub enum OptionUpdater {
     Enable,
     Disable,
     Toggle,
+    Increment(u16),
+    Decrement(u16),
     Cycle(bool), /* reverse */
 }
 

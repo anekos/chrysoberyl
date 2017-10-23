@@ -32,6 +32,19 @@ where T: FnOnce(String) -> Operation {
     }
 }
 
+pub fn parse_u16<T>(args: &[String], op: T, mut delta: u16) -> Result<Operation, ParsingError>
+where T: FnOnce(u16) -> OptionUpdater {
+    let mut option_name = OptionName::default();
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut option_name).add_argument("option_name", Store, "Option name").required();
+        ap.refer(&mut delta).add_argument("delta", Store, "Delta");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::UpdateOption(option_name, op(delta))
+    })
+}
+
 pub fn parse_move<T>(args: &[String], op: T) -> Result<Operation, ParsingError>
 where T: FnOnce(Option<usize>, bool, MoveBy, bool) -> Operation {
     let mut ignore_views = false;

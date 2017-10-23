@@ -190,6 +190,11 @@ impl FromStr for FitTo {
                 if let Ok((w, h)) = resolution::from(src) {
                     return Ok(Fixed(w as i32, h as i32));
                 }
+                if src.ends_with('%') {
+                    if let Ok(scale) = src[.. src.len() - 1].parse() {
+                        return Ok(Scale(scale))
+                    }
+                }
                 return Err(ChryError::InvalidValue(o!(src)))
             }
         };
@@ -209,6 +214,27 @@ impl OptionValue for FitTo {
         use self::FitTo::*;
         *self = cycled(*self, &[Cell, OriginalOrCell, Original, Width, Height], reverse);
         Ok(())
+    }
+
+    fn increment(&mut self, delta: u16) -> Result {
+        const LIMIT: u16 = 1000;
+        let scale = get_scale(self).checked_add(delta).unwrap_or(LIMIT);
+        *self = FitTo::Scale(min!(scale, LIMIT));
+        Ok(())
+    }
+
+    fn decrement(&mut self, delta: u16) -> Result {
+        const LIMIT: u16 = 10;
+        let scale = get_scale(self).checked_sub(delta).unwrap_or(LIMIT);
+        *self = FitTo::Scale(max!(scale, LIMIT));
+        Ok(())
+    }
+}
+
+fn get_scale(fit_to: &FitTo) -> u16 {
+    match *fit_to {
+        FitTo::Scale(scale) => scale,
+        _ => 100,
     }
 }
 

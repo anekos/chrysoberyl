@@ -33,6 +33,7 @@ pub enum FitTo {
     Height,
     Cell,
     Fixed(i32, i32),
+    Scale(u16),
 }
 
 
@@ -101,6 +102,7 @@ impl Size {
             Width => self.fit_to_width(cell_size),
             Height => self.fit_to_height(cell_size),
             Fixed(w, h) => self.fit_to_fixed(w, h),
+            Scale(scale) => self.fit_to_scaled(scale),
         };
 
         (scale, fitted)
@@ -164,6 +166,11 @@ impl Size {
         if result_height > h {
             scale = f64!(h) / f64!(self.height);
         }
+        (scale, self.scaled(scale))
+    }
+
+    fn fit_to_scaled(&self, scale: u16) -> (f64, Size) {
+        let scale = scale as f64 / 100.0;
         (scale, self.scaled(scale))
     }
 }

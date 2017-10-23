@@ -46,4 +46,12 @@ pub trait OptionValue {
     fn cycle(&mut self, _: bool) -> Result {
         Err(ChryError::NotSupported("cycle"))
     }
+
+    fn increment(&mut self, _: u16) -> Result {
+        Err(ChryError::NotSupported("increment"))
+    }
+
+    fn decrement(&mut self, _: u16) -> Result {
+        Err(ChryError::NotSupported("decrement"))
+    }
 }

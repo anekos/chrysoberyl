@@ -7,7 +7,7 @@ pub fn parse_bool(value: &str) -> Result<bool, ChryError>{
     match value {
         "true" | "yes" | "on" | "1" => Ok(true),
         "false" | "no" | "off" | "0" => Ok(false),
-        _ => return Err(ChryError::InvalidValue(o!(value)))
+        _ => Err(ChryError::InvalidValue(o!(value)))
     }
 }
 

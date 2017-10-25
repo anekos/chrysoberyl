@@ -69,6 +69,7 @@ mod gui;
 mod image;
 mod image_cache;
 mod image_fetcher;
+mod key;
 mod lazy;
 mod lazy_sender;
 mod mapping;

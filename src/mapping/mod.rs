@@ -3,6 +3,7 @@ use gdk;
 
 use events::EventName;
 use gtk_wrapper::ScrollDirection;
+use key::Key;
 use size::Region;
 
 pub mod event_mapping;
@@ -17,7 +18,7 @@ pub mod wheel_mapping;
 pub enum Input {
     Event(EventName),
     Key(String),
-    MouseButton((i32, i32), u32), // (X, Y), Button
+    MouseButton((i32, i32), Key), // (X, Y), Button
     Region(Region, u32, usize), // region, button, cell_index
     Wheel(ScrollDirection),
 }
@@ -55,7 +56,7 @@ impl Mapping {
         self.key_mapping.register(key, operation);
     }
 
-    pub fn register_mouse(&mut self, button: u32, region: Option<Region>, operation: Vec<String>) {
+    pub fn register_mouse(&mut self, button: Key, region: Option<Region>, operation: Vec<String>) {
         self.mouse_mapping.register(button, region, operation);
     }
 
@@ -75,7 +76,7 @@ impl Mapping {
         self.key_mapping.unregister(key);
     }
 
-    pub fn unregister_mouse(&mut self, button: &u32, region: &Option<Region>) {
+    pub fn unregister_mouse(&mut self, button: &Key, region: &Option<Region>) {
         self.mouse_mapping.unregister(button, region);
     }
 
@@ -98,7 +99,7 @@ impl Mapping {
                 self.key_mapping.matched(&self.key_input_history).into_iter().collect()
             }
             Input::MouseButton((x, y), ref button) =>
-                self.mouse_mapping.matched(*button, x, y, width, height).into_iter().collect(),
+                self.mouse_mapping.matched(button.clone(), x, y, width, height).into_iter().collect(),
             Input::Event(ref event_name) =>
                 self.event_mapping.matched(event_name, decrease_remain),
             Input::Region(_, button, _) =>
@@ -140,7 +141,7 @@ impl Input {
         Input::Key(name)
     }
 
-    pub fn mouse_button(x: i32, y: i32, button: u32) -> Input {
+    pub fn mouse_button(x: i32, y: i32, button: Key) -> Input {
         Input::MouseButton((x, y), button)
     }
 

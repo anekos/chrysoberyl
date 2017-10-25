@@ -2,11 +2,12 @@
 use std::collections::HashMap;
 
 use size::Region;
+use key::Key;
 
 
 
 pub struct MouseMapping {
-    pub table: HashMap<u32, Vec<WithRegion>>
+    pub table: HashMap<Key, Vec<WithRegion>>
 }
 
 pub struct WithRegion {
@@ -20,7 +21,7 @@ impl MouseMapping {
         MouseMapping { table: HashMap::new() }
     }
 
-    pub fn register(&mut self, button: u32, region: Option<Region>, operation: Vec<String>) {
+    pub fn register(&mut self, button: Key, region: Option<Region>, operation: Vec<String>) {
         let entry = WithRegion { operation: operation.to_vec(), region: region };
         if region.is_some() {
             if let Some(entries) = self.table.get_mut(&button) {
@@ -32,7 +33,7 @@ impl MouseMapping {
         self.table.insert(button, vec![entry]);
     }
 
-    pub fn unregister(&mut self, button: &u32, region: &Option<Region>) {
+    pub fn unregister(&mut self, button: &Key, region: &Option<Region>) {
         let is_empty = {
             if_let_some!(entries = self.table.get_mut(button), ());
             entries.retain(|it| it.region != *region);
@@ -43,7 +44,7 @@ impl MouseMapping {
         }
     }
 
-    pub fn matched(&self, button: u32, x: i32, y: i32, width: i32, height: i32) -> Option<Vec<String>> {
+    pub fn matched(&self, button: Key, x: i32, y: i32, width: i32, height: i32) -> Option<Vec<String>> {
         self.table.get(&button).and_then(|entries| {
             let mut found = None;
 

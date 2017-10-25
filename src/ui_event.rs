@@ -12,6 +12,7 @@ use gtk::Inhibit;
 use events::EventName;
 use gtk_wrapper::ScrollDirection;
 use gui::Gui;
+use key::Key;
 use lazy_sender::LazySender;
 use mapping::Input;
 use operation::Operation;
@@ -66,13 +67,13 @@ fn on_button_press(button: &EventButton, pressed_at: ArcPressedAt) -> Inhibit {
 fn on_button_release(tx: &Sender<Operation>, button: &EventButton, pressed_at: ArcPressedAt) -> Inhibit {
     let (x, y) = button.get_position();
     if_let_some!((px, py) = (*pressed_at).get(), Inhibit(true));
-    let button = button.get_button();
     if feq(x, px, 10.0) && feq(y, py, 10.0) {
+        println!("{:?}", Key::from(button));
         tx.send(
             Operation::Input(
-                Input::mouse_button(x as i32, y as i32, button))).unwrap();
+                Input::mouse_button(x as i32, y as i32, Key::from(button)))).unwrap();
     } else {
-        tx.send(Operation::TellRegion(px, py, x, y, button)).unwrap();
+        tx.send(Operation::TellRegion(px, py, x, y, button.get_button())).unwrap();
     }
     Inhibit(true)
 }

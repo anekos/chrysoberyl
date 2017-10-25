@@ -21,6 +21,7 @@ use expandable::Expandable;
 use filer;
 use gtk_wrapper::ScrollDirection;
 use gui::Direction;
+use key::Key;
 use mapping;
 use poppler;
 use session::Session;
@@ -130,7 +131,7 @@ pub struct OperationContext {
 #[derive(Clone, Debug, PartialEq)]
 pub enum MappingTarget {
     Key(Vec<String>),
-    Mouse(u32, Option<Region>),
+    Mouse(Key, Option<Region>),
     Event(Option<EventName>, Option<String>),
     Region(u32),
     Wheel(ScrollDirection),

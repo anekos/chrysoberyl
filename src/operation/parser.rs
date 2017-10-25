@@ -12,6 +12,7 @@ use entry::filter::expression::Expr as FilterExpr;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta, EntryType};
 use expandable::Expandable;
 use gtk_wrapper::ScrollDirection;
+use key::Key;
 use mapping::{Input, InputType};
 use shellexpand_wrapper as sh;
 use utils::join;
@@ -409,7 +410,7 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingEr
     }
 
     fn parse_map_mouse(args: &[String], register: bool) -> Result<Operation, ParsingError> {
-        let mut from = 1;
+        let mut from = Key::default();
         let mut to: Vec<String> = vec![];
         let mut region: Option<Region> = None;
 

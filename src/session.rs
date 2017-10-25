@@ -13,7 +13,7 @@ use entry::filter::expression::Expr as FilterExpr;
 use entry::filter::writer::write as write_expr;
 use entry::{Entry, EntryContainer, EntryType, Key};
 use gui::Gui;
-use mapping::{Mapping, key_mapping as kmap, mouse_mapping as mmap, region_mapping as rmap};
+use mapping::{Mapping, unified_mapping as umap, mouse_mapping as mmap, region_mapping as rmap};
 use operation::option::PreDefinedOptionName;
 use option::common::{bool_to_str as b2s};
 use paginator::Paginator;
@@ -271,34 +271,40 @@ pub fn write_paginator(entry: &Option<Entry>, paginator: &Paginator, out: &mut S
 }
 
 pub fn write_mappings(mappings: &Mapping, out: &mut String) {
-    write_key_mappings(None, &mappings.key_mapping, out);
+    write_unified_mappings(None, &mappings.unified_mapping, out);
     write_mouse_mappings(&mappings.mouse_mapping, out);
     write_region_mappings(&mappings.region_mapping, out);
 }
 
-fn write_key_mappings(base: Option<&str>, mappings: &kmap::KeyMapping, out: &mut String) {
+fn write_unified_mappings(base: Option<&str>, mappings: &umap::UnifiedMapping, out: &mut String) {
     for (name, entry) in &mappings.table {
         let name = if let Some(base) = base {
             format!("{},{}", base, name)
         } else {
-            o!(name)
+            format!("{}", name)
         };
-        write_key_mapping_entry(&name, entry, out);
+        write_unified_mapping_entry(&name, entry, out);
     }
 }
 
-fn write_key_mapping_entry(name: &str, entry: &kmap::MappingEntry, out: &mut String) {
-    use self::kmap::MappingEntry::*;
+fn write_unified_mapping_entry(name: &str, entry: &umap::Node, out: &mut String) {
+    use self::umap::Node::*;
 
     match *entry {
         Sub(ref sub) =>
-            write_key_mappings(Some(name), &*sub, out),
-        Code(ref code) => {
-            sprint!(out, "@map key {}", escape(name));
-            for it in code {
-                sprint!(out, " {}", escape(it));
+            write_unified_mappings(Some(name), &*sub, out),
+        Leaf(ref leaf_node) => {
+            for entry in &leaf_node.entries {
+                sprint!(out, "@map input");
+                if let Some(ref region) = entry.region {
+                    sprint!(out, " --region {}x{}-{}x{}", region.left, region.top, region.right, region.bottom);
+                }
+                sprint!(out, " {}", escape(name));
+                for it in &entry.operation {
+                    sprint!(out, " {}", escape(it));
+                }
+                sprintln!(out, "");
             }
-            sprintln!(out, "");
         }
     }
 }

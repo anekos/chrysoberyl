@@ -12,7 +12,7 @@ use gtk::Inhibit;
 use events::EventName;
 use gtk_wrapper::ScrollDirection;
 use gui::Gui;
-use key::Key;
+use key::{Key, Coord};
 use lazy_sender::LazySender;
 use mapping::Input;
 use operation::Operation;
@@ -52,7 +52,8 @@ fn on_key_press(tx: &Sender<Operation>, key: &EventKey) -> Inhibit {
     if 48 <= keyval && keyval <= 57 {
         tx.send(Operation::CountDigit((keyval - 48) as u8)).unwrap();
     } else if !is_modifier_key(key.get_keyval()) {
-        tx.send(Operation::Input(Input::key_from_event_key(key))).unwrap();
+        let key = Key::from(key);
+        tx.send(Operation::Input(Input::Unified(Coord::default(), key))).unwrap();
     }
 
     Inhibit(false)

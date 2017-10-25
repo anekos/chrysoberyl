@@ -419,8 +419,8 @@ pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, opera
 
     // puts_event!("map", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
     match target {
-        Key(key_sequence) =>
-            app.mapping.register_key(key_sequence, operation),
+        Unified(key_sequence, region) =>
+            app.mapping.register_unified(key_sequence, region, operation),
         Mouse(button, area) =>
             app.mapping.register_mouse(button, area, operation),
         Event(Some(event_name), group) =>
@@ -942,8 +942,8 @@ pub fn on_unmap(app: &mut App, target: MappingTarget) {
 
     // puts_event!("unmap", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
     match target {
-        Key(key_sequence) =>
-            app.mapping.unregister_key(key_sequence),
+        Unified(ref key_sequence, ref region) =>
+            app.mapping.unregister_unified(key_sequence, region),
         Mouse(ref button, ref area) =>
             app.mapping.unregister_mouse(button, area),
         Event(ref event_name, ref group) =>

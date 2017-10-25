@@ -1,7 +1,7 @@
 
 use std::collections::{VecDeque, HashMap};
 
-use key::{Key, KeySequence};
+use key::{Key, KeySequence, Coord};
 use size::Region;
 
 
@@ -20,7 +20,7 @@ pub enum Node {
 }
 
 pub struct LeafNode {
-    entries: Vec<WithRegion>
+    pub entries: Vec<WithRegion>
 }
 
 pub struct WithRegion {
@@ -54,8 +54,8 @@ impl UnifiedMapping {
                         **entry = new_mapping_entry(tail, region, operation),
                     Sub(ref mut sub) =>
                         sub.register(tail, region, operation),
-                    Leaf(ref mut leafNode) if tail.is_empty() =>
-                        leafNode.register(region, operation),
+                    Leaf(ref mut leaf_node) if tail.is_empty() =>
+                        leaf_node.register(region, operation),
                     Leaf(_) =>
                         **entry = new_mapping_entry(tail, region, operation),
                 }
@@ -67,7 +67,7 @@ impl UnifiedMapping {
         }
     }
 
-    pub fn unregister(&mut self, keys: KeySequence, region: &Option<Region>) {
+    pub fn unregister(&mut self, keys: &KeySequence, region: &Option<Region>) {
         use self::Node::*;
 
         if_let_some!((head, tail) = keys.split_first(), ());
@@ -77,11 +77,11 @@ impl UnifiedMapping {
             if_let_some!(ref mut entry = self.table.get_mut(head), ());
             match **entry {
                 Sub(ref mut sub) if !tail.is_empty() =>
-                    return sub.unregister(tail, region),
+                    return sub.unregister(&tail, region),
                 Sub(_) =>
                     return (),
-                Leaf(ref mut leafNode) =>
-                    leafNode.unregister(region),
+                Leaf(ref mut leaf_node) =>
+                    leaf_node.unregister(region),
             }
         };
 
@@ -90,7 +90,7 @@ impl UnifiedMapping {
         }
     }
 
-    pub fn matched(&self, history: &InputHistory, x: i32, y: i32, width: i32, height: i32) -> Option<Vec<String>> {
+    pub fn matched(&self, history: &InputHistory, coord: Coord, width: i32, height: i32) -> Option<Vec<String>> {
         let entries = &history.entries;
         let len = entries.len();
         for i in 0..len {
@@ -100,8 +100,8 @@ impl UnifiedMapping {
                     match *entry {
                         Node::Sub(ref sub) =>
                             mapping = sub,
-                        Node::Leaf(ref leafNode) if j == len - 1 =>
-                            return leafNode.matched(x, y, width, height),
+                        Node::Leaf(ref leaf_node) if j == len - 1 =>
+                            return leaf_node.matched(coord, width, height),
                         _ =>
                             ()
                     }
@@ -169,12 +169,12 @@ impl LeafNode {
         self.entries.is_empty()
     }
 
-    pub fn matched(&self, x: i32, y: i32, width: i32, height: i32) -> Option<OperationCode> {
+    pub fn matched(&self, coord: Coord, width: i32, height: i32) -> Option<OperationCode> {
         let mut found = None;
 
         for entry in self.entries.iter() {
             if let Some(area) = entry.region {
-                if area.contains(x, y, width, height) {
+                if area.contains(coord.x, coord.y, width, height) {
                     found = Some(entry.operation.clone());
                     break;
                 }

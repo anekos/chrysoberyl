@@ -1,10 +1,10 @@
 # scroll or move
-@map key h            @scroll --size 0.8 left  @previous
-@map key j            @scroll --size 0.8 down  @next
-@map key k            @scroll --size 0.8 up    @previous
-@map key l            @scroll --size 0.8 right @next
-@map key space        @next
-@map key BackSpace    @previous
+@map input h            @scroll --size 0.8 left  @previous
+@map input j            @scroll --size 0.8 down  @next
+@map input k            @scroll --size 0.8 up    @previous
+@map input l            @scroll --size 0.8 right @next
+@map input space        @next
+@map input BackSpace    @previous
 
 @map wheel left       @scroll --size 0.2 left  @previous
 @map wheel down       @scroll --size 0.2 down  @next
@@ -12,67 +12,67 @@
 @map wheel right      @scroll --size 0.2 right @next
 
 # move --ignore-views
-@map key J            @next --ignore-views
-@map key K            @previous --ignore-views
-@map key w,j          @next --wrap
-@map key w,k          @previous --wrap
+@map input J            @next --ignore-views
+@map input K            @previous --ignore-views
+@map input w,j          @next --wrap
+@map input w,k          @previous --wrap
 
 # move --archive
-@map key C-n          @next --archive
-@map key C-p          @previous --archive
+@map input C-n          @next --archive
+@map input C-p          @previous --archive
 
 # move
-@map key asciicircum  @first # ^
-@map key dollar       @last
-@map key g            @first
-@map key G            @last
+@map input asciicircum  @first # ^
+@map input dollar       @last
+@map input g            @first
+@map input G            @last
 
 # move (ignore views)
-@map key H            @previous --ignore-views
-@map key J            @next     --ignore-views
-@map key K            @previous --ignore-views
-@map key L            @next     --ignore-views
+@map input H            @previous --ignore-views
+@map input J            @next     --ignore-views
+@map input K            @previous --ignore-views
+@map input L            @next     --ignore-views
 
 # move (archive)
-@map key p            @previous --archive
-@map key n            @next     --archive
+@map input p            @previous --archive
+@map input n            @next     --archive
 
 # toggle a option
-@map key t,a          @toggle auto-paging
-@map key t,s          @toggle status-bar
-@map key t,r          @toggle reverse
-@map key t,c          @toggle center
-@map key t,R          @cycle rotation
+@map input t,a          @toggle auto-paging
+@map input t,s          @toggle status-bar
+@map input t,r          @toggle reverse
+@map input t,c          @toggle center
+@map input t,R          @cycle rotation
 
 # option (fit-to)
-@map key f,w          @set fit-to width
-@map key f,h          @set fit-to height
-@map key f,o          @set fit-to original-or-cell
-@map key f,O          @set fit-to original
-@map key f,c          @set fit-to cell
-@map key f,s          @set-by-count fit-to
-@map key plus         @increment fit-to 10
-@map key minus        @decrement fit-to 10
+@map input f,w          @set fit-to width
+@map input f,h          @set fit-to height
+@map input f,o          @set fit-to original-or-cell
+@map input f,O          @set fit-to original
+@map input f,c          @set fit-to cell
+@map input f,s          @set-by-count fit-to
+@map input plus         @increment fit-to 10
+@map input minus        @decrement fit-to 10
 
 # views
-@map key v            @views
-@map key V            @views --rows
+@map input v            @views
+@map input V            @views --rows
 
 # entries
-@map key C-N          @push-next --show
-@map key C-P          @push-previous --show
-@map key z            @shuffle
-@map key e            @expand
-@map key E            @expand --recursive
-@map key R            @refresh
-@map key X            @clear
+@map input C-N          @push-next --show
+@map input C-P          @push-previous --show
+@map input z            @shuffle
+@map input e            @expand
+@map input E            @expand --recursive
+@map input R            @refresh
+@map input X            @clear
 
 # misc
-@map key q            @quit
-@map key Escape       @count
-@map key c            @unclip
-@map key C            @reset-image
-@map key u            @undo
+@map input q            @quit
+@map input Escape       @count
+@map input c            @unclip
+@map input C            @reset-image
+@map input u            @undo
 
 # Mouse
 @map mouse 1          @scroll --size 0.8 down @next
@@ -84,13 +84,13 @@
 @map region 3         @fill
 
 # script
-@map key at           @shell --operation --search-path script/shell.sh
-@map key C-o          @shell --operation --search-path script/open-file-dialog.sh
-@map key C-d          @shell --operation --search-path script/open-directory-dialog.sh
-@map key C-i          @shell --operation --search-path script/pdf-index.sh
-@map key C-g          @shell --operation --search-path script/go-page.sh
-@map key C-s          @shell --operation --search-path script/save-session.sh
-@map key C-l          @shell --operation --search-path script/load-session.sh
+@map input at           @shell --operation --search-path script/shell.sh
+@map input C-o          @shell --operation --search-path script/open-file-dialog.sh
+@map input C-d          @shell --operation --search-path script/open-directory-dialog.sh
+@map input C-i          @shell --operation --search-path script/pdf-index.sh
+@map input C-g          @shell --operation --search-path script/go-page.sh
+@map input C-s          @shell --operation --search-path script/save-session.sh
+@map input C-l          @shell --operation --search-path script/load-session.sh
 
 # pre-redner
 @set pre-render yes

@@ -12,7 +12,7 @@ use entry::filter::expression::Expr as FilterExpr;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta, EntryType};
 use expandable::Expandable;
 use gtk_wrapper::ScrollDirection;
-use key::Key;
+use key::{Key, new_key_sequence, Coord};
 use mapping::{Input, InputType};
 use shellexpand_wrapper as sh;
 use utils::join;
@@ -326,8 +326,8 @@ pub fn parse_input(args: &[String]) -> Result<Operation, ParsingError> {
     impl InputType {
         pub fn input_from_text(&self, text: &str) -> Result<Input, ParsingError> {
             match *self {
-                InputType::Key =>
-                    Ok(Input::key(text)),
+                InputType::Unified =>
+                    Ok(Input::Unified(Coord::default(), Key(o!(text)))),
                 InputType::MouseButton => {
                     match text.parse() {
                         Ok(button) => Ok(Input::mouse_button(0, 0, button)),
@@ -344,13 +344,12 @@ pub fn parse_input(args: &[String]) -> Result<Operation, ParsingError> {
         }
     }
 
-    let mut input_type = InputType::Key;
+    let mut input_type = InputType::Unified;
     let mut input = "".to_owned();
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut input_type)
-            .add_option(&["--key", "-k"], StoreConst(InputType::Key), "Keyboard")
             .add_option(&["--mouse-button", "-m"], StoreConst(InputType::MouseButton), "Mouse button")
             .add_option(&["--event", "-e"], StoreConst(InputType::Event), "Event");
         ap.refer(&mut input).add_argument("input", Store, "Input").required();
@@ -389,18 +388,21 @@ pub fn parse_load(args: &[String]) -> Result<Operation, ParsingError> {
 }
 
 pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingError> {
-    fn parse_map_key(args: &[String], register: bool) -> Result<Operation, ParsingError> {
+    fn parse_map_unified(args: &[String], register: bool) -> Result<Operation, ParsingError> {
         let mut from = "".to_owned();
         let mut to: Vec<String> = vec![];
+        let mut region: Option<Region> = None;
+
         {
             let mut ap = ArgumentParser::new();
-            ap.refer(&mut from).add_argument("from", Store, "Target key sequence").required();
+            ap.refer(&mut from).add_argument("from", Store, "Target input sequence").required();
+            ap.refer(&mut region).add_option(&["--region", "-r"], StoreOption, "Region");
             if register {
                 ap.refer(&mut to).add_argument("to", List, "Command").required();
             }
             parse_args(&mut ap, args)
         } .map(|_| {
-            let target = MappingTarget::Key(from.split(',').map(|it| o!(it)).collect());
+            let target = MappingTarget::Unified(new_key_sequence(&from), region);
             if register {
                 Operation::Map(target, None, to)
             } else {
@@ -509,7 +511,7 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingEr
     if let Some(target) = args.get(1) {
         let args = &args[1..];
         match &**target {
-            "k" | "key" => parse_map_key(args, register),
+            "i" | "input" => parse_map_unified(args, register),
             "m" | "button" | "mouse" | "mouse-button" => parse_map_mouse(args, register),
             "e" | "event" => parse_map_event(args, register),
             "r" | "region" => parse_map_region(args, register),

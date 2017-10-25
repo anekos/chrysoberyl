@@ -13,7 +13,7 @@ use errors::ChryError;
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct Key(pub String);
 
-pub struct KeySequence(pub Vec<String>);
+pub type KeySequence = Vec<Key>;
 
 
 impl Default for Key {

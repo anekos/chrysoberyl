@@ -73,7 +73,7 @@ fn on_button_release(tx: &Sender<Operation>, button: &EventButton, pressed_at: A
             Operation::Input(
                 Input::Unified(Coord { x: x as i32, y: y as i32 }, Key::from(button)))).unwrap();
     } else {
-        tx.send(Operation::TellRegion(px, py, x, y, button.get_button())).unwrap();
+        tx.send(Operation::TellRegion(px, py, x, y, Key::from(button))).unwrap();
     }
     Inhibit(true)
 }

@@ -30,6 +30,7 @@ use file_extension::get_entry_type_from_filename;
 use filer;
 use fragile_input::new_fragile_input;
 use gui::Direction;
+use key::Key;
 use logger;
 use operation::option::{OptionName, OptionUpdater};
 use operation::{self, Operation, OperationContext, MappingTarget, MoveBy};
@@ -888,7 +889,7 @@ pub fn on_spawn(app: &mut App) {
     app.operate(Operation::Draw);
 }
 
-pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f64, button: u32) {
+pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f64, button: Key) {
     let (mx, my) = (left as i32, top as i32);
     for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
         if app.current_with(index).is_some() {
@@ -908,7 +909,7 @@ pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f6
                     f64!(my - y1) / h,
                     (right - f64!(x1)) / w,
                     (bottom - f64!(y1)) / h);
-                let op = Operation::Input(Input::Region(region, button, index));
+                let op = Operation::Input(Input::Region(region, button.clone(), index));
                 app.tx.send(op).unwrap();
             }
         }

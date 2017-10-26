@@ -438,7 +438,7 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingEr
     }
 
     fn parse_map_region(args: &[String], register: bool) -> Result<Operation, ParsingError> {
-        let mut from = 1;
+        let mut from = "".to_owned();
         let mut to = vec![];
         {
             let mut ap = ArgumentParser::new();
@@ -448,7 +448,7 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingEr
             }
             parse_args(&mut ap, args)
         } .map(|_| {
-            let target = MappingTarget::Region(from);
+            let target = MappingTarget::Region(Key(from));
             if register {
                 Operation::Map(target, None, to)
             } else {

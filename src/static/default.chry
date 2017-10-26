@@ -80,8 +80,8 @@
 @map input button-3     @scroll --size 0.8 up @previous
 
 # Region
-@map region 1         @clip
-@map region 3         @fill
+@map region button-1    @clip
+@map region button-3    @fill
 
 # script
 @map input at           @shell --operation --search-path script/shell.sh

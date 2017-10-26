@@ -97,7 +97,7 @@ pub enum Operation {
     Show(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Shuffle(bool), /* Fix current */
     Sort(bool), /* fix */
-    TellRegion(f64, f64, f64, f64, u32), /* lef,t top, right, bottom, mousesbutton */
+    TellRegion(f64, f64, f64, f64, Key), /* lef,t top, right, bottom, mousesbutton */
     Timer(String, Vec<String>, Duration, Option<usize>),
     Unclip,
     Undo(Option<usize>),
@@ -133,7 +133,7 @@ pub struct OperationContext {
 pub enum MappingTarget {
     Unified(KeySequence, Option<Region>),
     Event(Option<EventName>, Option<String>),
-    Region(u32),
+    Region(Key),
     Wheel(ScrollDirection),
 }
 

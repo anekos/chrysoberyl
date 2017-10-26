@@ -15,7 +15,7 @@ pub mod unified_mapping;
 pub enum Input {
     Unified(Coord, Key),
     Event(EventName),
-    Region(Region, u32, usize), // region, button, cell_index
+    Region(Region, Key, usize), // region, button, cell_index
     Wheel(ScrollDirection),
 }
 
@@ -53,7 +53,7 @@ impl Mapping {
         self.event_mapping.register(event_name, group, remain, operation);
     }
 
-    pub fn register_region(&mut self, button: u32, operation: Vec<String>) {
+    pub fn register_region(&mut self, button: Key, operation: Vec<String>) {
         self.region_mapping.register(button, operation);
     }
 
@@ -69,7 +69,7 @@ impl Mapping {
         self.event_mapping.unregister(event_name, group);
     }
 
-    pub fn unregister_region(&mut self, button: &u32) {
+    pub fn unregister_region(&mut self, button: &Key) {
         self.region_mapping.unregister(button);
     }
 
@@ -85,7 +85,7 @@ impl Mapping {
             }
             Input::Event(ref event_name) =>
                 self.event_mapping.matched(event_name, decrease_remain),
-            Input::Region(_, button, _) =>
+            Input::Region(_, ref button, _) =>
                 self.region_mapping.matched(button).into_iter().collect(),
             Input::Wheel(direction) =>
                 self.wheel_mapping.matched(direction).into_iter().collect(),
@@ -103,9 +103,9 @@ impl Mapping {
 impl Input {
     pub fn text(&self) -> String {
         match *self {
-            Input::Unified(ref coord, ref key) => format!("{} @ {}", key, coord),
+            Input::Unified(ref coord, ref key) => format!("{} at {}", key, coord),
             Input::Event(ref event_name) => s!(event_name),
-            Input::Region(ref region, button, _) => format!("{}, {}", region, button),
+            Input::Region(ref region, ref button, _) => format!("{} in {}",  button,  region),
             Input::Wheel(direction) => format!("{}", direction),
         }
     }

@@ -267,7 +267,7 @@ impl FromStr for Region {
 
 impl fmt::Display for Region {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}x{}-{}x{}", self.left, self.top, self.right, self.bottom)
+        write!(f, "{:1.2}x{:1.2}-{:1.2}x{:1.2}", self.left, self.top, self.right, self.bottom)
     }
 }
 

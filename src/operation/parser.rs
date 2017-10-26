@@ -11,7 +11,6 @@ use color::Color;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta, EntryType};
 use expandable::Expandable;
-use gtk_wrapper::ScrollDirection;
 use key::{Key, new_key_sequence, Coord};
 use mapping::{Input, InputType};
 use shellexpand_wrapper as sh;
@@ -457,34 +456,12 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingEr
         })
     }
 
-    fn parse_map_wheel(args: &[String], register: bool) -> Result<Operation, ParsingError> {
-        let mut from = ScrollDirection::default();
-        let mut to: Vec<String> = vec![];
-
-        {
-            let mut ap = ArgumentParser::new();
-            ap.refer(&mut from).add_argument("from", Store, "Target direction").required();
-            if register {
-                ap.refer(&mut to).add_argument("to", List, "Command").required();
-            }
-            parse_args(&mut ap, args)
-        } .map(|_| {
-            let target = MappingTarget::Wheel(from);
-            if register {
-                Operation::Map(target, None, to)
-            } else {
-                Operation::Unmap(target)
-            }
-        })
-    }
-
     if let Some(target) = args.get(1) {
         let args = &args[1..];
         match &**target {
             "i" | "input" => parse_map_unified(args, register),
             "e" | "event" => parse_map_event(args, register),
             "r" | "region" => parse_map_region(args, register),
-            "w" | "wheel" => parse_map_wheel(args, register),
             _ => Err(ParsingError::InvalidArgument(format!("Invalid mapping target: {}", target)))
         }
     } else {

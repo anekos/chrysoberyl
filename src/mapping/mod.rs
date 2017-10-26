@@ -1,12 +1,10 @@
 
 use events::EventName;
-use gtk_wrapper::ScrollDirection;
 use key::{Key, KeySequence, Coord};
 use size::Region;
 
 pub mod event_mapping;
 pub mod region_mapping;
-pub mod wheel_mapping;
 pub mod unified_mapping;
 
 
@@ -16,7 +14,6 @@ pub enum Input {
     Unified(Coord, Key),
     Event(EventName),
     Region(Region, Key, usize), // region, button, cell_index
-    Wheel(ScrollDirection),
 }
 
 #[derive(Clone, Copy)]
@@ -30,7 +27,6 @@ pub struct Mapping {
     pub unified_mapping: unified_mapping::UnifiedMapping,
     pub event_mapping: event_mapping::EventMapping,
     pub region_mapping: region_mapping::RegionMapping,
-    pub wheel_mapping: wheel_mapping::WheelMapping,
 }
 
 
@@ -41,7 +37,6 @@ impl Mapping {
             unified_mapping: unified_mapping::UnifiedMapping::new(),
             event_mapping: event_mapping::EventMapping::new(),
             region_mapping: region_mapping::RegionMapping::new(),
-            wheel_mapping: wheel_mapping::WheelMapping::new(),
         }
     }
 
@@ -57,10 +52,6 @@ impl Mapping {
         self.region_mapping.register(button, operation);
     }
 
-    pub fn register_wheel(&mut self, direction: ScrollDirection, operation: Vec<String>) {
-        self.wheel_mapping.register(direction, operation);
-    }
-
     pub fn unregister_unified(&mut self, key: &KeySequence, region: &Option<Region>) {
         self.unified_mapping.unregister(key, region);
     }
@@ -73,10 +64,6 @@ impl Mapping {
         self.region_mapping.unregister(button);
     }
 
-    pub fn unregister_wheel(&mut self, direction: ScrollDirection) {
-        self.wheel_mapping.unregister(direction);
-    }
-
     pub fn matched(&mut self, input: &Input, width: i32, height: i32, decrease_remain: bool) -> Vec<Vec<String>> {
         let found = match *input {
             Input::Unified(coord, ref key) => {
@@ -87,8 +74,6 @@ impl Mapping {
                 self.event_mapping.matched(event_name, decrease_remain),
             Input::Region(_, ref button, _) =>
                 self.region_mapping.matched(button).into_iter().collect(),
-            Input::Wheel(direction) =>
-                self.wheel_mapping.matched(direction).into_iter().collect(),
         };
 
         if found.is_empty() {
@@ -106,7 +91,6 @@ impl Input {
             Input::Unified(ref coord, ref key) => format!("{} at {}", key, coord),
             Input::Event(ref event_name) => s!(event_name),
             Input::Region(ref region, ref button, _) => format!("{} in {}",  button,  region),
-            Input::Wheel(direction) => format!("{}", direction),
         }
     }
 
@@ -115,7 +99,6 @@ impl Input {
             Input::Unified(_, _) => "unified",
             Input::Event(_) => "event",
             Input::Region(_, _, _) => "region",
-            Input::Wheel(_) => "wheel",
         }
     }
 }

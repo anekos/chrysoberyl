@@ -19,7 +19,6 @@ use errors::ChryError;
 use events::EventName;
 use expandable::Expandable;
 use filer;
-use gtk_wrapper::ScrollDirection;
 use gui::Direction;
 use key::Key;
 use key::KeySequence;
@@ -134,7 +133,6 @@ pub enum MappingTarget {
     Unified(KeySequence, Option<Region>),
     Event(Option<EventName>, Option<String>),
     Region(Key),
-    Wheel(ScrollDirection),
 }
 
 #[derive(Debug, PartialEq)]

@@ -5,12 +5,11 @@ use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 
-use gdk::{EventButton, EventKey, EventConfigure, EventScroll};
+use gdk::{EventButton, EventKey, EventConfigure, EventScroll, ScrollDirection};
 use gtk::prelude::*;
 use gtk::Inhibit;
 
 use events::EventName;
-use gtk_wrapper::ScrollDirection;
 use gui::Gui;
 use key::{Key, Coord};
 use lazy_sender::LazySender;
@@ -111,14 +110,8 @@ fn on_delete(tx: &Sender<Operation>) -> Inhibit {
 }
 
 fn on_scroll(tx: &Sender<Operation>, scroll: &EventScroll) -> Inhibit {
-    use gdk::ScrollDirection::*;
-
-    let d = scroll.get_direction();
-    match d {
-        Up | Down | Left | Right =>
-            tx.send(Operation::Input(Input::Wheel(ScrollDirection(d)))).unwrap(),
-        _ =>
-            (),
+    if scroll.get_direction() != ScrollDirection::Smooth {
+        tx.send(Operation::Input(Input::Unified(Coord::default(), Key::from(scroll)))).unwrap();
     }
     Inhibit(true)
 }

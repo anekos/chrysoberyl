@@ -64,7 +64,6 @@ mod filer;
 mod filterable_vec;
 mod fragile_input;
 mod gtk_utils;
-mod gtk_wrapper;
 mod gui;
 mod image;
 mod image_cache;

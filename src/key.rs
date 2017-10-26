@@ -5,7 +5,7 @@ use std::default::Default;
 
 use gdk;
 
-use gdk::{EventButton, EventKey};
+use gdk::{EventButton, EventKey, EventScroll, ScrollDirection};
 use errors::ChryError;
 
 
@@ -59,6 +59,14 @@ impl<'a> From<&'a EventKey> for Key {
     }
 }
 
+impl<'a> From<&'a EventScroll> for Key {
+    fn from(ev: &'a EventScroll) -> Self {
+        let mut key = get_modifiers_text(ev.get_state());
+        key.push_str(&get_direction_text(&ev.get_direction()));
+        Key(key)
+    }
+}
+
 fn get_modifiers_text(state: gdk::ModifierType) -> String {
     let mut result = o!("");
     if state.contains(gdk::CONTROL_MASK) { result.push_str("C-"); }
@@ -67,6 +75,20 @@ fn get_modifiers_text(state: gdk::ModifierType) -> String {
     if state.contains(gdk::MOD1_MASK) { result.push_str("A-"); }
     if state.contains(gdk::SUPER_MASK) { result.push_str("S-"); }
     result
+}
+
+fn get_direction_text(direction: &ScrollDirection) -> String {
+    use self::ScrollDirection::*;
+
+    let name = match *direction {
+        Up => "up",
+        Down => "down",
+        Left => "left",
+        Right => "right",
+        Smooth => "smooth",
+        __Unknown(n) => return format!("scroll-x{}", n)
+    };
+    format!("scroll-{}", name)
 }
 
 

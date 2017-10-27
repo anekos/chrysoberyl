@@ -189,8 +189,8 @@ macro_rules! gen_format {
                 match *self {
                     $t::Script(_, ref script) => {
                         text_format::generate(script).unwrap_or_else(|err| {
-                            puts_error!(err, "at" => "Evaluate format script", "script" => script);
-                            o!($default)
+                            puts_error!(err, "at" => "gen_format", "script" => script);
+                            o!("mruby script error")
                         })
                     },
                     $t::Literal(ref s) => sh::expand(s),

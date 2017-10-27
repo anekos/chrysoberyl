@@ -189,7 +189,7 @@ macro_rules! gen_format {
                 match *self {
                     $t::Script(_, ref script) => {
                         text_format::generate(script).unwrap_or_else(|err| {
-                            puts_error!(err, "at" => "gen_format", "script" => script);
+                            puts_error!(err, "at" => "generate/mruby_script");
                             o!("mruby script error")
                         })
                     },

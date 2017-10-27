@@ -46,7 +46,7 @@ impl FromStr for Key {
 
 impl<'a> From<&'a EventButton> for Key {
     fn from(ev: &'a EventButton) -> Self {
-        let mut key = get_modifiers_text(ev.get_state());
+        let mut key = get_modifiers_text(ev.get_state(), false);
         key.push_str(&format!("button-{}", ev.get_button()));
         Key(key)
     }
@@ -55,7 +55,7 @@ impl<'a> From<&'a EventButton> for Key {
 impl<'a> From<&'a EventKey> for Key {
     fn from(ev: &'a EventKey) -> Self {
         let keyval = ev.as_ref().keyval;
-        let mut key = get_modifiers_text(ev.get_state());
+        let mut key = get_modifiers_text(ev.get_state(), true);
         key.push_str(&gdk::keyval_name(keyval).unwrap_or_else(|| s!(keyval)));
         Key(key)
     }
@@ -63,19 +63,20 @@ impl<'a> From<&'a EventKey> for Key {
 
 impl<'a> From<&'a EventScroll> for Key {
     fn from(ev: &'a EventScroll) -> Self {
-        let mut key = get_modifiers_text(ev.get_state());
+        let mut key = get_modifiers_text(ev.get_state(), false);
         key.push_str(&get_direction_text(&ev.get_direction()));
         Key(key)
     }
 }
 
-fn get_modifiers_text(state: gdk::ModifierType) -> String {
+fn get_modifiers_text(state: gdk::ModifierType, ignore_shift: bool) -> String {
     let mut result = o!("");
     if state.contains(gdk::CONTROL_MASK) { result.push_str("C-"); }
     if state.contains(gdk::HYPER_MASK) { result.push_str("H-"); }
     if state.contains(gdk::META_MASK) { result.push_str("M-"); }
     if state.contains(gdk::MOD1_MASK) { result.push_str("A-"); }
-    if state.contains(gdk::SUPER_MASK) { result.push_str("S-"); }
+    if state.contains(gdk::SUPER_MASK) { result.push_str("U-"); }
+    if state.contains(gdk::SHIFT_MASK) && !ignore_shift { result.push_str("S-"); }
     result
 }
 

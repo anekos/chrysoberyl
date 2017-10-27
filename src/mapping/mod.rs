@@ -1,4 +1,6 @@
 
+use std::fmt;
+
 use events::EventName;
 use key::{Key, KeySequence, Coord};
 use size::Region;
@@ -86,19 +88,21 @@ impl Mapping {
 
 
 impl Input {
-    pub fn text(&self) -> String {
-        match *self {
-            Input::Unified(ref coord, ref key) => format!("{} at {}", key, coord),
-            Input::Event(ref event_name) => s!(event_name),
-            Input::Region(ref region, ref button, _) => format!("{} in {}",  button,  region),
-        }
-    }
-
     pub fn type_name(&self) -> &str {
         match *self {
             Input::Unified(_, _) => "unified",
             Input::Event(_) => "event",
             Input::Region(_, _, _) => "region",
+        }
+    }
+}
+
+impl fmt::Display for Input {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Input::Unified(ref coord, ref key) => write!(f, "{} ({})", key, coord),
+            Input::Event(ref event_name) => write!(f, "{}", event_name),
+            Input::Region(ref region, ref button, _) => write!(f, "{} ({})",  button,  region),
         }
     }
 }

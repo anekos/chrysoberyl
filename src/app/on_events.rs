@@ -355,7 +355,7 @@ pub fn on_input(app: &mut App, input: &Input) {
     let operations = app.mapping.matched(input, width, height, true);
 
     if operations.is_empty() {
-        puts_event!("input", "type" => input.type_name(), "name" => input.text());
+        puts_event!("input", "type" => input.type_name(), "name" => s!(input));
         return;
     }
 

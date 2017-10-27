@@ -17,6 +17,8 @@ pub struct Key(pub String);
 pub struct Coord {
     pub x: i32,
     pub y: i32,
+    pub width: u32,
+    pub height: u32,
 }
 
 pub type KeySequence = Vec<Key>;
@@ -94,13 +96,17 @@ fn get_direction_text(direction: &ScrollDirection) -> String {
 
 impl Default for Coord {
     fn default() -> Self {
-        Coord { x: 0, y: 0 }
+        Coord { x: 0, y: 0, width: 0, height: 0 }
     }
 }
 
 impl fmt::Display for Coord {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}x{}", self.x, self.y)
+        write!(
+            f,
+            "{:1.2}x{:1.2}",
+            self.x as f32 / self.width as f32,
+            self.y as f32 / self.height as f32)
     }
 }
 

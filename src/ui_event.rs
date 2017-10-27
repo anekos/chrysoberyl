@@ -41,7 +41,7 @@ pub fn register(gui: &Gui, skip: usize, tx: &Sender<Operation>) {
     gui.window.connect_configure_event(clone_army!([conf, tx, sender] move |_, ev| on_configure(sender.clone(), &tx, ev, conf.clone())));
     gui.window.connect_delete_event(clone_army!([tx] move |_, _| on_delete(&tx)));
     gui.window.connect_button_press_event(clone_army!([pressed_at] move |_, button| on_button_press(button, pressed_at.clone())));
-    gui.window.connect_button_release_event(clone_army!([tx] move |_, button| on_button_release(&tx, button, pressed_at.clone())));
+    gui.window.connect_button_release_event(clone_army!([conf, tx] move |_, button| on_button_release(&tx, button, pressed_at.clone(), conf.clone())));
     gui.window.connect_scroll_event(clone_army!([tx] move |_, scroll| on_scroll(&tx, scroll)));
 }
 
@@ -64,13 +64,14 @@ fn on_button_press(button: &EventButton, pressed_at: ArcPressedAt) -> Inhibit {
     Inhibit(true)
 }
 
-fn on_button_release(tx: &Sender<Operation>, button: &EventButton, pressed_at: ArcPressedAt) -> Inhibit {
+fn on_button_release(tx: &Sender<Operation>, button: &EventButton, pressed_at: ArcPressedAt, conf: ArcConf) -> Inhibit {
+    let c = conf.get();
     let (x, y) = button.get_position();
     if_let_some!((px, py) = (*pressed_at).get(), Inhibit(true));
     if feq(x, px, 10.0) && feq(y, py, 10.0) {
         tx.send(
             Operation::Input(
-                Input::Unified(Coord { x: x as i32, y: y as i32 }, Key::from(button)))).unwrap();
+                Input::Unified(Coord { x: x as i32, y: y as i32, width: c.width, height: c.height }, Key::from(button)))).unwrap();
     } else {
         tx.send(Operation::TellRegion(px, py, x, y, Key::from(button))).unwrap();
     }

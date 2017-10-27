@@ -13,7 +13,7 @@ use entry::filter::expression::Expr as FilterExpr;
 use entry::filter::writer::write as write_expr;
 use entry::{Entry, EntryContainer, EntryType, Key};
 use gui::Gui;
-use mapping::{Mapping, unified_mapping as umap, mouse_mapping as mmap, region_mapping as rmap};
+use mapping::{Mapping, unified_mapping as umap, region_mapping as rmap};
 use operation::option::PreDefinedOptionName;
 use option::common::{bool_to_str as b2s};
 use paginator::Paginator;

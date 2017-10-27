@@ -5,7 +5,6 @@ use key::{Key, KeySequence, Coord};
 use size::Region;
 
 pub mod event_mapping;
-pub mod mouse_mapping;
 pub mod region_mapping;
 pub mod wheel_mapping;
 pub mod unified_mapping;

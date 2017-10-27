@@ -285,7 +285,8 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@clip"                         => parse_clip(whole),
             "@count"                        => parse_count(whole),
             "@cycle"                        => parse_option_cycle(whole),
-            "@dec" | "@decrement" | "@--"   => parse_usize(whole, OptionUpdater::Decrement, 10),
+            "@dec" | "@decrement" | "@decrease" | "@--"
+                                            => parse_usize(whole, OptionUpdater::Decrement, 10),
             "@default"                      => Ok(LoadDefault),
             "@define-switch"                => parse_define_switch(whole),
             "@delete"                       => parse_delete(whole),
@@ -302,7 +303,8 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@fly-leaves"                   => parse_fly_leaves(whole),
             "@fragile"                      => parse_command1(whole, |it| Fragile(Expandable(it))),
             "@go"                           => parse_go(whole),
-            "@inc" | "@increment" | "@++"   => parse_usize(whole, OptionUpdater::Increment, 10),
+            "@inc" | "@increment" | "@increase" | "@++"
+                                            => parse_usize(whole, OptionUpdater::Increment, 10),
             "@input"                        => parse_input(whole),
             "@kill-timer"                   => parse_kill_timer(whole),
             "@last" | "@l"                  => parse_move(whole, Last),

@@ -887,7 +887,7 @@ pub fn on_spawn(app: &mut App) {
     app.operate(Operation::Draw);
 }
 
-pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f64, button: Key) {
+pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f64, button: &Key) {
     let (mx, my) = (left as i32, top as i32);
     for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
         if app.current_with(index).is_some() {
@@ -934,11 +934,11 @@ pub fn on_undo(app: &mut App, updated: &mut Updated, count: Option<usize>) {
     updated.image_options = true;
 }
 
-pub fn on_unmap(app: &mut App, target: MappingTarget) {
+pub fn on_unmap(app: &mut App, target: &MappingTarget) {
     use app::MappingTarget::*;
 
     // puts_event!("unmap", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
-    match target {
+    match *target {
         Unified(ref key_sequence, ref region) =>
             app.mapping.unregister_unified(key_sequence, region),
         Event(ref event_name, ref group) =>

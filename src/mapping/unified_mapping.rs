@@ -67,15 +67,15 @@ impl UnifiedMapping {
         }
     }
 
-    pub fn unregister(&mut self, keys: &KeySequence, region: &Option<Region>) {
+    pub fn unregister(&mut self, keys: &[Key], region: &Option<Region>) {
         use self::Node::*;
 
         if_let_some!((head, tail) = keys.split_first(), ());
         let tail = tail.to_vec();
 
         let do_remove = {
-            if_let_some!(ref mut entry = self.table.get_mut(head), ());
-            match **entry {
+            if_let_some!(entry = self.table.get_mut(head), ());
+            match *entry {
                 Sub(ref mut sub) if !tail.is_empty() =>
                     return sub.unregister(&tail, region),
                 Sub(_) =>
@@ -172,7 +172,7 @@ impl LeafNode {
     pub fn matched(&self, coord: Coord, width: i32, height: i32) -> Option<OperationCode> {
         let mut found = None;
 
-        for entry in self.entries.iter() {
+        for entry in &self.entries {
             if let Some(area) = entry.region {
                 if area.contains(coord.x, coord.y, width, height) {
                     found = Some(entry.operation.clone());

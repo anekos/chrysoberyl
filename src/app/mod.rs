@@ -284,7 +284,7 @@ impl App {
                 Sort(fix_current) =>
                     on_sort(self, &mut updated, fix_current),
                 TellRegion(left, top, right, bottom, button) =>
-                    on_tell_region(self, left, top, right, bottom, button),
+                    on_tell_region(self, left, top, right, bottom, &button),
                 Timer(name, op, interval, repeat) =>
                     on_timer(self, name, op, interval, repeat),
                 Unclip =>
@@ -292,7 +292,7 @@ impl App {
                 Undo(count) =>
                     on_undo(self, &mut updated, count),
                 Unmap(target) =>
-                    on_unmap(self, target),
+                    on_unmap(self, &target),
                 Update(new_updated) =>
                     updated = new_updated,
                 UpdateUI =>

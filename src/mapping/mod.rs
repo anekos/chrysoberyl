@@ -54,7 +54,7 @@ impl Mapping {
         self.region_mapping.register(button, operation);
     }
 
-    pub fn unregister_unified(&mut self, key: &KeySequence, region: &Option<Region>) {
+    pub fn unregister_unified(&mut self, key: &[Key], region: &Option<Region>) {
         self.unified_mapping.unregister(key, region);
     }
 

@@ -54,6 +54,11 @@
 @map input plus         @increment fit-to 10
 @map input minus        @decrement fit-to 10
 
+@map input C-scroll-left  @previous
+@map input C-scroll-down  @decrease fit-to
+@map input C-scroll-up    @increase fit-to
+@map input C-scroll-right @next
+
 # views
 @map input v            @views
 @map input V            @views --rows

@@ -213,6 +213,7 @@ impl Gui {
                 let image = Image::new_from_pixbuf(None);
                 scrolled.connect_button_press_event(|_, _| Inhibit(true));
                 scrolled.connect_button_release_event(|_, _| Inhibit(true));
+                scrolled.connect_scroll_event(|_, _| Inhibit(true));
                 scrolled.add_with_viewport(&image);
                 scrolled.show();
                 image.show();

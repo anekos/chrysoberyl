@@ -75,9 +75,9 @@
 @map input u            @undo
 
 # Mouse
-@map mouse 1          @scroll --size 0.8 down @next
-@map mouse 2          @cherenkov --radius 0.02 --color random --spokes 50
-@map mouse 3          @scroll --size 0.8 up @previous
+@map input button-1     @scroll --size 0.8 down @next
+@map input button-2     @cherenkov --radius 0.02 --color random --spokes 50
+@map input button-3     @scroll --size 0.8 up @previous
 
 # Region
 @map region 1         @clip

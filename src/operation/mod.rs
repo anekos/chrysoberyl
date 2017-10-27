@@ -132,7 +132,6 @@ pub struct OperationContext {
 #[derive(Clone, Debug, PartialEq)]
 pub enum MappingTarget {
     Unified(KeySequence, Option<Region>),
-    Mouse(Key, Option<Region>),
     Event(Option<EventName>, Option<String>),
     Region(u32),
     Wheel(ScrollDirection),

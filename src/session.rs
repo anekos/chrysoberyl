@@ -272,7 +272,6 @@ pub fn write_paginator(entry: &Option<Entry>, paginator: &Paginator, out: &mut S
 
 pub fn write_mappings(mappings: &Mapping, out: &mut String) {
     write_unified_mappings(None, &mappings.unified_mapping, out);
-    write_mouse_mappings(&mappings.mouse_mapping, out);
     write_region_mappings(&mappings.region_mapping, out);
 }
 
@@ -305,22 +304,6 @@ fn write_unified_mapping_entry(name: &str, entry: &umap::Node, out: &mut String)
                 }
                 sprintln!(out, "");
             }
-        }
-    }
-}
-
-fn write_mouse_mappings(mappings: &mmap::MouseMapping, out: &mut String) {
-    for (button, entries) in &mappings.table {
-        for entry in entries {
-            sprint!(out, "@map mouse");
-            if let Some(ref region) = entry.region {
-                sprint!(out, " --region {}x{}-{}x{}", region.left, region.top, region.right, region.bottom);
-            }
-            sprint!(out, " {}", button);
-            for it in &entry.operation {
-                sprint!(out, " {}", escape(it));
-            }
-            sprintln!(out, "");
         }
     }
 }

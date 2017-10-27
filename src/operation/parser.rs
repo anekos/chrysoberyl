@@ -328,12 +328,6 @@ pub fn parse_input(args: &[String]) -> Result<Operation, ParsingError> {
             match *self {
                 InputType::Unified =>
                     Ok(Input::Unified(Coord::default(), Key(o!(text)))),
-                InputType::MouseButton => {
-                    match text.parse() {
-                        Ok(button) => Ok(Input::mouse_button(0, 0, button)),
-                        Err(err) => Err(ParsingError::InvalidArgument(s!(err))),
-                    }
-                }
                 InputType::Event => {
                     match text.parse() {
                         Ok(event) => Ok(Input::Event(event)),
@@ -350,7 +344,6 @@ pub fn parse_input(args: &[String]) -> Result<Operation, ParsingError> {
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut input_type)
-            .add_option(&["--mouse-button", "-m"], StoreConst(InputType::MouseButton), "Mouse button")
             .add_option(&["--event", "-e"], StoreConst(InputType::Event), "Event");
         ap.refer(&mut input).add_argument("input", Store, "Input").required();
         parse_args(&mut ap, args)
@@ -403,29 +396,6 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingEr
             parse_args(&mut ap, args)
         } .map(|_| {
             let target = MappingTarget::Unified(new_key_sequence(&from), region);
-            if register {
-                Operation::Map(target, None, to)
-            } else {
-                Operation::Unmap(target)
-            }
-        })
-    }
-
-    fn parse_map_mouse(args: &[String], register: bool) -> Result<Operation, ParsingError> {
-        let mut from = Key::default();
-        let mut to: Vec<String> = vec![];
-        let mut region: Option<Region> = None;
-
-        {
-            let mut ap = ArgumentParser::new();
-            ap.refer(&mut from).add_argument("from", Store, "Target button").required();
-            ap.refer(&mut region).add_option(&["--region", "-r"], StoreOption, "Region");
-            if register {
-                ap.refer(&mut to).add_argument("to", List, "Command").required();
-            }
-            parse_args(&mut ap, args)
-        } .map(|_| {
-            let target = MappingTarget::Mouse(from, region);
             if register {
                 Operation::Map(target, None, to)
             } else {
@@ -512,7 +482,6 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingEr
         let args = &args[1..];
         match &**target {
             "i" | "input" => parse_map_unified(args, register),
-            "m" | "button" | "mouse" | "mouse-button" => parse_map_mouse(args, register),
             "e" | "event" => parse_map_event(args, register),
             "r" | "region" => parse_map_region(args, register),
             "w" | "wheel" => parse_map_wheel(args, register),

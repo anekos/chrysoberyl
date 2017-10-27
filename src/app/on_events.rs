@@ -79,7 +79,7 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
     use cherenkov::{Che, Modifier};
     use cherenkov::nova::Nova;
 
-    if let Some(Input::MouseButton((mx, my), _)) = context.map(|it| it.input) {
+    if let Some(Input::Unified(coord, _)) = context.map(|it| it.input) {
         let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
 
         for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
@@ -93,10 +93,10 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
                     }
                 };
                 let (x2, y2) = (x1 + w, y1 + h);
-                if x1 <= mx && mx <= x2 && y1 <= my && my <= y2 {
+                if x1 <= coord.x && coord.x <= x2 && y1 <= coord.y && coord.y <= y2 {
                     let center = (
-                        f64!(parameter.x.unwrap_or_else(|| mx - x1)) / f64!(w),
-                        f64!(parameter.y.unwrap_or_else(|| my - y1)) / f64!(h));
+                        f64!(parameter.x.unwrap_or_else(|| coord.x - x1)) / f64!(w),
+                        f64!(parameter.y.unwrap_or_else(|| coord.y - y1)) / f64!(h));
                     app.cache.cherenkov1(
                         &entry,
                         &cell_size,
@@ -421,8 +421,6 @@ pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, opera
     match target {
         Unified(key_sequence, region) =>
             app.mapping.register_unified(key_sequence, region, operation),
-        Mouse(button, area) =>
-            app.mapping.register_mouse(button, area, operation),
         Event(Some(event_name), group) =>
             app.mapping.register_event(event_name, group, remain, operation),
         Event(None, _) =>
@@ -944,8 +942,6 @@ pub fn on_unmap(app: &mut App, target: MappingTarget) {
     match target {
         Unified(ref key_sequence, ref region) =>
             app.mapping.unregister_unified(key_sequence, region),
-        Mouse(ref button, ref area) =>
-            app.mapping.unregister_mouse(button, area),
         Event(ref event_name, ref group) =>
             app.mapping.unregister_event(event_name, group),
         Region(ref button) =>

@@ -9,7 +9,7 @@ use std::thread::spawn;
 
 use errors::ChryError;
 use operation::Operation;
-use utils::join;
+use util::string::join;
 
 
 

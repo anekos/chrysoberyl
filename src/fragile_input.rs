@@ -13,7 +13,7 @@ use errors::ChryError;
 use operation::Operation;
 use operation_utils::read_operations;
 use termination;
-use utils::path_to_str;
+use util::path::path_to_str;
 
 
 

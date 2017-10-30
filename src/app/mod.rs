@@ -39,7 +39,8 @@ use state::{States, PreFetchState};
 use termination;
 use timer::TimerManager;
 use ui_event;
-use utils::{path_to_str, join};
+use util::path::path_to_str;
+use util::string::join;
 use version;
 
 mod error_loop_detector;

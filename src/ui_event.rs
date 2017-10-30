@@ -15,7 +15,7 @@ use key::{Key, Coord};
 use lazy_sender::LazySender;
 use mapping::Input;
 use operation::Operation;
-use utils::feq;
+use util::num::feq;
 
 
 

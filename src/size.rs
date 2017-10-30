@@ -7,7 +7,7 @@ use gdk_pixbuf::Pixbuf;
 
 use resolution;
 use state::DrawingState;
-use utils::feq;
+use util::num::feq;
 
 
 

@@ -6,7 +6,7 @@ use std::string::ToString;
 use shellexpand_wrapper as sh;
 
 use app_path;
-use utils::path_to_string;
+use util::path::path_to_string;
 
 
 

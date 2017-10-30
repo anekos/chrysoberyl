@@ -9,7 +9,6 @@ use std::sync::mpsc::{channel, Sender};
 use std::thread::spawn;
 
 use curl::easy::Easy as EasyCurl;
-use curl;
 use filetime::{FileTime, set_file_times};
 use md5;
 use time;
@@ -24,7 +23,6 @@ use file_extension::get_entry_type_from_filename;
 use mapping;
 use operation::{Operation, QueuedOperation};
 use sorting_buffer::SortingBuffer;
-use utils::s;
 
 pub mod curl_options;
 
@@ -175,16 +173,9 @@ fn processor(thread_id: usize, main_tx: Sender<Getter>) -> Sender<Request> {
 
             puts!("event" => "remote/get", "thread_id" => s!(thread_id), "url" => o!(&request.url));
 
-            let mut buf = vec![];
-            let result = curl_get(&mut curl, &request.url, &mut buf).map_err(s).and_then(|_| {
-                File::create(&request.cache_filepath).and_then(|file| {
-                    let mut writer = BufWriter::new(file);
-                    writer.write_all(buf.as_slice())
-                }).map_err(s)
-            });
-            match result {
+            match http_save(&mut curl, &request.url, &request.cache_filepath) {
                 Ok(_) => main_tx.send(Getter::Done(thread_id, request)).unwrap(),
-                Err(err) => main_tx.send(Getter::Fail(thread_id, err, request)).unwrap(),
+                Err(err) => main_tx.send(Getter::Fail(thread_id, s!(err), request)).unwrap(),
             }
         }
     });
@@ -192,16 +183,24 @@ fn processor(thread_id: usize, main_tx: Sender<Getter>) -> Sender<Request> {
     getter_tx
 }
 
-fn curl_get(curl: &mut EasyCurl, url: &str, buf: &mut Vec<u8>) -> Result<(), curl::Error> {
-    try!(curl.url(url));
+fn http_save<T: AsRef<Path>>(curl: &mut EasyCurl, url: &str, cache_filepath: &T) -> Result<(), Box<Error>> {
+    let mut buf = vec![];
+    curl_get(curl, url, &mut buf)?;
+    File::create(cache_filepath).and_then(|file| {
+        let mut writer = BufWriter::new(file);
+        writer.write_all(buf.as_slice())
+    })?;
+    Ok(())
+}
+
+fn curl_get(curl: &mut EasyCurl, url: &str, buf: &mut Vec<u8>) -> Result<(), Box<Error>> {
+    curl.url(url)?;
     let mut transfer = curl.transfer();
-    try! {
-        transfer.write_function(|data| {
-            buf.extend_from_slice(data);
-            Ok(data.len())
-        })
-    };
-    transfer.perform()
+    transfer.write_function(|data| {
+        buf.extend_from_slice(data);
+        Ok(data.len())
+    })?;
+    Ok(transfer.perform()?)
 }
 
 fn fix_path_segment(s: &str, last: bool) -> String {

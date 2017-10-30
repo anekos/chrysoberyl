@@ -8,7 +8,7 @@ use app_dirs::*;
 
 use option::{OptionValue, Result as OptionValueResult};
 use shellexpand_wrapper as sh;
-use utils::path_to_str;
+use util::path::path_to_str;
 
 
 

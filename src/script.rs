@@ -9,7 +9,7 @@ use app_path::PathList;
 use config::DEFAULT_CONFIG;
 use errors::ChryError;
 use operation::Operation;
-use utils::path_to_string;
+use util::path::path_to_string;
 
 
 

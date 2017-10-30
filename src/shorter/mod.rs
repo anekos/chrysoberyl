@@ -5,7 +5,7 @@ use std::path::{PathBuf, Path};
 use tldextract::{TldExtractor, TldOption};
 use url::Url;
 
-use utils::path_to_string;
+use util::path::path_to_string;
 use app_path;
 
 #[cfg(test)] mod test;

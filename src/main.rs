@@ -92,7 +92,7 @@ mod termination;
 mod text_format;
 mod timer;
 mod ui_event;
-mod utils;
+mod util;
 mod version;
 
 

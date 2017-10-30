@@ -41,7 +41,8 @@ use session::{Session, write_sessions};
 use shell;
 use shell_filter;
 use state;
-use utils::{path_to_str, range_contains};
+use util::num::range_contains;
+use util::path::path_to_str;
 
 use app::*;
 

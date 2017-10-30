@@ -17,7 +17,7 @@ use gtk_utils::new_pixbuf_from_surface;
 use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use size::{FitTo, Size, Region};
 use state::ViewState;
-use utils::feq;
+use util::num::feq;
 
 
 

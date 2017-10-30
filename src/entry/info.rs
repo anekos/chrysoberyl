@@ -9,7 +9,7 @@ use archive::ArchiveEntry;
 use entry::EntryContent;
 use lazy::Lazy;
 use size::Size;
-use utils::path_to_str;
+use util::path::path_to_str;
 
 
 

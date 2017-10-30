@@ -85,7 +85,7 @@ macro_rules! time {
     ($name:expr => $body:expr) => {
         {
             use std::time::Instant;
-            use utils::duration_to_string;
+            use util::time::duration_to_string;
 
             let t = Instant::now();
             let result = $body;

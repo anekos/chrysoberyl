@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 use errors::*;
 use size::Size;
-use utils::mangle;
+use util::common::mangle;
 
 
 #[derive(Clone, Debug, PartialEq, Copy)]

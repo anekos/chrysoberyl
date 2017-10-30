@@ -18,7 +18,7 @@ use entry::filter::expression::Expr as FilterExpr;
 use file_extension::{is_valid_image_filename};
 use filterable_vec::{FilterableVec, Pred};
 use shorter::*;
-use utils::path_to_str;
+use util::path::path_to_str;
 
 pub mod image;
 pub mod filter;

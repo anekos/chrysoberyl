@@ -27,7 +27,7 @@ use rand::distributions::{IndependentSample, Range};
 use rand::{self, Rng, ThreadRng};
 
 use color::Color;
-use utils::feq;
+use util::num::feq;
 
 use cherenkov::modified::Modified;
 

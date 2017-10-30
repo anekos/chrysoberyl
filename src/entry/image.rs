@@ -17,7 +17,7 @@ use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use poppler::PopplerDocument;
 use size::Size;
 use state::DrawingState;
-use utils::path_to_str;
+use util::path::path_to_str;
 
 
 

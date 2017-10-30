@@ -14,7 +14,7 @@ use expandable::Expandable;
 use key::{Key, new_key_sequence, Coord};
 use mapping::{Input, InputType};
 use shellexpand_wrapper as sh;
-use utils::join;
+use util::string::join;
 
 use operation::*;
 use operation::option::*;

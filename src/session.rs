@@ -19,7 +19,7 @@ use option::common::{bool_to_str as b2s};
 use paginator::Paginator;
 use size::FitTo;
 use state::{self, States, ScalingMethod, Filters};
-use utils::path_to_str;
+use util::path::path_to_str;
 
 
 

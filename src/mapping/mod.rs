@@ -71,7 +71,7 @@ impl Mapping {
             Input::Unified(coord, ref key) => {
                 self.input_history.push(key.clone(), self.unified_mapping.depth);
                 tap!(matched = self.unified_mapping.matched(&self.input_history, coord, width, height), {
-                    if !matched.is_some() {
+                    if matched.is_some() {
                         self.input_history.clear();
                     }
                 }).into_iter().collect()

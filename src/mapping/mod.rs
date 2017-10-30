@@ -70,7 +70,11 @@ impl Mapping {
         let found = match *input {
             Input::Unified(coord, ref key) => {
                 self.input_history.push(key.clone(), self.unified_mapping.depth);
-                self.unified_mapping.matched(&self.input_history, coord, width, height).into_iter().collect()
+                tap!(matched = self.unified_mapping.matched(&self.input_history, coord, width, height), {
+                    if !matched.is_some() {
+                        self.input_history.clear();
+                    }
+                }).into_iter().collect()
             }
             Input::Event(ref event_name) =>
                 self.event_mapping.matched(event_name, decrease_remain),

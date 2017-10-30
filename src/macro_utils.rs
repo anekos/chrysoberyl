@@ -181,3 +181,13 @@ macro_rules! clamp {
         min!(max!($min, $value), $max)
     }
 }
+
+macro_rules! tap {
+    ($name:ident = $value:expr, $block:expr) => {
+        {
+            let $name = $value;
+            $block;
+            $name
+        }
+    }
+}

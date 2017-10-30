@@ -29,7 +29,7 @@ pub struct WithRegion {
 }
 
 pub struct InputHistory {
-    pub entries: VecDeque<Key>,
+    entries: VecDeque<Key>,
 }
 
 
@@ -134,6 +134,10 @@ impl InputHistory {
         while depth < self.entries.len() {
             self.entries.pop_front();
         }
+    }
+
+    pub fn clear(&mut self) {
+        self.entries.clear();
     }
 }
 

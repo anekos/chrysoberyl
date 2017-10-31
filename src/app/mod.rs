@@ -54,6 +54,7 @@ use self::info::AppInfo;
 pub struct App {
     cache: ImageCache,
     counter: Counter,
+    current_base_scale: Option<f64>, // Scale of first scaled image
     current_env_keys: HashSet<String>,
     do_clear_cache: bool,
     draw_serial: u64,
@@ -107,6 +108,7 @@ impl App {
         let app = App {
             cache: cache.clone(),
             counter: Counter::new(),
+            current_base_scale: None,
             current_env_keys: HashSet::new(),
             do_clear_cache: false,
             draw_serial: 0,
@@ -496,6 +498,7 @@ impl App {
 
         let mut invalid_all = true;
         let mut showed = false;
+        let mut base_scale = None;
 
         for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
             if let Some((entry, _)) = self.current_with(index) {
@@ -503,7 +506,10 @@ impl App {
                 let (fg, bg) = (self.gui.colors.error, self.gui.colors.error_background);
                 match image_buffer {
                     Ok(image_buffer) => {
-                        cell.draw(&image_buffer, &cell_size, &self.states.drawing.fit_to, &fg, &bg);
+                        let scale = cell.draw(&image_buffer, &cell_size, &self.states.drawing.fit_to, &fg, &bg);
+                        if base_scale.is_none() {
+                            base_scale = scale;
+                        }
                         invalid_all = false;
                         if index == 0 {
                             image_size = image_buffer.get_original_size();
@@ -517,6 +523,8 @@ impl App {
                 cell.image.set_from_pixbuf(None);
             }
         }
+
+        self.current_base_scale = base_scale;
 
         if self.states.drawing.fit_to.is_scrollable() {
             self.tx.send(Operation::UpdateUI).unwrap();

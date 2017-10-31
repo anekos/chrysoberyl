@@ -264,12 +264,17 @@ impl Cell {
         Cell { image: image, window: window }
     }
 
-    pub fn draw(&self, image_buffer: &ImageBuffer, cell_size: &Size, fit_to: &FitTo, fg: &Color, bg: &Color) {
+    /**
+     * @return Scale
+     */
+    pub fn draw(&self, image_buffer: &ImageBuffer, cell_size: &Size, fit_to: &FitTo, fg: &Color, bg: &Color) -> Option<f64> {
         match *image_buffer {
             ImageBuffer::Static(ref buf) =>
                 self.draw_static(buf, cell_size, fit_to),
-            ImageBuffer::Animation(ref buf) =>
-                self.draw_animation(buf, cell_size, fg, bg),
+            ImageBuffer::Animation(ref buf) => {
+                self.draw_animation(buf, cell_size, fg, bg);
+                None
+            }
         }
     }
 
@@ -301,19 +306,23 @@ impl Cell {
 
         // puts_error!("at" => "show_image", "reason" => text);
 
-        self.draw_pixbuf(&new_pixbuf_from_surface(&surface), cell_size, &FitTo::Original)
+        self.draw_pixbuf(&new_pixbuf_from_surface(&surface), cell_size, &FitTo::Original);
     }
 
-    fn draw_static(&self, image_buffer: &StaticImageBuffer, cell_size: &Size, fit_to: &FitTo) {
-        self.draw_pixbuf(&image_buffer.get_pixbuf(), cell_size, fit_to)
+    fn draw_static(&self, image_buffer: &StaticImageBuffer, cell_size: &Size, fit_to: &FitTo) -> Option<f64> {
+        self.draw_pixbuf(&image_buffer.get_pixbuf(), cell_size, fit_to);
+        image_buffer.original_size.map(|original_size| {
+            original_size.fit(cell_size, fit_to).0
+        })
+
     }
 
     fn draw_pixbuf(&self, pixbuf: &Pixbuf, cell_size: &Size, fit_to: &FitTo) {
         use size::FitTo::*;
 
         self.image.set_from_pixbuf(Some(pixbuf));
-        let (image_width, image_height) = (pixbuf.get_width(), pixbuf.get_height());
-        let (ci_width, ci_height) = (min!(image_width, cell_size.width), min!(image_height, cell_size.height));
+        let image_size = Size::new(pixbuf.get_width(), pixbuf.get_height());
+        let (ci_width, ci_height) = (min!(image_size.width, cell_size.width), min!(image_size.height, cell_size.height));
         match *fit_to {
             Width =>
                 self.window.set_size_request(cell_size.width, ci_height),

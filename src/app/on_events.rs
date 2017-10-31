@@ -1003,6 +1003,14 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
             }
         };
 
+
+        match *updater {
+            Increment(_) | Decrement(_) if *option_name == PreDefined(FitTo) => {
+                value.set(&format!("{}%", (app.current_base_scale.unwrap_or(1.0) * 100.0) as usize)).expect("WTF: on_update_option/set_current_base_scale");
+            },
+            _ => (),
+        };
+
         let result = match *updater {
             Cycle(ref reverse) => value.cycle(*reverse),
             Disable => value.disable(),

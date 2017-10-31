@@ -48,7 +48,7 @@ use app::*;
 
 
 
-pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName) {
+pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName, context: &HashMap<String, String>) {
     use self::EventName::*;
 
     let async = match *event_name {
@@ -69,6 +69,9 @@ pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName
     if async {
         app.tx.send(op).unwrap();
     } else {
+        for (k, v) in context {
+            env::set_var(constant::env_name(k), v);
+        }
         app.operate(op);
     }
 
@@ -353,12 +356,10 @@ pub fn on_initialized(app: &mut App) {
 
 pub fn on_input(app: &mut App, input: &Input) {
     let (width, height) = app.gui.window.get_size();
-    let operations = app.mapping.matched(input, width, height, true);
 
-    if operations.is_empty() {
+    if_let_some!((operations, inputs) = app.mapping.matched(input, width, height, true), {
         puts_event!("input", "type" => input.type_name(), "name" => s!(input));
-        return;
-    }
+    });
 
     for op in operations {
         match Operation::parse_from_vec(&op) {
@@ -367,6 +368,11 @@ pub fn on_input(app: &mut App, input: &Input) {
             Err(err) =>
                 puts_error!(err, "at" => "input")
         }
+    }
+
+    if let Input::Unified(coord, _) = *input {
+        let context = convert_args!(hashmap!("input" => inputs, "x" => s!(coord.x), "y" => s!(coord.y)));
+        app.fire_event_with_context(EventName::MappedInput, context);
     }
 }
 

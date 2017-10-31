@@ -1,7 +1,7 @@
 
 use std::collections::{VecDeque, HashMap};
 
-use key::{Key, KeySequence, Coord};
+use key::{Key, KeySequence, Coord, key_sequence_to_string};
 use size::Region;
 
 
@@ -90,18 +90,27 @@ impl UnifiedMapping {
         }
     }
 
-    pub fn matched(&self, history: &InputHistory, coord: Coord, width: i32, height: i32) -> Option<Vec<String>> {
+    pub fn matched(&self, history: &InputHistory, coord: Coord, width: i32, height: i32) -> Option<(String, Vec<String>)> {
         let entries = &history.entries;
         let len = entries.len();
         for i in 0..len {
             let mut mapping = self;
-            for (j, entry) in entries.iter().enumerate().take(len).skip(i) {
-                if let Some(entry) = mapping.table.get(entry) {
+            let mut inputs = vec![];
+            for (j, input) in entries.iter().enumerate().take(len).skip(i) {
+                let end = j == len - 1;
+                if let Some(entry) = mapping.table.get(input) {
                     match *entry {
-                        Node::Sub(ref sub) =>
-                            mapping = sub,
-                        Node::Leaf(ref leaf_node) if j == len - 1 =>
-                            return leaf_node.matched(coord, width, height),
+                        Node::Sub(ref sub) => {
+                            mapping = sub;
+                            inputs.push(input.clone());
+                        }
+                        Node::Leaf(ref leaf_node) if end => {
+                            if let Some(matched) = leaf_node.matched(coord, width, height) {
+                                inputs.push(input.clone());
+                                let inputs = key_sequence_to_string(&inputs);
+                                return Some((inputs, matched));
+                            }
+                        }
                         _ =>
                             return None,
                     }

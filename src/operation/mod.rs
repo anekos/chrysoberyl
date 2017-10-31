@@ -1,5 +1,5 @@
 
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::error;
 use std::fmt;
 use std::path::PathBuf;
@@ -36,7 +36,7 @@ use self::option::{OptionName, OptionUpdater};
 
 #[derive(Clone)]
 pub enum Operation {
-    AppEvent(EventName),
+    AppEvent(EventName, HashMap<String, String>),
     Cherenkov(CherenkovParameter),
     Clear,
     Clip(Region),
@@ -251,8 +251,12 @@ impl From<ParsingError> for ChryError {
 
 
 impl EventName {
+    pub fn operation_with_context(&self, context: HashMap<String, String>) -> Operation {
+        Operation::AppEvent(self.clone(), context)
+    }
+
     pub fn operation(&self) -> Operation {
-        Operation::AppEvent(self.clone())
+        self.operation_with_context(HashMap::new())
     }
 }
 
@@ -365,7 +369,7 @@ impl fmt::Debug for Operation {
         use self::Operation::*;
 
         let s = match *self {
-            AppEvent(ref ev) => return write!(f, "AppEvent({:?})", ev),
+            AppEvent(ref ev, _) => return write!(f, "AppEvent({:?})", ev),
             Cherenkov(_) => "Cherenkov",
             Clear => "Clear ",
             Clip(_) => "Clip",

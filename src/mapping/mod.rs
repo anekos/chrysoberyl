@@ -66,27 +66,28 @@ impl Mapping {
         self.region_mapping.unregister(button);
     }
 
-    pub fn matched(&mut self, input: &Input, width: i32, height: i32, decrease_remain: bool) -> Vec<Vec<String>> {
-        let found = match *input {
+    pub fn matched(&mut self, input: &Input, width: i32, height: i32, decrease_remain: bool) -> Option<(Vec<Vec<String>>, String)> {
+        match *input {
             Input::Unified(coord, ref key) => {
                 self.input_history.push(key.clone(), self.unified_mapping.depth);
-                tap!(matched = self.unified_mapping.matched(&self.input_history, coord, width, height), {
-                    if matched.is_some() {
-                        self.input_history.clear();
-                    }
-                }).into_iter().collect()
+                self.unified_mapping.matched(&self.input_history, coord, width, height).map(|(inputs, matched)| {
+                    self.input_history.clear();
+                    (vec![matched], inputs)
+                })
             }
-            Input::Event(ref event_name) =>
-                self.event_mapping.matched(event_name, decrease_remain),
+            Input::Event(ref event_name) => {
+                let ops = self.event_mapping.matched(event_name, decrease_remain);
+                if ops.is_empty() {
+                    None
+                } else {
+                    Some((ops, s!(event_name)))
+                }
+            }
             Input::Region(_, ref button, _) =>
-                self.region_mapping.matched(button).into_iter().collect(),
-        };
-
-        if found.is_empty() {
-            return vec!();
+                self.region_mapping.matched(button).map(|op| {
+                    (vec![op], s!(button))
+                })
         }
-
-        found
     }
 }
 

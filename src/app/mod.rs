@@ -1,6 +1,5 @@
 
-use std::collections::HashSet;
-use std::collections::VecDeque;
+use std::collections::{HashSet, HashMap, VecDeque};
 use std::env;
 use std::ops::Range;
 use std::path::PathBuf;
@@ -139,15 +138,19 @@ impl App {
         (app, primary_rx, rx)
     }
 
-    pub fn fire_event(&mut self, event_name: EventName) {
+    pub fn fire_event_with_context(&mut self, event_name: EventName, context: HashMap<String, String>) {
         use self::EventName::*;
 
-        let op = event_name.operation();
+        let op = event_name.operation_with_context(context);
 
         match event_name {
             Initialize => self.tx.send(op).unwrap(),
             _ => self.operate(op),
         }
+    }
+
+    pub fn fire_event(&mut self, event_name: EventName) {
+        self.fire_event_with_context(event_name, HashMap::new())
     }
 
     pub fn operate(&mut self, operation: Operation) {
@@ -166,8 +169,8 @@ impl App {
 
         {
             match operation {
-                AppEvent(event_name) =>
-                    on_app_event(self, &mut updated, &event_name),
+                AppEvent(ref event_name, ref context) =>
+                    on_app_event(self, &mut updated, event_name, context),
                 Cherenkov(ref parameter) =>
                     on_cherenkov(self, &mut updated, parameter, context),
                 Clear =>

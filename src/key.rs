@@ -5,8 +5,8 @@ use std::default::Default;
 
 use gdk;
 
-use gdk::{EventButton, EventKey, EventScroll, ScrollDirection};
 use errors::ChryError;
+use gdk::{EventButton, EventKey, EventScroll, ScrollDirection};
 
 
 
@@ -114,4 +114,17 @@ impl fmt::Display for Coord {
 
 pub fn new_key_sequence(s: &str) -> KeySequence {
     s.split(',').map(|it| Key(o!(it))).collect()
+}
+
+pub fn key_sequence_to_string(seq: &[Key]) -> String {
+    let mut result = o!("");
+    let len = seq.len();
+    for (index, it) in seq.iter().enumerate() {
+        if len - 1 == index { // Detect zero length KeySequence
+            result.push_str(&it.0)
+        } else {
+            result.push_str(&format!("{},", it))
+        }
+    }
+    result
 }

@@ -103,7 +103,7 @@ impl UnifiedMapping {
                         Node::Leaf(ref leaf_node) if j == len - 1 =>
                             return leaf_node.matched(coord, width, height),
                         _ =>
-                            ()
+                            return None,
                     }
                 }
             }

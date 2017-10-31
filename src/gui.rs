@@ -270,7 +270,6 @@ impl Cell {
                 self.draw_static(buf, cell_size, fit_to),
             ImageBuffer::Animation(ref buf) =>
                 self.draw_animation(buf, cell_size, fg, bg),
-
         }
     }
 

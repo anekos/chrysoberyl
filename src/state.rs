@@ -183,12 +183,12 @@ macro_rules! gen_format {
 
         impl $t {
             pub fn generate(&self) -> String {
-                use text_format;
+                use mruby::MRubyEnv;
                 use shellexpand_wrapper as sh;
 
                 match *self {
                     $t::Script(_, ref script) => {
-                        text_format::generate(script).unwrap_or_else(|err| {
+                        MRubyEnv::generate_string(script).unwrap_or_else(|err| {
                             puts_error!(err, "at" => "generate/mruby_script");
                             o!("mruby script error")
                         })

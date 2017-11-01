@@ -1,6 +1,5 @@
 
 use std::default::Default;
-use std::error::Error;
 use std::ffi::CStr;
 use std::str::FromStr;
 

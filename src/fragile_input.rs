@@ -1,5 +1,4 @@
 
-use std::error::Error;
 use std::ffi::CString;
 use std::fs::File;
 use std::io;

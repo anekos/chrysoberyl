@@ -25,8 +25,8 @@ macro_rules! puts_error {
     ( $err:expr $(,$name:expr => $value:expr)* ) => {
         {
             use error;
-            error::push(o!($err.description()));
-            puts!("event" => "error", "message" => $err.description() $(, $name => $value)*)
+            error::push(d!($err));
+            puts!("event" => "error", "message" => d!($err) $(, $name => $value)*)
         }
     }
 }

@@ -1,5 +1,4 @@
 
-use std::error::Error;
 use std::io::{BufReader, BufRead, Read};
 use std::sync::mpsc::Sender;
 

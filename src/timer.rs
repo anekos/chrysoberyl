@@ -1,6 +1,5 @@
 
 use std::collections::HashMap;
-use std::error::Error;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Sender, channel};

@@ -1,6 +1,5 @@
 
 use std::env;
-use std::error::Error;
 use std::fs::File;
 use std::io::{Write, Read};
 use std::path::{Path, PathBuf};

@@ -1,7 +1,6 @@
 
 use std::collections::HashMap;
 use std::env;
-use std::error::Error;
 use std::io::{BufReader, BufRead, Read};
 use std::process::{Command, Stdio, Child};
 use std::sync::mpsc::Sender;

@@ -1,6 +1,5 @@
 
 use std::cmp::{PartialEq, PartialOrd, Ord, Ordering};
-use std::error::Error;
 use std::hash::{Hash, Hasher};
 use std::io;
 use std::ops;

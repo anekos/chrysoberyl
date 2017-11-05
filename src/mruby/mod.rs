@@ -82,6 +82,12 @@ impl MRubyEnv {
         let object = self.mruby.get_class("Object").unwrap();
         object.def_const("App", self.mruby.obj(app_info));
     }
+
+    #[allow(dead_code)]
+    // pub fn set_entry_info(&self, app_info: AppInfo) {
+    //     let object = self.mruby.get_class("Object").unwrap();
+    //     object.def_const("App", self.mruby.obj(app_info));
+    // }
 }
 
 fn fetch_var(mruby: &Rc<RefCell<Mruby>>, name: &Value) -> Result<Value, Box<error::Error>> {

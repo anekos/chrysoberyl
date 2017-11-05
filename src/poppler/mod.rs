@@ -1,4 +1,5 @@
 
+extern crate gio_sys;
 extern crate glib_sys;
 extern crate gobject_sys;
 
@@ -14,6 +15,8 @@ use gdk_pixbuf::Pixbuf;
 use glib::translate::ToGlibPtr;
 use libc::{c_int, c_double, c_void};
 use self::glib_sys::{g_list_free, g_list_length, g_list_nth_data};
+use self::gio_sys::{g_file_new_for_path, GFile};
+use self::gobject_sys::{GObject, g_object_unref};
 
 use gtk_utils::{new_pixbuf_from_surface, context_rotate};
 use size::{Size, Region};
@@ -38,14 +41,14 @@ pub struct PopplerDocument(*const sys::document_t);
 
 pub struct PopplerPage(*const sys::page_t);
 
+pub struct File(*const GFile);
+
 
 impl PopplerDocument {
     pub fn new_from_file<T: AsRef<Path>>(filepath: T) -> PopplerDocument {
-        let filepath = filepath.as_ref().to_str().unwrap();
-        let filepath = format!("file://{}", filepath);
-        let filepath = CString::new(filepath).unwrap();
         let raw = unsafe {
-            time!("poppler/new_from_file" => sys::poppler_document_new_from_file(filepath.as_ptr(), null(), null_mut()))
+            let file = File::new(filepath);
+            time!("poppler/new_from_file" => sys::poppler_document_new_from_gfile(file.0, null(), null(), null_mut()))
         };
         PopplerDocument(raw)
     }
@@ -76,8 +79,8 @@ impl PopplerDocument {
 impl Drop for PopplerDocument {
     fn drop(&mut self) {
         unsafe {
-            let ptr = transmute::<*const sys::document_t, *mut gobject_sys::GObject>(self.0);
-            gobject_sys::g_object_unref(ptr);
+            let ptr = transmute::<*const sys::document_t, *mut GObject>(self.0);
+            g_object_unref(ptr);
         }
     }
 }
@@ -172,11 +175,33 @@ impl PopplerPage {
 impl Drop for PopplerPage {
     fn drop(&mut self) {
         unsafe {
-            let ptr = transmute::<*const sys::page_t, *mut gobject_sys::GObject>(self.0);
-            gobject_sys::g_object_unref(ptr);
+            let ptr = transmute::<*const sys::page_t, *mut GObject>(self.0);
+            g_object_unref(ptr);
         }
     }
 }
+
+
+impl File {
+    pub fn new<T: AsRef<Path>>(filepath: T) -> File {
+        let filepath = filepath.as_ref().to_str().unwrap();
+        let filepath = CString::new(filepath).unwrap();
+        let g_file = unsafe {
+            g_file_new_for_path(filepath.into_raw())
+        };
+        File(g_file)
+    }
+}
+
+impl Drop for File {
+    fn drop(&mut self) {
+        unsafe {
+            let ptr = transmute::<*const GFile, *mut GObject>(self.0);
+            g_object_unref(ptr);
+        }
+    }
+}
+
 
 fn new_region_on(pdf_region: &sys::rectangle_t, size: &Size) -> Region {
     let (w, h) = (f64!(size.width), f64!(size.height));

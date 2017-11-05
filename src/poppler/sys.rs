@@ -1,8 +1,10 @@
 
 extern crate cairo_sys;
+extern crate gio_sys;
 extern crate glib_sys;
 
 use libc::{c_int, c_char, c_double, c_void, c_uint};
+use self::gio_sys::{GFile, GCancellable};
 use self::glib_sys::{gboolean, GList};
 
 #[repr(C)]
@@ -42,7 +44,7 @@ pub struct rectangle_t {
 
 #[link(name = "poppler")]
 extern "C" {
-    pub fn poppler_document_new_from_file(uri: *const c_char, password: *const c_char, error: *const *const glib_sys::GError) -> *const document_t;
+    pub fn poppler_document_new_from_gfile(file: *const GFile, password: *const c_char, cancelable: *const GCancellable, error: *const *const glib_sys::GError) -> *const document_t;
     pub fn poppler_document_get_n_pages(doc: *const document_t) -> c_int;
     pub fn poppler_document_get_page(doc: *const document_t, index: c_int) -> *const page_t;
 

@@ -399,6 +399,10 @@ impl App {
         None
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.current_non_fly_leave().is_none()
+    }
+
     pub fn update_env_for_option(&self, option_name: &PreDefinedOptionName) {
         use session::{generate_option_value, WriteContext};
         use constant::OPTION_VARIABLE_PREFIX;
@@ -682,20 +686,20 @@ impl App {
 
         if update_title {
             let text =
-                if self.current_non_fly_leave().is_some() {
-                    self.states.title_format.generate()
+                if self.is_empty() {
+                    self.states.empty_status_format.generate()
                 } else {
-                    o!(constant::DEFAULT_INFORMATION)
+                    self.states.title_format.generate()
                 };
             self.gui.window.set_title(&text);
         }
 
         if self.states.status_bar {
             let text =
-                if self.current_non_fly_leave().is_some() {
-                    self.states.status_format.generate()
+                if self.is_empty() {
+                    self.states.empty_status_format.generate()
                 } else {
-                    o!(constant::DEFAULT_INFORMATION)
+                    self.states.status_format.generate()
                 };
             self.gui.label.set_markup(&text);
         }

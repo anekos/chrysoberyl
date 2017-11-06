@@ -9,6 +9,7 @@ use cairo;
 use gdk_pixbuf::InterpType;
 
 use app_path::{PathList, cache_dir};
+use constant::DEFAULT_INFORMATION;
 use entry::SearchKey;
 use entry::filter::expression::Expr as FilterExpr;
 use errors::ChryError;
@@ -36,6 +37,7 @@ pub struct States {
     pub spawned: bool,
     pub status_bar: bool,
     pub status_format: StatusFormat,
+    pub empty_status_format: EmptyStatusFormat,
     pub stdout: logger::stdout::StdOut,
     pub title_format: TitleFormat,
     pub update_cache_atime: bool,
@@ -104,6 +106,7 @@ impl Default for States {
             spawned: false,
             status_bar: true,
             status_format: StatusFormat::default(),
+            empty_status_format: EmptyStatusFormat::default(),
             stdout: logger::stdout::StdOut::new(),
             title_format: TitleFormat::default(),
             update_cache_atime: false,
@@ -242,6 +245,9 @@ macro_rules! gen_format {
 gen_format!(
     StatusFormat,
     "<span background=\"red\">$CHRY_MESSAGE</span><span background=\"#005050\"> $CHRY_PAGING/$CHRY_PAGES </span> $CHRY_ABBREV_PATH <span foreground=\"grey\">$CHRY_FLAGS</span> <span foreground=\"rosybrown\">${CHRY_REMOTE_QUEUE}q${CHRY_REMOTE_BUFFER}b${CHRY_REMOTE_THREAD}t</span>");
+gen_format!(
+    EmptyStatusFormat,
+    DEFAULT_INFORMATION);
 gen_format!(
     TitleFormat,
     "[$CHRY_PAGING/$CHRY_PAGES] $CHRY_PATH");

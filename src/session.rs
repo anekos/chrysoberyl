@@ -142,6 +142,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         StatusBar => gen("status-bar", &b2s(st.status_bar), context),
         StdOut => gen("stdout", &st.stdout, context),
         StatusFormat => gen("status-format", &st.status_format, context),
+        EmptyStatusFormat => gen("empty-status-format", &st.empty_status_format, context),
         TitleFormat => gen("title-format", &st.title_format, context),
         UpdateCacheAccessTime => gen("update-cache-atime", &b2s(st.update_cache_atime), context),
         VerticalViews => gen("vertical-views", &st.view.rows, context),

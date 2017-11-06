@@ -68,6 +68,11 @@ impl OptionValue for StdOut {
             }
         })
     }
+
+    fn unset(&mut self) -> Result<(), ChryError> {
+        self.unregister();
+        Ok(())
+    }
 }
 
 impl fmt::Display for StdOut {

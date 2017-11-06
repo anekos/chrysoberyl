@@ -55,6 +55,10 @@ impl MRubyEnv {
             def!("pages", |mruby, slf: (&AppInfo)| {
                 mruby.fixnum(slf.pages as i32)
             });
+
+            def!("empty?", |mruby, slf: (&AppInfo)| {
+                mruby.bool(slf.is_empty())
+            });
             // TODO more methods
         });
         AppInfo::require(mruby.clone());

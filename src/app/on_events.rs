@@ -974,6 +974,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 CurlLowSpeedLimit => &mut app.states.curl_options.low_speed_limit,
                 CurlLowSpeedTime => &mut app.states.curl_options.low_speed_time,
                 CurlTimeout => &mut app.states.curl_options.timeout,
+                EmptyStatusFormat => &mut app.states.empty_status_format,
                 FitTo => &mut app.states.drawing.fit_to,
                 HistoryFile => &mut app.states.history_file,
                 HorizontalViews => &mut app.states.view.cols,

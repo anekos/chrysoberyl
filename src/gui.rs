@@ -90,7 +90,7 @@ impl Gui {
         let vbox = gtk::Box::new(Orientation::Vertical, 0);
         let image_outer = gtk::Box::new(Orientation::Vertical, 0);
 
-        let label = Label::new(Some(constant::DEFAULT_INFORMATION));
+        let label = Label::new(None);
 
         vbox.pack_end(&label, false, false, 0);
         vbox.pack_end(&image_outer, true, true, 0);

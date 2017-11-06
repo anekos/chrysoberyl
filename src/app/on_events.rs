@@ -350,6 +350,7 @@ pub fn on_initialized(app: &mut App) {
 
     ui_event::register(&app.gui, app.states.skip_resize_window, &app.primary_tx.clone());
     app.gui.update_colors();
+    app.update_label(true, true);
     app.gui.show();
 }
 

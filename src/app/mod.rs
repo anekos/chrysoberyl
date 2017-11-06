@@ -363,7 +363,7 @@ impl App {
         }
 
         if updated.image || updated.image_options || updated.label || updated.message {
-            self.update_label(updated.image);
+            self.update_label(updated.image, false);
         }
     }
 
@@ -681,13 +681,15 @@ impl App {
         self.update_env(&envs);
     }
 
-    fn update_label(&self, update_title: bool) {
+    fn update_label(&self, update_title: bool, force_empty: bool) {
         env::set_var(constant::env_name("pages"), s!(self.entries.len()));
+
+        let empty = force_empty || self.is_empty();
 
         if update_title {
             let text =
-                if self.is_empty() {
-                    self.states.empty_status_format.generate()
+                if empty {
+                    o!(constant::DEFAULT_INFORMATION)
                 } else {
                     self.states.title_format.generate()
                 };
@@ -696,7 +698,7 @@ impl App {
 
         if self.states.status_bar {
             let text =
-                if self.is_empty() {
+                if empty {
                     self.states.empty_status_format.generate()
                 } else {
                     self.states.status_format.generate()

@@ -314,7 +314,6 @@ impl Cell {
         image_buffer.original_size.map(|original_size| {
             original_size.fit(cell_size, fit_to).0
         })
-
     }
 
     fn draw_pixbuf(&self, pixbuf: &Pixbuf, cell_size: &Size, fit_to: &FitTo) {

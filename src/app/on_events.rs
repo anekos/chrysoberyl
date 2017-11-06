@@ -959,6 +959,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
     use operation::option::OptionName::*;
     use operation::option::OptionUpdater::*;
     use operation::option::PreDefinedOptionName::*;
+    use size;
 
     let mut dummy_switch = DummySwtich::new();
 
@@ -1011,7 +1012,12 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
 
         match *updater {
             Increment(_) | Decrement(_) if *option_name == PreDefined(FitTo) => {
-                value.set(&format!("{}%", (app.current_base_scale.unwrap_or(1.0) * 100.0) as usize)).expect("WTF: on_update_option/set_current_base_scale");
+                match app.states.drawing.fit_to {
+                    size::FitTo::Scale(_) =>
+                        (),
+                    _ =>
+                        value.set(&format!("{}%", (app.current_base_scale.unwrap_or(1.0) * 100.0) as usize)).unwrap(),
+                };
             },
             _ => (),
         };

@@ -8,6 +8,10 @@ set -euC
 
 check_app
 
-yanity --entry
+
+op="$(yanity --entry --width 500 --entry-text="${CHRY_X_LAST_SHELL:-}")"
+
+printf '@set-env CHRY_X_LAST_SHELL %q\n' "$op"
+echo "$op"
 
 

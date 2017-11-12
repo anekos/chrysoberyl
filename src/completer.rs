@@ -32,6 +32,7 @@ fn make_gui() -> gtk::Window {
     window.set_position(gtk::WindowPosition::Center);
     window.set_wmclass(WINDOW_CLASS, WINDOW_CLASS);
     window.set_title("chrysoberyl-shell");
+    window.resize(500, 1);
 
     let entry_completion = tap!(entry_completion = EntryCompletion::new(), {
         let store = ListStore::new(&[Type::String]);

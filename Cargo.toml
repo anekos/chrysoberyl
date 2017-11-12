@@ -4,6 +4,14 @@ version = "0.1.0"
 authors = ["anekos <anekos@snca.net>"]
 build = "build.rs"
 
+[[bin]]
+name = "chrysoberyl"
+path = "src/main.rs"
+
+[[bin]]
+name = "chrysoberyl-completer"
+path = "src/completer.rs"
+
 [features]
 poppler_lock = []
 

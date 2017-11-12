@@ -96,6 +96,7 @@
 @map input C-g          @shell --operation --search-path script/go-page.sh
 @map input C-s          @shell --operation --search-path script/save-session.sh
 @map input C-l          @shell --operation --search-path script/load-session.sh
+@map input semicolon    @shell --operation --search-path chrysoberyl-completer
 
 # pre-redner
 @set pre-render yes

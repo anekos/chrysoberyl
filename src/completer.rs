@@ -1,11 +1,13 @@
 
-extern crate gtk;
+#[macro_use] extern crate closet;
+extern crate cmdline_parser;
 extern crate gdk;
 extern crate glib;
-#[macro_use] extern crate closet;
+extern crate gtk;
 
 #[macro_use]#[allow(unused_macros)] mod macro_utils;
 
+use cmdline_parser::Parser;
 use gdk::EventKey;
 use glib::Type;
 use gtk::prelude::*;
@@ -14,6 +16,7 @@ use gtk::{EntryCompletion, ListStore, Value};
 
 const WINDOW_CLASS: &'static str = concat!(env!("CARGO_PKG_NAME"), "-completer");
 static OPERATIONS: &'static str = include_str!("static/operations.txt");
+static OPTIONS: &'static str = include_str!("static/options.txt");
 
 
 
@@ -34,20 +37,24 @@ fn make_gui() -> gtk::Window {
     window.set_title("chrysoberyl-shell");
     window.resize(500, 1);
 
-    let entry_completion = tap!(entry_completion = EntryCompletion::new(), {
+    let completion = tap!(completion = EntryCompletion::new(), {
         let store = ListStore::new(&[Type::String]);
-        entry_completion.set_model(&store);
-        entry_completion.set_text_column(0);
+        completion.set_model(&store);
+        completion.set_text_column(0);
+        completion.set_inline_completion(true);
+        completion.set_inline_selection(true);
+        completion.set_popup_single_match(false);
+        completion.set_popup_completion(true);
         update_completion(&store);
     });
 
     let entry = gtk::Entry::new();
-    entry.set_completion(&entry_completion);
+    entry.set_completion(&completion);
 
     window.add(&entry);
 
     window.connect_delete_event(|_, _| on_delete());
-    window.connect_key_press_event(clone_army!([entry] move |_, key| on_key_press(&entry, key)));
+    window.connect_key_press_event(clone_army!([entry, completion] move |_, key| on_key_press(&entry, key, &completion)));
 
     window
 }
@@ -60,13 +67,21 @@ fn append_completion_entry(store: &ListStore, entry: &str) {
 }
 
 fn update_completion(store: &ListStore) {
-    for it in OPERATIONS.split(" ") {
-        append_completion_entry(store, it);
+    for it in OPERATIONS.split("\n").filter(|it| 0 < it.len()) {
+        match &it[1..] {
+            "set" | "set-by-count" | "increase" | "decrease" | "unset" | "enable" | "disable" | "cycle" | "toggle" => {
+                for option in OPTIONS.split("\n") {
+                    append_completion_entry(store, &format!("{} {}", it, option));
+                }
+            },
+            _ =>
+                append_completion_entry(store, it),
+        }
     }
 }
 
 
-fn on_key_press(entry: &gtk::Entry, event_key: &EventKey) -> Inhibit {
+fn on_key_press(entry: &gtk::Entry, event_key: &EventKey, completion: &EntryCompletion) -> Inhibit {
     use gdk::enums::key;
 
     let keyval = event_key.as_ref().keyval;
@@ -75,7 +90,11 @@ fn on_key_press(entry: &gtk::Entry, event_key: &EventKey) -> Inhibit {
             println!("{}", text);
         },
         key::Escape => (),
-        _ => return Inhibit(false)
+        key::Tab => {
+            completion.complete();
+            return Inhibit(false);
+        },
+        _ => return Inhibit(false),
     }
 
     gtk::main_quit();

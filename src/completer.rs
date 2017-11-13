@@ -1,13 +1,11 @@
 
 #[macro_use] extern crate closet;
-extern crate cmdline_parser;
 extern crate gdk;
 extern crate glib;
 extern crate gtk;
 
 #[macro_use]#[allow(unused_macros)] mod macro_utils;
 
-use cmdline_parser::Parser;
 use gdk::EventKey;
 use glib::Type;
 use gtk::prelude::*;
@@ -54,8 +52,7 @@ fn make_gui() -> gtk::Window {
     window.add(&entry);
 
     window.connect_delete_event(|_, _| on_delete());
-    window.connect_key_press_event(clone_army!([entry, completion] move |_, key| on_key_press(&entry, key, &completion)));
-
+    entry.connect_key_press_event(clone_army!([entry] move |_, key| on_key_press(&entry, key)));
     window
 }
 
@@ -81,7 +78,7 @@ fn update_completion(store: &ListStore) {
 }
 
 
-fn on_key_press(entry: &gtk::Entry, event_key: &EventKey, completion: &EntryCompletion) -> Inhibit {
+fn on_key_press(entry: &gtk::Entry, event_key: &EventKey) -> Inhibit {
     use gdk::enums::key;
 
     let keyval = event_key.as_ref().keyval;
@@ -91,7 +88,13 @@ fn on_key_press(entry: &gtk::Entry, event_key: &EventKey, completion: &EntryComp
         },
         key::Escape => (),
         key::Tab => {
-            completion.complete();
+            if let Some(text) = entry.get_text() {
+                let mut p = text.len() as i32;
+                entry.insert_text(" ", &mut p);
+                entry.set_position(p - 1);
+            } else {
+                println!("empty");
+            }
             return Inhibit(false);
         },
         _ => return Inhibit(false),

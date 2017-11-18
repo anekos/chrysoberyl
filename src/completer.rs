@@ -1,10 +1,5 @@
 
-#[macro_use] extern crate closet;
-extern crate gdk;
-extern crate glib;
 extern crate gtk;
-
-#[macro_use]#[allow(unused_macros)] mod macro_utils;
 
 use gdk::EventKey;
 use glib::Type;
@@ -18,7 +13,7 @@ static OPTIONS: &'static str = include_str!("static/options.txt");
 
 
 
-fn main() {
+pub fn main() {
     gtk::init().unwrap();
 
     let window = make_gui();
@@ -64,10 +59,10 @@ fn append_completion_entry(store: &ListStore, entry: &str) {
 }
 
 fn update_completion(store: &ListStore) {
-    for it in OPERATIONS.split("\n").filter(|it| 0 < it.len()) {
+    for it in OPERATIONS.split('\n').filter(|it| 0 < it.len()) {
         match &it[1..] {
             "set" | "set-by-count" | "increase" | "decrease" | "unset" | "enable" | "disable" | "cycle" | "toggle" => {
-                for option in OPTIONS.split("\n") {
+                for option in OPTIONS.split('\n') {
                     append_completion_entry(store, &format!("{} {}", it, option));
                 }
             },

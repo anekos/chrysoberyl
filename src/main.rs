@@ -52,6 +52,7 @@ mod cherenkov;
 mod chrysoberyl;
 mod color;
 mod command_line;
+mod completer;
 mod config;
 mod constant;
 mod controller;
@@ -99,5 +100,11 @@ mod version;
 
 
 fn main() {
-    chrysoberyl::main();
+    use std::env::args;
+
+    if args().nth(1).as_ref().map(String::as_str) == Some("--complete") {
+        completer::main();
+    } else {
+        chrysoberyl::main();
+    }
 }

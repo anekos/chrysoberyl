@@ -16,25 +16,25 @@ use option::common;
 
 
 impl OptionValue for bool {
-    fn is_enabled(&self) -> StdResult<bool, ChryError> {
+    fn is_enabled(&self) -> Result<bool, ChryError> {
         Ok(*self)
     }
 
-    fn enable(&mut self) -> Result {
+    fn enable(&mut self) -> Result<(), ChryError> {
         *self = true;
         Ok(())
     }
 
-    fn disable(&mut self) -> Result {
+    fn disable(&mut self) -> Result<(), ChryError> {
         *self = false;
         Ok(())
     }
 
-    fn cycle(&mut self, _: bool) -> Result {
+    fn cycle(&mut self, _: bool) -> Result<(), ChryError> {
         self.toggle()
     }
 
-    fn set(&mut self, value: &str) -> Result {
+    fn set(&mut self, value: &str) -> Result<(), ChryError> {
         common::parse_bool(value).map(|value| {
             *self = value;
         })
@@ -42,12 +42,12 @@ impl OptionValue for bool {
 }
 
 impl OptionValue for Option<PathBuf> {
-    fn set(&mut self, value: &str) -> Result {
+    fn set(&mut self, value: &str) -> Result<(), ChryError> {
         *self = Some(Path::new(value).to_path_buf());
         Ok(())
     }
 
-    fn unset(&mut self) -> Result {
+    fn unset(&mut self) -> Result<(), ChryError> {
         *self = None;
         Ok(())
     }
@@ -57,7 +57,7 @@ impl OptionValue for Option<PathBuf> {
 macro_rules! def_uint {
     ($type:ty) => {
         impl OptionValue for $type {
-            fn cycle(&mut self, reverse: bool) -> Result {
+            fn cycle(&mut self, reverse: bool) -> Result<(), ChryError> {
                 if reverse {
                     if *self != 0 {
                         *self -= 1;
@@ -71,12 +71,12 @@ macro_rules! def_uint {
                 Ok(())
             }
 
-            fn unset(&mut self) -> Result {
+            fn unset(&mut self) -> Result<(), ChryError> {
                 *self = 0;
                 Ok(())
             }
 
-            fn set(&mut self, value: &str) -> Result {
+            fn set(&mut self, value: &str) -> Result<(), ChryError> {
                 value.parse().map(|value| {
                     *self = value;
                 }).map_err(|it| ChryError::Standard(format!("Invalid value: {} ({})", value, it)))
@@ -88,7 +88,7 @@ macro_rules! def_uint {
 macro_rules! def_opt_uint {
     ($type:ty) => {
         impl OptionValue for Option<$type> {
-            fn cycle(&mut self, reverse: bool) -> Result {
+            fn cycle(&mut self, reverse: bool) -> Result<(), ChryError> {
                 if_let_some!(v = self.as_mut(), Ok(()));
 
                 if reverse {
@@ -102,12 +102,12 @@ macro_rules! def_opt_uint {
                 Ok(())
             }
 
-            fn unset(&mut self) -> Result {
+            fn unset(&mut self) -> Result<(), ChryError> {
                 *self = None;
                 Ok(())
             }
 
-            fn set(&mut self, value: &str) -> Result {
+            fn set(&mut self, value: &str) -> Result<(), ChryError> {
                 value.parse().map(|value| {
                     *self = Some(value);
                 }).map_err(|it| ChryError::InvalidValue(s!(it)))
@@ -125,12 +125,12 @@ def_uint!(u8);
 
 impl OptionValue for Color {
     // CSS Color names
-    // fn cycle(&mut self) -> Result {
+    // fn cycle(&mut self) -> Result<(), ChryError> {
     //     *self += 1;
     //     Ok(())
     // }
 
-    fn set(&mut self, value: &str) -> Result {
+    fn set(&mut self, value: &str) -> Result<(), ChryError> {
         value.parse().map(|value| {
             *self = value;
         })
@@ -141,7 +141,7 @@ impl OptionValue for Color {
 impl FromStr for ScalingMethod {
     type Err = ChryError;
 
-    fn from_str(src: &str) -> StdResult<ScalingMethod, ChryError> {
+    fn from_str(src: &str) -> Result<ScalingMethod, ChryError> {
         match src {
             "n" | "nearest" => Ok(InterpType::Nearest),
             "t" | "tiles" => Ok(InterpType::Tiles),
@@ -153,14 +153,14 @@ impl FromStr for ScalingMethod {
 }
 
 impl OptionValue for ScalingMethod {
-    fn set(&mut self, value: &str) -> Result {
+    fn set(&mut self, value: &str) -> Result<(), ChryError> {
         value.parse().map(|value| {
             *self = value;
             ()
         })
     }
 
-    fn cycle(&mut self, reverse: bool) -> Result {
+    fn cycle(&mut self, reverse: bool) -> Result<(), ChryError> {
         use self::InterpType::*;
         self.0 = cycled(self.0, &[Bilinear, Nearest, Tiles, Hyper], reverse);
         Ok(())
@@ -171,7 +171,7 @@ impl OptionValue for ScalingMethod {
 impl FromStr for FitTo {
     type Err = ChryError;
 
-    fn from_str(src: &str) -> StdResult<Self, ChryError> {
+    fn from_str(src: &str) -> Result<Self, ChryError> {
         use self::FitTo::*;
 
         let result = match src {
@@ -203,31 +203,31 @@ impl FromStr for FitTo {
 }
 
 impl OptionValue for FitTo {
-    fn set(&mut self, value: &str) -> Result {
+    fn set(&mut self, value: &str) -> Result<(), ChryError> {
         value.parse().map(|value| {
             *self = value;
             ()
         })
     }
 
-    fn set_from_count(&mut self, value: Option<usize>) -> Result {
+    fn set_from_count(&mut self, value: Option<usize>) -> Result<(), ChryError> {
         self.set_scale(value.unwrap_or(100));
         Ok(())
     }
 
-    fn cycle(&mut self, reverse: bool) -> Result {
+    fn cycle(&mut self, reverse: bool) -> Result<(), ChryError> {
         use self::FitTo::*;
         *self = cycled(*self, &[Cell, OriginalOrCell, Original, Width, Height], reverse);
         Ok(())
     }
 
-    fn increment(&mut self, delta: usize) -> Result {
+    fn increment(&mut self, delta: usize) -> Result<(), ChryError> {
         let value = get_scale(self).checked_add(delta).unwrap_or(<usize>::max_value());
         self.set_scale(value);
         Ok(())
     }
 
-    fn decrement(&mut self, delta: usize) -> Result {
+    fn decrement(&mut self, delta: usize) -> Result<(), ChryError> {
         let value = get_scale(self).checked_sub(delta).unwrap_or(<usize>::min_value());
         self.set_scale(value);
         Ok(())
@@ -245,7 +245,7 @@ fn get_scale(fit_to: &FitTo) -> usize {
 impl FromStr for MaskOperator {
     type Err = ChryError;
 
-    fn from_str(src: &str) -> StdResult<Self, ChryError> {
+    fn from_str(src: &str) -> Result<Self, ChryError> {
         use self::cairo::Operator::*;
 
         let result = match src {
@@ -286,14 +286,14 @@ impl FromStr for MaskOperator {
 }
 
 impl OptionValue for MaskOperator {
-    fn set(&mut self, value: &str) -> Result {
+    fn set(&mut self, value: &str) -> Result<(), ChryError> {
         value.parse().map(|value| {
             *self = value;
             ()
         })
     }
 
-    fn cycle(&mut self, reverse: bool) -> Result {
+    fn cycle(&mut self, reverse: bool) -> Result<(), ChryError> {
         use self::cairo::Operator::*;
 
         self.0 = cycled(self.0, &[

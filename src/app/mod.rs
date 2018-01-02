@@ -27,7 +27,7 @@ use logger;
 use mapping::{Mapping, Input};
 use operation::option::PreDefinedOptionName;
 use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy, Updated};
-use option::user::UserSwitchManager;
+use option::user_switch::UserSwitchManager;
 use paginator::values::Index;
 use paginator::{self, Paginator, Paging};
 use remote_cache::RemoteCache;

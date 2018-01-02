@@ -6,7 +6,8 @@ use std::path::{PathBuf, Path};
 
 use app_dirs::*;
 
-use option::{OptionValue, Result as OptionValueResult};
+use errors::ChryError;
+use option::OptionValue;
 use shellexpand_wrapper as sh;
 use util::path::path_to_str;
 
@@ -58,12 +59,12 @@ pub fn search_path<T: AsRef<Path>>(filename: &T, path_list: &PathList) -> PathBu
 
 
 impl OptionValue for PathList {
-    fn unset(&mut self) -> OptionValueResult {
+    fn unset(&mut self) -> Result<(), ChryError> {
         *self = PathList::default();
         Ok(())
     }
 
-    fn set(&mut self, value: &str) -> OptionValueResult {
+    fn set(&mut self, value: &str) -> Result<(), ChryError> {
         self.entries = value.split(':').map(sh::expand_to_pathbuf).collect();
         Ok(())
     }

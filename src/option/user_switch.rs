@@ -1,5 +1,6 @@
 
 use std::collections::{HashMap, VecDeque};
+use std::error::Error;
 use std::sync::mpsc::Sender;
 
 use option::*;
@@ -32,11 +33,11 @@ impl UserSwitchManager {
         }
     }
 
-    pub fn register(&mut self, name: String, values: Vec<Vec<String>>) -> Result {
+    pub fn register(&mut self, name: String, values: Vec<Vec<String>>) -> Result<Operation, Box<Error>> {
         let switch = UserSwitch::new(self.app_tx.clone(), values);
-        let result = switch.send();
+        let result = switch.current_operation()?;
         self.table.insert(name, switch);
-        result
+        Ok(result)
     }
 
     pub fn get(&mut self, name: &str) -> Option<&mut UserSwitch> {
@@ -46,11 +47,11 @@ impl UserSwitchManager {
 
 
 impl OptionValue for UserSwitch {
-    fn toggle(&mut self) -> Result {
+    fn toggle(&mut self) -> Result<(), ChryError> {
         self.cycle(false).and_then(|_| self.send())
     }
 
-    fn cycle(&mut self, reverse: bool) -> Result {
+    fn cycle(&mut self, reverse: bool) -> Result<(), ChryError> {
         if reverse {
             let back = self.values.pop_back().expect(NO_VALUE_ERROR);
             self.values.push_front(back);
@@ -74,7 +75,11 @@ impl UserSwitch {
         self.values.front().cloned().expect(NO_VALUE_ERROR)
     }
 
-    pub fn send(&self) -> Result {
+    pub fn current_operation(&self) -> Result<Operation, ChryError> {
+        Operation::parse_from_vec(&self.current())
+    }
+
+    pub fn send(&self) -> Result<(), ChryError> {
         Operation::parse_from_vec(&self.current()).map(|op| {
             self.app_tx.send(op).unwrap()
         })
@@ -93,11 +98,11 @@ impl DummySwtich {
 }
 
 impl OptionValue for DummySwtich {
-    fn toggle(&mut self) -> Result {
+    fn toggle(&mut self) -> Result<(), ChryError> {
         Err(ChryError::InvalidValue(o!(self.name)))
     }
 
-    fn cycle(&mut self, _: bool) -> Result {
+    fn cycle(&mut self, _: bool) -> Result<(), ChryError> {
         self.toggle()
     }
 }

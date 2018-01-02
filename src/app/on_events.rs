@@ -33,7 +33,7 @@ use key::Key;
 use logger;
 use operation::option::{OptionName, OptionUpdater};
 use operation::{self, Operation, OperationContext, MappingTarget, MoveBy};
-use option::user::DummySwtich;
+use option::user_switch::DummySwtich;
 use poppler::{PopplerDocument, self};
 use script;
 use session::{Session, write_sessions};
@@ -233,8 +233,9 @@ pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Op
 }
 
 pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) {
-    if let Err(error) = app.user_switches.register(name, values) {
-        puts_error!(error, "at" => "on_define_switch");
+    match app.user_switches.register(name, values) {
+        Ok(op) => app.operate(op),
+        Err(error) => puts_error!(error, "at" => "on_define_switch"),
     }
 }
 

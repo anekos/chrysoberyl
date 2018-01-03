@@ -6,7 +6,6 @@ use std::io::Read;
 use std::path::PathBuf;
 
 use cairo;
-use gdk_pixbuf::InterpType;
 
 use app_path::{PathList, cache_dir};
 use constant::DEFAULT_INFORMATION;
@@ -50,15 +49,11 @@ pub struct ViewState {
     pub rows: usize,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ScalingMethod(pub InterpType);
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct DrawingState {
     pub clipping: Option<Region>,
     pub fit_to: FitTo,
     pub mask_operator: MaskOperator,
-    pub scaling: ScalingMethod,
     pub rotation: u8,
 }
 
@@ -121,18 +116,10 @@ impl Default for DrawingState {
     fn default() -> Self {
         DrawingState {
             fit_to: FitTo::Cell,
-            scaling: ScalingMethod::default(),
             clipping: None,
             mask_operator: MaskOperator(cairo::Operator::DestIn),
             rotation: 0,
         }
-    }
-}
-
-
-impl Default for ScalingMethod {
-    fn default() -> Self {
-        ScalingMethod(InterpType::Bilinear)
     }
 }
 

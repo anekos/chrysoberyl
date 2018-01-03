@@ -3,10 +3,9 @@ use std::fmt;
 use std::str::FromStr;
 use std::default::Default;
 
-use gdk;
+use gdk::{self, EventButton, EventKey, EventScroll, ScrollDirection, ModifierType};
 
 use errors::ChryError;
-use gdk::{EventButton, EventKey, EventScroll, ScrollDirection};
 
 
 
@@ -69,14 +68,14 @@ impl<'a> From<&'a EventScroll> for Key {
     }
 }
 
-fn get_modifiers_text(state: gdk::ModifierType, ignore_shift: bool) -> String {
+fn get_modifiers_text(state: ModifierType, ignore_shift: bool) -> String {
     let mut result = o!("");
-    if state.contains(gdk::CONTROL_MASK) { result.push_str("C-"); }
-    if state.contains(gdk::HYPER_MASK) { result.push_str("H-"); }
-    if state.contains(gdk::META_MASK) { result.push_str("M-"); }
-    if state.contains(gdk::MOD1_MASK) { result.push_str("A-"); }
-    if state.contains(gdk::SUPER_MASK) { result.push_str("U-"); }
-    if state.contains(gdk::SHIFT_MASK) && !ignore_shift { result.push_str("S-"); }
+    if state.contains(ModifierType::CONTROL_MASK) { result.push_str("C-"); }
+    if state.contains(ModifierType::HYPER_MASK) { result.push_str("H-"); }
+    if state.contains(ModifierType::META_MASK) { result.push_str("M-"); }
+    if state.contains(ModifierType::MOD1_MASK) { result.push_str("A-"); }
+    if state.contains(ModifierType::SUPER_MASK) { result.push_str("U-"); }
+    if state.contains(ModifierType::SHIFT_MASK) && !ignore_shift { result.push_str("S-"); }
     result
 }
 

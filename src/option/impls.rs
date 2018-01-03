@@ -3,13 +3,12 @@ use std::str::FromStr;
 use std::path::{Path, PathBuf};
 
 use cairo;
-use gdk_pixbuf::InterpType;
 
 use color::Color;
 use option::*;
 use resolution;
 use size::FitTo;
-use state::{ScalingMethod, MaskOperator};
+use state::MaskOperator;
 
 use option::common;
 
@@ -134,36 +133,6 @@ impl OptionValue for Color {
         value.parse().map(|value| {
             *self = value;
         })
-    }
-}
-
-
-impl FromStr for ScalingMethod {
-    type Err = ChryError;
-
-    fn from_str(src: &str) -> Result<ScalingMethod, ChryError> {
-        match src {
-            "n" | "nearest" => Ok(InterpType::Nearest),
-            "t" | "tiles" => Ok(InterpType::Tiles),
-            "b" | "bilinear" => Ok(InterpType::Bilinear),
-            "h" | "hyper" => Ok(InterpType::Hyper),
-            _ => Err(ChryError::InvalidValue(o!(src)))
-        } .map(ScalingMethod)
-    }
-}
-
-impl OptionValue for ScalingMethod {
-    fn set(&mut self, value: &str) -> Result<(), ChryError> {
-        value.parse().map(|value| {
-            *self = value;
-            ()
-        })
-    }
-
-    fn cycle(&mut self, reverse: bool) -> Result<(), ChryError> {
-        use self::InterpType::*;
-        self.0 = cycled(self.0, &[Bilinear, Nearest, Tiles, Hyper], reverse);
-        Ok(())
     }
 }
 

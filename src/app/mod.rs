@@ -245,8 +245,6 @@ impl App {
                     on_pre_fetch(self, pre_fetch_serial),
                 Previous(count, ignore_views, move_by, wrap) =>
                     on_previous(self, &mut updated, &mut to_end, count, ignore_views, move_by, wrap),
-                PrintEntries =>
-                    on_print_entries(self),
                 Pull =>
                     on_pull(self, &mut updated),
                 Push(path, meta, force) =>

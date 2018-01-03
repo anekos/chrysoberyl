@@ -561,13 +561,6 @@ pub fn on_previous(app: &mut App, updated: &mut Updated, to_end: &mut bool, coun
     }
 }
 
-pub fn on_print_entries(app: &App) {
-    use std::io::{Write, stderr};
-    for entry in app.entries.to_displays() {
-        writeln!(&mut stderr(), "{}", entry).unwrap();
-    }
-}
-
 pub fn on_pull(app: &mut App, updated: &mut Updated) {
     let buffered = app.sorting_buffer.pull_all();
     push_buffered(app, updated, buffered);

@@ -1,5 +1,40 @@
 # chrysoberyl
 
+The controllable image viewer
+
+
+# Features
+
+- Key mapping
+- Mouse mapping (+ with screen region)
+- Multi control source (stdin, fifo file, and user specified command's stdout)
+- Multi cell view
+- Many operation commands
+- Support HTTP(s)
+- Support Archive (zip, lha, rar, tar.gz)
+- Color config (window, statusbar, error text)
+- Shuffle
+- Directory expanding
+- Cherenkov
+- Shell script friendly output (stdout)
+
+
+## Multi cell view
+
+Press `3v2V` for 3x2.
+
+[Multi cell view](http://gyazo.snca.net/2017/04/11-191950-d08c6328e4315c20fb705933bcde6dd4.png)
+
+
+## Cherenkov
+
+Map to button with `@map mouse 2 @cherenkov --color red --radius 0.02`.
+And click with wheel.
+
+[Cherenkoved](http://gyazo.snca.net/2017/04/11-192852-ce7d9141eb69efce2c9e67e516dff69d.png)
+
+Original -> Cherenkoved
+
 
 # Operation commands
 

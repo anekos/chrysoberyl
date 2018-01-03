@@ -5,7 +5,7 @@ use std::path::Path;
 use std::str::FromStr;
 
 use cairo::{Context, ImageSurface, Format};
-use gdk;
+use gdk::EventMask;
 use gdk_pixbuf::{Pixbuf, PixbufAnimationExt};
 use gtk::prelude::*;
 use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment};
@@ -85,7 +85,7 @@ impl Gui {
         window.set_border_width(0);
         window.set_position(gtk::WindowPosition::Center);
         window.set_wmclass(constant::WINDOW_CLASS, constant::WINDOW_CLASS);
-        window.add_events(gdk::SCROLL_MASK.bits() as i32);
+        window.add_events(EventMask::SCROLL_MASK.bits() as i32);
 
         let vbox = gtk::Box::new(Orientation::Vertical, 0);
         let image_outer = gtk::Box::new(Orientation::Vertical, 0);

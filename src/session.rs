@@ -18,7 +18,7 @@ use operation::option::PreDefinedOptionName;
 use option::common::{bool_to_str as b2s};
 use paginator::Paginator;
 use size::FitTo;
-use state::{self, States, ScalingMethod, Filters};
+use state::{self, States, Filters};
 use util::path::path_to_str;
 
 
@@ -137,7 +137,6 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         PreFetchPageSize => gen("pre-render-pages", &st.pre_fetch.page_size, context),
         Reverse => gen("reverse", &b2s(st.reverse), context),
         Rotation => gen("rotation", &st.drawing.rotation, context),
-        Scaling => gen("scaling", &st.drawing.scaling, context),
         SkipResizeWindow => gen("skip-resize-window", &st.skip_resize_window, context),
         StatusBar => gen("status-bar", &b2s(st.status_bar), context),
         StdOut => gen("stdout", &st.stdout, context),
@@ -164,7 +163,7 @@ pub fn write_options(st: &States, gui: &Gui, reading: bool, out: &mut String) {
     for option_name in PreDefinedOptionName::iterator() {
         if reading {
             match *option_name {
-                Reverse | Rotation | Scaling | StatusBar | FitTo => (),
+                Reverse | Rotation | StatusBar | FitTo => (),
                 _ => continue,
             }
         }
@@ -402,21 +401,6 @@ impl fmt::Display for state::MaskOperator {
                 HslLuminosity => "hsl-luminosity",
             };
 
-        write!(f, "{}", result)
-    }
-}
-
-
-impl fmt::Display for ScalingMethod {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use gdk_pixbuf::InterpType::*;
-
-        let result = match self.0 {
-            Nearest => "nearest",
-            Tiles => "tiles",
-            Bilinear => "bilinear",
-            Hyper => "hyper",
-        };
         write!(f, "{}", result)
     }
 }

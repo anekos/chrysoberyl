@@ -988,7 +988,6 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 PreFetchPageSize => &mut app.states.pre_fetch.page_size,
                 Reverse => &mut app.states.reverse,
                 Rotation => &mut app.states.drawing.rotation,
-                Scaling => &mut app.states.drawing.scaling,
                 SkipResizeWindow => &mut app.states.skip_resize_window,
                 StatusBar => &mut app.states.status_bar,
                 StatusFormat => &mut app.states.status_format,

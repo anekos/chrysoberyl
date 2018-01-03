@@ -43,7 +43,7 @@ pub fn shorten_url(url: Url, max: usize) -> String {
 }
 
 pub fn shorten_host(host: &str) -> Option<String> {
-    EXTRACTOR.extract(host, None).map(|it| it.domain).ok()
+    EXTRACTOR.extract(host).map(|it| it.domain).ok()
 }
 
 pub fn shorten_path<T: AsRef<Path>>(path: &T, max: usize) -> String {

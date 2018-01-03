@@ -74,7 +74,6 @@ pub enum Operation {
     PdfIndex(bool, bool, bool, Vec<Expandable>, poppler::index::Format, Option<String>), /* async, read_operations, search_path, ... */
     PreFetch(u64),
     Previous(Option<usize>, bool, MoveBy, bool),
-    PrintEntries,
     Pull,
     Push(Expandable, Option<Meta>, bool), /* path, meta, force */
     PushArchive(Expandable, Option<Meta>, bool), /* path, meta, force */
@@ -298,7 +297,6 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@draw"                         => Ok(Draw),
             "@editor"                       => parse_editor(whole),
             "@enable"                       => parse_option_1(whole, OptionUpdater::Enable),
-            "@entries"                      => Ok(PrintEntries),
             "@expand"                       => parse_expand(whole),
             "@file"                         => parse_file(whole),
             "@fill"                         => parse_fill(whole),
@@ -407,7 +405,6 @@ impl fmt::Debug for Operation {
             PdfIndex(_, _, _, _, _, _) => "PdfIndex",
             PreFetch(_) => "PreFetch",
             Previous(_, _, _, _) => "Previous",
-            PrintEntries => "PrintEntries ",
             Pull => "Pull ",
             Push(_, _, _) => "Push",
             PushArchive(_, _, _) => "PushArchive",

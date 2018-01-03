@@ -207,10 +207,6 @@ impl EntryContainer {
         })
     }
 
-    pub fn to_displays(&self) -> Vec<String> {
-        self.entries.iter().map(|it: &Rc<Entry>| (**it).display_path()).collect()
-    }
-
     pub fn validate_nth(&mut self, index: usize, expr: FilterExpr, app_info: &AppInfo) -> Option<bool> {
         self.entries.validate_nth(index, app_info, Box::new(move |ref mut entry, app_info| expr.evaluate(entry, app_info)))
     }

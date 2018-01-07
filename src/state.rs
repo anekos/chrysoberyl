@@ -193,11 +193,12 @@ macro_rules! gen_format {
                 use shellexpand_wrapper as sh;
 
                 if value.starts_with('@') {
-                    let path = sh::expand(&value[1..]);
+                    let raw_path = &value[1..];
+                    let path = sh::expand(raw_path);
                     let mut file = File::open(&path)?;
                     let mut script = o!("");
                     file.read_to_string(&mut script)?;
-                    *self = $t::Script(o!(value), script);
+                    *self = $t::Script(o!(raw_path), script);
                 } else {
                     *self = $t::Literal(o!(value));
                 }

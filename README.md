@@ -146,9 +146,19 @@ if `--overwrite` is given, then overwrites destination file.
 
 ## @fill [(--shape|-s) <SHAPE>] [(--cell-index|-i) <CELL_INDEX>] [(--region|-r) <REGION>] [(--color|-c) <CSS_COLOR>] [--mask|-m]
 
+Fill the shape.
+
+You can use `@fill` with mapping.
+
+```
+@map region button-3 @fill --mask --filler circle --color red
+```
+
 
 
 ## @filter [(--dynamic|-d)] [(--static|-s)] <FILTER_EXPRESSION>
+
+Filter entries.
 
 
 
@@ -188,7 +198,7 @@ Feed input event.
 
 ## @kill-timer <NAME>
 
-Kill the timer `NAME`.
+Kill a timer named `NAME`.
 
 
 ## (@last|@l) [--wrap|-w] [--archive|-a] [--ignore-views|-i] [<COUNT>]
@@ -305,9 +315,15 @@ Add a PDF file.
 
 Add a previous file.
 
-## @push-url
+## @push-url [--meta <NAME>"="<VALUE>]... [--force|-f] [(--type|-t|--as) <TYPE>] <URL>
 
 Add a URL to image/PDF/archive.
+
+### Type
+
+- image
+- archive
+- pdf
 
 
 ## @quit
@@ -397,7 +413,16 @@ Shuffle entries.
 Sort entries.
 
 
-## @timer
+## @timer [(--repeat|-r) <TIME>] [--infinity|-i] <NAME> <INTERVAL_SEC> <OPERATION>...
+
+Execute `OPERATION` repeatedly.
+
+```
+@timer -i next-page 1.5 @next
+```
+
+You can use `@kill-timer` to stop this task.
+
 
 ## @toggle <OPTION_NAME>
 
@@ -462,7 +487,19 @@ If the result of `FILTER_EXPRESSION` evaluation is true, execute the operation.
 Write current entry image to `PATH`.
 
 
-# Engrish Document
+# Filter Expression
 
-This docuemnt is written in Engrish.
-Anyone,  please make pull request for English document.
+```
+Expr ← Block | Bool | Cond | Logic | 'not' Expr
+Block ← '(' Expr ')' | '{' Expr '}'
+Logic ← Bool LogicOp Expr
+Bool ← Compare | BoolVariable | 'true' | 'false'
+Cond ← 'if' Expr Expr Expr | 'when' Expr Expr | 'unless' Expr Expr
+BoolOp ← 'and' | 'or'
+Compare ← Value CmpOp Value
+CmpOp ← '<' | '<=' | '>' | '>=' | '=' | '==' | '!=' | '=*' | '!*'
+Value ← Glob | Integer | Variable
+Variable ← 'type' | 'width' | 'height' | 'path' | 'ext' | 'extension' | 'dimensions' | 'name' | 'filesize' | 'page' | 'pages' | 'real-pages' | 'ratio'
+Glob ← '<' string '>'
+BoolVariable ← 'animation'
+```

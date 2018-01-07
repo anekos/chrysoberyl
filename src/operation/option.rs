@@ -70,7 +70,7 @@ impl FromStr for PreDefinedOptionName {
             "curl-connect-timeout"                 => CurlConnectTimeout,
             "curl-follow-location"                 => CurlFollowLocation,
             "curl-low-speed-limit"                 => CurlLowSpeedLimit,
-            "curl-low-speed-time-"                 => CurlLowSpeedTime,
+            "curl-low-speed-time"                  => CurlLowSpeedTime,
             "curl-timeout"                         => CurlTimeout,
             "empty-status-format"                  => EmptyStatusFormat,
             "fit" | "fit-to"                       => FitTo,

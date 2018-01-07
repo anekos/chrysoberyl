@@ -220,10 +220,11 @@ macro_rules! gen_format {
         impl fmt::Display for $t {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 use self::$t::*;
+                use util::shell::escape;
 
                 match *self {
-                    Script(ref filepath, _) => write!(f, "@{}", filepath),
-                    Literal(ref s) => write!(f, "{}", s),
+                    Script(ref filepath, _) => write!(f, "{}", escape(&format!("@{}", filepath))),
+                    Literal(ref s) => write!(f, "{}", escape(s)),
                 }
             }
         }

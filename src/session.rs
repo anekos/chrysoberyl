@@ -1,10 +1,7 @@
 
-use std::borrow::Cow;
 use std::fmt;
 use std::path::PathBuf;
 use std::env;
-
-use shell_escape;
 
 use app::App;
 use color::Color;
@@ -20,6 +17,7 @@ use paginator::Paginator;
 use size::FitTo;
 use state::{self, States, Filters};
 use util::path::path_to_str;
+use util::shell::{escape, escape_pathbuf};
 
 
 
@@ -403,14 +401,4 @@ impl fmt::Display for state::MaskOperator {
 
         write!(f, "{}", result)
     }
-}
-
-
-fn escape_pathbuf(path: &PathBuf) -> String {
-    escape(path_to_str(path))
-}
-
-fn escape(s: &str) -> String {
-    let s = Cow::from(o!(s));
-    shell_escape::escape(s).into_owned()
 }

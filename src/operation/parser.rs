@@ -798,7 +798,7 @@ pub fn parse_sort(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut sort_key)
             .add_option(&["--accessed", "-a"], StoreConst(SortKey::Accessed), "Sort by accessed time")
             .add_option(&["--created", "-c"], StoreConst(SortKey::Created), "Sort by created time")
-            .add_option(&["--modifed", "-m"], StoreConst(SortKey::Modified), "Sort by modified time")
+            .add_option(&["--modified", "-m"], StoreConst(SortKey::Modified), "Sort by modified time")
             .add_option(&["--file-size", "-s"], StoreConst(SortKey::FileSize), "Sort by file size");
         ap.refer(&mut reverse).add_option(&["--reverse", "-r"], StoreTrue, "Reversed");
         parse_args(&mut ap, args)

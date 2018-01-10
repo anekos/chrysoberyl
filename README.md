@@ -408,7 +408,7 @@ This operation does not consider `views`.
 Shuffle entries.
 
 
-## @sort
+## @sort [--accessed|-a] [--created|-c] [--modified|-m] [--reverse|-r]
 
 Sort entries.
 

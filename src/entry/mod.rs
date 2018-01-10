@@ -15,7 +15,7 @@ use app::info::AppInfo;
 use archive::ArchiveEntry;
 use entry::filter::expression::Expr as FilterExpr;
 use file_extension::{is_valid_image_filename};
-use filterable_vec::{FilterableVec, Pred};
+use filterable_vec::{FilterableVec, Pred, Compare};
 use shorter::*;
 use util::path::path_to_str;
 
@@ -273,6 +273,10 @@ impl EntryContainer {
         self.entries.sort(app_info)
     }
 
+    pub fn sort_by(&mut self, app_info: &AppInfo, compare: &mut Compare<Entry>) -> Option<usize> {
+        self.entries.sort_by(app_info, compare)
+    }
+
     pub fn find_page_in_archive(&self, current: usize, page_number: usize) -> Option<usize> {
         if_let_some!(base = self.entries.get(current), None);
 
@@ -524,6 +528,16 @@ pub fn new_opt_meta(entries: Vec<MetaEntry>) -> Option<Meta> {
 }
 
 
+pub fn compare_key(a: &Key, b: &Key) -> Ordering {
+    let name = natord::compare(&a.1, &b.1);
+    if name == Ordering::Equal {
+        a.2.cmp(&b.2)
+    } else {
+        name
+    }
+}
+
+
 impl MetaEntry {
     pub fn new_without_value(key: String) -> MetaEntry {
         MetaEntry { key: key, value: o!("true") }
@@ -562,7 +576,6 @@ impl ops::Add<usize> for Serial {
     }
 }
 
-
 fn n_parents(path: PathBuf, n: u8) -> PathBuf {
     if n > 0 {
         if let Some(parent) = path.clone().parent() {
@@ -592,13 +605,4 @@ fn expand(dir: &Path, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
     });
 
     Ok(result)
-}
-
-fn compare_key(a: &Key, b: &Key) -> Ordering {
-    let name = natord::compare(&a.1, &b.1);
-    if name == Ordering::Equal {
-        a.2.cmp(&b.2)
-    } else {
-        name
-    }
 }

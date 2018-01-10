@@ -787,6 +787,26 @@ pub fn parse_shell_filter(args: &[String]) -> Result<Operation, ParsingError> {
     })
 }
 
+pub fn parse_sort(args: &[String]) -> Result<Operation, ParsingError> {
+    let mut fix = false;
+    let mut sort_key = SortKey::Natural;
+    let mut reverse = false;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut fix).add_option(&["--fix", "-f"], StoreTrue, "Fix current page");
+        ap.refer(&mut sort_key)
+            .add_option(&["--accessed", "-a"], StoreConst(SortKey::Accessed), "Sort by accessed time")
+            .add_option(&["--created", "-c"], StoreConst(SortKey::Created), "Sort by created time")
+            .add_option(&["--modifed", "-m"], StoreConst(SortKey::Modified), "Sort by modified time")
+            .add_option(&["--file-size", "-s"], StoreConst(SortKey::FileSize), "Sort by file size");
+        ap.refer(&mut reverse).add_option(&["--reverse", "-r"], StoreTrue, "Reversed");
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        Ok(Operation::Sort(fix, sort_key, reverse))
+    })
+}
+
 pub fn parse_modify_entry_order<T>(args: &[String], op: T) -> Result<Operation, ParsingError>
 where T: FnOnce(bool) -> Operation {
     let mut fix = false;

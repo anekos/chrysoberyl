@@ -21,18 +21,19 @@ use config::DEFAULT_CONFIG;
 use constant::VARIABLE_PREFIX;
 use editor;
 use entry::filter::expression::Expr as FilterExpr;
-use entry::{Meta, SearchKey, Entry, EntryContent, EntryType};
+use entry::{self, Meta, SearchKey, Entry, EntryContent, EntryType};
 use errors::ChryError;
 use events::EventName;
 use expandable::{Expandable, expand_all};
 use file_extension::get_entry_type_from_filename;
 use filer;
+use filterable_vec::Compare;
 use fragile_input::new_fragile_input;
 use gui::Direction;
 use key::Key;
 use logger;
 use operation::option::{OptionName, OptionUpdater};
-use operation::{self, Operation, OperationContext, MappingTarget, MoveBy};
+use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, SortKey};
 use option::user_switch::DummySwtich;
 use poppler::{PopplerDocument, self};
 use script;
@@ -441,8 +442,7 @@ pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, opera
 
 #[allow(unused_variables)]
 pub fn on_meow(app: &mut App, updated: &mut Updated) {
-    /* for develop */
-    updated.image = false;
+    updated.image = true;
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
@@ -868,11 +868,36 @@ pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) {
     updated.label = true;
 }
 
-pub fn on_sort(app: &mut App, updated: &mut Updated, fix_current: bool) {
+pub fn on_sort(app: &mut App, updated: &mut Updated, fix_current: bool, sort_key: SortKey, reverse: bool) {
+    use std::cmp::Ordering;
+
     let serial = app.store();
     let app_info = app.app_info();
 
-    app.entries.sort(&app_info);
+    if sort_key == SortKey::Natural && !reverse {
+        app.entries.sort(&app_info);
+    } else {
+        let r = move |it| if reverse {
+            match it {
+                Ordering::Greater => Ordering::Less,
+                Ordering::Less => Ordering::Greater,
+                other => other,
+            }
+        } else {
+            it
+        };
+
+        let mut compare: Compare<Entry> = match sort_key {
+            SortKey::Natural => Box::new(move |ref mut a, ref mut b| r(entry::compare_key(&a.key, &b.key))),
+            SortKey::FileSize => Box::new(move |ref mut a, ref mut b| {
+                r(a.info.lazy(&a.content).file_size.cmp(&b.info.lazy(&b.content).file_size))
+            }),
+            SortKey::Created => Box::new(move |ref mut a, ref mut b| r(a.info.lazy(&a.content).created.cmp(&b.info.lazy(&b.content).created))),
+            SortKey::Accessed => Box::new(move |ref mut a, ref mut b| r(a.info.lazy(&a.content).accessed.cmp(&b.info.lazy(&b.content).accessed))),
+            SortKey::Modified => Box::new(move |ref mut a, ref mut b| r(a.info.lazy(&a.content).modified.cmp(&b.info.lazy(&b.content).modified))),
+        };
+        app.entries.sort_by(&app_info, &mut compare);
+    }
 
     if fix_current {
         app.restore_or_first(updated, serial);

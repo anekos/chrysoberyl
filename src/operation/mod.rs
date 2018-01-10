@@ -94,7 +94,7 @@ pub enum Operation {
     ShellFilter(Vec<Expandable>, bool), /* path, search_path */
     Show(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Shuffle(bool), /* Fix current */
-    Sort(bool), /* fix */
+    Sort(bool, SortKey, bool), /* fix, key, reverse */
     TellRegion(f64, f64, f64, f64, Key), /* lef,t top, right, bottom, mousesbutton */
     Timer(String, Vec<String>, Duration, Option<usize>),
     Unclip,
@@ -166,6 +166,15 @@ pub struct Updated {
     pub image_options: bool,
     pub message: bool,
     pub target_regions: Option<Vec<Option<Region>>>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SortKey {
+    Natural,
+    Accessed,
+    Created,
+    Modified,
+    FileSize,
 }
 
 
@@ -341,7 +350,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@shell-filter"                 => parse_shell_filter(whole),
             "@show"                         => parse_move(whole, Show),
             "@shuffle"                      => parse_modify_entry_order(whole, Operation::Shuffle),
-            "@sort"                         => parse_modify_entry_order(whole, Operation::Sort),
+            "@sort"                         => parse_sort(whole),
             "@timer"                        => parse_timer(whole),
             "@toggle"                       => parse_option_1(whole, OptionUpdater::Toggle),
             "@unclip"                       => Ok(Unclip),
@@ -425,7 +434,7 @@ impl fmt::Debug for Operation {
             ShellFilter(_, _) => "ShellFilter",
             Show(_, _, _, _) => "Show",
             Shuffle(_) => "Shuffle",
-            Sort(_) => "Sort ",
+            Sort(_, _, _) => "Sort ",
             TellRegion(_, _, _, _, _) => "TellRegion",
             Timer(_, _, _, _) => "Timer",
             Unclip => "Unclip ",

@@ -1,4 +1,5 @@
 
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::mem::swap;
@@ -10,6 +11,7 @@ use rand::{thread_rng, Rng, ThreadRng};
 
 
 pub type Pred<T, U> = Box<FnMut(&mut T, &U) -> bool>;
+pub type Compare<T> = Box<FnMut(&mut T, &mut T) -> Ordering>;
 
 pub struct FilterableVec<T: Clone + Hash + Eq + Sized, U> {
     original: Vec<Rc<T>>,
@@ -82,6 +84,15 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
 
     pub fn sort(&mut self, info: &U) -> Option<usize> {
         self.original.sort();
+        self.filter(info, None)
+    }
+
+    pub fn sort_by(&mut self, info: &U, compare: &mut Compare<T>) -> Option<usize> {
+        {
+            let len = self.original.len();
+            let xs: &mut [Rc<T>] = self.original.as_mut_slice();
+            quicksort::<T>(xs, 0, len, compare);
+        }
         self.filter(info, None)
     }
 
@@ -238,4 +249,40 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
             self.original_indices.insert(entry.clone(), index);
         }
     }
+}
+
+
+fn partition<T: Clone>(xs: &mut [Rc<T>], left: usize, right: usize, compare: &mut Compare<T>) -> usize {
+    let mut i = 0;
+
+    {
+        let (lefts, rights) = xs.split_at_mut(left + 1);
+        let pivot: &mut Rc<T> = lefts.get_mut(left).unwrap();
+        for j in 0..(right - left - 1) {
+            let less = {
+                let it: &mut Rc<T> = rights.get_mut(j).unwrap();
+                (compare)(Rc::make_mut(it), Rc::make_mut(pivot)) == Ordering::Less
+            };
+            if less {
+                rights.swap(i, j);
+                i += 1;
+            }
+        }
+    }
+
+    i += left;
+    xs.swap(left, i);
+    i
+}
+
+
+fn quicksort<T: Clone>(xs: &mut [Rc<T>], l: usize, r: usize, compare: &mut Compare<T>) -> usize {
+  if r - l <= 1 {
+    return 0;
+  }
+
+  let p = partition(xs, l, r, compare);
+  let a = quicksort(xs, l, p, compare);
+  let b = quicksort(xs, p + 1, r, compare);
+  a + b + (r - l - 1)
 }

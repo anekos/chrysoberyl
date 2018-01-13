@@ -28,7 +28,7 @@ lazy_static! {
     };
 }
 
-pub fn shorten_url(url: Url, max: usize) -> String {
+pub fn shorten_url(url: &Url, max: usize) -> String {
     let host = shorten_host(url.as_str()).unwrap_or_else(|| o!(url.host_str().unwrap_or("")));
     let path = Path::new(url.path());
 

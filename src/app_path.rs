@@ -14,7 +14,7 @@ use util::path::path_to_str;
 
 
 const APP_INFO: AppInfo = AppInfo { name: "chrysoberyl", author: "anekos" };
-pub const DEFAULT_SESSION_FILENAME: &'static str = "default";
+pub const DEFAULT_SESSION_FILENAME: &str = "default";
 
 
 pub struct PathList {

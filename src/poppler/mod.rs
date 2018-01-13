@@ -92,7 +92,7 @@ impl PopplerPage {
         #[cfg(feature = "poppler_lock")]
         trace!("render/start: {:?}", *count);
 
-        let context = context.as_ref().to_glib_none().0;
+        let context = context.to_glib_none().0;
         unsafe { sys::poppler_page_render(self.0, context) };
 
         #[cfg(feature = "poppler_lock")]

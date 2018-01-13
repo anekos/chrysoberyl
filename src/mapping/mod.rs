@@ -2,7 +2,7 @@
 use std::fmt;
 
 use events::EventName;
-use key::{Key, KeySequence, Coord};
+use key::{Key, Coord};
 use size::Region;
 
 pub mod event_mapping;
@@ -42,7 +42,7 @@ impl Mapping {
         }
     }
 
-    pub fn register_unified(&mut self, key: KeySequence, region: Option<Region>, operation: Vec<String>) {
+    pub fn register_unified(&mut self, key: &[Key], region: Option<Region>, operation: Vec<String>) {
         self.unified_mapping.register(key, region, operation);
     }
 

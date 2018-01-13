@@ -159,7 +159,7 @@ fn re_cherenkov(entry: &Entry, cell_size: &Size, drawing: &DrawingState, modifie
         }
         let pixbuf = modified.get_pixbuf();
         let pixbuf = if let Some(mask) = mask {
-            apply_mask(&pixbuf, mask, drawing.mask_operator.0)
+            apply_mask(&pixbuf, &mask, drawing.mask_operator.0)
         } else {
             pixbuf
         };
@@ -181,7 +181,7 @@ fn cherenkov_pixbuf(modified: Modified, mask_surface: Option<ImageSurface>, che:
     }
 }
 
-fn apply_mask(pixbuf: &Pixbuf, mask: ImageSurface, operator: Operator) -> Pixbuf {
+fn apply_mask(pixbuf: &Pixbuf, mask: &ImageSurface, operator: Operator) -> Pixbuf {
     let (w, h) = (pixbuf.get_width(), pixbuf.get_height());
     let surface = ImageSurface::create(Format::ARgb32, w, h).unwrap();
     let context = Context::new(&surface);

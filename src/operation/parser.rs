@@ -21,7 +21,7 @@ use operation::option::*;
 
 
 
-const SEARCH_PATH_DESC: &'static str = "Search script path from ~/.config/chrysoberyl and /usr/share/chrysoberyl";
+const SEARCH_PATH_DESC: &str = "Search script path from ~/.config/chrysoberyl and /usr/share/chrysoberyl";
 
 
 pub fn parse_command1<T>(args: &[String], op: T) -> Result<Operation, ParsingError>

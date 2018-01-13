@@ -34,7 +34,7 @@ impl LazySender {
 
         let tx = self.tx.clone();
         let delay = self.delay;
-        let current = self.current.clone();
+        let current = Arc::clone(&self.current);
 
         spawn(move || {
             let mut delay = delay;

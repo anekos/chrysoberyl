@@ -207,11 +207,11 @@ impl Operation {
         }
     }
 
-    fn user(args: Vec<String>) -> Operation {
+    fn user(args: &[String]) -> Operation {
         let mut result: Vec<(String, String)> = vec![];
         let mut index = 0;
 
-        for  arg in &args {
+        for  arg in args {
             let sep = arg.find('=').unwrap_or(0);
             let (key, value) = arg.split_at(sep);
             if key.is_empty() {
@@ -362,7 +362,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@unmap"                        => parse_map(whole, false),
             "@unset"                        => parse_option_1(whole, OptionUpdater::Unset),
             "@update"                       => parse_update(whole),
-            "@user"                         => Ok(Operation::user(args.to_vec())),
+            "@user"                         => Ok(Operation::user(args)),
             "@views"                        => parse_views(whole),
             "@when"                         => parse_when(whole, false),
             "@write"                        => parse_write(whole),

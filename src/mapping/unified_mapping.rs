@@ -1,7 +1,7 @@
 
 use std::collections::{VecDeque, HashMap};
 
-use key::{Key, KeySequence, Coord, key_sequence_to_string};
+use key::{Key, Coord, key_sequence_to_string};
 use size::Region;
 
 
@@ -38,16 +38,15 @@ impl UnifiedMapping {
         UnifiedMapping { depth: 1, table: HashMap::new() }
     }
 
-    pub fn register(&mut self, keys: KeySequence, region: Option<Region>, operation: OperationCode) {
+    pub fn register(&mut self, keys: &[Key], region: Option<Region>, operation: OperationCode) {
         self._register(keys, region, operation);
         self.update_depth();
     }
 
-    fn _register(&mut self, keys: KeySequence, region: Option<Region>, operation: OperationCode) {
+    fn _register(&mut self, keys: &[Key], region: Option<Region>, operation: OperationCode) {
         use self::Node::*;
 
         if let Some((head, tail)) = keys.split_first() {
-            let tail = tail.to_vec();
             if let Some(ref mut entry) = self.table.get_mut(head) {
                 match **entry {
                     Sub(_) if tail.is_empty() =>
@@ -151,7 +150,7 @@ impl InputHistory {
 }
 
 
-fn new_mapping_entry(keys: KeySequence, region: Option<Region>, operation: OperationCode) -> Node {
+fn new_mapping_entry(keys: &[Key], region: Option<Region>, operation: OperationCode) -> Node {
     if !keys.is_empty() {
         let mut result = UnifiedMapping { depth: 1, table: HashMap::new() };
         result.register(keys, region, operation);

@@ -138,18 +138,18 @@ impl App {
         (app, primary_rx, rx)
     }
 
-    pub fn fire_event_with_context(&mut self, event_name: EventName, context: HashMap<String, String>) {
+    pub fn fire_event_with_context(&mut self, event_name: &EventName, context: HashMap<String, String>) {
         use self::EventName::*;
 
         let op = event_name.operation_with_context(context);
 
-        match event_name {
+        match *event_name {
             Initialize => self.tx.send(op).unwrap(),
             _ => self.operate(op),
         }
     }
 
-    pub fn fire_event(&mut self, event_name: EventName) {
+    pub fn fire_event(&mut self, event_name: &EventName) {
         self.fire_event_with_context(event_name, HashMap::new())
     }
 
@@ -342,9 +342,9 @@ impl App {
                 self.update_message(None);
             }
             if self.paginator.at_last() {
-                self.fire_event(EventName::AtLast);
+                self.fire_event(&EventName::AtLast);
             } else if self.paginator.at_first() {
-                self.fire_event(EventName::AtFirst);
+                self.fire_event(&EventName::AtFirst);
             }
         }
 
@@ -553,9 +553,9 @@ impl App {
 
         if showed {
             trace!("showed");
-            self.fire_event(EventName::ShowImage);
+            self.fire_event(&EventName::ShowImage);
             if invalid_all {
-                self.fire_event(EventName::InvalidAll);
+                self.fire_event(&EventName::InvalidAll);
             }
         }
 
@@ -736,7 +736,7 @@ impl App {
             self.paginator.update_index(Index(index))
         } else {
             let paging = self.paging(false, false);
-            self.paginator.first(paging)
+            self.paginator.first(&paging)
         }
     }
 }

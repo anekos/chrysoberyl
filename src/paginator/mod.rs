@@ -105,7 +105,7 @@ impl Paginator {
         self.sight_size = SightSize(condition.sight_size);
     }
 
-    pub fn first(&mut self, paging: Paging) -> bool {
+    pub fn first(&mut self, paging: &Paging) -> bool {
         if self.len == 0 {
             return false;
         }
@@ -133,7 +133,7 @@ impl Paginator {
         self.update_level(Level(new_level))
     }
 
-    pub fn last(&mut self, paging: Paging) -> bool {
+    pub fn last(&mut self, paging: &Paging) -> bool {
         if self.len == 0 {
             return false;
         }
@@ -161,7 +161,7 @@ impl Paginator {
         self.update_level(Level(new_level))
     }
 
-    pub fn next(&mut self, paging: Paging) -> bool {
+    pub fn next(&mut self, paging: &Paging) -> bool {
         if self.len == 0 {
             return false;
         }
@@ -181,7 +181,7 @@ impl Paginator {
         level_updated || fly_leaves_updated
     }
 
-    pub fn previous(&mut self, paging: Paging) -> bool {
+    pub fn previous(&mut self, paging: &Paging) -> bool {
         if self.len == 0 {
             return false;
         }
@@ -202,7 +202,7 @@ impl Paginator {
         level_updated || fly_leaves_updated
     }
 
-    pub fn show(&mut self, paging: Paging) -> bool {
+    pub fn show(&mut self, paging: &Paging) -> bool {
         self.update_index(Index(paging.count - 1))
     }
 

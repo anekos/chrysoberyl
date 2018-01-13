@@ -38,10 +38,10 @@ pub fn register(gui: &Gui, skip: usize, tx: &Sender<Operation>) {
     let conf = Arc::new(Cell::new(Conf { skip: skip, .. Conf::default() }));
 
     gui.window.connect_key_press_event(clone_army!([tx] move |_, key| on_key_press(&tx, key)));
-    gui.window.connect_configure_event(clone_army!([conf, tx, sender] move |_, ev| on_configure(sender.clone(), &tx, ev, conf.clone())));
+    gui.window.connect_configure_event(clone_army!([conf, tx, sender] move |_, ev| on_configure(sender.clone(), &tx, ev, &conf)));
     gui.window.connect_delete_event(clone_army!([tx] move |_, _| on_delete(&tx)));
-    gui.window.connect_button_press_event(clone_army!([pressed_at] move |_, button| on_button_press(button, pressed_at.clone())));
-    gui.window.connect_button_release_event(clone_army!([conf, tx] move |_, button| on_button_release(&tx, button, pressed_at.clone(), conf.clone())));
+    gui.window.connect_button_press_event(clone_army!([pressed_at] move |_, button| on_button_press(button, &pressed_at)));
+    gui.window.connect_button_release_event(clone_army!([conf, tx] move |_, button| on_button_release(&tx, button, &pressed_at, &conf)));
     gui.window.connect_scroll_event(clone_army!([tx] move |_, scroll| on_scroll(&tx, scroll)));
 }
 
@@ -58,13 +58,13 @@ fn on_key_press(tx: &Sender<Operation>, key: &EventKey) -> Inhibit {
     Inhibit(false)
 }
 
-fn on_button_press(button: &EventButton, pressed_at: ArcPressedAt) -> Inhibit {
+fn on_button_press(button: &EventButton, pressed_at: &ArcPressedAt) -> Inhibit {
     let (x, y) = button.get_position();
     (*pressed_at).set(Some((x, y)));
     Inhibit(true)
 }
 
-fn on_button_release(tx: &Sender<Operation>, button: &EventButton, pressed_at: ArcPressedAt, conf: ArcConf) -> Inhibit {
+fn on_button_release(tx: &Sender<Operation>, button: &EventButton, pressed_at: &ArcPressedAt, conf: &ArcConf) -> Inhibit {
     let c = conf.get();
     let (x, y) = button.get_position();
     if_let_some!((px, py) = (*pressed_at).get(), Inhibit(true));
@@ -78,7 +78,7 @@ fn on_button_release(tx: &Sender<Operation>, button: &EventButton, pressed_at: A
     Inhibit(true)
 }
 
-fn on_configure(mut sender: LazySender, tx: &Sender<Operation>, ev: &EventConfigure, conf: ArcConf) -> bool {
+fn on_configure(mut sender: LazySender, tx: &Sender<Operation>, ev: &EventConfigure, conf: &ArcConf) -> bool {
     let (w, h) = ev.get_size();
     let mut c = conf.get();
 

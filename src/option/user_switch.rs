@@ -7,7 +7,7 @@ use option::*;
 use operation::Operation;
 
 
-const NO_VALUE_ERROR: &'static str = "User switch has no value.";
+const NO_VALUE_ERROR: &str = "User switch has no value.";
 
 
 pub struct UserSwitch {

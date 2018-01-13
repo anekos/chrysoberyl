@@ -61,7 +61,7 @@ impl MRubyEnv {
             });
             // TODO more methods
         });
-        AppInfo::require(mruby.clone());
+        AppInfo::require(Rc::clone(&mruby));
 
         // TODO EntryInfo
 

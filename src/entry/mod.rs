@@ -158,9 +158,10 @@ impl EntryContent {
         use self::EntryContent::*;
 
         match *self {
-            Image(ref path) => path.to_path_buf(),
-            Archive(ref path, _) => path.to_path_buf(),
-            Pdf(ref path, _) => path.to_path_buf(),
+            Archive(ref path, _) | Pdf(ref path, _) =>
+                path.to_path_buf(),
+            Image(ref path) =>
+                path.to_path_buf(),
         }
     }
 }
@@ -405,8 +406,8 @@ impl EntryContainer {
             force);
     }
 
-    pub fn push_pdf_entry(&mut self, app_info: &AppInfo, pdf_path: Arc<PathBuf>, index: usize, meta: Option<Meta>, force: bool, url: Option<String>) {
-        let content = EntryContent::Pdf(pdf_path.clone(), index);
+    pub fn push_pdf_entry(&mut self, app_info: &AppInfo, pdf_path: &Arc<PathBuf>, index: usize, meta: Option<Meta>, force: bool, url: Option<String>) {
+        let content = EntryContent::Pdf(Arc::clone(pdf_path), index);
         let serial = self.new_serial();
         self.push_entry(app_info, Entry::new(serial, content, meta, url), force);
     }
@@ -447,7 +448,7 @@ impl EntryContainer {
             force);
     }
 
-    pub fn push_directory(&mut self, app_info: &AppInfo, dir: &PathBuf, meta: Option<Meta>, force: bool) {
+    pub fn push_directory(&mut self, app_info: &AppInfo, dir: &PathBuf, meta: &Option<Meta>, force: bool) {
         through!([expanded = expand(dir, <u8>::max_value())] {
             let mut expanded = expanded;
             expanded.sort_by(|a, b| natord::compare(path_to_str(a), path_to_str(b)));
@@ -491,7 +492,7 @@ impl Entry {
 
     pub fn abbrev_path(&self, max: usize) -> String {
         if let Some(ref url) = self.url {
-            Url::parse(&**url).map(|it| shorten_url(it, max)).unwrap_or_else(|_| (**url).clone())
+            Url::parse(&**url).as_ref().map(|it| shorten_url(it, max)).unwrap_or_else(|_| (**url).clone())
         } else {
             shorten_path(&Path::new(&self.key.1), max)
         }

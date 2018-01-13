@@ -4,7 +4,7 @@ use entry::filter::resolution;
 
 
 
-const SUFFIXES: &'static str = "KMGTP";
+const SUFFIXES: &str = "KMGTP";
 
 
 pub fn write(expr: &Expr, out: &mut String) {

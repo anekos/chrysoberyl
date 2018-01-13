@@ -209,7 +209,7 @@ pub fn on_error(app: &mut App, updated: &mut Updated, error: String) {
     env::set_var(constant::env_name("ERROR"), &error);
     app.update_message(Some(error));
     updated.message = true;
-    app.fire_event(EventName::Error);
+    app.fire_event(&EventName::Error);
 }
 
 pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Option<PathBuf>) {
@@ -315,13 +315,13 @@ pub fn on_first(app: &mut App, updated: &mut Updated, count: Option<usize>, igno
     match move_by {
         MoveBy::Page => {
             let paging = app.paging_with_count(false, ignore_views, count);
-            updated.pointer = app.paginator.first(paging);
+            updated.pointer = app.paginator.first(&paging);
         },
         MoveBy::Archive => {
             let count = app.counter.overwrite(count).pop();
             if let Some(first) = app.entries.find_nth_archive(count, false) {
                 let paging = app.paging_with_index(false, ignore_views, first);
-                updated.pointer = app.paginator.show(paging);
+                updated.pointer = app.paginator.show(&paging);
             }
         }
     }
@@ -374,7 +374,7 @@ pub fn on_input(app: &mut App, input: &Input) {
 
     if let Input::Unified(coord, _) = *input {
         let context = convert_args!(hashmap!("input" => inputs, "x" => s!(coord.x), "y" => s!(coord.y)));
-        app.fire_event_with_context(EventName::MappedInput, context);
+        app.fire_event_with_context(&EventName::MappedInput, context);
     }
 }
 
@@ -386,13 +386,13 @@ pub fn on_last(app: &mut App, updated: &mut Updated, count: Option<usize>, ignor
     match move_by {
         MoveBy::Page => {
             let paging = app.paging_with_count(false, ignore_views, count);
-            updated.pointer = app.paginator.last(paging);
+            updated.pointer = app.paginator.last(&paging);
         }
         MoveBy::Archive => {
             let count = app.counter.overwrite(count).pop();
             if let Some(nth) = app.entries.find_nth_archive(count, true) {
                 let paging = app.paging_with_index(false, ignore_views, nth);
-                updated.pointer = app.paginator.show(paging);
+                updated.pointer = app.paginator.show(&paging);
             }
         }
     }
@@ -429,7 +429,7 @@ pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, opera
 
     // puts_event!("map", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
     match target {
-        Unified(key_sequence, region) =>
+        Unified(ref key_sequence, region) =>
             app.mapping.register_unified(key_sequence, region, operation),
         Event(Some(event_name), group) =>
             app.mapping.register_event(event_name, group, remain, operation),
@@ -474,14 +474,14 @@ pub fn on_next(app: &mut App, updated: &mut Updated, count: Option<usize>, ignor
     match move_by {
         MoveBy::Page => {
             let paging = app.paging_with_count(wrap, ignore_views, count);
-            updated.pointer = app.paginator.next(paging);
+            updated.pointer = app.paginator.next(&paging);
         }
         MoveBy::Archive => {
             let count = app.counter.overwrite(count).pop();
             let current = app.current();
             if let Some(next) = app.entries.find_next_archive(current, count) {
                 let paging = app.paging_with_index(false, ignore_views, next);
-                updated.pointer = app.paginator.show(paging);
+                updated.pointer = app.paginator.show(&paging);
             }
         }
     }
@@ -547,7 +547,7 @@ pub fn on_previous(app: &mut App, updated: &mut Updated, to_end: &mut bool, coun
     match move_by {
         MoveBy::Page => {
             let paging = app.paging_with_count(wrap, ignore_views, count);
-            updated.pointer = app.paginator.previous(paging);
+            updated.pointer = app.paginator.previous(&paging);
             *to_end = count.is_none() && !ignore_views;
         }
         MoveBy::Archive => {
@@ -555,7 +555,7 @@ pub fn on_previous(app: &mut App, updated: &mut Updated, to_end: &mut bool, coun
             let current = app.current();
             if let Some(previous) = app.entries.find_previous_archive(current, count) {
                 let paging = app.paging_with_index(false, ignore_views, previous);
-                updated.pointer = app.paginator.show(paging);
+                updated.pointer = app.paginator.show(&paging);
             }
         }
     }
@@ -672,7 +672,7 @@ pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) {
     if len > 0 {
         let index = RandRange::new(0, len).ind_sample(&mut app.rng);
         let paging = app.paging_with_index(false, false, index);
-        app.paginator.show(paging);
+        app.paginator.show(&paging);
         updated.image = true;
     }
 }
@@ -754,13 +754,13 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
 
             if let Some((ref p_doc, ref p_path)) = previous {
                 if **path == *p_path {
-                    doc = Some(p_doc.clone());
+                    doc = Some(Rc::clone(p_doc));
                 }
             }
 
             if doc.is_none() {
                 let d = Rc::new(PopplerDocument::new_from_file(&**path));
-                doc = Some(d.clone());
+                doc = Some(Rc::clone(&d));
                 previous = Some((d, (**path).clone()));
             }
 
@@ -845,7 +845,7 @@ pub fn on_show(app: &mut App, updated: &mut Updated, count: Option<usize>, ignor
     match move_by {
         MoveBy::Page => {
             let paging = app.paging_with_count(false, false, count);
-            updated.pointer = app.paginator.show(paging);
+            updated.pointer = app.paginator.show(&paging);
         },
         MoveBy::Archive => {
             on_first(app, updated, count, ignore_views, move_by);
@@ -1182,7 +1182,7 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
             PushImage(path, meta, force, expand_level, url) =>
                 app.entries.push_image(&app_info, &path, meta, force, expand_level, url),
             PushDirectory(path, meta, force) =>
-                app.entries.push_directory(&app_info, &path, meta, force),
+                app.entries.push_directory(&app_info, &path, &meta, force),
             PushArchive(archive_path, meta, force, url) =>
                 on_push_archive(app, &archive_path, meta, force, url),
             PushArchiveEntry(archive_path, entry, meta, force, url) =>
@@ -1192,7 +1192,7 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
             PushPdfEntries(pdf_path, pages, meta, force, url) => {
                 let pdf_path = Arc::new(pdf_path.clone());
                 for index in 0 .. pages {
-                    app.entries.push_pdf_entry(&app_info, pdf_path.clone(), index, meta.clone(), force, url.clone());
+                    app.entries.push_pdf_entry(&app_info, &pdf_path, index, meta.clone(), force, url.clone());
                 }
             }
         }

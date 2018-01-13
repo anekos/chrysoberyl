@@ -79,7 +79,7 @@ fn main(mut cache: ImageCache) -> Sender<FetcherOperation> {
                 }
                 Done(key, image_buffer) => {
                     idles += 1;
-                    cache.push(key, image_buffer);
+                    cache.push(&key, image_buffer);
                     start(&tx, &mut cache, &mut current_target.entries, &mut idles, current_target.cell_size, &current_target.drawing);
                 }
             }

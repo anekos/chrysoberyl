@@ -57,12 +57,12 @@ impl ImageCache {
         }
     }
 
-    pub fn push(&mut self, key: Key, image_buffer: Result<ImageBuffer, String>) {
+    pub fn push(&mut self, key: &Key, image_buffer: Result<ImageBuffer, String>) {
         trace!("image_cache/push: key={:?}", key);
 
         let &(ref fetching, ref cond) = &*self.fetching;
         let mut fetching = fetching.lock().unwrap();
-        if fetching.remove(&key) == Some(true) {
+        if fetching.remove(key) == Some(true) {
             self.cache.push(key.clone(), image_buffer);
         }
         cond.notify_all();

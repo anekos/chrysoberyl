@@ -116,7 +116,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
                 let mut targets = vec![];
                 for mut entry in &mut entries.into_iter() {
                     if (static_pred)(Rc::make_mut(&mut entry), info) {
-                        targets.push(entry.clone());
+                        targets.push(Rc::clone(&entry));
                     }
                 }
                 targets
@@ -130,8 +130,8 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
             let mut targets = vec![];
             for (index, mut entry) in &mut entries.into_iter().enumerate() {
                 if (dynamic_pred)(Rc::make_mut(&mut entry), info) {
-                    self.original_indices.insert(entry.clone(), len + index);
-                    targets.push(entry.clone());
+                    self.original_indices.insert(Rc::clone(&entry), len + index);
+                    targets.push(Rc::clone(&entry));
                 }
             }
             targets
@@ -153,8 +153,8 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
             }
         };
 
-        self.original_indices.insert(entry.clone(), self.original.len());
-        self.original.push(entry.clone());
+        self.original_indices.insert(Rc::clone(&entry), self.original.len());
+        self.original.push(Rc::clone(&entry));
 
         if let Some(ref mut dynamic_pred) = self.dynamic_pred {
             if !(dynamic_pred)(Rc::make_mut(&mut entry), info) {
@@ -162,7 +162,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
             }
         };
 
-        self.push_filtered(entry.clone());
+        self.push_filtered(Rc::clone(&entry));
     }
 
     pub fn update_filter(&mut self, info: &U, dynamic: bool, index_before_filter: Option<usize>, pred: Option<Pred<T, U>>) -> Option<usize> {
@@ -187,7 +187,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
             let mut new_originals = vec![];
             for mut entry in &mut self.original.iter_mut() {
                 if (static_pred)(Rc::make_mut(&mut entry), info) {
-                    new_originals.push(entry.clone());
+                    new_originals.push(Rc::clone(entry));
                 }
             }
             self.original = new_originals;
@@ -205,7 +205,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
             self.filtered = vec![];
             for (index, mut entry) in &mut self.original.iter_mut().enumerate() {
                 if (dynamic_pred)(Rc::make_mut(&mut entry), info) {
-                     self.filtered.push(entry.clone());
+                     self.filtered.push(Rc::clone(entry));
 
                      if let Some(original_index_before) = original_index_before {
                          if index == original_index_before {
@@ -235,18 +235,18 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
     }
 
     fn push_filtered(&mut self, entry: Rc<T>) {
-        self.filtered_indices.insert(entry.clone(), self.filtered.len());
+        self.filtered_indices.insert(Rc::clone(&entry), self.filtered.len());
         self.filtered.push(entry);
     }
 
     fn reset_indices(&mut self) {
         self.filtered_indices.clear();
         for (index, entry) in self.filtered.iter().enumerate() {
-            self.filtered_indices.insert(entry.clone(), index);
+            self.filtered_indices.insert(Rc::clone(entry), index);
         }
         self.original_indices.clear();
         for (index, entry) in self.original.iter().enumerate() {
-            self.original_indices.insert(entry.clone(), index);
+            self.original_indices.insert(Rc::clone(entry), index);
         }
     }
 }
@@ -257,10 +257,10 @@ fn partition<T: Clone>(xs: &mut [Rc<T>], left: usize, right: usize, compare: &mu
 
     {
         let (lefts, rights) = xs.split_at_mut(left + 1);
-        let pivot: &mut Rc<T> = lefts.get_mut(left).unwrap();
+        let pivot: &mut Rc<T> = &mut lefts[left];
         for j in 0..(right - left - 1) {
             let less = {
-                let it: &mut Rc<T> = rights.get_mut(j).unwrap();
+                let it: &mut Rc<T> = &mut rights[j];
                 (compare)(Rc::make_mut(it), Rc::make_mut(pivot)) == Ordering::Less
             };
             if less {
@@ -276,13 +276,12 @@ fn partition<T: Clone>(xs: &mut [Rc<T>], left: usize, right: usize, compare: &mu
 }
 
 
-fn quicksort<T: Clone>(xs: &mut [Rc<T>], l: usize, r: usize, compare: &mut Compare<T>) -> usize {
-  if r - l <= 1 {
-    return 0;
+fn quicksort<T: Clone>(xs: &mut [Rc<T>], left: usize, right: usize, compare: &mut Compare<T>) {
+  if right - left <= 1 {
+    return;
   }
 
-  let p = partition(xs, l, r, compare);
-  let a = quicksort(xs, l, p, compare);
-  let b = quicksort(xs, p + 1, r, compare);
-  a + b + (r - l - 1)
+  let pivot = partition(xs, left, right, compare);
+  quicksort(xs, left, pivot, compare);
+  quicksort(xs, pivot + 1, right, compare);
 }

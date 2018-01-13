@@ -31,7 +31,7 @@ pub struct Output {
 
 impl Output {
     pub fn puts(&mut self, data: &[(String, String)]) {
-        self.puts_each_channel(generate_text(data));
+        self.puts_each_channel(&generate_text(data));
     }
 
     pub fn register(&mut self, tx: Sender<String>) -> Handle {
@@ -44,10 +44,10 @@ impl Output {
         self.txs.remove(&handle);
     }
 
-    fn puts_each_channel(&mut self, text: String) {
+    fn puts_each_channel(&mut self, text: &str) {
         let mut removes: Vec<Handle> = vec![];
         for (handle, tx) in &self.txs {
-            if tx.send(text.clone()).is_err() {
+            if tx.send(text.to_owned()).is_err() {
                 removes.push(*handle);
             }
         }

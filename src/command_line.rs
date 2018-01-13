@@ -103,7 +103,7 @@ fn parse_option(arg: &str, args: &mut Args, init: &mut Initial) -> Result<bool, 
             exit(0);
         },
         "--shuffle" | "-z" => init.shuffle = true,
-        "--silent" => init.silent = true,
+        "--silent" | "-s" => init.silent = true,
         "--expand" | "-e" => if let Some(value) = args.next() {
             init.entries.push(Entry::Expand(value, false));
         },

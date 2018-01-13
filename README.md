@@ -39,12 +39,30 @@ Original -> Cherenkoved
 # Command line
 
 ```
-chrysoberyl (<FILE>|<DIRECTORY>)
-chrysoberyl <OPERATION_COMMAND>.. ["@@" (<FILE>|<DIRECTORY>)...]
+chrysoberyl <OPTIONS>.. (<FILE>|<DIRECTORY>)
+chrysoberyl <OPTIONS>.. <OPERATION_COMMAND>.. ["@@" (<FILE>|<DIRECTORY>)...]
 chrysoberyl (--print-path|-v)
 chrysoberyl (--version|-v)
 chrysoberyl (--help|-h)
 ```
+
+## Options
+
+--silent
+:   Suppress stdout
+--shuffle -z
+:   Shuffle entries
+--expand -e
+:   Expand directory (`@expand`)
+--expand-recursive -E
+:   Expand directory (`@expand`)
+--max-curl-threads -t
+:   Set maximum curl threads
+--input -i
+:   Create the file to input operation commands
+--encoding
+:   Set filename encoding for archives (zip, rar, ...).
+
 
 ## Example
 

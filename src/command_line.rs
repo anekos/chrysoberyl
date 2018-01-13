@@ -1,6 +1,7 @@
 
 use std::default::Default;
 use std::env::{args, Args};
+use std::process::exit;
 
 use encoding::label::encoding_from_whatwg_label;
 use encoding::types::EncodingRef;
@@ -26,6 +27,10 @@ pub enum Entry {
     Input(String),
 }
 
+
+pub const README: &str = include_str!("../README.md");
+
+
 impl Default for Initial {
     fn default() -> Self {
         Initial {
@@ -37,7 +42,6 @@ impl Default for Initial {
         }
     }
 }
-
 
 
 pub fn parse_args() -> Result<Initial, String> {
@@ -86,8 +90,18 @@ fn parse_option(arg: &str, args: &mut Args, init: &mut Initial) -> Result<bool, 
     };
 
     match arg {
-        "--version" | "-v" => print_version(),
-        "--print-path" => print_path(),
+        "--version" | "-v" => {
+            print_version();
+            exit(0);
+        },
+        "--print-path" => {
+            print_path();
+            exit(0);
+        },
+        "--help" | "-h" => {
+            print_help();
+            exit(0);
+        },
         "--shuffle" | "-z" => init.shuffle = true,
         "--silent" => init.silent = true,
         "--expand" | "-e" => if let Some(value) = args.next() {
@@ -133,4 +147,21 @@ fn print_path() {
         "configuration: {}\ncache: {}",
         app_path::config_file(None).to_str().unwrap(),
         app_path::cache_dir("/").to_str().unwrap());
+}
+
+fn print_help() {
+    let mut phase = 0;
+
+    println!("Usage:");
+
+    for line in README.lines() {
+        match phase {
+            0 if line == "# Command line" => phase = 1,
+            1 if line == "```" => phase = 2,
+            2 if line == "```" => phase = 3,
+            2 => println!("  {}", line),
+            3 => println!("{}", line),
+            _ => (),
+        }
+    }
 }

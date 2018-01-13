@@ -36,6 +36,38 @@ And click with wheel.
 Original -> Cherenkoved
 
 
+# Command line
+
+```
+chrysoberyl (<FILE>|<DIRECTORY>)
+chrysoberyl <OPERATION_COMMAND>.. ["@@" (<FILE>|<DIRECTORY>)...]
+chrysoberyl (--print-path|-v)
+chrysoberyl (--version|-v)
+chrysoberyl (--help|-h)
+```
+
+## Example
+
+Open a PDF file.
+
+```
+$ chrysoberyl ~/my-books/rust-nomicon.pdf
+```
+
+Set some options (operation commands), then open a PDF file.
+
+```
+$ chrysoberyl @@views 2 @@set reverse @@ ~/my-books/rust-nomicon.pdf
+```
+
+Print the file or directory path used by chrysoberyl.
+
+```
+$ chrysoberyl --print-path
+```
+
+
+
 # Operation commands
 
 You can use below commands on STDIN of chrysoberyl.

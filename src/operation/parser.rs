@@ -799,11 +799,16 @@ pub fn parse_sort(args: &[String]) -> Result<Operation, ParsingError> {
             .add_option(&["--accessed", "-a"], StoreConst(SortKey::Accessed), "Sort by accessed time")
             .add_option(&["--created", "-c"], StoreConst(SortKey::Created), "Sort by created time")
             .add_option(&["--modified", "-m"], StoreConst(SortKey::Modified), "Sort by modified time")
-            .add_option(&["--file-size", "-s"], StoreConst(SortKey::FileSize), "Sort by file size");
+            .add_option(&["--file-size", "-s"], StoreConst(SortKey::FileSize), "Sort by file size")
+            .add_option(&["--width", "-w"], StoreConst(SortKey::Width), "Sort by width")
+            .add_option(&["--height", "-h"], StoreConst(SortKey::Height), "Sort by heigth")
+            .add_option(&["--dimensions", "-d"], StoreConst(SortKey::Dimensions), "Sort by width x height");
         ap.refer(&mut reverse).add_option(&["--reverse", "-r"], StoreTrue, "Reversed");
         parse_args(&mut ap, args)
-    } .and_then(|_| {
-        Ok(Operation::Sort(fix, sort_key, reverse))
+    } .map(|_| {
+        Operation::WithMessage(
+            Some(o!("Sorting")),
+            Box::new(Operation::Sort(fix, sort_key, reverse)))
     })
 }
 

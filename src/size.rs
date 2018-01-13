@@ -1,4 +1,5 @@
 
+use std::cmp::Ordering;
 use std::fmt;
 use std::ops::Add;
 use std::str::FromStr;
@@ -11,7 +12,7 @@ use util::num::feq;
 
 
 
-#[derive(Clone, PartialEq, Eq, Copy, Debug)]
+#[derive(Clone, PartialEq, Eq, Copy, Debug, Default, Ord)]
 pub struct Size {
     pub width: i32,
     pub height: i32,
@@ -174,6 +175,12 @@ impl Size {
     fn fit_to_scaled(&self, scale: usize) -> (f64, Size) {
         let scale = scale as f64 / 100.0;
         (scale, self.scaled(scale))
+    }
+}
+
+impl PartialOrd for Size {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.dimensions().partial_cmp(&other.dimensions())
     }
 }
 

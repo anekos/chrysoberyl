@@ -175,6 +175,9 @@ pub enum SortKey {
     Created,
     Modified,
     FileSize,
+    Dimensions,
+    Width,
+    Height,
 }
 
 

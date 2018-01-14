@@ -116,7 +116,7 @@ impl App {
             error_loop_detector: error_loop_detector::Detector::default(),
             fetcher: ImageFetcher::new(cache),
             found_on: None,
-            gui: Gui::new(),
+            gui: Gui::new(&initial.window_role),
             mapping: Mapping::new(),
             paginator: Paginator::new(),
             pre_fetch_serial: 0,

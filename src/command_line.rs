@@ -7,6 +7,7 @@ use encoding::label::encoding_from_whatwg_label;
 use encoding::types::EncodingRef;
 
 use app_path;
+use constant;
 
 
 
@@ -17,6 +18,7 @@ pub struct Initial {
     pub encodings: Vec<EncodingRef>,
     pub entries: Vec<Entry>,
     pub silent: bool,
+    pub window_role: String,
 }
 
 #[derive(Clone)]
@@ -39,6 +41,7 @@ impl Default for Initial {
             encodings: vec![],
             entries: vec![],
             silent: false,
+            window_role: constant::WINDOW_ROLE.to_string(),
         }
     }
 }
@@ -101,6 +104,11 @@ fn parse_option(arg: &str, args: &mut Args, init: &mut Initial) -> Result<bool, 
         "--help" | "-h" => {
             print_help();
             exit(0);
+        },
+        "--role" => if let Some(value) = args.next() {
+            init.window_role = value;
+        } else {
+            return not_enough();
         },
         "--shuffle" | "-z" => init.shuffle = true,
         "--silent" | "-s" => init.silent = true,

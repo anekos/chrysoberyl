@@ -62,6 +62,8 @@ chrysoberyl (--help|-h)
 :   Create the file to input operation commands
 `--encoding <ENCODING>`
 :   Set filename encoding for archives (zip, rar, ...).
+`--role <WINDOW_ROLE>`
+:   Set window role
 
 
 ## Example

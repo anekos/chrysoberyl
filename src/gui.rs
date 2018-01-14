@@ -73,7 +73,7 @@ const PADDING: f64 = 5.0;
 
 
 impl Gui {
-    pub fn new() -> Gui {
+    pub fn new(window_role: &str) -> Gui {
         use gtk::Orientation;
 
         gtk::init().unwrap();
@@ -81,7 +81,7 @@ impl Gui {
         let window = gtk::Window::new(gtk::WindowType::Toplevel);
 
         window.set_title(constant::DEFAULT_TITLE);
-        window.set_role(constant::WINDOW_ROLE);
+        window.set_role(window_role);
         window.set_border_width(0);
         window.set_position(gtk::WindowPosition::Center);
         window.set_wmclass(constant::WINDOW_CLASS, constant::WINDOW_CLASS);

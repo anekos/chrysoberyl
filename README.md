@@ -48,19 +48,19 @@ chrysoberyl (--help|-h)
 
 ## Options
 
---silent
+`--silent`
 :   Suppress stdout
---shuffle -z
+`--shuffle|-z`
 :   Shuffle entries
---expand -e
+`--expand |e`
 :   Expand directory (`@expand`)
---expand-recursive -E
+`--expand-recursive|-E`
 :   Expand directory (`@expand`)
---max-curl-threads -t
+`(--max-curl-threads|-t) <N_THREADS>`
 :   Set maximum curl threads
---input -i
+`(--input|-i) <PATH>`
 :   Create the file to input operation commands
---encoding
+`--encoding <ENCODING>`
 :   Set filename encoding for archives (zip, rar, ...).
 
 

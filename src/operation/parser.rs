@@ -717,15 +717,17 @@ pub fn parse_scroll(args: &[String]) -> Result<Operation, ParsingError> {
     let mut direction = Direction::Up;
     let mut operation = vec![];
     let mut scroll_size = 1.0;
+    let mut crush = false;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut direction).add_argument("direction", Store, "left|up|right|down").required();
         ap.refer(&mut scroll_size).add_option(&["-s", "--size"], Store, "Scroll size (default 1.0) ");
+        ap.refer(&mut crush).add_option(&["-c", "--crush"], StoreTrue, "Crush a little space");
         ap.refer(&mut operation).add_argument("operation", List, "Operation");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Scroll(direction, operation, scroll_size)
+        Operation::Scroll(direction, operation, scroll_size, crush)
     })
 }
 

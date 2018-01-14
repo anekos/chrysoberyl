@@ -402,7 +402,7 @@ Write the session data to `PATH`.
 You can `@load` `PATH` file to restore current session.
 
 
-## @scroll <DIRECTION> [(-s|--size) <SIZE>]
+## @scroll <DIRECTION> [(-s|--size) <SIZE>] [--crush|-c]
 
 Scroll image.
 If no `SIZE` is given, scroll size is `1.0`.

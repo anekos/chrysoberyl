@@ -811,9 +811,9 @@ pub fn on_set_env(_: &mut App, name: &str, value: &Option<String>) {
     }
 }
 
-pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scroll_size: f64) {
+pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scroll_size: f64, crush: bool) {
     let saved = app.counter.clone();
-    if !app.gui.scroll_views(direction, scroll_size, app.counter.pop()) && !operation.is_empty() {
+    if !app.gui.scroll_views(direction, scroll_size, app.counter.pop(), crush) && !operation.is_empty() {
         match Operation::parse_from_vec(operation) {
             Ok(op) => {
                 app.counter = saved;

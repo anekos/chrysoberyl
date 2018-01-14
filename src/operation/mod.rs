@@ -88,7 +88,7 @@ pub enum Operation {
     ResetScrolls(bool), /* to_end */
     Save(Option<PathBuf>, Vec<Session>),
     SearchText(Option<String>, bool, Color), /* text, backward */
-    Scroll(Direction, Vec<String>, f64), /* direction, operation, scroll_size_ratio */
+    Scroll(Direction, Vec<String>, f64, bool), /* direction, operation, scroll_size_ratio, crush */
     SetEnv(String, Option<Expandable>),
     Shell(bool, bool, bool, Vec<Expandable>, Vec<Session>), /* async, operation, search_path, command_line, session */
     ShellFilter(Vec<Expandable>, bool), /* path, search_path */
@@ -431,7 +431,7 @@ impl fmt::Debug for Operation {
             ResetScrolls(_) => "ResetScrolls",
             Save(_, _) => "Save",
             SearchText(_, _, _) => "SearchText",
-            Scroll(_, _, _) => "Scroll",
+            Scroll(_, _, _, _) => "Scroll",
             SetEnv(_, _) => "SetEnv",
             Shell(_, _, _, _, _) => "Shell",
             ShellFilter(_, _) => "ShellFilter",

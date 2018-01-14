@@ -181,10 +181,10 @@ impl Gui {
             &self.colors.status_bar_background.gdk_rgba());
     }
 
-    pub fn scroll_views(&self, direction: &Direction, scroll_size: f64, count: usize) -> bool {
+    pub fn scroll_views(&self, direction: &Direction, scroll_size: f64, count: usize, crush: bool) -> bool {
         let mut scrolled = false;
         for cell in self.cells(false) {
-            scrolled |= scroll_window(&cell.window, direction, scroll_size, count);
+            scrolled |= scroll_window(&cell.window, direction, scroll_size, count, crush);
         }
         scrolled
     }
@@ -459,19 +459,27 @@ fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), BoxedError>
     Ok(())
 }
 
-fn scroll_window(window: &ScrolledWindow, direction: &Direction, scroll_size_ratio: f64, count: usize) -> bool {
+fn scroll_window(window: &ScrolledWindow, direction: &Direction, scroll_size_ratio: f64, count: usize, crush: bool) -> bool {
     use self::Direction::*;
 
     let scroll = |horizontal| -> bool {
         let adj = if horizontal { window.get_hadjustment() } else { window.get_vadjustment() };
         if let Some(adj) = adj {
             let scroll_size = adj.get_page_size() * scroll_size_ratio * count as f64;
+            let space = adj.get_page_size() * (1.0 - scroll_size_ratio);
             let scroll_size = match *direction {
                 Right | Down => scroll_size,
                 Left | Up => -scroll_size,
             };
             let value = adj.get_value();
-            adj.set_value(value + scroll_size);
+            let rest = adj.get_upper() - value - scroll_size - adj.get_page_size();
+
+            if rest < space && crush {
+                adj.set_value(value + scroll_size + rest);
+            } else {
+                adj.set_value(value + scroll_size);
+            }
+
             if !feq(adj.get_value(), value, 0.0000001) {
                 if horizontal { window.set_hadjustment(&adj) } else { window.set_vadjustment(&adj) }
                 return true

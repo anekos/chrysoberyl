@@ -467,18 +467,27 @@ fn scroll_window(window: &ScrolledWindow, direction: &Direction, scroll_size_rat
         if let Some(adj) = adj {
             let scroll_size = adj.get_page_size() * scroll_size_ratio * count as f64;
             let space = adj.get_page_size() * (1.0 - scroll_size_ratio);
-            let scroll_size = match *direction {
-                Right | Down => scroll_size,
-                Left | Up => -scroll_size,
-            };
             let value = adj.get_value();
-            let rest = adj.get_upper() - value - scroll_size - adj.get_page_size();
+            let scroll_size = match *direction {
+                Right | Down => {
+                    let rest = adj.get_upper() - value - scroll_size - adj.get_page_size();
+                    if rest < space && crush {
+                        scroll_size + rest
+                    } else {
+                        scroll_size
+                    }
+                }
+                Left | Up => {
+                    let rest = adj.get_value();
+                    if rest < space && crush {
+                        -(scroll_size + rest)
+                    } else {
+                        -scroll_size
+                    }
+                }
+            };
 
-            if rest < space && crush {
-                adj.set_value(value + scroll_size + rest);
-            } else {
-                adj.set_value(value + scroll_size);
-            }
+            adj.set_value(value + scroll_size);
 
             if !feq(adj.get_value(), value, 0.0000001) {
                 if horizontal { window.set_hadjustment(&adj) } else { window.set_vadjustment(&adj) }

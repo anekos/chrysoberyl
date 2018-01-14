@@ -158,17 +158,20 @@ fn print_path() {
 }
 
 fn print_help() {
+    use std::io::{self, Write};
+
+    let mut stdout = io::stdout();
     let mut phase = 0;
 
-    println!("Usage:");
+    let _ = writeln!(&mut stdout, "Usage:");
 
     for line in README.lines() {
         match phase {
             0 if line == "# Command line" => phase = 1,
             1 if line == "```" => phase = 2,
             2 if line == "```" => phase = 3,
-            2 => println!("  {}", line),
-            3 => println!("{}", line),
+            2 => { let _ = writeln!(&mut stdout, "  {}", line); },
+            3 => { let _ = writeln!(&mut stdout, "{}", line); },
             _ => (),
         }
     }

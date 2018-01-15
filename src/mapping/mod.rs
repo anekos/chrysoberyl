@@ -105,7 +105,8 @@ impl Input {
 impl fmt::Display for Input {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Input::Unified(ref coord, ref key) => write!(f, "{} ({})", key, coord),
+            Input::Unified(ref coord, ref key) if coord.is_valid() => write!(f, "{} ({})", key, coord),
+            Input::Unified(_, ref key) => write!(f, "{}", key),
             Input::Event(ref event_name) => write!(f, "{}", event_name),
             Input::Region(ref region, ref button, _) => write!(f, "{} ({})",  button,  region),
         }

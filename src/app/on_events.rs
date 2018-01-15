@@ -360,7 +360,10 @@ pub fn on_input(app: &mut App, input: &Input) {
     let (width, height) = app.gui.window.get_size();
 
     if_let_some!((operations, inputs) = app.mapping.matched(input, width, height, true), {
-        puts_event!("input", "type" => input.type_name(), "name" => s!(input));
+        if let Input::Event(_) = *input {
+        } else {
+            puts_event!("input", "type" => input.type_name(), "name" => s!(input));
+        }
     });
 
     for op in operations {

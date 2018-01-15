@@ -94,6 +94,20 @@ fn get_direction_text(direction: &ScrollDirection) -> String {
 }
 
 
+impl Coord {
+    fn relative_x(&self) -> f32 {
+        self.x as f32 / self.width as f32
+    }
+
+    fn relative_y(&self) -> f32 {
+        self.y as f32 / self.height as f32
+    }
+
+    pub fn is_valid(&self) -> bool {
+        !self.relative_x().is_nan() && !self.relative_y().is_nan()
+    }
+}
+
 impl Default for Coord {
     fn default() -> Self {
         Coord { x: 0, y: 0, width: 0, height: 0 }

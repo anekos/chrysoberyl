@@ -3,6 +3,14 @@ name = "chrysoberyl"
 version = "0.1.0"
 authors = ["anekos <anekos@snca.net>"]
 build = "build.rs"
+license-file = "LICENSE"
+readme = "README.md"
+description = "(Remote)?(PDF|Image|Archive) Viewer"
+repository = "http://github.com/anekos/chrysoberyl"
+
+[[bin]]
+name = "chrysoberyl"
+doc = false
 
 [features]
 poppler_lock = []

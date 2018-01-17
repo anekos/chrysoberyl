@@ -51,6 +51,8 @@ pub fn get_static_image_buffer(entry: &Entry, cell: &Size, drawing: &DrawingStat
             make_scaled_from_file(path_to_str(path), cell, drawing),
         Archive(_, ref entry) =>
             make_scaled(&*entry.content.as_slice(), cell, drawing),
+        Memory(ref content, _) =>
+            make_scaled(content, cell, drawing),
         Pdf(ref path, index) =>
             Ok(make_scaled_from_pdf(&**path, index, cell, drawing))
     }
@@ -122,6 +124,8 @@ fn get_meta(entry: &Entry) -> Option<Result<GenericMetadata, immeta::Error>> {
             Some(immeta::load_from_file(&path)),
         Archive(_, ref entry) =>
             Some(immeta::load_from_buf(&entry.content)),
+        Memory(ref content, _) =>
+            Some(immeta::load_from_buf(content)),
         Pdf(_,  _) =>
             None
     }

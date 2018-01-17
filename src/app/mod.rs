@@ -619,6 +619,10 @@ impl App {
                     envs.push((o!("archive_file"), o!(path_to_str(&**archive_file))));
                     envs.push((o!("archive_page"), s!(entry.index + 1)));
                 },
+                Memory(_, ref hash) => {
+                    envs.push((o!("type"), o!("memory")));
+                    envs.push((o!("hash"), o!(hash)));
+                },
                 Pdf(ref pdf_file, index) => {
                     envs.push((o!("type"), o!("pdf")));
                     envs.push((o!("file"), o!(path_to_str(&**pdf_file))));

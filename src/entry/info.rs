@@ -5,7 +5,6 @@ use std::time::SystemTime;
 
 use immeta;
 
-use archive::ArchiveEntry;
 use entry::EntryContent;
 use lazy::Lazy;
 use size::Size;
@@ -23,10 +22,10 @@ pub struct EntryInfo {
 pub struct LazyEntryInfo {
     pub dimensions: Option<Size>, // PDF makes None
     pub is_animated: bool,
-    pub file_size: u64,
-    pub accessed: SystemTime,
-    pub created: SystemTime,
-    pub modified: SystemTime,
+    pub file_size: Option<u64>,
+    pub accessed: Option<SystemTime>,
+    pub created: Option<SystemTime>,
+    pub modified: Option<SystemTime>,
 }
 
 
@@ -50,11 +49,13 @@ impl EntryInfo {
             Image(_) => "image",
             Archive(_, _) => "archive",
             Pdf(_, _) => "pdf",
+            Memory(_, _) => "memory",
         };
 
         let name: String = match *content {
             Image(ref path) => o!(path_to_str(path)),
             Archive(_, ref entry) => entry.name.clone(),
+            Memory(_, ref hash) => hash.clone(),
             Pdf(ref path, _) => o!(path_to_str(&**path)),
         };
 
@@ -83,25 +84,28 @@ impl LazyEntryInfo {
 
         info!("LazyEntryInfo::new");
 
-        let meta = match *content {
+        let size_anim = match *content {
             Image(ref path) => generate_static_image_size(path),
-            Archive(_, ref entry) => generate_archive_image_size(entry),
+            Archive(_, ref entry) => generate_archive_image_size(&entry.content),
+            Memory(ref content, _) => generate_archive_image_size(content),
             Pdf(_, _) => None,
         };
 
-        let path = content.local_file_path();
+        let file_size = if let Memory(ref content, _) = *content {
+            Some(content.len() as u64)
+        } else {
+            None
+        };
 
-        let file_meta = metadata(&path).unwrap(); // FIXME ???
-
-        let modified = file_meta.modified().unwrap();
+        let file_meta = content.local_file_path().and_then(|ref it| metadata(it).ok());
 
         LazyEntryInfo {
-            dimensions: meta.map(|it| it.0),
-            is_animated: meta.map(|it| it.1).unwrap_or(false),
-            file_size: file_meta.len(),
-            accessed: file_meta.accessed().unwrap_or(modified),
-            created: file_meta.created().unwrap_or(modified),
-            modified: modified,
+            dimensions: size_anim.map(|it| it.0),
+            is_animated: size_anim.map(|it| it.1).unwrap_or(false),
+            file_size: file_size.or_else(|| file_meta.as_ref().map(|it| it.len())),
+            accessed: file_meta.as_ref().and_then(|it| it.accessed().ok()),
+            created: file_meta.as_ref().and_then(|it| it.created().ok()),
+            modified: file_meta.as_ref().and_then(|it| it.modified().ok()),
         }
     }
 }
@@ -115,9 +119,8 @@ fn generate_static_image_size(path: &Path) -> Option<(Size, bool)> {
     })
 }
 
-fn generate_archive_image_size(entry: &ArchiveEntry) -> Option<(Size, bool)> {
-    let buf = &*entry.content;
-    let img = immeta::load_from_buf(buf.as_slice()).ok();
+fn generate_archive_image_size(buf: &[u8]) -> Option<(Size, bool)> {
+    let img = immeta::load_from_buf(buf).ok();
     img.map(|img| {
         let dim = img.dimensions();
         (Size::new(dim.width as i32, dim.height as i32), is_animated(&img))

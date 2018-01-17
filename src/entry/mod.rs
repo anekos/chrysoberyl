@@ -1,7 +1,9 @@
 
 use std::cmp::{PartialEq, PartialOrd, Ord, Ordering};
+use std::error;
+use std::fs::File;
 use std::hash::{Hash, Hasher};
-use std::io;
+use std::io::{self, Read};
 use std::ops;
 use std::path::{PathBuf, Path};
 use std::rc::Rc;
@@ -52,6 +54,7 @@ pub enum EntryContent {
     Image(PathBuf),
     Archive(Arc<PathBuf>, ArchiveEntry),
     Pdf(Arc<PathBuf>, usize),
+    Memory(Vec<u8>, String),
 }
 
 pub type Meta = Arc<Vec<MetaEntry>>;
@@ -76,6 +79,7 @@ pub enum EntryType {
     PDF,
     Image,
     Archive,
+    Memory,
 }
 
 
@@ -147,6 +151,10 @@ impl EntryContent {
                 (EntryType::Archive,
                  url.unwrap_or_else(|| path_to_str(&**path).to_owned()),
                  entry.index),
+            Memory(_, ref hash) =>
+                (EntryType::Memory,
+                 url.unwrap_or_else(|| hash.clone()),
+                 0),
             Pdf(ref path, index) =>
                 (EntryType::PDF,
                  url.unwrap_or_else(|| path_to_str(&**path).to_owned()),
@@ -154,14 +162,16 @@ impl EntryContent {
         }
     }
 
-    pub fn local_file_path(&self) -> PathBuf {
+    pub fn local_file_path(&self) -> Option<PathBuf> {
         use self::EntryContent::*;
 
         match *self {
             Archive(ref path, _) | Pdf(ref path, _) =>
-                path.to_path_buf(),
+                Some(path.to_path_buf()),
             Image(ref path) =>
-                path.to_path_buf(),
+                Some(path.to_path_buf()),
+            Memory(_, _) =>
+                None
         }
     }
 }
@@ -421,8 +431,24 @@ impl EntryContainer {
     }
 
     pub fn push_image(&mut self, app_info: &AppInfo, file: &PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) {
-        if_let_some!(file = file.canonicalize().ok(), {
-            puts_error!(chry_error!("Invalid file path: {:?}", file), "at" => "push_image", "for" => path_to_str(&file));
+        use std::os::unix::fs::FileTypeExt;
+        if file.metadata().unwrap().file_type().is_fifo() {
+            match load_image_from_pipe(file) {
+                Ok((content, hash)) => {
+                    let serial = self.new_serial();
+                    self.push_entry(
+                        app_info,
+                        Entry::new(serial, EntryContent::Memory(content, hash), meta, url),
+                        force);
+                },
+                Err(err) =>
+                    puts_error!(err, "at" => "push_image", "for" => path_to_str(&file)),
+            }
+            return;
+        }
+
+        if_let_ok!(file = file.canonicalize(), |err| {
+            puts_error!(chry_error!("Invalid file path ({}): {:?}", err, file), "at" => "push_image", "for" => path_to_str(&file));
         });
 
         if let Some(expand_level) = expand_level {
@@ -467,7 +493,7 @@ impl EntryContainer {
 
         match (*entry).content {
             Image(ref path) => is_valid_image_filename(path),
-            Archive(_, _) | Pdf(_,  _) => true, // FIXME archive
+            Archive(_, _) | Pdf(_,  _) | Memory(_, _) => true, // FIXME archive
         }
     }
 
@@ -606,4 +632,23 @@ fn expand(dir: &Path, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
     });
 
     Ok(result)
+}
+
+fn load_image_from_pipe(path: &Path) -> Result<(Vec<u8>, String), Box<error::Error>> {
+    use sha2::{Sha256, Digest};
+
+    let mut hasher = Sha256::default();
+    let mut content = Vec::<u8>::new();
+
+    let mut file = File::open(path)?;
+    file.read_to_end(&mut content)?;
+
+    hasher.input(&content);
+
+    let mut hash = String::new();
+    for b in hasher.result().as_ref() {
+        hash.push_str(&format!("{:2x}", b));
+    }
+
+    Ok((content, hash))
 }

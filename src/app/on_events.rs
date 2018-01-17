@@ -501,6 +501,10 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) {
                 let name = entry.page_filename();
                 file_operation.execute_with_buffer(content, &name)
             },
+            Memory(ref content, _) => {
+                let name = entry.page_filename();
+                file_operation.execute_with_buffer(content, &name)
+            },
             Pdf(ref path, index) => {
                 let name = entry.page_filename();
                 let png = PopplerDocument::new_from_file(&**path).nth_page(index).get_png_data(&file_operation.size);
@@ -651,6 +655,8 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
                 find_sibling(path, next),
             Archive(ref path, _) | Pdf(ref path, _) =>
                 find_sibling(&*path, next),
+            Memory(_, _) =>
+                None,
         }
     });
 

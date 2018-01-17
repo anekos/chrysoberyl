@@ -32,6 +32,7 @@ extern crate num_cpus;
 extern crate pom;
 extern crate rand;
 extern crate readline;
+extern crate sha2;
 extern crate shell_escape;
 extern crate shellexpand;
 extern crate time;

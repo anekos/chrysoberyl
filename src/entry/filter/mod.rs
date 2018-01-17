@@ -165,7 +165,7 @@ fn eval_variable(info: &mut Info, content: &EntryContent, v: &EVariable) -> Opti
         Dimentions => info.entry.lazy(content).dimensions.map(|it| i64!(it.dimensions())),
         Pages => Some(info.app.pages as i64),
         RealPages => Some(info.app.real_pages as i64),
-        FileSize => Some(info.entry.lazy(content).file_size as i64),
+        FileSize => info.entry.lazy(content).file_size.map(|it| it as i64),
         AspectRatio | Type | Path | Name | Extension => None,
     }
 }

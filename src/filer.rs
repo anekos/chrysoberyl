@@ -21,6 +21,7 @@ pub enum IfExist {
 pub struct FileOperation {
     action: FileOperationAction,
     destination_directory: PathBuf,
+    destination_file: Option<String>,
     if_exist: IfExist,
     pub size: Option<Size>,
 }
@@ -34,16 +35,16 @@ pub enum FileOperationAction {
 
 
 impl FileOperation {
-    pub fn new_move(destination_directory: PathBuf, if_exist: IfExist, size: Option<Size>) -> FileOperation {
-        FileOperation::new(FileOperationAction::Move, destination_directory, if_exist, size)
+    pub fn new_move(destination_directory: PathBuf, destination_file: Option<String>, if_exist: IfExist, size: Option<Size>) -> FileOperation {
+        FileOperation::new(FileOperationAction::Move, destination_directory, destination_file, if_exist, size)
     }
 
-    pub fn new_copy(destination_directory: PathBuf, if_exist: IfExist, size: Option<Size>) -> FileOperation {
-        FileOperation::new(FileOperationAction::Copy, destination_directory, if_exist, size)
+    pub fn new_copy(destination_directory: PathBuf, destination_file: Option<String>, if_exist: IfExist, size: Option<Size>) -> FileOperation {
+        FileOperation::new(FileOperationAction::Copy, destination_directory, destination_file, if_exist, size)
     }
 
-    fn new(action: FileOperationAction, destination_directory: PathBuf, if_exist: IfExist, size: Option<Size>) -> FileOperation {
-        FileOperation { action: action, destination_directory: destination_directory, if_exist: if_exist, size: size }
+    fn new(action: FileOperationAction, destination_directory: PathBuf, destination_file: Option<String>, if_exist: IfExist, size: Option<Size>) -> FileOperation {
+        FileOperation { action, destination_directory, destination_file, if_exist, size, }
     }
 
     pub fn execute(&self, source: &PathBuf) -> Result<(), BoxedError> {
@@ -51,28 +52,28 @@ impl FileOperation {
 
         match self.action {
             Copy => {
-                let dest = destination_path(source, &self.destination_directory, &self.if_exist)?;
+                let dest = destination_path(source, &self.destination_directory, &self.destination_file, &self.if_exist)?;
                 Ok(fs::copy(source, dest).map(mangle)?)
             }
             Move => {
-                let dest = destination_path(source, &self.destination_directory, &self.if_exist)?;
+                let dest = destination_path(source, &self.destination_directory, &self.destination_file, &self.if_exist)?;
                 Ok(fs::rename(source, dest).map(mangle)?)
             }
         }
     }
 
     pub fn execute_with_buffer(&self, source: &[u8], source_name: &PathBuf) -> Result<(), BoxedError> {
-        let dest = destination_path(source_name, &self.destination_directory, &self.if_exist)?;
+        let dest = destination_path(source_name, &self.destination_directory, &self.destination_file, &self.if_exist)?;
         let mut file = File::create(dest)?;
         Ok(file.write_all(source)?)
     }
 }
 
 
-fn destination_path(source: &PathBuf, destination_directory: &PathBuf, if_exist: &IfExist) -> Result<PathBuf, BoxedError> {
+fn destination_path(source: &PathBuf, destination_directory: &PathBuf, file_name: &Option<String>, if_exist: &IfExist) -> Result<PathBuf, BoxedError> {
     use self::IfExist::*;
 
-    let file_name = source.file_name().unwrap();
+    let file_name = file_name.as_ref().map(|it| it.as_ref()).unwrap_or_else(|| source.file_name().unwrap());
     let mut path = destination_directory.clone();
 
     if !path.exists() {

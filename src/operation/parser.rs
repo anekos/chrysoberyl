@@ -99,8 +99,9 @@ pub fn parse_file(args: &[String]) -> Result<Operation, ParsingError> {
     use filer::{IfExist, FileOperation};
     use size::Size;
 
-    fn parse<T>(args: &[String], op: T) -> Result<Operation, ParsingError> where T: FnOnce(PathBuf, IfExist, Option<Size>) -> FileOperation {
+    fn parse<T>(args: &[String], op: T) -> Result<Operation, ParsingError> where T: FnOnce(PathBuf, Option<String>, IfExist, Option<Size>) -> FileOperation {
         let mut destination = "".to_owned();
+        let mut filename: Option<String> = None;
         let mut if_exist = IfExist::NewFileName;
         let mut size = None;
 
@@ -113,10 +114,11 @@ pub fn parse_file(args: &[String]) -> Result<Operation, ParsingError> {
             ap.refer(&mut size)
                 .add_option(&["--size", "-s"], StoreOption, "Fit to this size (only for PDF)");
             ap.refer(&mut destination).add_argument("destination", Store, "Destination directory").required();
+            ap.refer(&mut filename).add_argument("filename", StoreOption, "Filename");
             parse_args(&mut ap, args)
         } .map(|_| {
             Operation::OperateFile(
-                op(sh::expand_to_pathbuf(&destination), if_exist, size))
+                op(sh::expand_to_pathbuf(&destination), filename, if_exist, size))
         })
     }
 

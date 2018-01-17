@@ -185,7 +185,7 @@ Enable `OPTION_NAME`.
 Add directory entries (image) on `PATH`.
 
 
-## @file (move|copy) [--fail|-f] [--overwrite|-o] [--new|--new-file-name|-n] [(--size|-s) <SIZE>] <DIRECTORY_PATH>
+## @file (move|copy) [--fail|-f] [--overwrite|-o] [--new|--new-file-name|-n] [(--size|-s) <SIZE>] <DIRECTORY_PATH> [<FILE_NAME>]
 
 Move or copy the current image file to `DIRECTORY_PATH`.
 

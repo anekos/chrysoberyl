@@ -153,7 +153,7 @@ impl EntryContent {
                  entry.index),
             Memory(_, ref hash) =>
                 (EntryType::Memory,
-                 url.unwrap_or_else(|| hash.clone()),
+                 url.unwrap_or_else(|| format!("{}.png", hash)),
                  0),
             Pdf(ref path, index) =>
                 (EntryType::PDF,

@@ -632,6 +632,9 @@ impl App {
 
             if let Some(url) = entry.url {
                 envs.push((o!("url"), o!(*url)));
+                if let Some(path) = entry.content.local_file_path() {
+                    envs.push((o!("cache_path"), o!(path_to_str(&path))));
+                }
             }
 
             envs.push((o!("page"), s!(index + 1)));

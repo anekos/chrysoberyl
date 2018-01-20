@@ -148,6 +148,29 @@ pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region, context: Opt
 
 
 pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuffle: bool) -> EventResult {
+    fn process(app: &mut App, entry: command_line::Entry, first_path: &mut Option<String>, updated: &mut Updated) -> EventResult {
+        match entry {
+            CLE::Path(file) => {
+                if first_path.is_none() {
+                    *first_path = Some(file.clone());
+                }
+                on_events::on_push(app, updated, file.clone(), None, false)?;
+            }
+            CLE::Input(file) => {
+                controller::register_file(app.tx.clone(), file);
+            },
+            CLE::Expand(file, recursive) => {
+                on_events::on_push(app, updated, file.clone(), None, false)?;
+                app.tx.send(Operation::Expand(recursive, Some(Path::new(&file).to_path_buf())))?;
+            },
+            CLE::Operation(op) => {
+                let op = Operation::parse_from_vec(&op)?;
+                app.tx.send(op)?;
+            }
+        }
+        Ok(())
+    }
+
     use command_line::{Entry as CLE};
 
     app.reset_view();
@@ -159,24 +182,8 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
     {
         let mut updated = Updated::default();
         for entry in entries {
-            match entry {
-                CLE::Path(file) => {
-                    if first_path.is_none() {
-                        first_path = Some(file.clone());
-                    }
-                    on_events::on_push(app, &mut updated, file.clone(), None, false)?;
-                }
-                CLE::Input(file) => {
-                    controller::register_file(app.tx.clone(), file);
-                },
-                CLE::Expand(file, recursive) => {
-                    on_events::on_push(app, &mut updated, file.clone(), None, false)?;
-                    app.tx.send(Operation::Expand(recursive, Some(Path::new(&file).to_path_buf())))?;
-                },
-                CLE::Operation(op) => {
-                    let op = Operation::parse_from_vec(&op)?;
-                    app.tx.send(op)?;
-                }
+            if let Err(err) = process(app, entry, &mut first_path, &mut updated) {
+                puts_error!(err); // DONT stop entire `on_initial_process`
             }
         }
     }

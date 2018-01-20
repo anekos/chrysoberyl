@@ -1,5 +1,6 @@
 
 use std::env;
+use std::error::Error;
 use std::fs::File;
 use std::io::{Write, Read};
 use std::path::{Path, PathBuf};
@@ -47,8 +48,10 @@ use util::path::path_to_str;
 use app::*;
 
 
+type EventResult = Result<(), Box<Error>>;
 
-pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName, context: &HashMap<String, String>) {
+
+pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName, context: &HashMap<String, String>) -> EventResult {
     use self::EventName::*;
 
     let async = match *event_name {
@@ -59,9 +62,9 @@ pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName
     trace!("on_app_event: event={}, async={}", event_name, async);
 
     match *event_name {
-        ResizeWindow => on_window_resized(app, updated),
-        Initialize => on_initialized(app),
-        Spawn => on_spawn(app),
+        ResizeWindow => on_window_resized(app, updated)?,
+        Initialize => on_initialized(app)?,
+        Spawn => on_spawn(app)?,
         _ => ()
     }
 
@@ -76,11 +79,13 @@ pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName
     }
 
     if *event_name == Quit {
-        on_quit();
+        on_quit()?;
     }
+
+    Ok(())
 }
 
-pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<OperationContext>) {
+pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<OperationContext>) -> EventResult {
     use cherenkov::{Che, Modifier};
     use cherenkov::nova::Nova;
 
@@ -121,24 +126,28 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
             }
         }
     }
+
+    Ok(())
 }
 
-pub fn on_clear(app: &mut App, updated: &mut Updated) {
+pub fn on_clear(app: &mut App, updated: &mut Updated) -> EventResult {
     app.entries.clear();
     app.paginator.reset();
     app.cache.clear();
     updated.image = true;
+    Ok(())
 }
 
-pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region, context: Option<OperationContext>) {
+pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region, context: Option<OperationContext>) -> EventResult {
     let inner = extract_region_from_context(context).map(|it| it.0).unwrap_or(inner);
     let current = app.states.drawing.clipping.unwrap_or_default();
     app.states.drawing.clipping = Some(current + inner);
     updated.image_options = true;
+    Ok(())
 }
 
 
-pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuffle: bool) {
+pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuffle: bool) -> EventResult {
     use command_line::{Entry as CLE};
 
     app.reset_view();
@@ -155,20 +164,18 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
                     if first_path.is_none() {
                         first_path = Some(file.clone());
                     }
-                    on_events::on_push(app, &mut updated, file.clone(), None, false);
+                    on_events::on_push(app, &mut updated, file.clone(), None, false)?;
                 }
                 CLE::Input(file) => {
                     controller::register_file(app.tx.clone(), file);
                 },
                 CLE::Expand(file, recursive) => {
-                    on_events::on_push(app, &mut updated, file.clone(), None, false);
-                    app.tx.send(Operation::Expand(recursive, Some(Path::new(&file).to_path_buf()))).unwrap();
+                    on_events::on_push(app, &mut updated, file.clone(), None, false)?;
+                    app.tx.send(Operation::Expand(recursive, Some(Path::new(&file).to_path_buf())))?;
                 },
                 CLE::Operation(op) => {
-                    match Operation::parse_from_vec(&op) {
-                        Ok(op) => app.tx.send(op).unwrap(),
-                        Err(err) => puts_error!(err, "at" => "operation", "for" => join(&op, ' ')),
-                    }
+                    let op = Operation::parse_from_vec(&op)?;
+                    app.tx.send(op)?;
                 }
             }
         }
@@ -185,34 +192,36 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
     app.update_paginator_condition();
 
     app.tx.send(EventName::Initialize.operation()).unwrap();
+    Ok(())
 }
 
 
-pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Expandable], sessions: &[Session]) {
+pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Expandable], sessions: &[Session]) -> EventResult {
     let tx = app.tx.clone();
     let source = with_ouput_string!(out, {
         for file in files {
-            if let Err(err) = File::open(file.expand()).and_then(|mut file| file.read_to_string(out)) {
-                puts_error!(err, "at" => o!("on_load"));
-            }
+            let mut file = File::open(file.expand())?;
+            file.read_to_string(out)?;
         }
         write_sessions(app, sessions, out);
     });
     spawn(move || editor::start_edit(&tx, editor_command.map(|it| it.to_string()), &source));
+    Ok(())
 }
 
-pub fn on_error(app: &mut App, updated: &mut Updated, error: String) {
+pub fn on_error(app: &mut App, updated: &mut Updated, error: String) -> EventResult {
     if app.error_loop_detector.in_loop(&error) {
-        return;
+        return Ok(());
     }
 
     env::set_var(constant::env_name("ERROR"), &error);
     app.update_message(Some(error));
     updated.message = true;
     app.fire_event(&EventName::Error);
+    Ok(())
 }
 
-pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Option<PathBuf>) {
+pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Option<PathBuf>) -> EventResult {
     let count = app.counter.pop();
     let center = app.current_for_file();
     let serial = app.store();
@@ -231,16 +240,16 @@ pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Op
     }
 
     updated.label = true;
+    Ok(())
 }
 
-pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) {
-    match app.user_switches.register(name, values) {
-        Ok(op) => app.operate(op),
-        Err(error) => puts_error!(error, "at" => "on_define_switch"),
-    }
+pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) -> EventResult {
+    let op = app.user_switches.register(name, values)?;
+    app.operate(op);
+    Ok(())
 }
 
-pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) {
+pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) -> EventResult {
     let current_index = app.paginator.current_index();
     let app_info = app.app_info();
 
@@ -257,10 +266,11 @@ pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) {
     updated.pointer = true;
     updated.image = true;
     updated.message = true;
+    Ok(())
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
-pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Option<Region>, color: Color, mask: bool, cell_index: usize, context: Option<OperationContext>) {
+pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Option<Region>, color: Color, mask: bool, cell_index: usize, context: Option<OperationContext>) -> EventResult {
     use cherenkov::{Modifier, Che};
 
     let (region, cell_index) = extract_region_from_context(context)
@@ -279,9 +289,10 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Optio
             &app.states.drawing);
         updated.image = true;
     }
+    Ok(())
 }
 
-pub fn on_filter(app: &mut App, updated: &mut Updated, dynamic: bool, expr: Option<FilterExpr>) {
+pub fn on_filter(app: &mut App, updated: &mut Updated, dynamic: bool, expr: Option<FilterExpr>) -> EventResult {
     if dynamic {
         app.states.last_filter.dynamic_filter = expr.clone();
     } else {
@@ -309,9 +320,10 @@ pub fn on_filter(app: &mut App, updated: &mut Updated, dynamic: bool, expr: Opti
     updated.message = true;
 
     app.update_message(Some(o!("Done")));
+    Ok(())
 }
 
-pub fn on_first(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {
+pub fn on_first(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy) -> EventResult {
     match move_by {
         MoveBy::Page => {
             let paging = app.paging_with_count(false, ignore_views, count);
@@ -325,38 +337,43 @@ pub fn on_first(app: &mut App, updated: &mut Updated, count: Option<usize>, igno
             }
         }
     }
+    Ok(())
 }
 
-pub fn on_fly_leaves(app: &mut App, updated: &mut Updated, n: usize) {
+pub fn on_fly_leaves(app: &mut App, updated: &mut Updated, n: usize) -> EventResult {
     updated.pointer = app.paginator.set_fly_leaves(n);
+    Ok(())
 }
 
-pub fn on_fragile(app: &mut App, path: &Expandable) {
+pub fn on_fragile(app: &mut App, path: &Expandable) -> EventResult {
     new_fragile_input(app.tx.clone(), &path.expand());
+    Ok(())
 }
 
-pub fn on_go(app: &mut App, updated: &mut Updated, key: &SearchKey) {
+pub fn on_go(app: &mut App, updated: &mut Updated, key: &SearchKey) -> EventResult {
     let index = app.entries.search(key);
     if let Some(index) = index {
         if app.paginator.update_index(Index(index)) {
             updated.pointer = true;
-            return;
+            return Ok(());
         }
     }
 
     app.states.go = Some(key.clone());
+    Ok(())
 }
 
-pub fn on_initialized(app: &mut App) {
+pub fn on_initialized(app: &mut App) -> EventResult {
     app.tx.send(Operation::UpdateUI).unwrap();
 
     ui_event::register(&app.gui, app.states.skip_resize_window, &app.primary_tx.clone());
     app.gui.update_colors();
     app.update_label(true, true);
     app.gui.show();
+    Ok(())
 }
 
-pub fn on_input(app: &mut App, input: &Input) {
+pub fn on_input(app: &mut App, input: &Input) -> EventResult {
     let (width, height) = app.gui.window.get_size();
 
     if_let_some!((operations, inputs) = app.mapping.matched(input, width, height, true), {
@@ -364,28 +381,27 @@ pub fn on_input(app: &mut App, input: &Input) {
         } else {
             puts_event!("input", "type" => input.type_name(), "name" => s!(input));
         }
+        Ok(())
     });
 
     for op in operations {
-        match Operation::parse_from_vec(&op) {
-            Ok(op) =>
-                app.operate(Operation::Context(OperationContext { input: input.clone(), cell_index: None }, Box::new(op))),
-            Err(err) =>
-                puts_error!(err, "at" => "input")
-        }
+        let op = Operation::parse_from_vec(&op)?;
+        app.operate(Operation::Context(OperationContext { input: input.clone(), cell_index: None }, Box::new(op)));
     }
 
     if let Input::Unified(coord, _) = *input {
         let context = convert_args!(hashmap!("input" => inputs, "x" => s!(coord.x), "y" => s!(coord.y)));
         app.fire_event_with_context(&EventName::MappedInput, context);
     }
+    Ok(())
 }
 
-pub fn on_kill_timer(app: &mut App, name: &str) {
+pub fn on_kill_timer(app: &mut App, name: &str) -> EventResult {
     app.timers.unregister(name);
+    Ok(())
 }
 
-pub fn on_last(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {
+pub fn on_last(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy) -> EventResult {
     match move_by {
         MoveBy::Page => {
             let paging = app.paging_with_count(false, ignore_views, count);
@@ -399,9 +415,10 @@ pub fn on_last(app: &mut App, updated: &mut Updated, count: Option<usize>, ignor
             }
         }
     }
+    Ok(())
 }
 
-pub fn on_lazy_draw(app: &mut App, updated: &mut Updated, to_end: &mut bool, serial: u64, new_to_end: bool) {
+pub fn on_lazy_draw(app: &mut App, updated: &mut Updated, to_end: &mut bool, serial: u64, new_to_end: bool) -> EventResult {
     trace!("on_lazy_draw: draw_serial={} serial={}", app.draw_serial, serial);
     if app.draw_serial == serial {
         if app.do_clear_cache {
@@ -412,22 +429,26 @@ pub fn on_lazy_draw(app: &mut App, updated: &mut Updated, to_end: &mut bool, ser
         updated.image = true;
         *to_end = new_to_end;
     }
+    Ok(())
 }
 
-pub fn on_load(app: &mut App, file: &Expandable, search_path: bool) {
+pub fn on_load(app: &mut App, file: &Expandable, search_path: bool) -> EventResult {
     let path = if search_path { file.search_path(&app.states.path_list) } else { file.expand() };
     script::load_from_file(&app.tx, &path, &app.states.path_list);
+    Ok(())
 }
 
-pub fn on_load_default(app: &mut App) {
+pub fn on_load_default(app: &mut App) -> EventResult {
     script::load(&app.tx, DEFAULT_CONFIG, &app.states.path_list);
+    Ok(())
 }
 
-pub fn on_make_visibles(app: &mut App, regions: &[Option<Region>]) {
+pub fn on_make_visibles(app: &mut App, regions: &[Option<Region>]) -> EventResult {
     app.gui.make_visibles(regions);
+    Ok(())
 }
 
-pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, operation: Vec<String>) {
+pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, operation: Vec<String>) -> EventResult {
     use app::MappingTarget::*;
 
     // puts_event!("map", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
@@ -441,15 +462,17 @@ pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, opera
         Region(button) =>
             app.mapping.register_region(button, operation),
     }
+    Ok(())
 }
 
 #[allow(unused_variables)]
-pub fn on_meow(app: &mut App, updated: &mut Updated) {
+pub fn on_meow(app: &mut App, updated: &mut Updated) -> EventResult {
     updated.image = true;
+    Ok(())
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
-pub fn on_move_again(app: &mut App, updated: &mut Updated, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) {
+pub fn on_move_again(app: &mut App, updated: &mut Updated, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) -> EventResult {
     if app.states.last_direction == state::Direction::Forward {
         on_next(app, updated, count, ignore_views, move_by, wrap)
     } else {
@@ -457,22 +480,23 @@ pub fn on_move_again(app: &mut App, updated: &mut Updated, to_end: &mut bool, co
     }
 }
 
-pub fn on_multi(app: &mut App, mut operations: VecDeque<Operation>, async: bool) {
+pub fn on_multi(app: &mut App, mut operations: VecDeque<Operation>, async: bool) -> EventResult {
     if async {
         if let Some(op) = operations.pop_front() {
             app.operate(op);
         }
         if !operations.is_empty() {
-            app.tx.send(Operation::Multi(operations, async)).unwrap();
+            app.tx.send(Operation::Multi(operations, async))?;
         }
     } else {
         for op in operations {
             app.operate(op);
         }
     }
+    Ok(())
 }
 
-pub fn on_next(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) {
+pub fn on_next(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) -> EventResult {
     app.states.last_direction = state::Direction::Forward;
     match move_by {
         MoveBy::Page => {
@@ -488,55 +512,56 @@ pub fn on_next(app: &mut App, updated: &mut Updated, count: Option<usize>, ignor
             }
         }
     }
+    Ok(())
 }
 
-pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) {
+pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) -> EventResult {
     use entry::EntryContent::*;
     use archive::ArchiveEntry;
 
     if let Some((entry, _)) = app.current() {
-        let result = match entry.content {
-            Image(ref path) => file_operation.execute(path),
+        match entry.content {
+            Image(ref path) => file_operation.execute(path)?,
             Archive(_ , ArchiveEntry { ref content, .. }) => {
                 let name = entry.page_filename();
-                file_operation.execute_with_buffer(content, &name)
+                file_operation.execute_with_buffer(content, &name)?
             },
             Memory(ref content, _) => {
                 let name = entry.page_filename();
-                file_operation.execute_with_buffer(content, &name)
+                file_operation.execute_with_buffer(content, &name)?
             },
             Pdf(ref path, index) => {
                 let name = entry.page_filename();
                 let png = PopplerDocument::new_from_file(&**path).nth_page(index).get_png_data(&file_operation.size);
-                file_operation.execute_with_buffer(png.as_ref(), &name)
+                file_operation.execute_with_buffer(png.as_ref(), &name)?
             },
         };
         let text = format!("{:?}", file_operation);
-        match result {
-            Ok(_) => puts_event!("operate_file", "status" => "ok", "operation" => text),
-            Err(err) => puts_error!(err, "at" => "operate_file", "status" => "fail", "operation" => text),
-        }
+        puts_event!("operate_file", "status" => "ok", "operation" => text);
     }
+    Ok(())
 }
 
-pub fn on_page(app: &mut App, updated: &mut Updated, page: usize) {
-    if_let_some!((_, index) = app.current(), ());
-    if_let_some!(found = app.entries.find_page_in_archive(index, page), ());
+pub fn on_page(app: &mut App, updated: &mut Updated, page: usize) -> EventResult {
+    if_let_some!((_, index) = app.current(), Ok(()));
+    if_let_some!(found = app.entries.find_page_in_archive(index, page), Ok(()));
     updated.pointer = app.paginator.update_index(Index(found));
+    Ok(())
 }
 
-pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, search_path: bool, command_line: &[Expandable], fmt: &poppler::index::Format, separator: Option<&str>) {
-    if_let_some!((entry, _) = app.current(), ());
+pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, search_path: bool, command_line: &[Expandable], fmt: &poppler::index::Format, separator: Option<&str>) -> EventResult {
+    if_let_some!((entry, _) = app.current(), Ok(()));
     if let EntryContent::Pdf(path, _) = entry.content {
         let mut stdin = o!("");
         PopplerDocument::new_from_file(&*path).index().write(fmt, separator, &mut stdin);
         shell::call(async, &expand_all(command_line, search_path, &app.states.path_list), Some(stdin), option!(read_operations, app.tx.clone()));
+        Ok(())
     } else {
-        puts_error!(ChryError::Fixed("current entry is not PDF"), "at" => "on_pdf_index");
+        Err(Box::new(ChryError::Fixed("current entry is not PDF")))
     }
 }
 
-pub fn on_pre_fetch(app: &mut App, serial: u64) {
+pub fn on_pre_fetch(app: &mut App, serial: u64) -> EventResult {
     let pre_fetch = app.states.pre_fetch.clone();
     if pre_fetch.enabled {
         trace!("on_pre_fetch: pre_fetch_serial={} serial={}", app.pre_fetch_serial, serial);
@@ -546,10 +571,11 @@ pub fn on_pre_fetch(app: &mut App, serial: u64) {
             app.pre_fetch(cell_size, 1..pre_fetch.page_size);
         }
     }
+    Ok(())
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
-pub fn on_previous(app: &mut App, updated: &mut Updated, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) {
+pub fn on_previous(app: &mut App, updated: &mut Updated, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) -> EventResult {
     app.states.last_direction = state::Direction::Backward;
     match move_by {
         MoveBy::Page => {
@@ -566,27 +592,29 @@ pub fn on_previous(app: &mut App, updated: &mut Updated, to_end: &mut bool, coun
             }
         }
     }
+    Ok(())
 }
 
-pub fn on_pull(app: &mut App, updated: &mut Updated) {
+pub fn on_pull(app: &mut App, updated: &mut Updated) -> EventResult {
     let buffered = app.sorting_buffer.pull_all();
-    push_buffered(app, updated, buffered);
+    push_buffered(app, updated, buffered)
 }
 
-pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<Meta>, force: bool) {
+pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<Meta>, force: bool) -> EventResult {
     if is_url(&path) {
-        app.tx.send(Operation::PushURL(path, meta, force, None)).unwrap();
-        return;
+        app.tx.send(Operation::PushURL(path, meta, force, None))?;
+        return Ok(())
     }
 
     on_push_path(app, updated, &Path::new(&path).to_path_buf(), meta, force)
 }
 
-pub fn on_push_archive(app: &mut App, path: &PathBuf, meta: Option<Meta>, force: bool, url: Option<String>) {
+pub fn on_push_archive(app: &mut App, path: &PathBuf, meta: Option<Meta>, force: bool, url: Option<String>) -> EventResult {
     archive::fetch_entries(path, meta, &app.encodings, app.tx.clone(), app.sorting_buffer.clone(), force, url);
+    Ok(())
 }
 
-pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: Option<Meta>, force: bool) {
+pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: Option<Meta>, force: bool) -> EventResult {
     if let Ok(path) = path.canonicalize() {
         if let Some(entry_type) = get_entry_type_from_filename(&path) {
             match entry_type {
@@ -607,28 +635,28 @@ pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: 
     }
 }
 
-pub fn on_push_directory(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) {
+pub fn on_push_directory(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) -> EventResult {
     let buffered = app.sorting_buffer.push_with_reserve(
         QueuedOperation::PushDirectory(file, meta, force));
-    push_buffered(app, updated, buffered);
+    push_buffered(app, updated, buffered)
 }
 
-pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) {
+pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) -> EventResult {
     let buffered = app.sorting_buffer.push_with_reserve(
         QueuedOperation::PushImage(file, meta, force, expand_level, url));
-    push_buffered(app, updated, buffered);
+    push_buffered(app, updated, buffered)
 }
 
-pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, url: Option<String>) {
+pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, url: Option<String>) -> EventResult {
     let document = PopplerDocument::new_from_file(&file);
     let n_pages = document.n_pages();
 
     let buffered = app.sorting_buffer.push_with_reserve(
         QueuedOperation::PushPdfEntries(file, n_pages, meta, force, url));
-    push_buffered(app, updated, buffered);
+    push_buffered(app, updated, buffered)
 }
 
-pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: Option<Meta>, force: bool, go: bool) {
+pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: Option<Meta>, force: bool, go: bool) -> EventResult {
     fn find_sibling(base: &PathBuf, next: bool) -> Option<PathBuf> {
         base.parent().and_then(|dir| {
             dir.read_dir().ok().and_then(|dir| {
@@ -662,55 +690,56 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
 
     if let Some(found) = found {
         if go {
-            on_go(app, updated, &SearchKey { path: o!(path_to_str(&found)), index: None});
+            on_go(app, updated, &SearchKey { path: o!(path_to_str(&found)), index: None})?;
         }
-        on_push_path(app, updated, &found, meta, force);
+        on_push_path(app, updated, &found, meta, force)?;
     }
+    Ok(())
 }
 
-pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) {
+pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) -> EventResult {
     let buffered = app.remote_cache.fetch(url, meta, force, entry_type);
-    push_buffered(app, updated, buffered);
+    push_buffered(app, updated, buffered)
 }
 
-pub fn on_quit() {
+pub fn on_quit() -> EventResult {
     termination::execute();
+    Ok(())
 }
 
-pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) {
+pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) -> EventResult {
     if len > 0 {
         let index = RandRange::new(0, len).ind_sample(&mut app.rng);
         let paging = app.paging_with_index(false, false, index);
         app.paginator.show(&paging);
         updated.image = true;
     }
+    Ok(())
 }
 
-pub fn on_reset_image(app: &mut App, updated: &mut Updated) {
+pub fn on_reset_image(app: &mut App, updated: &mut Updated) -> EventResult {
     if let Some((entry, _)) = app.current() {
         app.cache.uncherenkov(&entry.key);
         updated.image_options = true;
     }
+    Ok(())
 }
 
-pub fn on_reset_scrolls(app: &mut App, to_end: bool) {
+pub fn on_reset_scrolls(app: &mut App, to_end: bool) -> EventResult {
     app.gui.reset_scrolls(to_end);
+    Ok(())
 }
 
-pub fn on_save(app: &mut App, path: &Option<PathBuf>, sessions: &[Session]) {
+pub fn on_save(app: &mut App, path: &Option<PathBuf>, sessions: &[Session]) -> EventResult {
     let default = app_path::config_file(Some(app_path::DEFAULT_SESSION_FILENAME));
     let path = path.as_ref().unwrap_or(&default);
 
-    let result = File::create(path).map(|mut file| {
-        file.write_all(with_ouput_string!(out, write_sessions(app, sessions, out)).as_str().as_bytes())
-    });
-
-    if let Err(err) = result {
-        puts_error!(err, "at" => "save_session")
-    }
+    let mut file = File::create(path)?;
+    file.write_all(with_ouput_string!(out, write_sessions(app, sessions, out)).as_str().as_bytes())?;
+    Ok(())
 }
 
-pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>, backward: bool, color: Color) {
+pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>, backward: bool, color: Color) -> EventResult {
     use cherenkov::{Che, Modifier};
 
     fn opt_range_contains(range: &Option<Range<usize>>, index: usize, if_none: bool) -> bool {
@@ -721,7 +750,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
         if text.trim() == "" {
             app.update_message(None);
             updated.message = true;
-            return;
+            return Ok(());
         }
 
         if app.cache.clear_search_highlights() {
@@ -739,7 +768,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
 
     updated.message = true;
 
-    if_let_some!(text = app.search_text.clone(), app.update_message(Some(o!("Empty"))));
+    if_let_some!(text = app.search_text.clone(), ok!(app.update_message(Some(o!("Empty")))));
 
     let seq: Vec<(usize, Rc<Entry>)> = if backward {
         let skip = app.paginator.current_index().map(|index| app.entries.len() - index - 1).unwrap_or(0);
@@ -810,30 +839,30 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
         updated.target_regions = Some(first_regions);
     }
     app.found_on = new_found_on;
+
+    Ok(())
 }
 
-pub fn on_set_env(_: &mut App, name: &str, value: &Option<String>) {
+pub fn on_set_env(_: &mut App, name: &str, value: &Option<String>) -> EventResult {
     if let Some(ref value) = *value {
         env::set_var(name, value);
     } else {
         env::remove_var(name);
     }
+    Ok(())
 }
 
-pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scroll_size: f64, crush: bool) {
+pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scroll_size: f64, crush: bool) -> EventResult {
     let saved = app.counter.clone();
     if !app.gui.scroll_views(direction, scroll_size, app.counter.pop(), crush) && !operation.is_empty() {
-        match Operation::parse_from_vec(operation) {
-            Ok(op) => {
-                app.counter = saved;
-                app.operate(op);
-            },
-            Err(err) => puts_error!(err, "at" => "scroll"),
-        }
+        let op = Operation::parse_from_vec(operation)?;
+        app.counter = saved;
+        app.operate(op);
     }
+    Ok(())
 }
 
-pub fn on_shell(app: &mut App, async: bool, read_operations: bool, search_path: bool, command_line: &[Expandable], sessions: &[Session]) {
+pub fn on_shell(app: &mut App, async: bool, read_operations: bool, search_path: bool, command_line: &[Expandable], sessions: &[Session]) -> EventResult {
     let stdin = if !sessions.is_empty() {
         Some(with_ouput_string!(out, write_sessions(app, sessions, out)))
     } else {
@@ -843,26 +872,29 @@ pub fn on_shell(app: &mut App, async: bool, read_operations: bool, search_path: 
     set_count_env(app);
     let tx = app.tx.clone();
     shell::call(async, &expand_all(command_line, search_path, &app.states.path_list), stdin, option!(read_operations, tx));
+    Ok(())
 }
 
-pub fn on_shell_filter(app: &mut App, command_line: &[Expandable], search_path: bool) {
+pub fn on_shell_filter(app: &mut App, command_line: &[Expandable], search_path: bool) -> EventResult {
     set_count_env(app);
     shell_filter::start(expand_all(command_line, search_path, &app.states.path_list), app.tx.clone());
+    Ok(())
 }
 
-pub fn on_show(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy) {
+pub fn on_show(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy) -> EventResult {
     match move_by {
         MoveBy::Page => {
             let paging = app.paging_with_count(false, false, count);
             updated.pointer = app.paginator.show(&paging);
         },
         MoveBy::Archive => {
-            on_first(app, updated, count, ignore_views, move_by);
+            on_first(app, updated, count, ignore_views, move_by)?;
         }
     }
+    Ok(())
 }
 
-pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) {
+pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) -> EventResult {
     let serial = app.store();
     let app_info = app.app_info();
     app.entries.shuffle(&app_info);
@@ -875,9 +907,10 @@ pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) {
         updated.pointer = true;
     }
     updated.label = true;
+    Ok(())
 }
 
-pub fn on_sort(app: &mut App, updated: &mut Updated, fix_current: bool, sort_key: SortKey, reverse: bool) {
+pub fn on_sort(app: &mut App, updated: &mut Updated, fix_current: bool, sort_key: SortKey, reverse: bool) -> EventResult {
     use std::cmp::Ordering;
     use self::SortKey::*;
 
@@ -925,14 +958,16 @@ pub fn on_sort(app: &mut App, updated: &mut Updated, fix_current: bool, sort_key
         updated.image = true;
         updated.pointer = true;
     }
+    Ok(())
 }
 
-pub fn on_spawn(app: &mut App) {
+pub fn on_spawn(app: &mut App) -> EventResult {
     app.states.spawned = true;
     app.operate(Operation::Draw);
+    Ok(())
 }
 
-pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f64, button: &Key) {
+pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f64, button: &Key) -> EventResult {
     let (mx, my) = (left as i32, top as i32);
     for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
         if app.current_with(index).is_some() {
@@ -957,18 +992,21 @@ pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f6
             }
         }
     }
+    Ok(())
 }
 
-pub fn on_timer(app: &mut App, name: String, op: Vec<String>, interval: Duration, repeat: Option<usize>) {
+pub fn on_timer(app: &mut App, name: String, op: Vec<String>, interval: Duration, repeat: Option<usize>) -> EventResult {
     app.timers.register(name, op, interval, repeat);
+    Ok(())
 }
 
-pub fn on_unclip(app: &mut App, updated: &mut Updated) {
+pub fn on_unclip(app: &mut App, updated: &mut Updated) -> EventResult {
     app.states.drawing.clipping = None;
     updated.image_options = true;
+    Ok(())
 }
 
-pub fn on_undo(app: &mut App, updated: &mut Updated, count: Option<usize>) {
+pub fn on_undo(app: &mut App, updated: &mut Updated, count: Option<usize>) -> EventResult {
     // `counted` should be evaluated
     #[cfg_attr(feature = "cargo-clippy", allow(or_fun_call))]
     let count = count.unwrap_or(app.counter.pop());
@@ -977,9 +1015,10 @@ pub fn on_undo(app: &mut App, updated: &mut Updated, count: Option<usize>) {
         app.cache.undo_cherenkov(&entry.key, count)
     }
     updated.image_options = true;
+    Ok(())
 }
 
-pub fn on_unmap(app: &mut App, target: &MappingTarget) {
+pub fn on_unmap(app: &mut App, target: &MappingTarget) -> EventResult {
     use app::MappingTarget::*;
 
     // puts_event!("unmap", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
@@ -991,9 +1030,10 @@ pub fn on_unmap(app: &mut App, target: &MappingTarget) {
         Region(ref button) =>
             app.mapping.unregister_region(button),
     }
+    Ok(())
 }
 
-pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &OptionName, updater: &OptionUpdater) {
+pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &OptionName, updater: &OptionUpdater) -> EventResult {
     use option::OptionValue;
     use operation::option::OptionName::*;
     use operation::option::OptionUpdater::*;
@@ -1061,21 +1101,16 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
             _ => (),
         };
 
-        let result = match *updater {
-            Cycle(ref reverse) => value.cycle(*reverse),
-            Disable => value.disable(),
-            Enable => value.enable(),
-            Set(ref arg) => value.set(arg),
-            Toggle => value.toggle(),
-            Unset => value.unset(),
-            SetByCount => value.set_from_count(app.counter.pop_option()),
-            Increment(delta) => value.increment(app.counter.pop_option().unwrap_or(delta)),
-            Decrement(delta) => value.decrement(app.counter.pop_option().unwrap_or(delta)),
-        };
-
-        if let Err(error) = result {
-            puts_error!(error, "at" => "update_option", "for" => d!(option_name));
-            return;
+        match *updater {
+            Cycle(ref reverse) => value.cycle(*reverse)?,
+            Disable => value.disable()?,
+            Enable => value.enable()?,
+            Set(ref arg) => value.set(arg)?,
+            Toggle => value.toggle()?,
+            Unset => value.unset()?,
+            SetByCount => value.set_from_count(app.counter.pop_option())?,
+            Increment(delta) => value.increment(app.counter.pop_option().unwrap_or(delta))?,
+            Decrement(delta) => value.decrement(app.counter.pop_option().unwrap_or(delta))?,
         }
     }
 
@@ -1104,83 +1139,83 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
             ColorWindowBackground | ColorStatusBar | ColorStatusBarBackground =>
                 app.gui.update_colors(),
             VerticalViews | HorizontalViews =>
-                on_update_views(app, updated),
+                on_update_views(app, updated)?,
             UpdateCacheAccessTime =>
                 app.remote_cache.do_update_atime = app.states.update_cache_atime,
             _ => ()
         }
     }
+    Ok(())
 }
 
-pub fn on_user(_: &mut App, data: &[(String, String)]) {
+pub fn on_user(_: &mut App, data: &[(String, String)]) -> EventResult {
     let mut pairs = vec![(o!("event"), o!("user"))];
     pairs.extend_from_slice(data);
     logger::puts(&pairs);
+    Ok(())
 }
 
-pub fn on_views(app: &mut App, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>) {
+pub fn on_views(app: &mut App, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>) -> EventResult {
     if let Some(cols) = cols {
         app.states.view.cols = cols
     }
     if let Some(rows) = rows {
         app.states.view.rows = rows
     }
-    on_update_views(app, updated);
+    on_update_views(app, updated)
 }
 
-pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool) {
+pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool) -> EventResult {
     let count = app.counter.pop();
     if for_rows {
         app.states.view.rows = count;
     } else {
         app.states.view.cols = count;
     };
-    on_update_views(app, updated);
+    on_update_views(app, updated)
 }
 
-pub fn on_when(app: &mut App, filter: FilterExpr, unless: bool, op: &[String]) {
+pub fn on_when(app: &mut App, filter: FilterExpr, unless: bool, op: &[String]) -> EventResult {
     let app_info = app.app_info();
-    if_let_some!((_, index, _) = app.current_non_fly_leave(), ());
-    if_let_some!(r = app.entries.validate_nth(index, filter, &app_info), ());
+    if_let_some!((_, index, _) = app.current_non_fly_leave(), Ok(()));
+    if_let_some!(r = app.entries.validate_nth(index, filter, &app_info), Ok(()));
 
     if r ^ unless {
-        match Operation::parse_from_vec(op) {
-            Ok(op) =>
-                app.operate(op),
-            Err(err) =>
-                puts_error!(err, "at" => "input")
-        }
+        let op = Operation::parse_from_vec(op)?;
+        app.operate(op);
     }
+    Ok(())
 }
 
-pub fn on_window_resized(app: &mut App, updated: &mut Updated) {
+pub fn on_window_resized(app: &mut App, updated: &mut Updated) -> EventResult {
     updated.image_options = true;
     // Ignore followed PreFetch
     app.pre_fetch_serial += 1;
+    Ok(())
 }
 
-pub fn on_with_message(app: &mut App, updated: &mut Updated, message: Option<String>, op: Operation) {
+pub fn on_with_message(app: &mut App, updated: &mut Updated, message: Option<String>, op: Operation) -> EventResult {
     updated.message = true;
     app.update_message(message);
-    app.tx.send(Operation::UpdateUI).unwrap();
-    app.tx.send(op).unwrap();
+    app.tx.send(Operation::UpdateUI)?;
+    app.tx.send(op)?;
+    Ok(())
 }
 
-pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) {
+pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) -> EventResult {
     let count = index.unwrap_or_else(|| app.counter.pop()) - 1;
-    if let Err(error) = app.gui.save(path, count) {
-        puts_error!(error, "at" => "save")
-    }
+    app.gui.save(path, count)
 }
 
-fn on_update_views(app: &mut App, updated: &mut Updated) {
+fn on_update_views(app: &mut App, updated: &mut Updated) -> EventResult {
     updated.image_options = true;
     let serial = app.store();
     app.reset_view();
     app.restore_or_first(updated, serial);
+    Ok(())
 }
 
-fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>) {
+fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>) -> EventResult {
     use operation::QueuedOperation::*;
 
     let before_len = app.entries.len();
@@ -1193,11 +1228,11 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
             PushDirectory(path, meta, force) =>
                 app.entries.push_directory(&app_info, &path, &meta, force),
             PushArchive(archive_path, meta, force, url) =>
-                on_push_archive(app, &archive_path, meta, force, url),
+                on_push_archive(app, &archive_path, meta, force, url)?,
             PushArchiveEntry(archive_path, entry, meta, force, url) =>
                 app.entries.push_archive_entry(&app_info, &archive_path, &entry, meta, force, url),
             PushPdf(pdf_path, meta, force, url) =>
-                on_push_pdf(app, updated, pdf_path, meta, force, url),
+                on_push_pdf(app, updated, pdf_path, meta, force, url)?,
             PushPdfEntries(pdf_path, pages, meta, force, url) => {
                 let pdf_path = Arc::new(pdf_path.clone());
                 for index in 0 .. pages {
@@ -1216,6 +1251,7 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
     }
 
     app.do_go(updated);
+    Ok(())
 }
 
 fn extract_region_from_context(context: Option<OperationContext>) -> Option<(Region, usize)> {

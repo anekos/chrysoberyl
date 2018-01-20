@@ -181,3 +181,12 @@ macro_rules! clamp {
         min!(max!($min, $value), $max)
     }
 }
+
+macro_rules! ok {
+    ($value:expr) => {
+        {
+            $value;
+            Ok(())
+        }
+    }
+}

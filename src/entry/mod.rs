@@ -432,19 +432,22 @@ impl EntryContainer {
 
     pub fn push_image(&mut self, app_info: &AppInfo, file: &PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) {
         use std::os::unix::fs::FileTypeExt;
-        if file.metadata().unwrap().file_type().is_fifo() {
-            match load_image_from_pipe(file) {
-                Ok((content, hash)) => {
-                    let serial = self.new_serial();
-                    self.push_entry(
-                        app_info,
-                        Entry::new(serial, EntryContent::Memory(content, hash), meta, url),
-                        force);
-                },
-                Err(err) =>
-                    puts_error!(err, "at" => "push_image", "for" => path_to_str(&file)),
+
+        if let Ok(metadata) = file.metadata() {
+            if metadata.file_type().is_fifo() {
+                match load_image_from_pipe(file) {
+                    Ok((content, hash)) => {
+                        let serial = self.new_serial();
+                        self.push_entry(
+                            app_info,
+                            Entry::new(serial, EntryContent::Memory(content, hash), meta, url),
+                            force);
+                    },
+                    Err(err) =>
+                        puts_error!(err, "at" => "push_image", "for" => path_to_str(&file)),
+                }
+                return;
             }
-            return;
         }
 
         if_let_ok!(file = file.canonicalize(), |err| {

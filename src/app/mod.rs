@@ -39,7 +39,6 @@ use termination;
 use timer::TimerManager;
 use ui_event;
 use util::path::path_to_str;
-use util::string::join;
 use version;
 
 mod error_loop_detector;
@@ -161,14 +160,15 @@ impl App {
         use self::Operation::*;
         use self::on_events::*;
 
-        trace!("operate_with_context: operation={:?}", operation);
+        let operation_name = d!(operation);
+        trace!("operate_with_context: operation={:?}", operation_name);
 
         let mut updated = Updated::default();
         let mut to_end = false;
         let len = self.entries.len();
 
         {
-            match operation {
+            let operated = match operation {
                 AppEvent(ref event_name, ref context) =>
                     on_app_event(self, &mut updated, event_name, context),
                 Cherenkov(ref parameter) =>
@@ -180,15 +180,15 @@ impl App {
                 Context(context, op) =>
                     return self.operate_with_context(*op, Some(context)),
                 Count(count) =>
-                    self.counter.set(count),
+                    ok!(self.counter.set(count)),
                 CountDigit(digit) =>
-                    self.counter.push_digit(digit),
+                    ok!(self.counter.push_digit(digit)),
                 DefineUserSwitch(name, values) =>
                     on_define_switch(self, name, values),
                 Delete(expr) =>
                     on_delete(self, &mut updated, *expr),
                 Draw =>
-                    updated.image = true,
+                    ok!(updated.image = true),
                 Editor(ref editor_command, ref files, ref sessions) =>
                    on_editor(self, editor_command.clone(), files, sessions),
                 Error(error) =>
@@ -234,7 +234,7 @@ impl App {
                 Next(count, ignore_views, move_by, wrap) =>
                     on_next(self, &mut updated, count, ignore_views, move_by, wrap),
                 Nop =>
-                    (),
+                    Ok(()),
                 OperateFile(ref file_operation) =>
                     on_operate_file(self, file_operation),
                 Page(page) =>
@@ -264,7 +264,7 @@ impl App {
                 Random =>
                     on_random(self, &mut updated, len),
                 Refresh =>
-                    updated.pointer = true,
+                    ok!(updated.pointer = true),
                 ResetImage =>
                     on_reset_image(self, &mut updated),
                 ResetScrolls(to_end) =>
@@ -298,7 +298,7 @@ impl App {
                 Unmap(target) =>
                     on_unmap(self, &target),
                 Update(new_updated) =>
-                    updated = new_updated,
+                    ok!(updated = new_updated),
                 UpdateUI =>
                     panic!("WTF"),
                 UpdateOption(ref option_name, ref updater) =>
@@ -315,6 +315,9 @@ impl App {
                     on_with_message(self, &mut updated, message, *op),
                 Write(ref path, ref index) =>
                     on_write(self, path, index),
+            };
+            if let Err(err) = operated {
+                puts_error!(err, "operation" => operation_name);
             }
         }
 

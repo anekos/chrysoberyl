@@ -56,7 +56,7 @@ pub enum Operation {
     Fragile(Expandable),
     Go(entry::SearchKey),
     Input(mapping::Input),
-    InitialProcess(Vec<command_line::Entry>, bool), /* command_lin::entries, shuffle */
+    InitialProcess(Vec<command_line::Entry>, bool, bool), /* command_lin::entries, shuffle, stdin_as_file */
     KillTimer(String),
     Last(Option<usize>, bool, MoveBy, bool),
     LazyDraw(u64, bool), /* serial, to_end */
@@ -79,6 +79,7 @@ pub enum Operation {
     PushArchive(Expandable, Option<Meta>, bool), /* path, meta, force */
     PushDirectory(Expandable, Option<Meta>, bool), /* path, meta, force */
     PushImage(Expandable, Option<Meta>, bool, Option<u8>), /* path, meta, force, expand-level */
+    PushMemory(Vec<u8>), /* memory */
     PushPdf(Expandable, Option<Meta>, bool),
     PushSibling(bool, Option<Meta>, bool, bool), /* next?, meta, force, show */
     PushURL(String, Option<Meta>, bool, Option<EntryType>),
@@ -150,10 +151,11 @@ pub enum MoveBy {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum QueuedOperation {
-    PushImage(PathBuf, Option<Meta>, bool, Option<u8>, Option<String>), /* path, meta, force, expand-level, remote-url */
-    PushDirectory(PathBuf, Option<Meta>, bool), /* path, meta, force */
     PushArchive(PathBuf, Option<Meta>, bool, Option<String>), /* path, meta, force, remote-url */
     PushArchiveEntry(PathBuf, ArchiveEntry, Option<Meta>, bool, Option<String>), /* path, archive-entry, meta, force, remote-url */
+    PushDirectory(PathBuf, Option<Meta>, bool), /* path, meta, force */
+    PushImage(PathBuf, Option<Meta>, bool, Option<u8>, Option<String>), /* path, meta, force, expand-level, remote-url */
+    PushMemory(Vec<u8>), /* memory */
     PushPdf(PathBuf, Option<Meta>, bool, Option<String>), /* path, meta, force, remote-url */
     PushPdfEntries(PathBuf, usize, Option<Meta>, bool, Option<String>), /* path, pages, meta, force, remote-url */
 }
@@ -398,7 +400,7 @@ impl fmt::Debug for Operation {
             FlyLeaves(_) => "FlyLeaves",
             Fragile(_) => "Fragile",
             Go(_) => "Go",
-            InitialProcess(_, _) => "InitialProcess",
+            InitialProcess(_, _, _) => "InitialProcess",
             Input(_) => "Input",
             KillTimer(_) => "KillTimer",
             Last(_, _, _, _) => "Last",
@@ -422,6 +424,7 @@ impl fmt::Debug for Operation {
             PushArchive(_, _, _) => "PushArchive",
             PushDirectory(_, _, _) => "PushDirectory",
             PushImage(_, _, _, _) => "PushImage",
+            PushMemory(_) => "PushMemory",
             PushPdf(_, _, _) => "PushPdf",
             PushSibling(_, _, _, _) => "PushSibling",
             PushURL(_, _, _, _) => "PushURL",

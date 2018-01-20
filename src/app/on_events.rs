@@ -147,7 +147,7 @@ pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region, context: Opt
 }
 
 
-pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuffle: bool) -> EventResult {
+pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuffle: bool, stdin_as_file: bool) -> EventResult {
     fn process(app: &mut App, entry: command_line::Entry, first_path: &mut Option<String>, updated: &mut Updated) -> EventResult {
         match entry {
             CLE::Path(file) => {
@@ -188,7 +188,11 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
         }
     }
 
-    controller::register_stdin(app.tx.clone(), app.states.history_file.clone());
+    if stdin_as_file {
+        controller::register_stdin_as_file(app.tx.clone());
+    } else {
+        controller::register_stdin(app.tx.clone(), app.states.history_file.clone());
+    }
 
     if shuffle {
         let fix = first_path.map(|it| Path::new(&it).is_file()).unwrap_or(false);
@@ -651,6 +655,12 @@ pub fn on_push_directory(app: &mut App, updated: &mut Updated, file: PathBuf, me
 pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) -> EventResult {
     let buffered = app.sorting_buffer.push_with_reserve(
         QueuedOperation::PushImage(file, meta, force, expand_level, url));
+    push_buffered(app, updated, buffered)
+}
+
+pub fn on_push_memory(app: &mut App, updated: &mut Updated, buf: Vec<u8>) -> EventResult {
+    let buffered = app.sorting_buffer.push_with_reserve(
+        QueuedOperation::PushMemory(buf));
     push_buffered(app, updated, buffered)
 }
 
@@ -1238,6 +1248,8 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
                 on_push_archive(app, &archive_path, meta, force, url)?,
             PushArchiveEntry(archive_path, entry, meta, force, url) =>
                 app.entries.push_archive_entry(&app_info, &archive_path, &entry, meta, force, url),
+            PushMemory(buf) =>
+                app.entries.push_memory(&app_info, buf, None, false, None)?,
             PushPdf(pdf_path, meta, force, url) =>
                 on_push_pdf(app, updated, pdf_path, meta, force, url)?,
             PushPdfEntries(pdf_path, pages, meta, force, url) => {

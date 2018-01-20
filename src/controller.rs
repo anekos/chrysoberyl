@@ -1,7 +1,7 @@
 
 use std::error::Error;
 use std::fs::{OpenOptions, File, create_dir_all};
-use std::io::{Write, BufReader, BufRead};
+use std::io::{self, Read, Write, BufReader, BufRead};
 use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 use std::thread::spawn;
@@ -57,6 +57,16 @@ pub fn register_stdin(tx: Sender<Operation>, mut history_file: Option<PathBuf>) 
             }
         }
         puts_event!("input/stdin/close");
+    });
+}
+
+pub fn register_stdin_as_file(tx: Sender<Operation>) {
+    spawn(move || {
+        let stdin = io::stdin();
+        let mut stdin = stdin.lock();
+        let mut buf = vec![];
+        stdin.read_to_end(&mut buf).unwrap();
+        tx.send(Operation::PushMemory(buf)).unwrap();
     });
 }
 

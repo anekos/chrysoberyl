@@ -131,7 +131,7 @@ impl App {
         };
 
         script::load(&app.tx, &config::get_config_source(), &app.states.path_list);
-        app.tx.send(Operation::InitialProcess(initial.entries, initial.shuffle)).unwrap();
+        app.tx.send(Operation::InitialProcess(initial.entries, initial.shuffle, initial.stdin_as_file)).unwrap();
         error::register(app.tx.clone());
 
         (app, primary_rx, rx)
@@ -207,8 +207,8 @@ impl App {
                     on_fragile(self, path),
                 Go(ref key) =>
                     on_go(self, &mut updated, key),
-                InitialProcess(entries, shuffle) =>
-                    on_initial_process(self, entries, shuffle),
+                InitialProcess(entries, shuffle, stdin_as_file) =>
+                    on_initial_process(self, entries, shuffle, stdin_as_file),
                 Input(ref input) =>
                     on_input(self, input),
                 KillTimer(ref name) =>
@@ -255,6 +255,8 @@ impl App {
                     on_push_directory(self, &mut updated, file.expand(), meta, force),
                 PushImage(file, meta, force, expand_level) =>
                     on_push_image(self, &mut updated, file.expand(), meta, force, expand_level, None),
+                PushMemory(buf) =>
+                    on_push_memory(self, &mut updated, buf),
                 PushPdf(file, meta, force) =>
                     on_push_pdf(self, &mut updated, file.expand(), meta, force, None),
                 PushSibling(next, meta, force, show) =>

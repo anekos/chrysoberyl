@@ -431,18 +431,35 @@ impl EntryContainer {
         self.entries.iter().position(|it| it.serial == serial)
     }
 
+    pub fn push_memory(&mut self, app_info: &AppInfo, content: Vec<u8>, meta: Option<Meta>, force: bool, url: Option<String>) -> Result<(), Box<error::Error>> {
+        use sha2::{Sha256, Digest};
+
+        let mut hasher = Sha256::default();
+
+        hasher.input(&content);
+
+        let mut hash = String::new();
+        for b in hasher.result().as_ref() {
+            hash.push_str(&format!("{:2x}", b));
+        }
+
+        let serial = self.new_serial();
+        self.push_entry(
+            app_info,
+            Entry::new(serial, EntryContent::Memory(content, hash), meta, url),
+            force);
+        Ok(())
+    }
+
     pub fn push_image(&mut self, app_info: &AppInfo, file: &PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) -> Result<(), Box<error::Error>> {
         use std::os::unix::fs::FileTypeExt;
 
         if let Ok(metadata) = file.metadata() {
             if metadata.file_type().is_fifo() {
-                let (content, hash) = load_image_from_pipe(file)?;
-                let serial = self.new_serial();
-                self.push_entry(
-                    app_info,
-                    Entry::new(serial, EntryContent::Memory(content, hash), meta, url),
-                    force);
-                return Ok(());
+                let mut content = vec![];
+                let mut file = File::open(file)?;
+                file.read_to_end(&mut content)?;
+                return self.push_memory(app_info, content, meta, force, url);
             }
         }
 
@@ -624,23 +641,4 @@ fn expand(dir: &Path, recursive: u8) -> Result<Vec<PathBuf>, io::Error> {
     });
 
     Ok(result)
-}
-
-fn load_image_from_pipe(path: &Path) -> Result<(Vec<u8>, String), Box<error::Error>> {
-    use sha2::{Sha256, Digest};
-
-    let mut hasher = Sha256::default();
-    let mut content = Vec::<u8>::new();
-
-    let mut file = File::open(path)?;
-    file.read_to_end(&mut content)?;
-
-    hasher.input(&content);
-
-    let mut hash = String::new();
-    for b in hasher.result().as_ref() {
-        hash.push_str(&format!("{:2x}", b));
-    }
-
-    Ok((content, hash))
 }

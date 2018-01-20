@@ -29,6 +29,7 @@ macro_rules! chry_error {
 pub enum ChryError {
     Standard(String),
     Parse(String),
+    File(&'static str, String),
     Fixed(&'static str),
     NotSupported(&'static str),
     InvalidValue(String),
@@ -41,6 +42,7 @@ impl fmt::Display for ChryError {
 
         match *self {
             Standard(ref e) => write!(f, "{}", e),
+            File(e, ref file) => write!(f, "{}: {}", e, file),
             Fixed(e) => write!(f, "Invalid value: {}", e),
             NotSupported(e) => write!(f, "Not supported: {}", e),
             Parse(ref e) => write!(f, "Parsing error: {}", e),
@@ -56,6 +58,7 @@ impl error::Error for ChryError {
 
         match *self {
             Standard(_) => "error",
+            File(_, _) => "File error",
             Fixed(e) => e,
             NotSupported(_) => "Not supported",
             Parse(_) => "Parsing error",

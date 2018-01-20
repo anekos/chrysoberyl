@@ -320,6 +320,7 @@ impl App {
             };
             if let Err(err) = operated {
                 puts_error!(err, "operation" => operation_name);
+                return;
             }
         }
 

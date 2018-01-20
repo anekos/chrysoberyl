@@ -161,11 +161,11 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
             },
             CLE::Expand(file, recursive) => {
                 on_events::on_push(app, updated, file.clone(), None, false)?;
-                app.tx.send(Operation::Expand(recursive, Some(Path::new(&file).to_path_buf())))?;
+                app.tx.send(Operation::Expand(recursive, Some(Path::new(&file).to_path_buf()))).unwrap();
             },
             CLE::Operation(op) => {
                 let op = Operation::parse_from_vec(&op)?;
-                app.tx.send(op)?;
+                app.tx.send(op).unwrap()
             }
         }
         Ok(())

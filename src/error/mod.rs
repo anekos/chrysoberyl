@@ -25,8 +25,9 @@ macro_rules! puts_error {
     ( $err:expr $(,$name:expr => $value:expr)* ) => {
         {
             use error;
-            error::push(d!($err));
-            puts!("event" => "error", "message" => d!($err) $(, $name => $value)*)
+            let message = s!($err);
+            error::push(message.clone());
+            puts!("event" => "error", "message" => message $(, $name => $value)*)
         }
     }
 }

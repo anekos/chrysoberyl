@@ -1224,9 +1224,9 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
     for op in ops {
         match op {
             PushImage(path, meta, force, expand_level, url) =>
-                app.entries.push_image(&app_info, &path, meta, force, expand_level, url),
+                app.entries.push_image(&app_info, &path, meta, force, expand_level, url)?,
             PushDirectory(path, meta, force) =>
-                app.entries.push_directory(&app_info, &path, &meta, force),
+                app.entries.push_directory(&app_info, &path, &meta, force)?,
             PushArchive(archive_path, meta, force, url) =>
                 on_push_archive(app, &archive_path, meta, force, url)?,
             PushArchiveEntry(archive_path, entry, meta, force, url) =>

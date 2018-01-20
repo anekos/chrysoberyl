@@ -16,6 +16,7 @@ use url::Url;
 use app::info::AppInfo;
 use archive::ArchiveEntry;
 use entry::filter::expression::Expr as FilterExpr;
+use errors::ChryError;
 use file_extension::{is_valid_image_filename};
 use filterable_vec::{FilterableVec, Pred, Compare};
 use shorter::*;
@@ -430,42 +431,28 @@ impl EntryContainer {
         self.entries.iter().position(|it| it.serial == serial)
     }
 
-    pub fn push_image(&mut self, app_info: &AppInfo, file: &PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) {
+    pub fn push_image(&mut self, app_info: &AppInfo, file: &PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) -> Result<(), Box<error::Error>> {
         use std::os::unix::fs::FileTypeExt;
 
         if let Ok(metadata) = file.metadata() {
             if metadata.file_type().is_fifo() {
-                match load_image_from_pipe(file) {
-                    Ok((content, hash)) => {
-                        let serial = self.new_serial();
-                        self.push_entry(
-                            app_info,
-                            Entry::new(serial, EntryContent::Memory(content, hash), meta, url),
-                            force);
-                    },
-                    Err(err) =>
-                        puts_error!(err, "at" => "push_image", "for" => path_to_str(&file)),
-                }
-                return;
+                let (content, hash) = load_image_from_pipe(file)?;
+                let serial = self.new_serial();
+                self.push_entry(
+                    app_info,
+                    Entry::new(serial, EntryContent::Memory(content, hash), meta, url),
+                    force);
+                return Ok(());
             }
         }
 
-        if_let_ok!(file = file.canonicalize(), |err| {
-            puts_error!(chry_error!("Invalid file path ({}): {:?}", err, file), "at" => "push_image", "for" => path_to_str(&file));
-        });
+        let file = file.canonicalize().map_err(|_| ChryError::File("Could not canonicalize", d!(file)))?;
 
         if let Some(expand_level) = expand_level {
             if let Some(dir) = file.parent() {
-                match expand(dir, expand_level) {
-                    Ok(files) => {
-                        for file in files {
-                            self.push_image(app_info, &file, meta.clone(), force, None, None);
-                        }
-                    },
-                    Err(err) => {
-                        puts_error!(err, "at" => "push_image", "for" => path_to_str(&file));
-                        return;
-                    }
+                let files = expand(dir, expand_level)?;
+                for file in files {
+                    self.push_image(app_info, &file, meta.clone(), force, None, None)?;
                 }
             }
         }
@@ -475,16 +462,18 @@ impl EntryContainer {
             app_info,
             Entry::new(serial, EntryContent::Image(file), meta, url),
             force);
+        Ok(())
     }
 
-    pub fn push_directory(&mut self, app_info: &AppInfo, dir: &PathBuf, meta: &Option<Meta>, force: bool) {
+    pub fn push_directory(&mut self, app_info: &AppInfo, dir: &PathBuf, meta: &Option<Meta>, force: bool) -> Result<(), Box<error::Error>> {
         through!([expanded = expand(dir, <u8>::max_value())] {
             let mut expanded = expanded;
             expanded.sort_by(|a, b| natord::compare(path_to_str(a), path_to_str(b)));
             for file in expanded {
-                self.push_image(app_info, &file, meta.clone(), force, None, None);
+                self.push_image(app_info, &file, meta.clone(), force, None, None)?;
             }
         });
+        Ok(())
     }
 
     fn is_duplicated(&self, entry: &Entry) -> bool {

@@ -8,7 +8,7 @@ set -euC
 
 check_app
 
-DIR="$(dirname ${CHRY_PATH:-$PWD})"
+DIR="$(dirname "${CHRY_PATH:-$PWD}")"
 
 function dialog {
   yanity --file-selection \

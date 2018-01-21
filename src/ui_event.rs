@@ -12,6 +12,7 @@ use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 
+use enum_primitive::FromPrimitive;
 use gdk::{EventButton, EventKey, EventConfigure, EventScroll, ScrollDirection};
 use gtk::prelude::*;
 use gtk::{Inhibit, SelectionData};
@@ -22,7 +23,7 @@ use self::gobject_sys::{GObject, g_object_unref};
 
 use events::EventName;
 use expandable::Expandable;
-use gui::Gui;
+use gui::{Gui, DropItemType};
 use key::{Key, Coord};
 use lazy_sender::LazySender;
 use mapping::Input;
@@ -56,7 +57,11 @@ pub fn register(gui: &Gui, skip: usize, tx: &Sender<Operation>) {
     gui.window.connect_button_release_event(clone_army!([conf, tx] move |_, button| on_button_release(&tx, button, &pressed_at, &conf)));
     gui.window.connect_scroll_event(clone_army!([tx] move |_, scroll| on_scroll(&tx, scroll)));
 
-    gui.vbox.connect_drag_data_received(clone_army!([tx] move |_, _, _, _, selection, _, _| on_drag_data_received(&tx, selection)));
+    gui.vbox.connect_drag_data_received(clone_army!([tx] move |_, _, _, _, selection, info, _| {
+        if let Some(drop_item_type) = DropItemType::from_u32(info) {
+            on_drag_data_received(&tx, selection, drop_item_type)
+        }
+    }));
 }
 
 
@@ -131,11 +136,20 @@ fn on_scroll(tx: &Sender<Operation>, scroll: &EventScroll) -> Inhibit {
     Inhibit(true)
 }
 
-fn on_drag_data_received(tx: &Sender<Operation>, selection: &SelectionData) {
-    for uri in &selection.get_uris() {
-        match uri_to_path(uri) {
-            Ok(path) => tx.send(Operation::Push(Expandable(path), None, false)).unwrap(),
-            Err(err) => puts_error!(err),
+fn on_drag_data_received(tx: &Sender<Operation>, selection: &SelectionData, drop_item_type: DropItemType) {
+    match drop_item_type {
+        DropItemType::Path => {
+            for uri in &selection.get_uris() {
+                match uri_to_path(uri) {
+                    Ok(path) => tx.send(Operation::Push(Expandable(path), None, false)).unwrap(),
+                    Err(err) => puts_error!(err),
+                }
+            }
+        },
+        DropItemType::URI => {
+            if let Some(url) = selection.get_text() {
+                tx.send(Operation::PushURL(url, None, false, None)).unwrap();
+            }
         }
     }
 }

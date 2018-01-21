@@ -3,6 +3,7 @@ use std::default::Default;
 use std::fs::File;
 use std::path::Path;
 use std::str::FromStr;
+use std::convert::Into;
 
 use cairo::{Context, ImageSurface, Format};
 use gdk::EventMask;
@@ -19,6 +20,15 @@ use size::{FitTo, Size, Region};
 use state::ViewState;
 use util::num::feq;
 
+
+
+enum_from_primitive! {
+    #[derive(Debug, PartialEq)]
+    pub enum DropItemType {
+        Path = 0,
+        URI = 1,
+    }
+}
 
 
 #[derive(Clone)]
@@ -96,9 +106,29 @@ impl Gui {
         let label = Label::new(None);
 
         {
-            let action = DragAction::COPY;
-            let flags = TargetFlags::OTHER_APP;
-            let targets = vec![TargetEntry::new("text/uri-list", flags, 0)];
+            let action = DragAction::COPY | DragAction::MOVE | DragAction::DEFAULT | DragAction::LINK | DragAction::ASK | DragAction::PRIVATE;
+            let flags = TargetFlags::OTHER_WIDGET | TargetFlags::OTHER_APP;
+            let targets = vec![
+                TargetEntry::new("text/uri-list", flags, DropItemType::Path.into()),
+                TargetEntry::new("text/plain", flags, DropItemType::URI.into()),
+
+                // TargetEntry::new("text/html", flags, 0),
+                // TargetEntry::new("text/x-moz-url", flags, 0),
+
+                // TargetEntry::new("application/x-moz-file", flags, 0),
+                // TargetEntry::new("text/unicode", flags, 0),
+                // TargetEntry::new("text/plain;charset=utf-8", flags, 0),
+                // TargetEntry::new("application/x-moz-custom-clipdata", flags, 0),
+                // TargetEntry::new("text/_moz_htmlcontext", flags, 0),
+                // TargetEntry::new("text/_moz_htmlinfo", flags, 0),
+                // TargetEntry::new("_NETSCAPE_URL", flags, 0),
+                // TargetEntry::new("text/x-moz-url-data", flags, 0),
+                // TargetEntry::new("text/x-moz-url-desc", flags, 0),
+                // TargetEntry::new("application/x-moz-nativeimage", flags, 0),
+                // TargetEntry::new("application/x-moz-file-promise", flags, 0),
+                // TargetEntry::new("application/x-moz-file-promise-url", flags, 0),
+                // TargetEntry::new("application/x-moz-file-promise-dest-filename", flags, 0),
+            ];
             vbox.drag_dest_set(DestDefaults::ALL, &targets, action);
         }
 
@@ -452,6 +482,13 @@ impl FromStr for Direction {
             _ =>
                 Err(format!("Invalid direction: {}", src))
         }
+    }
+}
+
+
+impl Into<u32> for DropItemType {
+    fn into(self) -> u32 {
+        self as u32
     }
 }
 

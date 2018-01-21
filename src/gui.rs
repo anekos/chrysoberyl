@@ -29,6 +29,7 @@ pub struct Gui {
     cell_inners: Vec<CellInner>,
     pub colors: Colors,
     pub window: Window,
+    pub vbox: gtk::Box,
     pub label: Label,
 }
 
@@ -75,6 +76,8 @@ const PADDING: f64 = 5.0;
 impl Gui {
     pub fn new(window_role: &str) -> Gui {
         use gtk::Orientation;
+        use gdk::DragAction;
+        use gtk::{DestDefaults, TargetEntry, TargetFlags};
 
         gtk::init().unwrap();
 
@@ -92,6 +95,13 @@ impl Gui {
 
         let label = Label::new(None);
 
+        {
+            let action = DragAction::COPY;
+            let flags = TargetFlags::OTHER_APP;
+            let targets = vec![TargetEntry::new("text/uri-list", flags, 0)];
+            vbox.drag_dest_set(DestDefaults::ALL, &targets, action);
+        }
+
         vbox.pack_end(&label, false, false, 0);
         vbox.pack_end(&image_outer, true, true, 0);
         window.add(&vbox);
@@ -101,6 +111,7 @@ impl Gui {
 
         Gui {
             window: window,
+            vbox: vbox,
             top_spacer: gtk::Image::new_from_pixbuf(None),
             bottom_spacer: gtk::Image::new_from_pixbuf(None),
             cell_outer: image_outer,

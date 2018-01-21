@@ -1,15 +1,27 @@
 
+extern crate gio_sys;
+extern crate gobject_sys;
+extern crate glib_sys;
+
 use std::cell::Cell;
 use std::default::Default;
+use std::error::Error;
+use std::ffi::{CString, CStr};
+use std::mem::transmute;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 
 use gdk::{EventButton, EventKey, EventConfigure, EventScroll, ScrollDirection};
 use gtk::prelude::*;
-use gtk::Inhibit;
+use gtk::{Inhibit, SelectionData};
+use libc::c_void;
+use self::gio_sys::{g_file_new_for_uri, g_file_get_path, GFile};
+use self::glib_sys::g_free;
+use self::gobject_sys::{GObject, g_object_unref};
 
 use events::EventName;
+use expandable::Expandable;
 use gui::Gui;
 use key::{Key, Coord};
 use lazy_sender::LazySender;
@@ -43,6 +55,8 @@ pub fn register(gui: &Gui, skip: usize, tx: &Sender<Operation>) {
     gui.window.connect_button_press_event(clone_army!([pressed_at] move |_, button| on_button_press(button, &pressed_at)));
     gui.window.connect_button_release_event(clone_army!([conf, tx] move |_, button| on_button_release(&tx, button, &pressed_at, &conf)));
     gui.window.connect_scroll_event(clone_army!([tx] move |_, scroll| on_scroll(&tx, scroll)));
+
+    gui.vbox.connect_drag_data_received(clone_army!([tx] move |_, _, _, _, selection, _, _| on_drag_data_received(&tx, selection)));
 }
 
 
@@ -115,6 +129,33 @@ fn on_scroll(tx: &Sender<Operation>, scroll: &EventScroll) -> Inhibit {
         tx.send(Operation::Input(Input::Unified(Coord::default(), Key::from(scroll)))).unwrap();
     }
     Inhibit(true)
+}
+
+fn on_drag_data_received(tx: &Sender<Operation>, selection: &SelectionData) {
+    for uri in &selection.get_uris() {
+        match uri_to_path(uri) {
+            Ok(path) => tx.send(Operation::Push(Expandable(path), None, false)).unwrap(),
+            Err(err) => puts_error!(err),
+        }
+    }
+}
+
+fn uri_to_path(uri: &str) -> Result<String, Box<Error>> {
+    let uri = CString::new(uri).unwrap();
+
+    unsafe {
+        let g_file = g_file_new_for_uri(uri.into_raw());
+        let c_path = g_file_get_path(g_file);
+        let path = CStr::from_ptr(c_path);
+        let path = path.to_str()?.to_string();
+
+        let ptr = transmute::<*const GFile, *mut GObject>(g_file);
+        g_object_unref(ptr);
+        let ptr = transmute::<*mut i8, *mut c_void>(c_path);
+        g_free(ptr);
+
+        Ok(path)
+    }
 }
 
 fn is_modifier_key(key: u32) -> bool {

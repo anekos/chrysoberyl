@@ -388,9 +388,10 @@ See you.
 Show a entry randomly.
 
 
-## (@refresh|@r)
+## (@refresh|@r) [--image|-i]
 
 Refresh something.
+If `--image` is given, clear the caches for currently viewing entries.
 
 
 ## @reset-image

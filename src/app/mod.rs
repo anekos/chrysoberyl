@@ -50,7 +50,6 @@ use self::info::AppInfo;
 
 
 pub struct App {
-    cache: ImageCache,
     counter: Counter,
     current_base_scale: Option<f64>, // Scale of first scaled image
     current_env_keys: HashSet<String>,
@@ -67,6 +66,7 @@ pub struct App {
     sorting_buffer: SortingBuffer<QueuedOperation>,
     timers: TimerManager,
     user_switches: UserSwitchManager,
+    pub cache: ImageCache,
     pub mapping: Mapping,
     pub entries: EntryContainer,
     pub gui: Gui,
@@ -265,8 +265,8 @@ impl App {
                     on_push_url(self, &mut updated, url, meta, force, entry_type),
                 Random =>
                     on_random(self, &mut updated, len),
-                Refresh =>
-                    ok!(updated.pointer = true),
+                Refresh(image) =>
+                    on_refresh(self, &mut updated, image),
                 ResetImage =>
                     on_reset_image(self, &mut updated),
                 ResetScrolls(to_end) =>

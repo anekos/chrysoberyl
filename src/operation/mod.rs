@@ -84,7 +84,7 @@ pub enum Operation {
     PushSibling(bool, Option<Meta>, bool, bool), /* next?, meta, force, show */
     PushURL(String, Option<Meta>, bool, Option<EntryType>),
     Random,
-    Refresh,
+    Refresh(bool), /* image_cache */
     ResetImage,
     ResetScrolls(bool), /* to_end */
     Save(Option<PathBuf>, Vec<Session>),
@@ -343,7 +343,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@push-url"                     => parse_push_url(whole),
             "@quit"                         => Ok(EventName::Quit.operation()),
             "@random" | "@rand"             => Ok(Random),
-            "@refresh" | "@r"               => Ok(Refresh),
+            "@refresh" | "@r"               => parse_refresh(whole),
             "@reset-image"                  => Ok(ResetImage),
             "@save"                         => parse_save(whole),
             "@scroll"                       => parse_scroll(whole),
@@ -429,7 +429,7 @@ impl fmt::Debug for Operation {
             PushSibling(_, _, _, _) => "PushSibling",
             PushURL(_, _, _, _) => "PushURL",
             Random => "Random ",
-            Refresh => "Refresh ",
+            Refresh(_) => "Refresh",
             ResetImage => "ResetImage ",
             ResetScrolls(_) => "ResetScrolls",
             Save(_, _) => "Save",

@@ -678,6 +678,18 @@ pub fn parse_push_url(args: &[String]) -> Result<Operation, ParsingError> {
     })
 }
 
+pub fn parse_refresh(args: &[String]) -> Result<Operation, ParsingError> {
+    let mut image = false;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut image).add_option(&["--image", "-i"], StoreTrue, "Refresh image cache");
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        Ok(Operation::Refresh(image))
+    })
+}
+
 pub fn parse_save(args: &[String]) -> Result<Operation, ParsingError> {
     let mut path: Option<String> = None;
     let mut sources: Vec<Session> = vec![];

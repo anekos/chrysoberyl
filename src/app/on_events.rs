@@ -478,7 +478,10 @@ pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, opera
 
 #[allow(unused_variables)]
 pub fn on_meow(app: &mut App, updated: &mut Updated) -> EventResult {
-    updated.image = true;
+    if let Some((entry, _)) = app.current() {
+        app.cache.clear_entry(&entry.key);
+        updated.image = true;
+    }
     Ok(())
 }
 
@@ -731,6 +734,20 @@ pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) -> EventResul
         app.paginator.show(&paging);
         updated.image = true;
     }
+    Ok(())
+}
+
+pub fn on_refresh(app: &mut App, updated: &mut Updated, image: bool) -> EventResult {
+    if image {
+        let len = app.gui.len();
+        for index in 0..len {
+            if let Some((entry, _)) = app.current_with(index) {
+                app.cache.clear_entry(&entry.key);
+                updated.image = true;
+            }
+        }
+    }
+    updated.pointer = true;
     Ok(())
 }
 

@@ -31,6 +31,11 @@ impl<K, V> Cache<K, V> where K: Hash + Eq, V: Clone {
         entries.clear();
     }
 
+    pub fn clear_entry(&mut self, key: &K) -> bool {
+        let mut entries = self.entries.lock().unwrap();
+        entries.remove(key).is_some()
+    }
+
     pub fn push(&mut self, key: K, value: V) {
         let mut entries = self.entries.lock().unwrap();
         entries.insert(key, value);

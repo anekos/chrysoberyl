@@ -44,6 +44,10 @@ impl ImageCache {
         cond.notify_all();
     }
 
+    pub fn clear_entry(&mut self, key: &Key) -> bool {
+        self.cache.clear_entry(key)
+    }
+
     pub fn mark_fetching(&mut self, key: Key) -> bool {
         trace!("image_cache/mark_fetching: key={:?}", key);
 

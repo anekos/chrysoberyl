@@ -280,6 +280,26 @@ pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) -> Even
     Ok(())
 }
 
+pub fn on_file_changed(app: &mut App, updated: &mut Updated, path: &Path) -> EventResult {
+    if !app.states.auto_reload {
+        return Ok(());
+    }
+
+    let len = app.gui.len();
+    for delta in 0..len {
+        if let Some((entry, _)) = app.current_with(delta) {
+            if let EntryContent::Image(ref entry_path) = entry.content {
+                if entry_path == path {
+                    app.cache.clear_entry(&entry.key);
+                    updated.image = true;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Option<Region>, color: Color, mask: bool, cell_index: usize, context: Option<OperationContext>) -> EventResult {
     use cherenkov::{Modifier, Che};
@@ -1080,6 +1100,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
         let value: &mut OptionValue = match *option_name {
             PreDefined(ref option_name) => match *option_name {
                 AbbrevLength => &mut app.states.abbrev_length,
+                AutoReload => &mut app.states.auto_reload,
                 AutoPaging => &mut app.states.auto_paging,
                 CenterAlignment => &mut app.states.view.center_alignment,
                 CurlConnectTimeout => &mut app.states.curl_options.connect_timeout,

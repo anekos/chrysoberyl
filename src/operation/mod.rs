@@ -49,6 +49,7 @@ pub enum Operation {
     Editor(Option<Expandable>, Vec<Expandable>, Vec<Session>),
     Error(String),
     Expand(bool, Option<PathBuf>), /* recursive, base */
+    FileChanged(PathBuf),
     Fill(Shape, Option<Region>, Color, bool, usize), /* region, mask, cell index */
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Filter(bool, Box<Option<entry::filter::expression::Expr>>), /* dynamic, filter expression */
@@ -395,6 +396,7 @@ impl fmt::Debug for Operation {
             Error(ref error) => return write!(f, "Error({:?})", error),
             Expand(_, _) => "Expand",
             First(_, _, _, _) => "First",
+            FileChanged(_) => "FileChanged",
             Fill(_, _, _, _, _) => "Fill",
             Filter(_, _) => "Filter",
             FlyLeaves(_) => "FlyLeaves",

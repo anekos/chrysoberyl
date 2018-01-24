@@ -22,6 +22,7 @@ use size::{FitTo, Region};
 pub struct States {
     pub abbrev_length: usize,
     pub auto_paging: bool,
+    pub auto_reload: bool,
     pub curl_options: CurlOptions,
     pub drawing: DrawingState,
     pub go: Option<SearchKey>,
@@ -86,6 +87,7 @@ impl Default for States {
 
         States {
             abbrev_length: 30,
+            auto_reload: false,
             auto_paging: false,
             curl_options: CurlOptions::default(),
             drawing: DrawingState::default(),

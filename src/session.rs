@@ -112,6 +112,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
 
     match *name {
         AbbrevLength => gen("abbrev-length", &st.abbrev_length, context),
+        AutoReload => gen("auto-reload", &b2s(st.auto_reload), context),
         AutoPaging => gen("auto-paging", &b2s(st.auto_paging), context),
         CenterAlignment => gen("center-alignment", &b2s(st.view.center_alignment), context),
         ColorError => gen("error-color", &c2s(&gui.colors.error), context),

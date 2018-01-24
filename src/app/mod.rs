@@ -40,6 +40,7 @@ use timer::TimerManager;
 use ui_event;
 use util::path::path_to_str;
 use version;
+use watcher::Watcher;
 
 mod error_loop_detector;
 mod on_events;
@@ -66,6 +67,7 @@ pub struct App {
     sorting_buffer: SortingBuffer<QueuedOperation>,
     timers: TimerManager,
     user_switches: UserSwitchManager,
+    watcher: Watcher,
     pub cache: ImageCache,
     pub mapping: Mapping,
     pub entries: EntryContainer,
@@ -128,6 +130,7 @@ impl App {
             timers: TimerManager::new(tx.clone()),
             tx: tx.clone(),
             user_switches: UserSwitchManager::new(tx.clone()),
+            watcher: Watcher::new(tx.clone()),
         };
 
         script::load(&app.tx, &config::get_config_source(), &app.states.path_list);
@@ -195,6 +198,8 @@ impl App {
                     on_error(self, &mut updated, error),
                 Expand(recursive, ref base) =>
                     on_expand(self, &mut updated, recursive, base.clone()),
+                FileChanged(ref path) =>
+                    on_file_changed(self, &mut updated, path),
                 Fill(shape, region, color, mask, cell_index) =>
                     on_fill(self, &mut updated, shape, region, color, mask, cell_index, context),
                 Filter(dynamic, expr) =>
@@ -364,6 +369,7 @@ impl App {
         if updated.image || updated.image_options {
             let image_size = time!("show_image" => self.show_image(to_end, updated.target_regions.clone()));
             self.on_image_updated(image_size);
+            self.update_watcher();
         }
 
         if updated.image || updated.image_options || updated.label || updated.message {
@@ -724,6 +730,21 @@ impl App {
         } else {
             self.gui.label.hide();
         }
+    }
+
+    fn update_watcher(&self) {
+        let len = self.gui.len();
+        let mut targets = HashSet::new();
+
+        for delta in 0..len {
+            if let Some((entry, _)) = self.current_with(delta) {
+                if let EntryContent::Image(ref path) = entry.content {
+                    targets.insert(path.to_path_buf());
+                }
+            }
+        }
+
+        self.watcher.update(targets);
     }
 
     fn initialize_envs_for_options(&self) {

@@ -66,6 +66,7 @@ pub enum Operation {
     Map(MappingTarget, Option<usize>, Vec<String>), /* target, remain, operation */
     MakeVisibles(Vec<Option<Region>>),
     Meow,
+    Message(Option<String>),
     MoveAgain(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Multi(VecDeque<Operation>, bool), /* operations, async */
     Next(Option<usize>, bool, MoveBy, bool),
@@ -328,9 +329,11 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@load"                         => parse_load(whole),
             "@map"                          => parse_map(whole, true),
             "@meow"                         => Ok(Meow),
+            "@message"                      => parse_message(whole),
             "@move-again"                   => parse_move(whole, MoveAgain),
             "@multi"                        => parse_multi(whole),
             "@next" | "@n"                  => parse_move(whole, Next),
+            "@nop"                          => Ok(Nop),
             "@page"                         => parse_page(whole),
             "@pdf-index"                    => parse_pdf_index(whole),
             "@prev" | "@p" | "@previous"    => parse_move(whole, Previous),
@@ -412,6 +415,7 @@ impl fmt::Debug for Operation {
             MakeVisibles(_) => "MakeVisibles",
             Map(_, _, _) => "Map",
             Meow => "Meow",
+            Message(_) => "Message",
             MoveAgain(_, _, _, _) => "MoveAgain",
             Multi(_, _) => "Multi",
             Next(_, _, _, _) => "Next",

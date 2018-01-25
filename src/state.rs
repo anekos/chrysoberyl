@@ -8,7 +8,6 @@ use std::path::PathBuf;
 use cairo;
 
 use app_path::{PathList, cache_dir};
-use constant::DEFAULT_INFORMATION;
 use entry::SearchKey;
 use entry::filter::expression::Expr as FilterExpr;
 use errors::ChryError;
@@ -240,7 +239,7 @@ gen_format!(
     "<span background=\"red\">$CHRY_MESSAGE</span><span background=\"#005050\"> $CHRY_PAGING/$CHRY_PAGES </span> $CHRY_ABBREV_PATH <span foreground=\"grey\">$CHRY_FLAGS</span> <span foreground=\"rosybrown\">${CHRY_REMOTE_QUEUE}q${CHRY_REMOTE_BUFFER}b${CHRY_REMOTE_THREAD}t</span>");
 gen_format!(
     EmptyStatusFormat,
-    DEFAULT_INFORMATION);
+    concat!("<span background=\"red\">$CHRY_MESSAGE</span>", env!("CARGO_PKG_NAME"), " v", env!("CARGO_PKG_VERSION")));
 gen_format!(
     TitleFormat,
     "[$CHRY_PAGING/$CHRY_PAGES] $CHRY_PATH");

@@ -471,6 +471,17 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingEr
     }
 }
 
+pub fn parse_message(args: &[String]) -> Result<Operation, ParsingError> {
+    let mut message = None;
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut message).add_argument("message", StoreOption, "Message");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Message(message)
+    })
+}
+
 pub fn parse_multi(args: &[String]) -> Result<Operation, ParsingError> {
     let mut separator = "".to_owned();
     let mut commands: Vec<String> = vec![];

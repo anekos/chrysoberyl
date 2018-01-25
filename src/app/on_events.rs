@@ -507,6 +507,12 @@ pub fn on_meow(app: &mut App, updated: &mut Updated) -> EventResult {
     Ok(())
 }
 
+pub fn on_message(app: &mut App, updated: &mut Updated, message: Option<String>) -> EventResult {
+    app.update_message(message);
+    updated.message = true;
+    Ok(())
+}
+
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 pub fn on_move_again(app: &mut App, updated: &mut Updated, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) -> EventResult {
     if app.states.last_direction == state::Direction::Forward {

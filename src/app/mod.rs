@@ -232,6 +232,8 @@ impl App {
                     on_map(self, target, remain, mapped_operation),
                 Meow =>
                     on_meow(self, &mut updated),
+                Message(message) =>
+                    on_message(self, &mut updated, message),
                 MoveAgain(count, ignore_views, move_by, wrap) =>
                     on_move_again(self, &mut updated, &mut to_end, count, ignore_views, move_by, wrap),
                 Multi(ops, async) =>

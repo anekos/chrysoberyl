@@ -53,11 +53,13 @@ impl FileOperation {
         match self.action {
             Copy => {
                 let dest = destination_path(source, &self.destination_directory, &self.destination_file, &self.if_exist)?;
-                Ok(fs::copy(source, dest).map(mangle)?)
+                fs::copy(source, dest).map(mangle)?;
+                Ok(())
             }
             Move => {
                 let dest = destination_path(source, &self.destination_directory, &self.destination_file, &self.if_exist)?;
-                Ok(fs::rename(source, dest).map(mangle)?)
+                fs::rename(source, dest).map(mangle)?;
+                Ok(())
             }
         }
     }
@@ -65,7 +67,8 @@ impl FileOperation {
     pub fn execute_with_buffer(&self, source: &[u8], source_name: &PathBuf) -> Result<(), BoxedError> {
         let dest = destination_path(source_name, &self.destination_directory, &self.destination_file, &self.if_exist)?;
         let mut file = File::create(dest)?;
-        Ok(file.write_all(source)?)
+        file.write_all(source)?;
+        Ok(())
     }
 }
 

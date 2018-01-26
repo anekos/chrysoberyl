@@ -200,7 +200,8 @@ fn curl_get(curl: &mut EasyCurl, url: &str, buf: &mut Vec<u8>) -> Result<(), Box
         buf.extend_from_slice(data);
         Ok(data.len())
     })?;
-    Ok(transfer.perform()?)
+    transfer.perform()?;
+    Ok(())
 }
 
 fn fix_path_segment(s: &str, last: bool) -> String {

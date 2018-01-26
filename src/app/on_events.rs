@@ -1179,6 +1179,8 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
             app.remote_cache.update_curl_options(app.states.curl_options.clone());
         }
         match *option_name {
+            AutoReload =>
+                app.update_watcher(),
             AbbrevLength =>
                 updated.label = true,
             StatusBar => {

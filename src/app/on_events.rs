@@ -19,7 +19,6 @@ use cherenkov::fill::Shape;
 use color::Color;
 use command_line;
 use config::DEFAULT_CONFIG;
-use constant::VARIABLE_PREFIX;
 use editor;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::{self, Meta, SearchKey, Entry, EntryContent, EntryType};
@@ -43,7 +42,7 @@ use shell;
 use shell_filter;
 use state;
 use util::num::range_contains;
-use util::path::path_to_str;
+use util::path::{path_to_str, path_to_string};
 
 use app::*;
 
@@ -279,6 +278,29 @@ pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) -> Even
     updated.message = true;
     Ok(())
 }
+
+pub fn on_file_changed(app: &mut App, updated: &mut Updated, path: &Path) -> EventResult {
+    env::set_var(constant::env_name("CHANGED_FILE"), path_to_string(&path));
+    app.fire_event(&EventName::FileChanged);
+
+    if !app.states.auto_reload {
+        return Ok(());
+    }
+
+    let len = app.gui.len();
+    for delta in 0..len {
+        if let Some((entry, _)) = app.current_with(delta) {
+            if let EntryContent::Image(ref entry_path) = entry.content {
+                if entry_path == path {
+                    app.cache.clear_entry(&entry.key);
+                    updated.image = true;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Option<Region>, color: Color, mask: bool, cell_index: usize, context: Option<OperationContext>) -> EventResult {
@@ -1080,6 +1102,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
         let value: &mut OptionValue = match *option_name {
             PreDefined(ref option_name) => match *option_name {
                 AbbrevLength => &mut app.states.abbrev_length,
+                AutoReload => &mut app.states.auto_reload,
                 AutoPaging => &mut app.states.auto_paging,
                 CenterAlignment => &mut app.states.view.center_alignment,
                 CurlConnectTimeout => &mut app.states.curl_options.connect_timeout,
@@ -1106,6 +1129,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 TitleFormat => &mut app.states.title_format,
                 UpdateCacheAccessTime => &mut app.states.update_cache_atime,
                 VerticalViews => &mut app.states.view.rows,
+                WatchFiles => &mut app.states.watch_files,
                 ColorWindowBackground => &mut app.gui.colors.window_background,
                 ColorStatusBar => &mut app.gui.colors.status_bar,
                 ColorStatusBarBackground => &mut app.gui.colors.status_bar_background,
@@ -1156,6 +1180,8 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
             app.remote_cache.update_curl_options(app.states.curl_options.clone());
         }
         match *option_name {
+            AutoReload | WatchFiles =>
+                app.update_watcher(),
             AbbrevLength =>
                 updated.label = true,
             StatusBar => {
@@ -1301,7 +1327,7 @@ fn extract_region_from_context(context: Option<OperationContext>) -> Option<(Reg
 
 fn set_count_env(app: &mut App) {
     let count = app.counter.pop();
-    env::set_var(format!("{}COUNT", VARIABLE_PREFIX), s!(count));
+    env::set_var(constant::env_name("COUNT"), s!(count));
 }
 
 fn is_url(path: &str) -> bool {

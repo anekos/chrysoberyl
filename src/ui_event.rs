@@ -59,7 +59,7 @@ pub fn register(gui: &Gui, skip: usize, tx: &Sender<Operation>) {
 
     gui.vbox.connect_drag_data_received(clone_army!([tx] move |_, _, _, _, selection, info, _| {
         if let Some(drop_item_type) = DropItemType::from_u32(info) {
-            on_drag_data_received(&tx, selection, drop_item_type)
+            on_drag_data_received(&tx, selection, &drop_item_type)
         }
     }));
 }
@@ -136,8 +136,8 @@ fn on_scroll(tx: &Sender<Operation>, scroll: &EventScroll) -> Inhibit {
     Inhibit(true)
 }
 
-fn on_drag_data_received(tx: &Sender<Operation>, selection: &SelectionData, drop_item_type: DropItemType) {
-    match drop_item_type {
+fn on_drag_data_received(tx: &Sender<Operation>, selection: &SelectionData, drop_item_type: &DropItemType) {
+    match *drop_item_type {
         DropItemType::Path => {
             for uri in &selection.get_uris() {
                 match uri_to_path(uri) {

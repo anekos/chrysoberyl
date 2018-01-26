@@ -22,6 +22,7 @@ use size::{FitTo, Region};
 pub struct States {
     pub abbrev_length: usize,
     pub auto_paging: bool,
+    pub auto_reload: bool,
     pub curl_options: CurlOptions,
     pub drawing: DrawingState,
     pub go: Option<SearchKey>,
@@ -41,6 +42,7 @@ pub struct States {
     pub title_format: TitleFormat,
     pub update_cache_atime: bool,
     pub view: ViewState,
+    pub watch_files: bool,
 }
 
 pub struct ViewState {
@@ -86,6 +88,7 @@ impl Default for States {
 
         States {
             abbrev_length: 30,
+            auto_reload: false,
             auto_paging: false,
             curl_options: CurlOptions::default(),
             drawing: DrawingState::default(),
@@ -106,6 +109,7 @@ impl Default for States {
             title_format: TitleFormat::default(),
             update_cache_atime: false,
             view: ViewState::default(),
+            watch_files: false,
         }
     }
 

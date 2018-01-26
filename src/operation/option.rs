@@ -23,6 +23,7 @@ pub enum OptionName {
 
 iterable_enum!(PreDefinedOptionName =>
     AbbrevLength,
+    AutoReload,
     AutoPaging,
     CenterAlignment,
     ColorError,
@@ -54,6 +55,7 @@ iterable_enum!(PreDefinedOptionName =>
     UpdateCacheAccessTime,
     TitleFormat,
     VerticalViews,
+    WatchFiles,
 );
 
 
@@ -65,6 +67,7 @@ impl FromStr for PreDefinedOptionName {
 
         let result = match src {
             "abbrev-length" | "abbr-length"        => AbbrevLength,
+            "auto-reload"                          => AutoReload,
             "auto-page" | "auto-paging" | "paging" => AutoPaging,
             "center" | "center-alignment"          => CenterAlignment,
             "curl-connect-timeout"                 => CurlConnectTimeout,
@@ -90,6 +93,7 @@ impl FromStr for PreDefinedOptionName {
             "title-format"                         => TitleFormat,
             "vertical-views"                       => VerticalViews,
             "update-cache-atime"                   => UpdateCacheAccessTime,
+            "watch-files"                          => WatchFiles,
             "window-background-color"              => ColorWindowBackground,
             "skip-resize-window"                   => SkipResizeWindow,
             "status-bar-color"                     => ColorStatusBar,
@@ -107,11 +111,11 @@ impl PreDefinedOptionName {
         use self::PreDefinedOptionName::*;
 
         match *self {
-            AbbrevLength | AutoPaging | CenterAlignment |
+            AbbrevLength | AutoReload | AutoPaging | CenterAlignment |
                 ColorError | ColorErrorBackground | ColorStatusBar | ColorStatusBarBackground | ColorWindowBackground |
                 FitTo | HorizontalViews | LogFile | MaskOperator |
                 PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
-                Reverse | Rotation | SkipResizeWindow | StatusBar | StatusFormat | EmptyStatusFormat | StdOut | UpdateCacheAccessTime | TitleFormat | VerticalViews | HistoryFile => false,
+                Reverse | Rotation | SkipResizeWindow | StatusBar | StatusFormat | EmptyStatusFormat | StdOut | UpdateCacheAccessTime | TitleFormat | VerticalViews | WatchFiles | HistoryFile => false,
             CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => true,
         }
     }

@@ -43,6 +43,7 @@
 @map input t,r          @toggle reverse
 @map input t,c          @toggle center
 @map input t,R          @cycle rotation
+@map input t,w          @toggle auto-reload
 
 # option (fit-to)
 @map input f,w          @set fit-to width

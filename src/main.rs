@@ -29,6 +29,7 @@ extern crate lru_cache;
 extern crate md5;
 extern crate mkstemp;
 extern crate natord;
+extern crate notify;
 extern crate num_cpus;
 extern crate pom;
 extern crate rand;
@@ -97,6 +98,7 @@ mod timer;
 mod ui_event;
 mod util;
 mod version;
+mod watcher;
 
 
 

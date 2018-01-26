@@ -137,7 +137,7 @@ fn on_scroll(tx: &Sender<Operation>, scroll: &EventScroll) -> Inhibit {
 }
 
 fn on_drag_data_received(tx: &Sender<Operation>, selection: &SelectionData, drop_item_type: &DropItemType) {
-    match drop_item_type {
+    match *drop_item_type {
         DropItemType::Path => {
             for uri in &selection.get_uris() {
                 match uri_to_path(uri) {

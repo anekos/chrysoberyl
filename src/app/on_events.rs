@@ -19,7 +19,6 @@ use cherenkov::fill::Shape;
 use color::Color;
 use command_line;
 use config::DEFAULT_CONFIG;
-use constant::VARIABLE_PREFIX;
 use editor;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::{self, Meta, SearchKey, Entry, EntryContent, EntryType};
@@ -43,7 +42,7 @@ use shell;
 use shell_filter;
 use state;
 use util::num::range_contains;
-use util::path::path_to_str;
+use util::path::{path_to_str, path_to_string};
 
 use app::*;
 
@@ -281,6 +280,9 @@ pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) -> Even
 }
 
 pub fn on_file_changed(app: &mut App, updated: &mut Updated, path: &Path) -> EventResult {
+    env::set_var(constant::env_name("CHANGED_FILE"), path_to_string(&path));
+    app.fire_event(&EventName::FileChanged);
+
     if !app.states.auto_reload {
         return Ok(());
     }
@@ -1322,7 +1324,7 @@ fn extract_region_from_context(context: Option<OperationContext>) -> Option<(Reg
 
 fn set_count_env(app: &mut App) {
     let count = app.counter.pop();
-    env::set_var(format!("{}COUNT", VARIABLE_PREFIX), s!(count));
+    env::set_var(constant::env_name("COUNT"), s!(count));
 }
 
 fn is_url(path: &str) -> bool {

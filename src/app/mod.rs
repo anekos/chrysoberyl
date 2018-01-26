@@ -734,6 +734,11 @@ impl App {
     }
 
     fn update_watcher(&self) {
+        if !self.states.auto_reload {
+            self.watcher.clear();
+            return;
+        }
+
         let len = self.gui.len();
         let mut targets = HashSet::new();
 

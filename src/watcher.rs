@@ -16,8 +16,9 @@ pub struct Watcher {
 
 #[derive(Debug)]
 enum WatcherCommand {
-    Update(HashSet<PathBuf>),
+    Clear,
     Notified(PathBuf),
+    Update(HashSet<PathBuf>),
 }
 
 
@@ -26,6 +27,10 @@ impl Watcher {
         let tx = main(app_tx);
 
         Watcher { tx }
+    }
+
+    pub fn clear(&self) {
+        self.tx.send(WatcherCommand::Clear).unwrap();
     }
 
     pub fn update(&self, targets: HashSet<PathBuf>) {
@@ -46,6 +51,12 @@ fn main(app_tx: Sender<Operation>) -> Sender<WatcherCommand> {
 
         while let Ok(command) = rx.recv() {
             match command {
+                WatcherCommand::Clear => {
+                    for it in &watchings {
+                        ignore!(w.unwatch(it));
+                    }
+                    watchings.clear();
+                }
                 WatcherCommand::Notified(path) =>
                     ignore!(app_tx.send(Operation::FileChanged(path))),
                 WatcherCommand::Update(new_targets) => {

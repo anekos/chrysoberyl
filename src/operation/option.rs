@@ -55,6 +55,7 @@ iterable_enum!(PreDefinedOptionName =>
     UpdateCacheAccessTime,
     TitleFormat,
     VerticalViews,
+    WatchFiles,
 );
 
 
@@ -92,6 +93,7 @@ impl FromStr for PreDefinedOptionName {
             "title-format"                         => TitleFormat,
             "vertical-views"                       => VerticalViews,
             "update-cache-atime"                   => UpdateCacheAccessTime,
+            "watch-files"                          => WatchFiles,
             "window-background-color"              => ColorWindowBackground,
             "skip-resize-window"                   => SkipResizeWindow,
             "status-bar-color"                     => ColorStatusBar,
@@ -113,7 +115,7 @@ impl PreDefinedOptionName {
                 ColorError | ColorErrorBackground | ColorStatusBar | ColorStatusBarBackground | ColorWindowBackground |
                 FitTo | HorizontalViews | LogFile | MaskOperator |
                 PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
-                Reverse | Rotation | SkipResizeWindow | StatusBar | StatusFormat | EmptyStatusFormat | StdOut | UpdateCacheAccessTime | TitleFormat | VerticalViews | HistoryFile => false,
+                Reverse | Rotation | SkipResizeWindow | StatusBar | StatusFormat | EmptyStatusFormat | StdOut | UpdateCacheAccessTime | TitleFormat | VerticalViews | WatchFiles | HistoryFile => false,
             CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => true,
         }
     }

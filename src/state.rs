@@ -42,6 +42,7 @@ pub struct States {
     pub title_format: TitleFormat,
     pub update_cache_atime: bool,
     pub view: ViewState,
+    pub watch_files: bool,
 }
 
 pub struct ViewState {
@@ -108,6 +109,7 @@ impl Default for States {
             title_format: TitleFormat::default(),
             update_cache_atime: false,
             view: ViewState::default(),
+            watch_files: false,
         }
     }
 

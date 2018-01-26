@@ -144,6 +144,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         TitleFormat => gen("title-format", &st.title_format, context),
         UpdateCacheAccessTime => gen("update-cache-atime", &b2s(st.update_cache_atime), context),
         VerticalViews => gen("vertical-views", &st.view.rows, context),
+        WatchFiles => gen("watch-files", &b2s(st.watch_files), context),
     }
 }
 

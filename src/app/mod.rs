@@ -734,7 +734,7 @@ impl App {
     }
 
     fn update_watcher(&self) {
-        if !self.states.auto_reload {
+        if !self.states.auto_reload && !self.states.watch_files {
             self.watcher.clear();
             return;
         }

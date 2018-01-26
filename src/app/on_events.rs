@@ -1129,6 +1129,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 TitleFormat => &mut app.states.title_format,
                 UpdateCacheAccessTime => &mut app.states.update_cache_atime,
                 VerticalViews => &mut app.states.view.rows,
+                WatchFiles => &mut app.states.watch_files,
                 ColorWindowBackground => &mut app.gui.colors.window_background,
                 ColorStatusBar => &mut app.gui.colors.status_bar,
                 ColorStatusBarBackground => &mut app.gui.colors.status_bar_background,
@@ -1179,7 +1180,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
             app.remote_cache.update_curl_options(app.states.curl_options.clone());
         }
         match *option_name {
-            AutoReload =>
+            AutoReload | WatchFiles =>
                 app.update_watcher(),
             AbbrevLength =>
                 updated.label = true,

@@ -70,7 +70,7 @@ fn n_main(nrx: Receiver<DebouncedEvent>, tx: Sender<WatcherCommand>) {
     thread::spawn(move || {
         while let Ok(event) = nrx.recv() {
             match event {
-                NoticeWrite(path) | NoticeRemove(path) | Create(path) | Write(path) | Chmod(path) | Remove(path) | Rename(_, path) =>
+                Create(path) | Write(path) | Rename(_, path) =>
                     ignore!(tx.send(WatcherCommand::Notified(path))),
                 _ => (),
             }

@@ -9,7 +9,7 @@ use cairo::{Context, ImageSurface, Format};
 use gdk::EventMask;
 use gdk_pixbuf::{Pixbuf, PixbufAnimationExt};
 use gtk::prelude::*;
-use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment, Entry};
+use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment, Entry, Overlay, TextView};
 
 use color::Color;
 use constant;
@@ -43,6 +43,7 @@ pub struct Gui {
     pub vbox: gtk::Box,
     pub label: Label,
     pub operation_entry: Entry,
+    pub overlay: Overlay,
 }
 
 #[derive(Clone)]
@@ -102,8 +103,8 @@ impl Gui {
         window.set_wmclass(constant::WINDOW_CLASS, constant::WINDOW_CLASS);
         window.add_events(EventMask::SCROLL_MASK.bits() as i32);
 
+        let overlay = Overlay::new();
         let vbox = gtk::Box::new(Orientation::Vertical, 0);
-
         let cell_outer = gtk::Box::new(Orientation::Vertical, 0);
         let operation_box = gtk::Box::new(Orientation::Vertical, 0);
         let label = Label::new(None);
@@ -136,18 +137,18 @@ impl Gui {
         }
 
         let operation_entry = Entry::new();
-        operation_box.pack_end(&operation_entry, true, true, 0);
-        operation_entry.set_text("foo");
-        operation_entry.show();
+        operation_entry.set_text("");
+        operation_box.pack_end(&operation_entry, false, false, 0);
 
-        vbox.pack_end(&operation_box, false, false, 0);
         vbox.pack_end(&label, false, false, 0);
         vbox.pack_end(&cell_outer, true, true, 0);
-        window.add(&vbox);
 
-        operation_box.show();
-        cell_outer.show();
-        vbox.show();
+        overlay.add_overlay(&vbox);
+        overlay.add_overlay(&operation_box);
+
+        window.add(&overlay);
+        overlay.show_all();
+        operation_box.hide();
 
         Gui {
             window,
@@ -158,6 +159,7 @@ impl Gui {
             cell_inners: vec![],
             operation_box,
             operation_entry,
+            overlay,
             label,
             colors: Colors::default()
         }

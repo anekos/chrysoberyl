@@ -72,6 +72,7 @@ pub enum Operation {
     Next(Option<usize>, bool, MoveBy, bool),
     Nop,
     OperateFile(filer::FileOperation),
+    OperationEntry(OperationEntryAction),
     Page(usize),
     PdfIndex(bool, bool, bool, Vec<Expandable>, poppler::index::Format, Option<String>), /* async, read_operations, search_path, ... */
     PreFetch(u64),
@@ -182,6 +183,13 @@ pub enum SortKey {
     Dimensions,
     Width,
     Height,
+}
+
+#[derive(Clone, Copy)]
+pub enum OperationEntryAction {
+    Open,
+    SendOperation,
+    Close,
 }
 
 
@@ -313,6 +321,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@draw"                         => Ok(Draw),
             "@editor"                       => parse_editor(whole),
             "@enable"                       => parse_option_1(whole, OptionUpdater::Enable),
+            "@entry"                        => parse_operation_entry(whole),
             "@expand"                       => parse_expand(whole),
             "@file"                         => parse_file(whole),
             "@fill"                         => parse_fill(whole),
@@ -421,6 +430,7 @@ impl fmt::Debug for Operation {
             Next(_, _, _, _) => "Next",
             Nop => "Nop ",
             OperateFile(_) => "OperateFile",
+            OperationEntry(_) => "OperationEntry",
             Page(_) => "Page",
             PdfIndex(_, _, _, _, _, _) => "PdfIndex",
             PreFetch(_) => "PreFetch",

@@ -244,6 +244,8 @@ impl App {
                     Ok(()),
                 OperateFile(ref file_operation) =>
                     on_operate_file(self, file_operation),
+                OperationEntry(action) =>
+                    on_operation_entry(self, action),
                 Page(page) =>
                     on_page(self, &mut updated, page),
                 PdfIndex(async, read_operations, search_path, ref command_line, ref fmt, ref separator) =>
@@ -507,7 +509,7 @@ impl App {
 
     fn show_image(&mut self, to_end: bool, target_regions: Option<Vec<Option<Region>>>) -> Option<Size> {
         let mut image_size = None;
-        let cell_size = self.gui.get_cell_size(&self.states.view, self.states.status_bar);
+        let cell_size = self.gui.get_cell_size(&self.states.view);
 
         self.cancel_lazy_draw();
 
@@ -727,12 +729,13 @@ impl App {
         }
     }
 
-    fn update_label_visibility(&self) {
+    fn update_ui_visibility(&self) {
         if self.states.status_bar {
             self.gui.label.show();
         } else {
             self.gui.label.hide();
         }
+        self.gui.set_operation_box_visibility(self.states.operation_box);
     }
 
     fn update_watcher(&self) {

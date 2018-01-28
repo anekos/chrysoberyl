@@ -39,6 +39,7 @@
 
 # toggle a option
 @map input t,a          @toggle auto-paging
+@map input t,o          @toggle operation-box
 @map input t,s          @toggle status-bar
 @map input t,r          @toggle reverse
 @map input t,c          @toggle center
@@ -79,6 +80,7 @@
 @map input c            @unclip
 @map input C            @reset-image
 @map input u            @undo
+@map input colon        @entry open
 
 # Mouse
 @map input button-1     @scroll --size 0.8 down @next

@@ -33,7 +33,7 @@ use gui::Direction;
 use key::Key;
 use logger;
 use operation::option::{OptionName, OptionUpdater};
-use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, SortKey};
+use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, SortKey, OperationEntryAction};
 use option::user_switch::DummySwtich;
 use poppler::{PopplerDocument, self};
 use script;
@@ -89,7 +89,7 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
     use cherenkov::nova::Nova;
 
     if let Some(Input::Unified(coord, _)) = context.map(|it| it.input) {
-        let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
+        let cell_size = app.gui.get_cell_size(&app.states.view);
 
         for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
             if let Some((entry, _)) = app.current_with(index) {
@@ -174,7 +174,7 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
 
     app.reset_view();
 
-    app.update_label_visibility();
+    app.update_ui_visibility();
 
     let mut first_path = None;
 
@@ -311,7 +311,7 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Optio
         .unwrap_or_else(|| (Region::full(), cell_index));
 
     if let Some((entry, _)) = app.current_with(cell_index) {
-        let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
+        let cell_size = app.gui.get_cell_size(&app.states.view);
         app.cache.cherenkov1(
             &entry,
             &cell_size,
@@ -500,10 +500,8 @@ pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, opera
 
 #[allow(unused_variables)]
 pub fn on_meow(app: &mut App, updated: &mut Updated) -> EventResult {
-    if let Some((entry, _)) = app.current() {
-        app.cache.clear_entry(&entry.key);
-        updated.image = true;
-    }
+    app.gui.operation_entry.hide();
+    updated.label = true;
     Ok(())
 }
 
@@ -584,6 +582,26 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) -> 
     Ok(())
 }
 
+pub fn on_operation_entry(app: &mut App, action: OperationEntryAction) -> EventResult {
+    use self::OperationEntryAction::*;
+
+    match action {
+        SendOperation => {
+            if let Some(ref text) = app.gui.operation_entry.get_text() {
+                app.gui.operation_entry.set_text("");
+                let op = Operation::parse_fuzziness(text)?;
+                app.tx.send(op).unwrap();
+            }
+            app.states.operation_box = false;
+        },
+        Open => app.states.operation_box = true,
+        Close => app.states.operation_box = false,
+    }
+
+    app.update_ui_visibility();
+    Ok(())
+}
+
 pub fn on_page(app: &mut App, updated: &mut Updated, page: usize) -> EventResult {
     if_let_some!((_, index) = app.current(), Ok(()));
     if_let_some!(found = app.entries.find_page_in_archive(index, page), Ok(()));
@@ -609,7 +627,7 @@ pub fn on_pre_fetch(app: &mut App, serial: u64) -> EventResult {
         trace!("on_pre_fetch: pre_fetch_serial={} serial={}", app.pre_fetch_serial, serial);
 
         if app.pre_fetch_serial == serial {
-            let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
+            let cell_size = app.gui.get_cell_size(&app.states.view);
             app.pre_fetch(cell_size, 1..pre_fetch.page_size);
         }
     }
@@ -875,7 +893,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
             }
             first_regions.push(Some(regions[0]));
 
-            let cell_size = app.gui.get_cell_size(&app.states.view, app.states.status_bar);
+            let cell_size = app.gui.get_cell_size(&app.states.view);
 
             app.cache.clear_entry_search_highlights(&entry);
             let modifiers: Vec<Modifier> = regions.iter().map(|region| Modifier { search_highlight: true, che: Che::Fill(Shape::Rectangle, *region, color, false) }).collect();
@@ -1122,6 +1140,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 HorizontalViews => &mut app.states.view.cols,
                 LogFile => &mut app.states.log_file,
                 MaskOperator => &mut app.states.drawing.mask_operator,
+                OperationBox => &mut app.states.operation_box,
                 PathList => &mut app.states.path_list,
                 PreFetchEnabled => &mut app.states.pre_fetch.enabled,
                 PreFetchLimit => &mut app.states.pre_fetch.limit_of_items,
@@ -1190,8 +1209,8 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 app.update_watcher(),
             AbbrevLength =>
                 updated.label = true,
-            StatusBar => {
-                app.update_label_visibility();
+            StatusBar | OperationBox => {
+                app.update_ui_visibility();
                 updated.image_options = true;
             }
             CenterAlignment => {

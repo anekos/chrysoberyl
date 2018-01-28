@@ -50,7 +50,8 @@ pub fn register(gui: &Gui, skip: usize, tx: &Sender<Operation>) {
     let pressed_at = Arc::new(Cell::new(None));
     let conf = Arc::new(Cell::new(Conf { skip: skip, .. Conf::default() }));
 
-    gui.window.connect_key_press_event(clone_army!([tx] move |_, key| on_key_press(&tx, key)));
+    gui.vbox.connect_key_press_event(clone_army!([tx] move |_, key| on_key_press(&tx, key)));
+    gui.operation_entry.connect_key_press_event(clone_army!([tx] move |_, key| entry_on_key_press(&tx, key)));
     gui.window.connect_configure_event(clone_army!([conf, tx, sender] move |_, ev| on_configure(sender.clone(), &tx, ev, &conf)));
     gui.window.connect_delete_event(clone_army!([tx] move |_, _| on_delete(&tx)));
     gui.window.connect_button_press_event(clone_army!([pressed_at] move |_, button| on_button_press(button, &pressed_at)));
@@ -64,6 +65,20 @@ pub fn register(gui: &Gui, skip: usize, tx: &Sender<Operation>) {
     }));
 }
 
+
+fn entry_on_key_press(tx: &Sender<Operation>, key: &EventKey) -> Inhibit {
+    use operation::OperationEntryAction::*;
+
+    let key = Key::from(key);
+    let action = match key.0.as_str() {
+        "Return" => SendOperation,
+        "Escape" => Close,
+        _ => return Inhibit(false),
+    };
+
+    tx.send(Operation::OperationEntry(action)).unwrap();
+    Inhibit(false)
+}
 
 fn on_key_press(tx: &Sender<Operation>, key: &EventKey) -> Inhibit {
     let keyval = key.as_ref().keyval;

@@ -9,7 +9,7 @@ use cairo::{Context, ImageSurface, Format};
 use gdk::EventMask;
 use gdk_pixbuf::{Pixbuf, PixbufAnimationExt};
 use gtk::prelude::*;
-use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment};
+use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment, Entry};
 
 use color::Color;
 use constant;
@@ -37,10 +37,12 @@ pub struct Gui {
     bottom_spacer: Image,
     cell_outer: gtk::Box,
     cell_inners: Vec<CellInner>,
+    operation_box: gtk::Box,
     pub colors: Colors,
     pub window: Window,
     pub vbox: gtk::Box,
     pub label: Label,
+    pub operation_entry: Entry,
 }
 
 #[derive(Clone)]
@@ -101,8 +103,9 @@ impl Gui {
         window.add_events(EventMask::SCROLL_MASK.bits() as i32);
 
         let vbox = gtk::Box::new(Orientation::Vertical, 0);
-        let image_outer = gtk::Box::new(Orientation::Vertical, 0);
 
+        let cell_outer = gtk::Box::new(Orientation::Vertical, 0);
+        let operation_box = gtk::Box::new(Orientation::Vertical, 0);
         let label = Label::new(None);
 
         {
@@ -132,27 +135,55 @@ impl Gui {
             vbox.drag_dest_set(DestDefaults::ALL, &targets, action);
         }
 
+        let operation_entry = Entry::new();
+        operation_box.pack_end(&operation_entry, true, true, 0);
+        operation_entry.set_text("foo");
+        operation_entry.show();
+
+        vbox.pack_end(&operation_box, false, false, 0);
         vbox.pack_end(&label, false, false, 0);
-        vbox.pack_end(&image_outer, true, true, 0);
+        vbox.pack_end(&cell_outer, true, true, 0);
         window.add(&vbox);
 
-        image_outer.show();
+        operation_box.show();
+        cell_outer.show();
         vbox.show();
 
         Gui {
-            window: window,
-            vbox: vbox,
+            window,
+            vbox,
             top_spacer: gtk::Image::new_from_pixbuf(None),
             bottom_spacer: gtk::Image::new_from_pixbuf(None),
-            cell_outer: image_outer,
+            cell_outer,
             cell_inners: vec![],
-            label: label,
+            operation_box,
+            operation_entry,
+            label,
             colors: Colors::default()
         }
     }
 
     pub fn show(&self) {
         self.window.show();
+    }
+
+    /**
+     * if visibility is updated, returns true.
+     */
+    pub fn set_operation_box_visibility(&self, visibility: bool) {
+        use gtk::DirectionType::*;
+
+        let current = self.operation_box.get_visible();
+        if visibility ^ current {
+            if visibility {
+                self.operation_entry.set_text("");
+                self.operation_box.show();
+                self.operation_entry.grab_focus();
+            } else {
+                self.operation_box.hide();
+                self.window.child_focus(Down); // To blur
+            }
+        }
     }
 
     pub fn rows(&self) -> usize {
@@ -197,15 +228,13 @@ impl Gui {
         }
     }
 
-    pub fn get_cell_size(&self, state: &ViewState, with_label: bool) -> Size {
+    pub fn get_cell_size(&self, state: &ViewState) -> Size {
         let (width, height) = self.window.get_size();
+        let label_height = if self.label.get_visible() { self.label.get_allocated_height() } else { 0 };
 
         let width = width / state.cols as i32;
-        let height = if with_label {
-            (height / state.rows as i32) - self.label.get_allocated_height()
-        } else {
-            height / state.rows as i32
-        };
+        let height = height - label_height;
+        let height = height / state.rows as i32;
 
         Size::new(width, height)
     }

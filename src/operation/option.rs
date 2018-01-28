@@ -42,6 +42,7 @@ iterable_enum!(PreDefinedOptionName =>
     HorizontalViews,
     LogFile,
     MaskOperator,
+    OperationBox,
     PathList,
     PreFetchEnabled,
     PreFetchLimit,
@@ -81,6 +82,7 @@ impl FromStr for PreDefinedOptionName {
             "horizontal-views"                     => HorizontalViews,
             "log-file" | "log"                     => LogFile,
             "mask-operator"                        => MaskOperator,
+            "operation-box" | "operation"          => OperationBox,
             "path"                                 => PathList,
             "pre-render"                           => PreFetchEnabled,
             "pre-render-limit"                     => PreFetchLimit,
@@ -91,8 +93,8 @@ impl FromStr for PreDefinedOptionName {
             "status-format"                        => StatusFormat,
             "stdout"                               => StdOut,
             "title-format"                         => TitleFormat,
-            "vertical-views"                       => VerticalViews,
             "update-cache-atime"                   => UpdateCacheAccessTime,
+            "vertical-views"                       => VerticalViews,
             "watch-files"                          => WatchFiles,
             "window-background-color"              => ColorWindowBackground,
             "skip-resize-window"                   => SkipResizeWindow,
@@ -114,7 +116,7 @@ impl PreDefinedOptionName {
             AbbrevLength | AutoReload | AutoPaging | CenterAlignment |
                 ColorError | ColorErrorBackground | ColorStatusBar | ColorStatusBarBackground | ColorWindowBackground |
                 FitTo | HorizontalViews | LogFile | MaskOperator |
-                PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
+                OperationBox | PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
                 Reverse | Rotation | SkipResizeWindow | StatusBar | StatusFormat | EmptyStatusFormat | StdOut | UpdateCacheAccessTime | TitleFormat | VerticalViews | WatchFiles | HistoryFile => false,
             CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => true,
         }

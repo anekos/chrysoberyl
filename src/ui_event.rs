@@ -66,9 +66,11 @@ pub fn register(gui: &Gui, skip: usize, tx: &Sender<Operation>) {
 
 
 fn on_key_press(tx: &Sender<Operation>, key: &EventKey) -> Inhibit {
+    use gdk::enums::key;
+
     let keyval = key.as_ref().keyval;
-    if 48 <= keyval && keyval <= 57 {
-        tx.send(Operation::CountDigit((keyval - 48) as u8)).unwrap();
+    if key::_0 <= keyval && keyval <= key::_9 {
+        tx.send(Operation::CountDigit((keyval - key::_0) as u8)).unwrap();
     } else if !is_modifier_key(key.get_keyval()) {
         let key = Key::from(key);
         tx.send(Operation::Input(Input::Unified(Coord::default(), key))).unwrap();

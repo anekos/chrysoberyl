@@ -71,7 +71,6 @@ fn register(gui: &Gui, skip: usize, app_tx: &Sender<Operation>) -> Sender<Event>
     use self::Event::*;
 
     let (tx, rx) = channel();
-    println!("registerrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr");
 
     gui.operation_entry.connect_key_press_event(clone_army!([tx] move |_, key| {
         tx.send(EntryKeyPress(Key::from(key))).unwrap();
@@ -114,12 +113,12 @@ fn register(gui: &Gui, skip: usize, app_tx: &Sender<Operation>) -> Sender<Event>
         }
     }));
 
-    thread::spawn(clone_army!([app_tx] move || main(app_tx, rx, skip)));
+    thread::spawn(clone_army!([app_tx] move || main(&app_tx, &rx, skip)));
 
     tx
 }
 
-fn main(app_tx: Sender<Operation>, rx: Receiver<Event>, skip: usize) {
+fn main(app_tx: &Sender<Operation>, rx: &Receiver<Event>, skip: usize) {
     use self::Event::*;
 
     let mut sender = LazySender::new(app_tx.clone(), Duration::from_millis(50));
@@ -130,21 +129,21 @@ fn main(app_tx: Sender<Operation>, rx: Receiver<Event>, skip: usize) {
     while let Ok(event) = rx.recv() {
         match event {
             EntryKeyPress(ref key) =>
-                entry_on_key_press(&app_tx, key),
+                entry_on_key_press(app_tx, key),
             WindowKeyPress(key, keyval) =>
-                if !visible { on_key_press(&app_tx, key, keyval) },
+                if !visible { on_key_press(app_tx, key, keyval) },
             ButtonPress((x, y)) if !visible =>
                 pressed_at = Some((x, y)),
             ButtonRelease(key, (x, y)) =>
-                if !visible { on_button_release(&app_tx, key, x, y, &mut pressed_at, &mut conf) },
+                if !visible { on_button_release(app_tx, key, x, y, &mut pressed_at, &mut conf) },
             Delete =>
                 app_tx.send(EventName::Quit.operation()).unwrap(),
             Configure((w, h)) =>
-                on_configure(&mut sender, &app_tx, w, h, &mut conf),
+                on_configure(&mut sender, app_tx, w, h, &mut conf),
             UpdateEntry(visibility) =>
                 visible = visibility,
             Scroll(key, direction) =>
-                on_scroll(&app_tx, key, &direction),
+                on_scroll(app_tx, key, &direction),
             _ => (),
         }
     }

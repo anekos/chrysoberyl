@@ -29,7 +29,7 @@ impl FromStr for Expr {
 }
 
 
-#[cfg_attr(feature = "cargo-clippy", allow(doc_markdown))]
+#[cfg_attr(feature = "cargo-clippy", allow(doc_markdown, empty_line_after_outer_attr))]
 /**
  * Expr ← Block | Bool | Cond | Logic | 'not' Expr
  * Block ← '(' Expr ')' | '{' Expr '}'

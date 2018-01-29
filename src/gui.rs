@@ -159,6 +159,7 @@ impl Gui {
         window.add(&overlay);
         overlay.show_all();
         operation_box.hide();
+        log_view.hide(); // XXX
 
         Gui {
             bottom_spacer: gtk::Image::new_from_pixbuf(None),

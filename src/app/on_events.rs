@@ -500,8 +500,7 @@ pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, opera
 
 #[allow(unused_variables)]
 pub fn on_meow(app: &mut App, updated: &mut Updated) -> EventResult {
-    app.gui.operation_entry.hide();
-    updated.label = true;
+    app.gui.log("fooo");
     Ok(())
 }
 

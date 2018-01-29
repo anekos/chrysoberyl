@@ -9,7 +9,7 @@ use cairo::{Context, ImageSurface, Format};
 use gdk::EventMask;
 use gdk_pixbuf::{Pixbuf, PixbufAnimationExt};
 use gtk::prelude::*;
-use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment, Entry, Overlay, TextView};
+use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment, Entry, Overlay, TextView, TextBuffer};
 
 use color::Color;
 use constant;
@@ -38,12 +38,13 @@ pub struct Gui {
     cell_outer: gtk::Box,
     cell_inners: Vec<CellInner>,
     operation_box: gtk::Box,
+    overlay: Overlay,
+    log_buffer: TextBuffer,
     pub colors: Colors,
     pub window: Window,
     pub vbox: gtk::Box,
     pub label: Label,
     pub operation_entry: Entry,
-    pub overlay: Overlay,
 }
 
 #[derive(Clone)]
@@ -138,7 +139,12 @@ impl Gui {
 
         let operation_entry = Entry::new();
         operation_entry.set_text("");
+        let log_scrolled = ScrolledWindow::new(None, None);
+        let log_buffer = TextBuffer::new(None);
+        let log_view = TextView::new_with_buffer(&log_buffer);
+        log_scrolled.add_with_viewport(&log_view);
         operation_box.pack_end(&operation_entry, false, false, 0);
+        operation_box.pack_end(&log_scrolled, false, false, 0);
 
         vbox.pack_end(&label, false, false, 0);
         vbox.pack_end(&cell_outer, true, true, 0);
@@ -161,6 +167,7 @@ impl Gui {
             operation_entry,
             overlay,
             label,
+            log_buffer,
             colors: Colors::default()
         }
     }
@@ -259,6 +266,12 @@ impl Gui {
             scrolled |= scroll_window(&cell.window, direction, scroll_size, count, crush);
         }
         scrolled
+    }
+
+    pub fn log(&self, line: &str) {
+        let mut iter = self.log_buffer.get_end_iter();
+        self.log_buffer.insert(&mut iter, line);
+        self.log_buffer.insert(&mut iter, "\n");
     }
 
     fn create_images(&mut self, state: &ViewState) {

@@ -584,12 +584,15 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) -> 
 pub fn on_operation_entry(app: &mut App, action: OperationEntryAction) -> EventResult {
     use self::OperationEntryAction::*;
 
+    let mut result = Ok(());
+
     match action {
         SendOperation => {
             if let Some(ref text) = app.gui.operation_entry.get_text() {
                 app.gui.operation_entry.set_text("");
-                let op = Operation::parse_fuzziness(text)?;
-                app.tx.send(op).unwrap();
+                result = Operation::parse_fuzziness(text).map(|op| {
+                    app.tx.send(op).unwrap();
+                });
             }
             app.states.operation_box = false;
         },
@@ -598,7 +601,8 @@ pub fn on_operation_entry(app: &mut App, action: OperationEntryAction) -> EventR
     }
 
     app.update_ui_visibility();
-    Ok(())
+
+    Ok(result?)
 }
 
 pub fn on_page(app: &mut App, updated: &mut Updated, page: usize) -> EventResult {

@@ -9,8 +9,9 @@ use std::sync::mpsc::Sender;
 use cairo::{Context, ImageSurface, Format};
 use gdk::EventMask;
 use gdk_pixbuf::{Pixbuf, PixbufAnimationExt};
+use glib::Type;
 use gtk::prelude::*;
-use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment, Entry, Overlay, TextView, TextBuffer};
+use gtk::{Adjustment, Entry, EntryCompletion, Image, Label, ListStore, Orientation, Overlay, ScrolledWindow, self, TextBuffer, TextView, Value, Window};
 
 use color::Color;
 use constant;
@@ -87,6 +88,8 @@ pub enum Direction {
 
 const FONT_SIZE: f64 = 12.0;
 const PADDING: f64 = 5.0;
+const OPERATIONS: &str = include_str!("static/operations.txt");
+const OPTIONS: &str = include_str!("static/options.txt");
 
 
 impl Gui {
@@ -141,8 +144,21 @@ impl Gui {
             vbox.drag_dest_set(DestDefaults::ALL, &targets, action);
         }
 
+        let completion = tap!(completion = EntryCompletion::new(), {
+            let store = ListStore::new(&[Type::String]);
+            completion.set_model(&store);
+            completion.set_text_column(0);
+            completion.set_inline_completion(true);
+            completion.set_inline_selection(true);
+            completion.set_popup_single_match(false);
+            completion.set_popup_completion(true);
+            completion.set_minimum_key_length(1);
+            update_completion(&store);
+        });
+
         let operation_entry = Entry::new();
         operation_entry.set_text("");
+        operation_entry.set_completion(&completion);
         let log_scrolled = ScrolledWindow::new(None, None);
         let log_buffer = TextBuffer::new(None);
         let log_view = TextView::new_with_buffer(&log_buffer);
@@ -185,9 +201,6 @@ impl Gui {
         self.ui_event = Some(UIEvent::new(self, skip, app_tx));
     }
 
-    /**
-     * if visibility is updated, returns true.
-     */
     pub fn set_operation_box_visibility(&self, visibility: bool) {
         use gtk::DirectionType::*;
 
@@ -198,10 +211,10 @@ impl Gui {
             }
 
             if visibility {
-                self.operation_entry.set_text("");
                 self.operation_entry.grab_focus();
                 self.operation_box.show();
             } else {
+                self.operation_entry.set_text("");
                 self.operation_box.hide();
                 self.window.child_focus(Down); // To blur
             }
@@ -606,5 +619,25 @@ fn scroll_window(window: &ScrolledWindow, direction: &Direction, scroll_size_rat
     match *direction {
         Left | Right => scroll(true),
         Up | Down => scroll(false),
+    }
+}
+
+fn append_completion_entry(store: &ListStore, entry: &str) {
+    let iter = store.append();
+    let value = Value::from(entry);
+    store.set_value(&iter, 0, &value);
+}
+
+fn update_completion(store: &ListStore) {
+    for it in OPERATIONS.split('\n').filter(|it| 0 < it.len()) {
+        match &it[1..] {
+            "set" | "set-by-count" | "increase" | "decrease" | "unset" | "enable" | "disable" | "cycle" | "toggle" => {
+                for option in OPTIONS.split('\n') {
+                    append_completion_entry(store, &format!("{} {}", it, option));
+                }
+            },
+            _ =>
+                append_completion_entry(store, it),
+        }
     }
 }

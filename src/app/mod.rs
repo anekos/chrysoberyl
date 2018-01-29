@@ -37,7 +37,6 @@ use sorting_buffer::SortingBuffer;
 use state::{States, PreFetchState};
 use termination;
 use timer::TimerManager;
-use ui_event;
 use util::path::path_to_str;
 use version;
 use watcher::Watcher;

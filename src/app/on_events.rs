@@ -399,7 +399,7 @@ pub fn on_go(app: &mut App, updated: &mut Updated, key: &SearchKey) -> EventResu
 pub fn on_initialized(app: &mut App) -> EventResult {
     app.tx.send(Operation::UpdateUI).unwrap();
 
-    ui_event::register(&app.gui, app.states.skip_resize_window, &app.primary_tx.clone());
+    app.gui.register_ui_events(app.states.skip_resize_window, &app.primary_tx);
     app.gui.update_colors();
     app.update_label(true, true);
     app.gui.show();

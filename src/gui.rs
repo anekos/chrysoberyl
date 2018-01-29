@@ -1,9 +1,10 @@
 
+use std::convert::Into;
 use std::default::Default;
 use std::fs::File;
 use std::path::Path;
 use std::str::FromStr;
-use std::convert::Into;
+use std::sync::mpsc::Sender;
 
 use cairo::{Context, ImageSurface, Format};
 use gdk::EventMask;
@@ -16,8 +17,10 @@ use constant;
 use errors::*;
 use gtk_utils::new_pixbuf_from_surface;
 use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
+use operation::Operation;
 use size::{FitTo, Size, Region};
 use state::ViewState;
+use ui_event::UIEvent;
 use util::num::feq;
 
 
@@ -31,15 +34,14 @@ enum_from_primitive! {
 }
 
 
-#[derive(Clone)]
 pub struct Gui {
     top_spacer: Image,
     bottom_spacer: Image,
     cell_outer: gtk::Box,
     cell_inners: Vec<CellInner>,
     operation_box: gtk::Box,
-    overlay: Overlay,
     log_buffer: TextBuffer,
+    ui_event: Option<UIEvent>,
     pub colors: Colors,
     pub window: Window,
     pub vbox: gtk::Box,
@@ -110,6 +112,8 @@ impl Gui {
         let operation_box = gtk::Box::new(Orientation::Vertical, 0);
         let label = Label::new(None);
 
+        vbox.add_events(EventMask::SCROLL_MASK.bits() as i32);
+
         {
             let action = DragAction::COPY | DragAction::MOVE | DragAction::DEFAULT | DragAction::LINK | DragAction::ASK | DragAction::PRIVATE;
             let flags = TargetFlags::OTHER_WIDGET | TargetFlags::OTHER_APP;
@@ -157,23 +161,27 @@ impl Gui {
         operation_box.hide();
 
         Gui {
-            window,
-            vbox,
-            top_spacer: gtk::Image::new_from_pixbuf(None),
             bottom_spacer: gtk::Image::new_from_pixbuf(None),
-            cell_outer,
             cell_inners: vec![],
-            operation_box,
-            operation_entry,
-            overlay,
+            cell_outer,
+            colors: Colors::default(),
             label,
             log_buffer,
-            colors: Colors::default()
+            operation_box,
+            operation_entry,
+            top_spacer: gtk::Image::new_from_pixbuf(None),
+            ui_event: None,
+            vbox,
+            window,
         }
     }
 
     pub fn show(&self) {
         self.window.show();
+    }
+
+    pub fn register_ui_events(&mut self, skip: usize, app_tx: &Sender<Operation>) {
+        self.ui_event = Some(UIEvent::new(self, skip, app_tx));
     }
 
     /**
@@ -184,10 +192,15 @@ impl Gui {
 
         let current = self.operation_box.get_visible();
         if visibility ^ current {
+            if let Some(ref ui_event) = self.ui_event {
+                ui_event.update_entry(visibility);
+            }
+
             if visibility {
                 self.operation_entry.set_text("");
                 self.operation_box.show();
                 self.operation_entry.grab_focus();
+                self.window.set_events(0);
             } else {
                 self.operation_box.hide();
                 self.window.child_focus(Down); // To blur

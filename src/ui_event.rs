@@ -3,17 +3,16 @@ extern crate gio_sys;
 extern crate gobject_sys;
 extern crate glib_sys;
 
-use std::cell::Cell;
 use std::default::Default;
 use std::error::Error;
 use std::ffi::{CString, CStr};
 use std::mem::transmute;
-use std::sync::Arc;
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::{channel, Sender, Receiver};
+use std::thread;
 use std::time::Duration;
 
 use enum_primitive::FromPrimitive;
-use gdk::{EventButton, EventKey, EventConfigure, EventScroll, ScrollDirection};
+use gdk::ScrollDirection;
 use gtk::prelude::*;
 use gtk::{Inhibit, SelectionData};
 use libc::c_void;
@@ -32,6 +31,11 @@ use util::num::feq;
 
 
 
+pub struct UIEvent {
+    tx: Sender<Event>,
+}
+
+
 #[derive(Clone, Copy, Default)]
 struct Conf {
     width: u32,
@@ -41,114 +45,158 @@ struct Conf {
 }
 
 
-type ArcPressedAt = Arc<Cell<Option<(f64, f64)>>>;
-type ArcConf = Arc<Cell<Conf>>;
-
-
-pub fn register(gui: &Gui, skip: usize, tx: &Sender<Operation>) {
-    let sender = LazySender::new(tx.clone(), Duration::from_millis(50));
-    let pressed_at = Arc::new(Cell::new(None));
-    let conf = Arc::new(Cell::new(Conf { skip: skip, .. Conf::default() }));
-
-    gui.vbox.connect_key_press_event(clone_army!([tx] move |_, key| on_key_press(&tx, key)));
-    gui.operation_entry.connect_key_press_event(clone_army!([tx] move |_, key| entry_on_key_press(&tx, key)));
-    gui.window.connect_configure_event(clone_army!([conf, tx, sender] move |_, ev| on_configure(sender.clone(), &tx, ev, &conf)));
-    gui.window.connect_delete_event(clone_army!([tx] move |_, _| on_delete(&tx)));
-    gui.window.connect_button_press_event(clone_army!([pressed_at] move |_, button| on_button_press(button, &pressed_at)));
-    gui.window.connect_button_release_event(clone_army!([conf, tx] move |_, button| on_button_release(&tx, button, &pressed_at, &conf)));
-    gui.window.connect_scroll_event(clone_army!([tx] move |_, scroll| on_scroll(&tx, scroll)));
-
-    gui.vbox.connect_drag_data_received(clone_army!([tx] move |_, _, _, _, selection, info, _| {
-        if let Some(drop_item_type) = DropItemType::from_u32(info) {
-            on_drag_data_received(&tx, selection, &drop_item_type)
-        }
-    }));
+pub enum Event {
+    ButtonPress((f64, f64)),
+    ButtonRelease(Key, (f64, f64)),
+    Configure((u32, u32)),
+    Delete,
+    EntryKeyPress(Key),
+    Scroll(Key, ScrollDirection),
+    UpdateEntry(bool), /* visibility */
+    WindowKeyPress(Key, u32),
 }
 
 
-fn entry_on_key_press(tx: &Sender<Operation>, key: &EventKey) -> Inhibit {
+impl UIEvent {
+    pub fn new(gui: &Gui, skip: usize, app_tx: &Sender<Operation>) -> Self {
+        UIEvent { tx: register(gui, skip, app_tx) }
+    }
+
+    pub fn update_entry(&self, visibility: bool) {
+        self.tx.send(Event::UpdateEntry(visibility)).unwrap();
+    }
+}
+
+fn register(gui: &Gui, skip: usize, app_tx: &Sender<Operation>) -> Sender<Event> {
+    use self::Event::*;
+
+    let (tx, rx) = channel();
+    println!("registerrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr");
+
+    gui.operation_entry.connect_key_press_event(clone_army!([tx] move |_, key| {
+        tx.send(EntryKeyPress(Key::from(key))).unwrap();
+        Inhibit(false)
+    }));
+
+    gui.vbox.connect_key_press_event(clone_army!([tx] move |_, key| {
+        tx.send(WindowKeyPress(Key::from(key), key.as_ref().keyval)).unwrap();
+        Inhibit(false)
+    }));
+
+    gui.window.connect_button_press_event(clone_army!([tx] move |_, button| {
+        tx.send(ButtonPress(button.get_position())).unwrap();
+        Inhibit(false)
+    }));
+
+    gui.window.connect_button_release_event(clone_army!([tx] move |_, button| {
+        tx.send(ButtonRelease(Key::from(button), button.get_position())).unwrap();
+        Inhibit(false)
+    }));
+
+    gui.window.connect_configure_event(clone_army!([tx] move |_, ev| {
+        tx.send(Configure(ev.get_size())).unwrap();
+        false
+    }));
+
+    gui.window.connect_delete_event(clone_army!([tx] move |_, _| {
+        tx.send(Delete).unwrap();
+        Inhibit(false)
+    }));
+
+    gui.window.connect_scroll_event(clone_army!([tx] move |_, scroll| {
+        tx.send(Scroll(Key::from(scroll), scroll.get_direction())).unwrap();
+        Inhibit(false)
+    }));
+
+    gui.vbox.connect_drag_data_received(clone_army!([app_tx] move |_, _, _, _, selection, info, _| {
+        if let Some(drop_item_type) = DropItemType::from_u32(info) {
+            on_drag_data_received(&app_tx, selection, &drop_item_type)
+        }
+    }));
+
+    thread::spawn(clone_army!([app_tx] move || main(app_tx, rx, skip)));
+
+    tx
+}
+
+fn main(app_tx: Sender<Operation>, rx: Receiver<Event>, skip: usize) {
+    use self::Event::*;
+
+    let mut sender = LazySender::new(app_tx.clone(), Duration::from_millis(50));
+    let mut conf = Conf { skip, .. Conf::default() };
+    let mut pressed_at = None;
+    let mut visible = false;
+
+    while let Ok(event) = rx.recv() {
+        match event {
+            EntryKeyPress(ref key) =>
+                entry_on_key_press(&app_tx, key),
+            WindowKeyPress(key, keyval) =>
+                if !visible { on_key_press(&app_tx, key, keyval) },
+            ButtonPress((x, y)) if !visible =>
+                pressed_at = Some((x, y)),
+            ButtonRelease(key, (x, y)) =>
+                if !visible { on_button_release(&app_tx, key, x, y, &mut pressed_at, &mut conf) },
+            Delete =>
+                app_tx.send(EventName::Quit.operation()).unwrap(),
+            Configure((w, h)) =>
+                on_configure(&mut sender, &app_tx, w, h, &mut conf),
+            UpdateEntry(visibility) =>
+                visible = visibility,
+            Scroll(key, direction) =>
+                on_scroll(&app_tx, key, &direction),
+            _ => (),
+        }
+    }
+}
+
+fn entry_on_key_press(tx: &Sender<Operation>, key: &Key) {
     use operation::OperationEntryAction::*;
 
-    let key = Key::from(key);
     let action = match key.0.as_str() {
         "Return" => SendOperation,
         "Escape" => Close,
-        _ => return Inhibit(false),
+        _ => return,
     };
 
     tx.send(Operation::OperationEntry(action)).unwrap();
-    Inhibit(false)
 }
 
-fn on_key_press(tx: &Sender<Operation>, key: &EventKey) -> Inhibit {
-    let keyval = key.as_ref().keyval;
+fn on_key_press(tx: &Sender<Operation>, key: Key, keyval: u32) {
     if 48 <= keyval && keyval <= 57 {
         tx.send(Operation::CountDigit((keyval - 48) as u8)).unwrap();
-    } else if !is_modifier_key(key.get_keyval()) {
-        let key = Key::from(key);
+    } else if !is_modifier_key(keyval) {
         tx.send(Operation::Input(Input::Unified(Coord::default(), key))).unwrap();
     }
-
-    Inhibit(false)
 }
 
-fn on_button_press(button: &EventButton, pressed_at: &ArcPressedAt) -> Inhibit {
-    let (x, y) = button.get_position();
-    (*pressed_at).set(Some((x, y)));
-    Inhibit(true)
-}
+fn on_button_release(tx: &Sender<Operation>, key: Key, x: f64, y: f64, pressed_at: &mut Option<(f64, f64)>, conf: &mut Conf) {
+    if_let_some!((px, py) = *pressed_at, ());
 
-fn on_button_release(tx: &Sender<Operation>, button: &EventButton, pressed_at: &ArcPressedAt, conf: &ArcConf) -> Inhibit {
-    let c = conf.get();
-    let (x, y) = button.get_position();
-    if_let_some!((px, py) = (*pressed_at).get(), Inhibit(true));
     if feq(x, px, 10.0) && feq(y, py, 10.0) {
         tx.send(
             Operation::Input(
-                Input::Unified(Coord { x: x as i32, y: y as i32, width: c.width, height: c.height }, Key::from(button)))).unwrap();
+                Input::Unified(Coord { x: x as i32, y: y as i32, width: conf.width, height: conf.height }, key))).unwrap();
     } else {
-        tx.send(Operation::TellRegion(px, py, x, y, Key::from(button))).unwrap();
+        tx.send(Operation::TellRegion(px, py, x, y, key)).unwrap();
     }
-    Inhibit(true)
 }
 
-fn on_configure(mut sender: LazySender, tx: &Sender<Operation>, ev: &EventConfigure, conf: &ArcConf) -> bool {
-    let (w, h) = ev.get_size();
-    let mut c = conf.get();
-
-    trace!("configure: w={} h={} lw={} lh={}", w, h, c.width, c.height);
-
-    if c.width == w && c.height == h {
-        return false;
+fn on_configure(sender: &mut LazySender, tx: &Sender<Operation>, w: u32, h: u32, conf: &mut Conf) {
+    if conf.width == w && conf.height == h {
+        return;
     }
 
-    if 0 < c.skip {
-        c.skip -= 1;
-        trace!("on_configure/skip: remain={:?}", c.skip);
-    } else if c.spawned {
+    if 0 < conf.skip {
+        conf.skip -= 1;
+    } else if conf.spawned {
         sender.request(EventName::ResizeWindow.operation());
     } else {
         tx.send(EventName::Spawn.operation()).unwrap();
-        c.spawned = true;
+        conf.spawned = true;
     }
-    c.width = w;
-    c.height = h;
-
-    conf.set(c);
-
-    false
-}
-
-fn on_delete(tx: &Sender<Operation>) -> Inhibit {
-    tx.send(EventName::Quit.operation()).unwrap();
-    Inhibit(false)
-}
-
-fn on_scroll(tx: &Sender<Operation>, scroll: &EventScroll) -> Inhibit {
-    if scroll.get_direction() != ScrollDirection::Smooth {
-        tx.send(Operation::Input(Input::Unified(Coord::default(), Key::from(scroll)))).unwrap();
-    }
-    Inhibit(true)
+    conf.width = w;
+    conf.height = h;
 }
 
 fn on_drag_data_received(tx: &Sender<Operation>, selection: &SelectionData, drop_item_type: &DropItemType) {
@@ -166,6 +214,12 @@ fn on_drag_data_received(tx: &Sender<Operation>, selection: &SelectionData, drop
                 tx.send(Operation::PushURL(url, None, false, None)).unwrap();
             }
         }
+    }
+}
+
+fn on_scroll(app_tx: &Sender<Operation>, key: Key, direction: &ScrollDirection) {
+    if *direction != ScrollDirection::Smooth {
+        app_tx.send(Operation::Input(Input::Unified(Coord::default(), key))).unwrap();
     }
 }
 

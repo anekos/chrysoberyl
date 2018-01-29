@@ -199,9 +199,8 @@ impl Gui {
 
             if visibility {
                 self.operation_entry.set_text("");
-                self.operation_box.show();
                 self.operation_entry.grab_focus();
-                self.window.set_events(0);
+                self.operation_box.show();
             } else {
                 self.operation_box.hide();
                 self.window.child_focus(Down); // To blur

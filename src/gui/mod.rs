@@ -24,6 +24,8 @@ use state::ViewState;
 use ui_event::UIEvent;
 use util::num::feq;
 
+mod completion;
+
 
 
 enum_from_primitive! {
@@ -88,8 +90,8 @@ pub enum Direction {
 
 const FONT_SIZE: f64 = 12.0;
 const PADDING: f64 = 5.0;
-const OPERATIONS: &str = include_str!("static/operations.txt");
-const OPTIONS: &str = include_str!("static/options.txt");
+const OPERATIONS: &str = include_str!("../static/operations.txt");
+const OPTIONS: &str = include_str!("../static/options.txt");
 
 
 impl Gui {
@@ -641,3 +643,4 @@ fn update_completion(store: &ListStore) {
         }
     }
 }
+

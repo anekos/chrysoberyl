@@ -82,6 +82,7 @@ mod operation_utils;
 mod option;
 mod paginator;
 mod poppler;
+mod readme;
 mod remote_cache;
 mod resolution;
 mod script;

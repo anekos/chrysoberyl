@@ -8,6 +8,7 @@ use encoding::types::EncodingRef;
 
 use app_path;
 use constant;
+use readme;
 
 
 
@@ -30,8 +31,6 @@ pub enum Entry {
     Input(String),
 }
 
-
-pub const README: &str = include_str!("../README.md");
 
 
 impl Default for Initial {
@@ -165,18 +164,9 @@ fn print_help() {
     use std::io::{self, Write};
 
     let mut stdout = io::stdout();
-    let mut phase = 0;
 
     let _ = writeln!(&mut stdout, "Usage:");
-
-    for line in README.lines() {
-        match phase {
-            0 if line == "# Command line" => phase = 1,
-            1 if line == "```" => phase = 2,
-            2 if line == "```" => phase = 3,
-            2 => { let _ = writeln!(&mut stdout, "  {}", line); },
-            3 => { let _ = writeln!(&mut stdout, "{}", line); },
-            _ => (),
-        }
+    for line in readme::body() {
+        let _ = writeln!(&mut stdout, "{}", line);
     }
 }

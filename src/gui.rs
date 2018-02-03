@@ -257,7 +257,7 @@ impl Gui {
     }
 
     fn create_images(&mut self, state: &ViewState) {
-        if state.center_alignment {
+        if state.centering {
             self.cell_outer.pack_start(&self.top_spacer, true, true, 0);
             self.top_spacer.show();
         } else {
@@ -269,7 +269,7 @@ impl Gui {
 
             let inner = gtk::Box::new(Orientation::Horizontal, 0);
 
-            if state.center_alignment {
+            if state.centering {
                 let left_spacer = gtk::Image::new_from_pixbuf(None);
                 inner.pack_start(&left_spacer, true, true, 0);
                 left_spacer.show();
@@ -284,17 +284,17 @@ impl Gui {
                 scrolled.add_with_viewport(&image);
                 scrolled.show();
                 image.show();
-                inner.pack_start(&scrolled, !state.center_alignment, true, 0);
+                inner.pack_start(&scrolled, !state.centering, true, 0);
                 cells.push(Cell::new(image, scrolled));
             }
 
-            if state.center_alignment {
+            if state.centering {
                 let right_spacer = gtk::Image::new_from_pixbuf(None);
                 inner.pack_start(&right_spacer, true, true, 0);
                 right_spacer.show();
             }
 
-            self.cell_outer.pack_start(&inner, !state.center_alignment, true, 0);
+            self.cell_outer.pack_start(&inner, !state.centering, true, 0);
             inner.show();
 
             self.cell_inners.push(CellInner {
@@ -303,7 +303,7 @@ impl Gui {
             });
         }
 
-        if state.center_alignment {
+        if state.centering {
             self.cell_outer.pack_start(&self.bottom_spacer, true, true, 0);
             self.bottom_spacer.show();
         } else {

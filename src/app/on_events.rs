@@ -1125,7 +1125,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 AbbrevLength => &mut app.states.abbrev_length,
                 AutoReload => &mut app.states.auto_reload,
                 AutoPaging => &mut app.states.auto_paging,
-                CenterAlignment => &mut app.states.view.center_alignment,
+                Centering => &mut app.states.view.centering,
                 CurlConnectTimeout => &mut app.states.curl_options.connect_timeout,
                 CurlFollowLocation => &mut app.states.curl_options.follow_location,
                 CurlLowSpeedLimit => &mut app.states.curl_options.low_speed_limit,
@@ -1218,7 +1218,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 app.update_status_bar_height();
                 updated.image_options = true;
             }
-            CenterAlignment => {
+            Centering => {
                 app.reset_view();
                 updated.image_options = true;
             }

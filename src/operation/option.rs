@@ -25,7 +25,7 @@ iterable_enum!(PreDefinedOptionName =>
     AbbrevLength,
     AutoReload,
     AutoPaging,
-    CenterAlignment,
+    Centering,
     ColorError,
     ColorErrorBackground,
     ColorStatusBar,
@@ -71,7 +71,7 @@ impl FromStr for PreDefinedOptionName {
             "abbrev-length" | "abbr-length"        => AbbrevLength,
             "auto-reload"                          => AutoReload,
             "auto-page" | "auto-paging" | "paging" => AutoPaging,
-            "center" | "center-alignment"          => CenterAlignment,
+            "centering" | "center"                 => Centering,
             "curl-connect-timeout"                 => CurlConnectTimeout,
             "curl-follow-location"                 => CurlFollowLocation,
             "curl-low-speed-limit"                 => CurlLowSpeedLimit,
@@ -115,7 +115,7 @@ impl PreDefinedOptionName {
         use self::PreDefinedOptionName::*;
 
         match *self {
-            AbbrevLength | AutoReload | AutoPaging | CenterAlignment |
+            AbbrevLength | AutoReload | AutoPaging | Centering |
                 ColorError | ColorErrorBackground | ColorStatusBar | ColorStatusBarBackground | ColorWindowBackground |
                 FitTo | HorizontalViews | LogFile | MaskOperator |
                 PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |

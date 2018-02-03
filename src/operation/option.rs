@@ -50,6 +50,7 @@ iterable_enum!(PreDefinedOptionName =>
     Rotation,
     SkipResizeWindow,
     StatusBar,
+    StatusBarHeight,
     StdOut,
     StatusFormat,
     UpdateCacheAccessTime,
@@ -88,6 +89,7 @@ impl FromStr for PreDefinedOptionName {
             "reverse" | "rev"                      => Reverse,
             "rotation"                             => Rotation,
             "status-bar" | "status"                => StatusBar,
+            "status-bar-height" | "status-height"  => StatusBarHeight,
             "status-format"                        => StatusFormat,
             "stdout"                               => StdOut,
             "title-format"                         => TitleFormat,
@@ -115,7 +117,7 @@ impl PreDefinedOptionName {
                 ColorError | ColorErrorBackground | ColorStatusBar | ColorStatusBarBackground | ColorWindowBackground |
                 FitTo | HorizontalViews | LogFile | MaskOperator |
                 PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
-                Reverse | Rotation | SkipResizeWindow | StatusBar | StatusFormat | EmptyStatusFormat | StdOut | UpdateCacheAccessTime | TitleFormat | VerticalViews | WatchFiles | HistoryFile => false,
+                Reverse | Rotation | SkipResizeWindow | StatusBar | StatusBarHeight | StatusFormat | EmptyStatusFormat | StdOut | UpdateCacheAccessTime | TitleFormat | VerticalViews | WatchFiles | HistoryFile => false,
             CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => true,
         }
     }

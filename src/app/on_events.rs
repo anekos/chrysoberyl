@@ -403,6 +403,7 @@ pub fn on_initialized(app: &mut App) -> EventResult {
     app.gui.update_colors();
     app.update_label(true, true);
     app.gui.show();
+    app.update_status_bar_height(); // XXX Must Do after `gui.show`
     Ok(())
 }
 
@@ -1130,6 +1131,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 Rotation => &mut app.states.drawing.rotation,
                 SkipResizeWindow => &mut app.states.skip_resize_window,
                 StatusBar => &mut app.states.status_bar,
+                StatusBarHeight => &mut app.states.status_bar_height,
                 StatusFormat => &mut app.states.status_format,
                 StdOut => &mut app.states.stdout,
                 TitleFormat => &mut app.states.title_format,
@@ -1192,6 +1194,10 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 updated.label = true,
             StatusBar => {
                 app.update_label_visibility();
+                updated.image_options = true;
+            }
+            StatusBarHeight => {
+                app.update_status_bar_height();
                 updated.image_options = true;
             }
             CenterAlignment => {

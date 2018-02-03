@@ -37,6 +37,7 @@ pub struct Gui {
     bottom_spacer: Image,
     cell_outer: gtk::Box,
     cell_inners: Vec<CellInner>,
+    pub status_bar: gtk::Box,
     pub colors: Colors,
     pub window: Window,
     pub vbox: gtk::Box,
@@ -132,7 +133,11 @@ impl Gui {
             vbox.drag_dest_set(DestDefaults::ALL, &targets, action);
         }
 
-        vbox.pack_end(&label, false, false, 0);
+        let status_bar = gtk::Box::new(Orientation::Vertical, 0);
+        status_bar.pack_end(&label, false, false, 0);
+        status_bar.show_all();
+
+        vbox.pack_end(&status_bar, false, false, 0);
         vbox.pack_end(&image_outer, true, true, 0);
         window.add(&vbox);
 
@@ -147,7 +152,8 @@ impl Gui {
             cell_outer: image_outer,
             cell_inners: vec![],
             label: label,
-            colors: Colors::default()
+            colors: Colors::default(),
+            status_bar,
         }
     }
 
@@ -202,7 +208,7 @@ impl Gui {
 
         let width = width / state.cols as i32;
         let height = if with_label {
-            (height / state.rows as i32) - self.label.get_allocated_height()
+            (height / state.rows as i32) - self.status_bar.get_allocated_height()
         } else {
             height / state.rows as i32
         };
@@ -217,9 +223,18 @@ impl Gui {
         self.label.override_color(
             self.label.get_state_flags(),
             &self.colors.status_bar.gdk_rgba());
-        self.label.override_background_color(
-            self.label.get_state_flags(),
+        self.status_bar.override_background_color(
+            self.status_bar.get_state_flags(),
             &self.colors.status_bar_background.gdk_rgba());
+    }
+
+    pub fn update_status_bar_height(&self, height: Option<usize>) {
+        let height = if let Some(height) = height {
+            height as i32
+        } else {
+            self.label.get_allocated_height() * 110 / 100
+        };
+        self.status_bar.set_property_height_request(height);
     }
 
     pub fn scroll_views(&self, direction: &Direction, scroll_size: f64, count: usize, crush: bool) -> bool {

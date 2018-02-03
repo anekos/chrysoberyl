@@ -10,6 +10,10 @@ impl Counter {
         Counter { value: None }
     }
 
+    pub fn peek(&self) -> usize {
+        self.value.unwrap_or(1)
+    }
+
     pub fn set(&mut self, value: Option<usize>) {
         self.value = value;
     }

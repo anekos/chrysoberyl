@@ -164,6 +164,7 @@ pub enum QueuedOperation {
 
 #[derive(Default, Debug, Clone)]
 pub struct Updated {
+    pub counter: bool,
     pub pointer: bool,
     pub label: bool,
     pub image: bool,

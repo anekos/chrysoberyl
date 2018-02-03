@@ -138,6 +138,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         Rotation => gen("rotation", &st.drawing.rotation, context),
         SkipResizeWindow => gen("skip-resize-window", &st.skip_resize_window, context),
         StatusBar => gen("status-bar", &b2s(st.status_bar), context),
+        StatusBarAlign => gen("status-bar-align", &st.status_bar_align, context),
         StatusBarHeight => geno("status-bar-height", &st.status_bar_height, context),
         StdOut => gen("stdout", &st.stdout, context),
         StatusFormat => gen("status-format", &st.status_format, context),
@@ -400,6 +401,22 @@ impl fmt::Display for state::MaskOperator {
                 HslSaturation => "hsl-saturation",
                 HslColor => "hsl-color",
                 HslLuminosity => "hsl-luminosity",
+            };
+
+        write!(f, "{}", result)
+    }
+}
+
+impl fmt::Display for state::Alignment {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use gtk::Align::*;
+
+        let result =
+            match self.0 {
+                Start => "start",
+                Center => "center",
+                End => "end",
+                _ => panic!("Unexpected value: {:?}", self.0)
             };
 
         write!(f, "{}", result)

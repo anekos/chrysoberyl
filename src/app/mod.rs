@@ -752,6 +752,10 @@ impl App {
         }
     }
 
+    fn update_status_bar_align(&self) {
+        self.gui.label.set_halign(self.states.status_bar_align.0);
+    }
+
     fn update_status_bar_height(&self) {
         self.gui.update_status_bar_height(self.states.status_bar_height);
     }

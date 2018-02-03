@@ -6,6 +6,7 @@ use std::io::Read;
 use std::path::PathBuf;
 
 use cairo;
+use gtk;
 
 use app_path::{PathList, cache_dir};
 use entry::SearchKey;
@@ -36,6 +37,7 @@ pub struct States {
     pub spawned: bool,
     pub status_bar: bool,
     pub status_bar_height: Option<usize>,
+    pub status_bar_align: Alignment,
     pub status_format: StatusFormat,
     pub empty_status_format: EmptyStatusFormat,
     pub stdout: logger::stdout::StdOut,
@@ -68,6 +70,9 @@ pub struct PreFetchState {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MaskOperator(pub cairo::Operator);
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Alignment(pub gtk::Align);
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Direction {
@@ -104,6 +109,7 @@ impl Default for States {
             spawned: false,
             status_bar: true,
             status_bar_height: None,
+            status_bar_align: Alignment(gtk::Align::Center),
             status_format: StatusFormat::default(),
             empty_status_format: EmptyStatusFormat::default(),
             stdout: logger::stdout::StdOut::new(),

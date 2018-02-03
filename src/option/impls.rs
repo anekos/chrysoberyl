@@ -8,7 +8,7 @@ use color::Color;
 use option::*;
 use resolution;
 use size::FitTo;
-use state::MaskOperator;
+use state::{MaskOperator, Alignment};
 
 use option::common;
 
@@ -313,5 +313,37 @@ where T: PartialEq + Copy {
         }
     } else {
         order.get(i + 1).cloned().unwrap_or_else(|| order[0])
+    }
+}
+
+
+impl FromStr for Alignment {
+    type Err = ChryError;
+
+    fn from_str(src: &str) -> Result<Self, ChryError> {
+        use gtk::Align::*;
+
+        let align = match src {
+            "left" | "l" | "start" => Start,
+            "right" | "r" | "end" => End,
+            "center" | "c" => Center,
+            _ => return Err(ChryError::InvalidValue(o!(src))),
+        };
+        Ok(Alignment(align))
+    }
+}
+
+impl OptionValue for Alignment {
+    fn cycle(&mut self, reverse: bool) -> Result<(), ChryError> {
+        use gtk::Align::*;
+        *self = cycled(*self, &[Alignment(Start), Alignment(Center), Alignment(End)], reverse);
+        Ok(())
+    }
+
+    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+        value.parse().map(|value| {
+            *self = value;
+            ()
+        })
     }
 }

@@ -1145,6 +1145,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 Rotation => &mut app.states.drawing.rotation,
                 SkipResizeWindow => &mut app.states.skip_resize_window,
                 StatusBar => &mut app.states.status_bar,
+                StatusBarAlign => &mut app.states.status_bar_align,
                 StatusBarHeight => &mut app.states.status_bar_height,
                 StatusFormat => &mut app.states.status_format,
                 StdOut => &mut app.states.stdout,
@@ -1209,6 +1210,9 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
             StatusBar => {
                 app.update_label_visibility();
                 updated.image_options = true;
+            }
+            StatusBarAlign => {
+                app.update_status_bar_align();
             }
             StatusBarHeight => {
                 app.update_status_bar_height();

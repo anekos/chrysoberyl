@@ -9,7 +9,7 @@ use cairo::{Context, ImageSurface, Format};
 use gdk::EventMask;
 use gdk_pixbuf::{Pixbuf, PixbufAnimationExt};
 use gtk::prelude::*;
-use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment};
+use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment, Layout};
 
 use color::Color;
 use constant;
@@ -37,7 +37,7 @@ pub struct Gui {
     bottom_spacer: Image,
     cell_outer: gtk::Box,
     cell_inners: Vec<CellInner>,
-    pub status_bar: gtk::Box,
+    pub status_bar: Layout,
     pub colors: Colors,
     pub window: Window,
     pub vbox: gtk::Box,
@@ -133,8 +133,10 @@ impl Gui {
             vbox.drag_dest_set(DestDefaults::ALL, &targets, action);
         }
 
-        let status_bar = gtk::Box::new(Orientation::Vertical, 0);
-        status_bar.pack_end(&label, false, false, 0);
+        let status_bar = Layout::new(None, None);
+        let sb_box = gtk::Box::new(Orientation::Vertical, 0);
+        sb_box.pack_end(&label, true, true, 0);
+        status_bar.add(&sb_box);
         status_bar.show_all();
 
         vbox.pack_end(&status_bar, false, false, 0);

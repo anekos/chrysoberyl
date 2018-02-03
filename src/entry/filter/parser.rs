@@ -29,22 +29,6 @@ impl FromStr for Expr {
 }
 
 
-#[cfg_attr(feature = "cargo-clippy", allow(doc_markdown))]
-/**
- * Expr ← Block | Bool | Cond | Logic | 'not' Expr
- * Block ← '(' Expr ')' | '{' Expr '}'
- * Logic ← Bool LogicOp Expr
- * Bool ← Compare | BoolVariable | 'true' | 'false'
- * Cond ← 'if' Expr Expr Expr | 'when' Expr Expr | 'unless' Expr Expr
- * BoolOp ← 'and' | 'or'
- * Compare ← Value CmpOp Value
- * CmpOp ← '<' | '<=' | '>' | '>=' | '=' | '==' | '!=' | '=*' | '!*'
- * Value ← Glob | Integer | Variable
- * Variable ← 'type' | 'width' | 'height' | 'path' | 'ext' | 'extension' | 'dimensions' | 'name' | 'filesize' | 'page' | 'pages' | 'real-pages' | 'ratio'
- * Glob ← '<' string '>'
- * BoolVariable ← 'animation'
- */
-
 fn from_vec_char(src: Vec<char>) -> String {
    src.into_iter().collect()
 }

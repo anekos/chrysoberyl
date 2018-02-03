@@ -735,6 +735,10 @@ impl App {
         }
     }
 
+    fn update_status_bar_height(&self) {
+        self.gui.update_status_bar_height(self.states.status_bar_height);
+    }
+
     fn update_watcher(&self) {
         if !self.states.auto_reload && !self.states.watch_files {
             self.watcher.clear();

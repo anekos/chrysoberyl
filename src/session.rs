@@ -138,6 +138,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         Rotation => gen("rotation", &st.drawing.rotation, context),
         SkipResizeWindow => gen("skip-resize-window", &st.skip_resize_window, context),
         StatusBar => gen("status-bar", &b2s(st.status_bar), context),
+        StatusBarHeight => geno("status-bar-height", &st.status_bar_height, context),
         StdOut => gen("stdout", &st.stdout, context),
         StatusFormat => gen("status-format", &st.status_format, context),
         EmptyStatusFormat => gen("empty-status-format", &st.empty_status_format, context),

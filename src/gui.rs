@@ -9,7 +9,7 @@ use cairo::{Context, ImageSurface, Format};
 use gdk::EventMask;
 use gdk_pixbuf::{Pixbuf, PixbufAnimationExt};
 use gtk::prelude::*;
-use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment, Layout};
+use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment, Layout, Align};
 
 use color::Color;
 use constant;
@@ -38,6 +38,7 @@ pub struct Gui {
     cell_outer: gtk::Box,
     cell_inners: Vec<CellInner>,
     pub status_bar: Layout,
+    pub status_bar_inner: gtk::Box,
     pub colors: Colors,
     pub window: Window,
     pub vbox: gtk::Box,
@@ -105,6 +106,7 @@ impl Gui {
         let image_outer = gtk::Box::new(Orientation::Vertical, 0);
 
         let label = Label::new(None);
+        label.set_halign(Align::Center);
 
         {
             let action = DragAction::COPY | DragAction::MOVE | DragAction::DEFAULT | DragAction::LINK | DragAction::ASK | DragAction::PRIVATE;
@@ -134,9 +136,10 @@ impl Gui {
         }
 
         let status_bar = Layout::new(None, None);
-        let sb_box = gtk::Box::new(Orientation::Vertical, 0);
-        sb_box.pack_end(&label, true, true, 0);
-        status_bar.add(&sb_box);
+        let status_bar_inner = gtk::Box::new(Orientation::Vertical, 0);
+        status_bar_inner.pack_end(&label, true, true, 0);
+        status_bar.add(&status_bar_inner);
+
         status_bar.show_all();
 
         vbox.pack_end(&status_bar, false, false, 0);
@@ -156,6 +159,7 @@ impl Gui {
             label: label,
             colors: Colors::default(),
             status_bar,
+            status_bar_inner,
         }
     }
 
@@ -177,6 +181,11 @@ impl Gui {
 
     pub fn cells(&self, reverse: bool) -> CellIterator {
         CellIterator { gui: self, index: 0, reverse: reverse }
+    }
+
+    pub fn refresh_status_bar_width(&self) {
+        let width = self.vbox.get_allocated_width();
+        self.status_bar_inner.set_property_width_request(width);
     }
 
     pub fn reset_view(&mut self, state: &ViewState) {

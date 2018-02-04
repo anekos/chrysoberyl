@@ -1,4 +1,3 @@
-
 use std::error::Error;
 use std::fs::{OpenOptions, File, create_dir_all};
 use std::io::{self, Read, Write, BufReader, BufRead};
@@ -9,25 +8,12 @@ use std::thread::spawn;
 use atty;
 use readline;
 
-use errors::ChryError;
 use operation::Operation;
-use operation_utils::read_operations;
+use controller::process;
 
 
 
-pub fn register_file(tx: Sender<Operation>, filepath: String) {
-    spawn(move || {
-        if let Ok(file) = File::open(&filepath) {
-            puts_event!("input/file/open");
-            read_operations("file", file, &tx);
-            puts_event!("input/file/close");
-        } else {
-            puts_error!(ChryError::from("Could not open file"), "at" => "input/file", "for" => filepath);
-        }
-    });
-}
-
-pub fn register_stdin(tx: Sender<Operation>, mut history_file: Option<PathBuf>) {
+pub fn register(tx: Sender<Operation>, mut history_file: Option<PathBuf>) {
     use std::io;
     use std::io::BufRead;
 
@@ -42,7 +28,7 @@ pub fn register_stdin(tx: Sender<Operation>, mut history_file: Option<PathBuf>) 
             puts_event!("input/stdin/open", "type" => "readline");
             while let Ok(line) = readline::readline("") {
                 let _ = readline::add_history(&*line);
-                if process(&tx, &*line) {
+                if process(&tx, &*line, "input/stdin") {
                     if let Err(error) = write_line(&line, &history_file) {
                         puts_error!(error, "at" => "input/stdin/write_line");
                         history_file = None; // Do not retry
@@ -53,14 +39,14 @@ pub fn register_stdin(tx: Sender<Operation>, mut history_file: Option<PathBuf>) 
             puts_event!("input/stdin/open", "type" => "standard");
             for line in stdin.lock().lines() {
                 let line = line.unwrap();
-                process(&tx, &*line);
+                process(&tx, &*line, "input/stdin");
             }
         }
         puts_event!("input/stdin/close");
     });
 }
 
-pub fn register_stdin_as_file(tx: Sender<Operation>) {
+pub fn register_as_file(tx: Sender<Operation>) {
     spawn(move || {
         let stdin = io::stdin();
         let mut stdin = stdin.lock();
@@ -68,19 +54,6 @@ pub fn register_stdin_as_file(tx: Sender<Operation>) {
         stdin.read_to_end(&mut buf).unwrap();
         tx.send(Operation::PushMemory(buf)).unwrap();
     });
-}
-
-fn process(tx: &Sender<Operation>, line: &str) -> bool {
-    match Operation::parse_fuzziness(line) {
-        Ok(op) => {
-            tx.send(op).unwrap();
-            true
-        }
-        Err(err) => {
-            puts_error!(err, "at" => "input/stdin", "for" => line);
-            false
-        }
-    }
 }
 
 fn setup_readline(file: &Option<PathBuf>) -> Result<(), Box<Error>> {

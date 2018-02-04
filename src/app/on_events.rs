@@ -28,7 +28,6 @@ use expandable::{Expandable, expand_all};
 use file_extension::get_entry_type_from_filename;
 use filer;
 use filterable_vec::Compare;
-use fragile_input::new_fragile_input;
 use gui::Direction;
 use key::Key;
 use logger;
@@ -167,7 +166,7 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
                 on_events::on_push(app, updated, file.clone(), None, false)?;
             }
             CLE::Input(file) => {
-                controller::register_file(app.tx.clone(), file);
+                controller::file::register(app.tx.clone(), file);
             },
             CLE::Expand(file, recursive) => {
                 on_events::on_push(app, updated, file.clone(), None, false)?;
@@ -199,9 +198,9 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
     }
 
     if stdin_as_file {
-        controller::register_stdin_as_file(app.tx.clone());
+        controller::stdin::register_as_file(app.tx.clone());
     } else {
-        controller::register_stdin(app.tx.clone(), app.states.history_file.clone());
+        controller::stdin::register(app.tx.clone(), app.states.history_file.clone());
     }
 
     if shuffle {
@@ -390,7 +389,7 @@ pub fn on_fly_leaves(app: &mut App, updated: &mut Updated, n: usize) -> EventRes
 }
 
 pub fn on_fragile(app: &mut App, path: &Expandable) -> EventResult {
-    new_fragile_input(app.tx.clone(), &path.expand());
+    controller::fifo::register(app.tx.clone(), &path.expand());
     Ok(())
 }
 

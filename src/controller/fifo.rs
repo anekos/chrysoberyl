@@ -10,13 +10,14 @@ use libc;
 
 use errors::ChryError;
 use operation::Operation;
-use operation_utils::read_operations;
 use termination;
 use util::path::path_to_str;
 
+use controller::process_lines;
 
 
-pub fn new_fragile_input<T: AsRef<Path>>(tx: Sender<Operation>, path: &T) {
+
+pub fn register<T: AsRef<Path>>(tx: Sender<Operation>, path: &T) {
     let res = unsafe {
         let mode = 0o600;
         let cstr = CString::new(path.as_ref().to_str().unwrap().as_bytes());
@@ -37,7 +38,7 @@ pub fn new_fragile_input<T: AsRef<Path>>(tx: Sender<Operation>, path: &T) {
     spawn(move || {
         while let Ok(file) = File::open(&path) {
             puts_event!("input/fragile/open");
-            read_operations("fragile", file, &tx);
+            process_lines(&tx, file, "input/fragile");
             puts_event!("input/fragile/close");
         }
         puts_error!(ChryError::Fixed("Could not open file"), "at" => "fragile_controller", "for" => path_to_str(&path));

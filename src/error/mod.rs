@@ -32,6 +32,22 @@ macro_rules! puts_error {
     }
 }
 
+macro_rules! with_error {
+    (at = $at:expr, $body:expr) => {
+        use std::error::Error as StdError;
+
+        let body = move || {
+            $body;
+            Ok(())
+        };
+        let result: Result<(), Box<StdError>> = body();
+        match result {
+            Ok(_) => (),
+            Err(err) => puts_error!(err, "at" => $at),
+        }
+    }
+}
+
 pub fn register(op_tx: Sender<Operation>) {
     let tx = (*ERROR_CHANNEL).lock().unwrap();
     tx.send(ErrorChannel::Register(op_tx)).unwrap()

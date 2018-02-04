@@ -12,6 +12,7 @@ use archive::ArchiveEntry;
 use cherenkov::fill::Shape;
 use color::Color;
 use command_line;
+use controller;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::{Meta, EntryType};
 use entry;
@@ -41,6 +42,7 @@ pub enum Operation {
     Clear,
     Clip(Region),
     Context(OperationContext, Box<Operation>),
+    Controller(controller::Source),
     Count(Option<usize>),
     CountDigit(u8),
     DefineUserSwitch(String, Vec<Vec<String>>),
@@ -54,7 +56,6 @@ pub enum Operation {
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Filter(bool, Box<Option<entry::filter::expression::Expr>>), /* dynamic, filter expression */
     FlyLeaves(usize),
-    Fragile(Expandable),
     Go(entry::SearchKey),
     Input(mapping::Input),
     InitialProcess(Vec<command_line::Entry>, bool, bool), /* command_lin::entries, shuffle, stdin_as_file */
@@ -303,6 +304,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@cherenkov"                    => parse_cherenkov(whole),
             "@clear"                        => Ok(Clear),
             "@clip"                         => parse_clip(whole),
+            "@controller" | "@control"      => parse_controller(whole),
             "@count"                        => parse_count(whole),
             "@cycle"                        => parse_option_cycle(whole),
             "@dec" | "@decrement" | "@decrease" | "@--"
@@ -320,7 +322,6 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@filter"                       => parse_filter(whole),
             "@first" | "@f"                 => parse_move(whole, First),
             "@fly-leaves"                   => parse_fly_leaves(whole),
-            "@fragile"                      => parse_command1(whole, |it| Fragile(Expandable(it))),
             "@go"                           => parse_go(whole),
             "@inc" | "@increment" | "@increase" | "@++"
                                             => parse_usize(whole, OptionUpdater::Increment, 10),
@@ -391,6 +392,7 @@ impl fmt::Debug for Operation {
             Clear => "Clear ",
             Clip(_) => "Clip",
             Context(_, _) => "Context",
+            Controller(_) => "Controller",
             Count(_) => "Count",
             CountDigit(_) => "CountDigit",
             DefineUserSwitch(_, _) => "DefineUserSwitch",
@@ -404,7 +406,6 @@ impl fmt::Debug for Operation {
             Fill(_, _, _, _, _) => "Fill",
             Filter(_, _) => "Filter",
             FlyLeaves(_) => "FlyLeaves",
-            Fragile(_) => "Fragile",
             Go(_) => "Go",
             InitialProcess(_, _, _) => "InitialProcess",
             Input(_) => "Input",

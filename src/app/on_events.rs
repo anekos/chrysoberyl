@@ -19,6 +19,7 @@ use cherenkov::fill::Shape;
 use color::Color;
 use command_line;
 use config::DEFAULT_CONFIG;
+use controller;
 use editor;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::{self, Meta, SearchKey, Entry, EntryContent, EntryType};
@@ -141,6 +142,11 @@ pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region, context: Opt
     let current = app.states.drawing.clipping.unwrap_or_default();
     app.states.drawing.clipping = Some(current + inner);
     updated.image_options = true;
+    Ok(())
+}
+
+pub fn on_controller(app: &mut App, source: controller::Source) -> EventResult {
+    controller::register(app.tx.clone(), source);
     Ok(())
 }
 
@@ -385,11 +391,6 @@ pub fn on_first(app: &mut App, updated: &mut Updated, count: Option<usize>, igno
 
 pub fn on_fly_leaves(app: &mut App, updated: &mut Updated, n: usize) -> EventResult {
     updated.pointer = app.paginator.set_fly_leaves(n);
-    Ok(())
-}
-
-pub fn on_fragile(app: &mut App, path: &Expandable) -> EventResult {
-    controller::fifo::register(app.tx.clone(), &path.expand());
     Ok(())
 }
 

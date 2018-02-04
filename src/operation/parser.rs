@@ -24,15 +24,6 @@ use operation::option::*;
 const SEARCH_PATH_DESC: &str = "Search script path from ~/.config/chrysoberyl and /usr/share/chrysoberyl";
 
 
-pub fn parse_command1<T>(args: &[String], op: T) -> Result<Operation, ParsingError>
-where T: FnOnce(String) -> Operation {
-    if let Some(arg) = args.get(1) {
-        Ok(op(arg.to_owned()))
-    } else {
-        Err(ParsingError::TooFewArguments)
-    }
-}
-
 pub fn parse_usize<T>(args: &[String], op: T, mut delta: usize) -> Result<Operation, ParsingError>
 where T: FnOnce(usize) -> OptionUpdater {
     let mut option_name = OptionName::default();
@@ -146,6 +137,34 @@ pub fn parse_clip(args: &[String]) -> Result<Operation, ParsingError> {
     } .map(|_| {
         Operation::Clip(region)
     })
+}
+
+pub fn parse_controller(args: &[String]) -> Result<Operation, ParsingError> {
+    use controller::Source;
+
+    fn parse_1<T>(args: &[String], f: T) -> Result<Source, ParsingError> where T: FnOnce(String) -> Source {
+        let mut path = o!("");
+
+        {
+            let mut ap = ArgumentParser::new();
+            ap.refer(&mut path).add_argument("path", Store, "History file").required();
+            parse_args(&mut ap, args)
+        } .map(|_| {
+            f(path)
+        })
+    }
+
+    if let Some(target) = args.get(1) {
+        let args = &args[1..];
+        let source = match &**target {
+            "fifo" => parse_1(args, Source::Fifo),
+            "file" => parse_1(args, Source::File),
+            _ => return Err(ParsingError::InvalidArgument(format!("Invalid controller source: {}", target)))
+        };
+        source.map(|it| Operation::Controller(it))
+    } else {
+        Err(ParsingError::TooFewArguments)
+    }
 }
 
 pub fn parse_count(args: &[String]) -> Result<Operation, ParsingError> {

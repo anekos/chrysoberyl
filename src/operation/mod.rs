@@ -86,6 +86,7 @@ pub enum Operation {
     PushPdf(Expandable, Option<Meta>, bool),
     PushSibling(bool, Option<Meta>, bool, bool), /* next?, meta, force, show */
     PushURL(String, Option<Meta>, bool, Option<EntryType>),
+    Query(Vec<String>, Option<String>), /* operation, caption */
     Random,
     Refresh(bool), /* image_cache */
     ResetImage,
@@ -347,6 +348,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@push-pdf"                     => parse_push(whole, |it, meta, force| PushPdf(Expandable(it), meta, force)),
             "@push-previous" | "@push-prev" => parse_push_sibling(whole, false),
             "@push-url"                     => parse_push_url(whole),
+            "@query"                        => parse_query(whole),
             "@quit"                         => Ok(EventName::Quit.operation()),
             "@random" | "@rand"             => Ok(Random),
             "@refresh" | "@r"               => parse_refresh(whole),
@@ -436,6 +438,7 @@ impl fmt::Debug for Operation {
             PushPdf(_, _, _) => "PushPdf",
             PushSibling(_, _, _, _) => "PushSibling",
             PushURL(_, _, _, _) => "PushURL",
+            Query(_, _) => "Query",
             Random => "Random ",
             Refresh(_) => "Refresh",
             ResetImage => "ResetImage ",

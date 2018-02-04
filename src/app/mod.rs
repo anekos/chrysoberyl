@@ -73,6 +73,7 @@ pub struct App {
     pub gui: Gui,
     pub paginator: Paginator,
     pub primary_tx: Sender<Operation>,
+    pub query_operation: Option<Vec<String>>,
     pub states: States,
     pub tx: Sender<Operation>,
 }
@@ -121,6 +122,7 @@ impl App {
             paginator: Paginator::new(),
             pre_fetch_serial: 0,
             primary_tx: primary_tx,
+            query_operation: None,
             remote_cache: RemoteCache::new(initial.curl_threads, tx.clone(), sorting_buffer.clone()),
             rng: rand::thread_rng(),
             search_text: None,
@@ -270,6 +272,8 @@ impl App {
                     on_push_sibling(self, &mut updated, next, meta, force, show),
                 PushURL(url, meta, force, entry_type) =>
                     on_push_url(self, &mut updated, url, meta, force, entry_type),
+                Query(operation, caption) =>
+                    on_query(self, &mut updated, operation, caption),
                 Random =>
                     on_random(self, &mut updated, len),
                 Refresh(image) =>

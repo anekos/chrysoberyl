@@ -540,6 +540,89 @@ If the result of `FILTER_EXPRESSION` evaluation is true, execute the operation.
 Write current entry image to `PATH`.
 
 
+# Options
+
+abbrev-length
+:   Max length for `CRHY_ABBREV_PATH`
+auto-reload
+:   Reload current viewingly images when they are updated.
+auto-paging
+:   Go next page when a new page is pushed (only at last page)
+centering
+:   Center image cells
+curl-connect-timeout
+:   cURL option.
+curl-follow-location
+:   cURL option.
+curl-low-speed-limit
+:   cURL option.
+curl-low-speed-time
+:   cURL option.
+curl-timeout
+:   cURL option.
+empty-status-format
+:   Status bar format for empty
+fit-to
+:   values: width, height, original, original-or-cell, cell
+:   default: cell
+history-file
+:   STDIN input history
+horizontal-views
+:   TODO
+log-file
+:   TODO
+mask-operator
+:   TODO
+path
+:   Script search path
+pre-render
+:   TODO
+pre-render-limit
+:   TODO
+pre-render-pages
+:   TODO
+reverse
+:   values: yes, no
+rotation
+:   values: 0, 1, 2, 3
+status-bar
+:   TODO
+status-bar-align
+:   TODO
+status-bar-height
+:   TODO
+status-format
+:   TODO
+stdout
+:   TODO
+title-format
+:   TODO
+vertical-views
+:   TODO
+update-cache-atime
+:   TODO
+watch-files
+:   Fire `file-changed` event when currently viewing images are updated.
+window-background-color
+:   TODO
+skip-resize-window
+:   TODO
+status-bar-color
+:   TODO
+status-bar-background-color
+:   TODO
+error-color
+:   TODO
+error-background-color
+:   TODO
+
+You can use `@editor` to see current option values.
+
+```
+@editor --session all $EDITOR
+```
+
+
 # Filter Expression
 
 ```

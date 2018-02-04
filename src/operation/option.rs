@@ -78,7 +78,7 @@ impl FromStr for PreDefinedOptionName {
             "curl-low-speed-time"                  => CurlLowSpeedTime,
             "curl-timeout"                         => CurlTimeout,
             "empty-status-format"                  => EmptyStatusFormat,
-            "fit" | "fit-to"                       => FitTo,
+            "fit-to" | "fit"                       => FitTo,
             "history-file"                         => HistoryFile,
             "horizontal-views"                     => HorizontalViews,
             "log-file" | "log"                     => LogFile,

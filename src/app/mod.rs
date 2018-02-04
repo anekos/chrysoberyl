@@ -169,6 +169,7 @@ impl App {
         let mut updated = Updated::default();
         let mut to_end = false;
         let len = self.entries.len();
+        let count = self.counter.peek();
 
         {
             let operated = match operation {
@@ -183,9 +184,9 @@ impl App {
                 Context(context, op) =>
                     return self.operate_with_context(*op, Some(context)),
                 Count(count) =>
-                    ok!(self.counter.set(count)),
+                    on_count(self, &mut updated, count),
                 CountDigit(digit) =>
-                    ok!(self.counter.push_digit(digit)),
+                    on_count_digit(self, &mut updated, digit),
                 DefineUserSwitch(name, values) =>
                     on_define_switch(self, name, values),
                 Delete(expr) =>
@@ -331,6 +332,8 @@ impl App {
             }
         }
 
+        updated.counter |= count != self.counter.peek();
+
         if self.states.spawned {
             self.after_operate(&mut updated, len, to_end);
         }
@@ -347,6 +350,11 @@ impl App {
                     return
                 }
             }
+        }
+
+        if updated.counter {
+            updated.label = true;
+            self.update_counter_env(false);
         }
 
         if updated.pointer {
@@ -574,6 +582,15 @@ impl App {
         }
 
         image_size
+    }
+
+    fn update_counter_env(&mut self, do_pop: bool) {
+        let count = if do_pop {
+            self.counter.pop()
+        } else {
+            self.counter.peek()
+        };
+        env::set_var(constant::env_name("COUNT"), s!(count));
     }
 
     fn update_env(&mut self, envs: &[(String, String)]) {

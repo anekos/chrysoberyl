@@ -145,6 +145,17 @@ pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region, context: Opt
     Ok(())
 }
 
+pub fn on_count(app: &mut App, updated: &mut Updated, count: Option<usize>) -> EventResult {
+    app.counter.set(count);
+    updated.label = true;
+    Ok(())
+}
+
+pub fn on_count_digit(app: &mut App, updated: &mut Updated, digit: u8) -> EventResult {
+    app.counter.push_digit(digit);
+    updated.label = true;
+    Ok(())
+}
 
 pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuffle: bool, stdin_as_file: bool) -> EventResult {
     fn process(app: &mut App, entry: command_line::Entry, first_path: &mut Option<String>, updated: &mut Updated) -> EventResult {
@@ -931,14 +942,14 @@ pub fn on_shell(app: &mut App, async: bool, read_operations: bool, search_path: 
         None
     };
 
-    set_count_env(app);
+    app.update_counter_env(true);
     let tx = app.tx.clone();
     shell::call(async, &expand_all(command_line, search_path, &app.states.path_list), stdin, option!(read_operations, tx));
     Ok(())
 }
 
 pub fn on_shell_filter(app: &mut App, command_line: &[Expandable], search_path: bool) -> EventResult {
-    set_count_env(app);
+    app.update_counter_env(true);
     shell_filter::start(expand_all(command_line, search_path, &app.states.path_list), app.tx.clone());
     Ok(())
 }
@@ -1329,11 +1340,6 @@ fn extract_region_from_context(context: Option<OperationContext>) -> Option<(Reg
         }
     }
     None
-}
-
-fn set_count_env(app: &mut App) {
-    let count = app.counter.pop();
-    env::set_var(constant::env_name("COUNT"), s!(count));
 }
 
 fn is_url(path: &str) -> bool {

@@ -146,7 +146,7 @@ pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region, context: Opt
 }
 
 pub fn on_controller(app: &mut App, source: controller::Source) -> EventResult {
-    controller::register(app.tx.clone(), source);
+    controller::register(app.tx.clone(), source)?;
     Ok(())
 }
 

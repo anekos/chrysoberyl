@@ -154,11 +154,26 @@ pub fn parse_controller(args: &[String]) -> Result<Operation, ParsingError> {
         })
     }
 
+    fn parse_2<T>(args: &[String], f: T) -> Result<Source, ParsingError> where T: FnOnce(String, bool) -> Source {
+        let mut path = o!("");
+        let mut as_file = false;
+
+        {
+            let mut ap = ArgumentParser::new();
+            ap.refer(&mut as_file).add_option(&["--as-file", "-f"], StoreTrue, "As image file");
+            ap.refer(&mut path).add_argument("path", Store, "Path").required();
+            parse_args(&mut ap, args)
+        } .map(|_| {
+            f(path, as_file)
+        })
+    }
+
     if let Some(target) = args.get(1) {
         let args = &args[1..];
         let source = match &**target {
             "fifo" => parse_1(args, Source::Fifo),
             "file" => parse_1(args, Source::File),
+            "socket" | "unix-socket" | "sock" => parse_2(args, Source::UnixSocket),
             _ => return Err(ParsingError::InvalidArgument(format!("Invalid controller source: {}", target)))
         };
         source.map(|it| Operation::Controller(it))

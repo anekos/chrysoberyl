@@ -15,7 +15,6 @@ use rand::{self, ThreadRng};
 use command_line::Initial;
 use config;
 use constant;
-use controller;
 use counter::Counter;
 use entry::{Entry, EntryContainer, EntryContent, Serial};
 use error;
@@ -183,6 +182,8 @@ impl App {
                     on_clip(self, &mut updated, region, context),
                 Context(context, op) =>
                     return self.operate_with_context(*op, Some(context)),
+                Controller(source) =>
+                    on_controller(self, source),
                 Count(count) =>
                     on_count(self, &mut updated, count),
                 CountDigit(digit) =>
@@ -209,8 +210,6 @@ impl App {
                     on_first(self, &mut updated, count, ignore_views, move_by),
                 FlyLeaves(n) =>
                     on_fly_leaves(self, &mut updated, n),
-                Fragile(ref path) =>
-                    on_fragile(self, path),
                 Go(ref key) =>
                     on_go(self, &mut updated, key),
                 InitialProcess(entries, shuffle, stdin_as_file) =>

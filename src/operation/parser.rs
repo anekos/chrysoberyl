@@ -723,6 +723,20 @@ pub fn parse_push_url(args: &[String]) -> Result<Operation, ParsingError> {
     })
 }
 
+pub fn parse_query(args: &[String]) -> Result<Operation, ParsingError> {
+    let mut operation = vec![];
+    let mut caption = None;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut caption).add_option(&["--caption", "-c"], StoreOption, "Caption");
+        ap.refer(&mut operation).add_argument("Operation", Collect, "Operation").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Query(operation, caption)
+    })
+}
+
 pub fn parse_refresh(args: &[String]) -> Result<Operation, ParsingError> {
     let mut image = false;
 

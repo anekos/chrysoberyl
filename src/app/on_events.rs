@@ -420,6 +420,15 @@ pub fn on_initialized(app: &mut App) -> EventResult {
 }
 
 pub fn on_input(app: &mut App, input: &Input) -> EventResult {
+    if let Some(query_operation) = app.query_operation.take() {
+        if let Input::Unified(_, ref key) = *input {
+            env::set_var(constant::env_name("query"), s!(key));
+            let op = Operation::parse_from_vec(&query_operation)?;
+            app.operate(op);
+            return Ok(())
+        }
+    }
+
     let (width, height) = app.gui.window.get_size();
 
     if_let_some!((operations, inputs) = app.mapping.matched(input, width, height, true), {
@@ -762,6 +771,15 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
 pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) -> EventResult {
     let buffered = app.remote_cache.fetch(url, meta, force, entry_type);
     push_buffered(app, updated, buffered)
+}
+
+pub fn on_query(app: &mut App, updated: &mut Updated, operation: Vec<String>, caption: Option<String>) -> EventResult {
+    app.query_operation = Some(operation);
+    if caption.is_some() {
+        app.update_message(caption);
+        updated.label = true;
+    }
+    Ok(())
 }
 
 pub fn on_quit() -> EventResult {

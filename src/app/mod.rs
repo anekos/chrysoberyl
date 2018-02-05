@@ -17,7 +17,6 @@ use config;
 use constant;
 use counter::Counter;
 use entry::{Entry, EntryContainer, EntryContent, Serial};
-use error;
 use events::EventName;
 use gui::Gui;
 use image_cache::ImageCache;
@@ -136,7 +135,7 @@ impl App {
 
         script::load(&app.tx, &config::get_config_source(), &app.states.path_list);
         app.tx.send(Operation::InitialProcess(initial.entries, initial.shuffle, initial.stdin_as_file)).unwrap();
-        error::register(app.tx.clone());
+        logger::error::register(app.tx.clone());
 
         (app, primary_rx, rx)
     }

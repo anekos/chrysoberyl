@@ -8,6 +8,7 @@ use shell_escape::escape;
 
 pub mod file;
 pub mod stdout;
+#[macro_use] pub mod error;
 #[macro_use] pub mod macros;
 
 

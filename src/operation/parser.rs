@@ -185,7 +185,7 @@ pub fn parse_controller(args: &[String]) -> Result<Operation, ParsingError> {
             "socket" | "unix-socket" | "sock" => parse_2(args, Source::UnixSocket),
             _ => return Err(ParsingError::InvalidArgument(format!("Invalid controller source: {}", target)))
         };
-        source.map(|it| Operation::Controller(it))
+        source.map(Operation::Controller)
     } else {
         Err(ParsingError::TooFewArguments)
     }

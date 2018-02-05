@@ -33,6 +33,9 @@ macro_rules! puts_error {
 }
 
 macro_rules! with_error {
+    (at = $at:expr, { $body:expr }) => {
+        with_error!(at = $at, $body)
+    };
     (at = $at:expr, $body:expr) => {
         use std::error::Error as StdError;
 

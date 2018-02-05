@@ -563,84 +563,153 @@ Write current entry image to `PATH`.
 # Options
 
 abbrev-length
+:   type: unsigned integer
 :   Max length for `CRHY_ABBREV_PATH`
+
 auto-reload
+:   type: boolean
 :   Reload current viewingly images when they are updated.
+
 auto-paging
+:   type: boolean
 :   Go next page when a new page is pushed (only at last page)
+
 centering
+:   type: boolean
 :   Center image cells
+
 curl-connect-timeout
+:   type: unsigned integer (seconds)
+:   default: 10
 :   cURL option.
+
 curl-follow-location
+:   type: boolean
+:   default: true
 :   cURL option.
+
 curl-low-speed-limit
+:   type: unsigned integer
 :   cURL option.
+
 curl-low-speed-time
+:   type: unsigned integer
 :   cURL option.
+
 curl-timeout
+:   type: unsigned integer (seconds)
+:   default: none
 :   cURL option.
+
 empty-status-format
 :   Status bar format for empty
+
 fit-to
-:   values: width, height, original, original-or-cell, cell
+:   type: enum
+:   values: width, height, original, original-or-cell, cell, xxx%
 :   default: cell
+
 history-file
+:   type: path
+:   default: none
 :   STDIN input history
+
 horizontal-views
-:   TODO
+:   type: unsigned integer (>= 1)
+:   Number of horizontal cells.
+
 log-file
-:   TODO
+:   type: path
+:   default: none
+:   Path for log.
+
 mask-operator
 :   TODO
+
 path
 :   Script search path
+
 pre-render
-:   TODO
+:   type: boolean
+:   default: true
+
 pre-render-limit
-:   TODO
+:   type: unsigned integer (>= 1)
+:   default: 100
+
 pre-render-pages
-:   TODO
+:   type: unsigned integer (>= 1)
+:   default: 5
+
 reverse
-:   values: yes, no
+:   type: boolean
+:   default: false
+
 rotation
+:   type: enum
 :   values: 0, 1, 2, 3
+
 status-bar
-:   TODO
+:   type: boolean
+:   default: true
+
 status-bar-align
-:   TODO
+:   values: left, center, right
+:   default: center
+
 status-bar-height
-:   TODO
+:   type: unsigned integer (>= 1)
+:   default: none
+
 status-format
 :   TODO
+
 stdout
 :   TODO
+
 title-format
 :   TODO
+
 vertical-views
-:   TODO
+:   type: unsigned integer (>= 1)
+:   Number of vertical cells.
+
 update-cache-atime
-:   TODO
+:   type: boolean
+:   default: false
+
 watch-files
 :   Fire `file-changed` event when currently viewing images are updated.
+
 window-background-color
-:   TODO
+:   type: CSS color text
+
 skip-resize-window
+:   type: unsigned integer
 :   TODO
+
 status-bar-color
-:   TODO
+:   type: CSS color text
+
 status-bar-background-color
-:   TODO
+:   type: CSS color text
+
 error-color
-:   TODO
+:   type: CSS color text
+
 error-background-color
-:   TODO
+:   type: CSS color text
 
 You can use `@editor` to see current option values.
 
 ```
 @editor --session all $EDITOR
 ```
+
+## Supportted operations
+
+unsigned integer
+:   @set, @unset, @increase, @decrease, @cycle
 
 
 # Filter Expression

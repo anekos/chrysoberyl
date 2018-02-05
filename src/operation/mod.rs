@@ -60,6 +60,7 @@ pub enum Operation {
     Go(entry::SearchKey),
     Input(mapping::Input),
     InitialProcess(Vec<command_line::Entry>, bool, bool), /* command_lin::entries, shuffle, stdin_as_file */
+    Jump(String), /* marker name */
     KillTimer(String),
     Last(Option<usize>, bool, MoveBy, bool),
     LazyDraw(u64, bool), /* serial, to_end */
@@ -331,6 +332,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@inc" | "@increment" | "@increase" | "@++"
                                             => parse_usize(whole, OptionUpdater::Increment, 10),
             "@input"                        => parse_input(whole),
+            "@jump"                         => parse_command1(whole, Jump),
             "@kill-timer"                   => parse_kill_timer(whole),
             "@last" | "@l"                  => parse_move(whole, Last),
             "@load"                         => parse_load(whole),
@@ -417,6 +419,7 @@ impl fmt::Debug for Operation {
             Go(_) => "Go",
             InitialProcess(_, _, _) => "InitialProcess",
             Input(_) => "Input",
+            Jump(_) => "Jump",
             KillTimer(_) => "KillTimer",
             Last(_, _, _, _) => "Last",
             LazyDraw(_, _) => "LazyDraw",

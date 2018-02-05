@@ -223,6 +223,8 @@ impl App {
                     on_initial_process(self, entries, shuffle, stdin_as_file),
                 Input(ref input) =>
                     on_input(self, input),
+                Jump(ref name) =>
+                    on_jump(self, &mut updated, name),
                 KillTimer(ref name) =>
                     on_kill_timer(self, name),
                 Last(count, ignore_views, move_by, _) =>

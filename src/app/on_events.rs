@@ -457,6 +457,17 @@ pub fn on_input(app: &mut App, input: &Input) -> EventResult {
     Ok(())
 }
 
+pub fn on_jump(app: &mut App, updated: &mut Updated, name: &str) -> EventResult {
+    let search_key = app.marker.get(name).ok_or(ChryError::Fixed("Mark not found"))?;
+    let index = app.entries.search(search_key).ok_or(ChryError::Fixed("Entry not found"))?;
+
+    if app.paginator.update_index(Index(index)) {
+        updated.pointer = true;
+    }
+
+    return Ok(());
+}
+
 pub fn on_kill_timer(app: &mut App, name: &str) -> EventResult {
     app.timers.unregister(name);
     Ok(())

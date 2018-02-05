@@ -514,6 +514,24 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingEr
     }
 }
 
+pub fn parse_marker(args: &[String]) -> Result<Operation, ParsingError> {
+    let mut name = o!("");
+    let mut path = None;
+    let mut index = None;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut name).add_argument("name", Store, "Marker name").required();
+        ap.refer(&mut path).add_argument("path", StoreOption, "Path");
+        ap.refer(&mut index).add_argument("index", StoreOption, "Index");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Mark(
+            name,
+            path.map(|path| SearchKey { path, index }))
+    })
+}
+
 pub fn parse_message(args: &[String]) -> Result<Operation, ParsingError> {
     let mut message = None;
     {

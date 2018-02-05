@@ -65,8 +65,9 @@ pub enum Operation {
     LazyDraw(u64, bool), /* serial, to_end */
     Load(Expandable, bool), /* path, search_path */
     LoadDefault,
-    Map(MappingTarget, Option<usize>, Vec<String>), /* target, remain, operation */
     MakeVisibles(Vec<Option<Region>>),
+    Map(MappingTarget, Option<usize>, Vec<String>), /* target, remain, operation */
+    Mark(String, Option<entry::SearchKey>),
     Meow,
     Message(Option<String>),
     MoveAgain(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
@@ -334,6 +335,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@last" | "@l"                  => parse_move(whole, Last),
             "@load"                         => parse_load(whole),
             "@map"                          => parse_map(whole, true),
+            "@mark"                         => parse_marker(whole),
             "@meow"                         => Ok(Meow),
             "@message"                      => parse_message(whole),
             "@move-again"                   => parse_move(whole, MoveAgain),
@@ -422,6 +424,7 @@ impl fmt::Debug for Operation {
             LoadDefault => "LoadDefault ",
             MakeVisibles(_) => "MakeVisibles",
             Map(_, _, _) => "Map",
+            Mark(_, _) => "Mark",
             Meow => "Meow",
             Message(_) => "Message",
             MoveAgain(_, _, _, _) => "MoveAgain",

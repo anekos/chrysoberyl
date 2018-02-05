@@ -75,6 +75,7 @@ mod key;
 mod lazy;
 mod lazy_sender;
 mod mapping;
+mod marker;
 mod mruby;
 mod operation;
 mod option;

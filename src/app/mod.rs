@@ -24,6 +24,7 @@ use image_cache::ImageCache;
 use image_fetcher::ImageFetcher;
 use logger;
 use mapping::{Mapping, Input};
+use marker::Marker;
 use operation::option::PreDefinedOptionName;
 use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy, Updated};
 use option::user_switch::UserSwitchManager;
@@ -59,6 +60,7 @@ pub struct App {
     error_loop_detector: error_loop_detector::Detector,
     fetcher: ImageFetcher,
     found_on: Option<Range<usize>>,
+    marker: Marker,
     pre_fetch_serial: u64,
     remote_cache: RemoteCache,
     rng: ThreadRng,
@@ -119,6 +121,7 @@ impl App {
             found_on: None,
             gui: Gui::new(&initial.window_role),
             mapping: Mapping::new(),
+            marker: Marker::new(),
             paginator: Paginator::new(),
             pre_fetch_serial: 0,
             primary_tx: primary_tx,
@@ -234,6 +237,8 @@ impl App {
                     on_make_visibles(self, regions),
                 Map(target, remain, mapped_operation) =>
                     on_map(self, target, remain, mapped_operation),
+                Mark(name, search_key) =>
+                    on_mark(self, &mut updated, name, search_key),
                 Meow =>
                     on_meow(self, &mut updated),
                 Message(message) =>

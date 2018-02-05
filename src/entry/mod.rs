@@ -589,6 +589,10 @@ impl SearchKey {
             entry.key.1 == self.path
         }
     }
+
+    pub fn from_key(key: &Key) -> Self {
+        SearchKey { path: key.1.clone(), index: Some(key.2) }
+    }
 }
 
 

@@ -93,9 +93,15 @@ $ chrysoberyl --print-path
 You can use below commands on STDIN of chrysoberyl.
 
 
+## @cd <PATH>
+
+Change working directory.
+
+
 ## @cherenkov [(--radius|-r) <RADIUS>] [(--random-hue|--hue|-h) <HUE>] [(--spokes|-s) <SPOKES>] [-x <X>] [-y <Y>] [(-c|--color) <CSS_COLOR>]
 
 Cherenkoves current image.
+
 
 ## @clear
 
@@ -105,6 +111,20 @@ Clear image entries.
 ## @clip
 
 Clip by mouse selected rectangle.
+
+
+## @controller file <PATH>
+
+Open `<PATH>` file to control chrysoberyl.
+
+
+## @controller fifo <PATH>
+
+Create unix FIFO file to control chrysoberyl.
+
+## @controller socket [--as-file|-f] <PATH>
+
+Create unix socket file to control chrysoberyl.
 
 
 ## @count

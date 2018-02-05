@@ -1,14 +1,15 @@
 
+use std::collections::HashMap;
+use std::env;
 use std::fmt;
 use std::path::PathBuf;
-use std::env;
 
 use app::App;
 use color::Color;
 use constant;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::filter::writer::write as write_expr;
-use entry::{Entry, EntryContainer, EntryType, Key};
+use entry::{Entry, EntryContainer, EntryType, Key, SearchKey};
 use gui::Gui;
 use mapping::{Mapping, unified_mapping as umap, region_mapping as rmap};
 use operation::option::PreDefinedOptionName;
@@ -29,6 +30,7 @@ pub enum Session {
     Position,
     Paths,
     Mappings,
+    Markers,
     Envs,
     Filter,
     Reading,
@@ -57,18 +59,21 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
         Paths => write_paths(&app.entries, out),
         Position => write_paginator(&app.current().map(|it| it.0), &app.paginator, out),
         Mappings => write_mappings(&app.mapping, out),
+        Markers => write_markers(&app.marker, out),
         Envs => write_envs(out),
         Filter => write_filters(&app.states.last_filter, out),
         Reading => {
             write_options(&app.states, &app.gui, true, out);
             write_entries(&app.entries, out);
             write_mappings(&app.mapping, out);
+            write_markers(&app.marker, out);
             write_paginator(&app.current().map(|it| it.0), &app.paginator, out);
         }
         All => {
             write_options(&app.states, &app.gui, false, out);
             write_entries(&app.entries, out);
             write_mappings(&app.mapping, out);
+            write_markers(&app.marker, out);
             write_envs(out);
             write_filters(&app.states.last_filter, out);
             write_paginator(&app.current().map(|it| it.0), &app.paginator, out);
@@ -315,6 +320,16 @@ fn write_region_mappings(mappings: &rmap::RegionMapping, out: &mut String) {
         sprint!(out, "@map region {} ", button);
         for it in operation {
             sprint!(out, " {}", escape(it));
+        }
+        sprintln!(out, "");
+    }
+}
+
+pub fn write_markers(marker: &HashMap<String, SearchKey>, out: &mut String) {
+    for (key, search_key) in marker {
+        sprint!(out, "@mark {} {}", escape(key), escape(&search_key.path));
+        if let Some(index) = search_key.index {
+            sprint!(out, " {}", index);
         }
         sprintln!(out, "");
     }

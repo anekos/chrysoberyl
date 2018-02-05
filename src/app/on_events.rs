@@ -541,7 +541,7 @@ pub fn on_mark(app: &mut App, updated: &mut Updated, name: String, search_key: O
     if let Some((ref entry, _)) = app.current() {
         app.update_message(Some(format!("Marked with {}", name)));
         let search_key = search_key.unwrap_or_else(|| SearchKey::from_key(&entry.key));
-        app.marker.set(name, search_key);
+        app.marker.insert(name, search_key);
         updated.label = true;
     }
     Ok(())

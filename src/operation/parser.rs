@@ -1060,6 +1060,8 @@ impl FromStr for Session {
                 Ok(Session::Filter),
             "reading" | "read" | "r" =>
                 Ok(Session::Reading),
+            "markers" | "marks" =>
+                Ok(Session::Markers),
             "all" | "a" =>
                 Ok(Session::All),
             _ =>

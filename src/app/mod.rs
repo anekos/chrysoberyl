@@ -16,7 +16,7 @@ use command_line::Initial;
 use config;
 use constant;
 use counter::Counter;
-use entry::{Entry, EntryContainer, EntryContent, Serial};
+use entry::{Entry, EntryContainer, EntryContent, Serial, SearchKey};
 use error;
 use events::EventName;
 use gui::Gui;
@@ -24,7 +24,6 @@ use image_cache::ImageCache;
 use image_fetcher::ImageFetcher;
 use logger;
 use mapping::{Mapping, Input};
-use marker::Marker;
 use operation::option::PreDefinedOptionName;
 use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy, Updated};
 use option::user_switch::UserSwitchManager;
@@ -60,7 +59,6 @@ pub struct App {
     error_loop_detector: error_loop_detector::Detector,
     fetcher: ImageFetcher,
     found_on: Option<Range<usize>>,
-    marker: Marker,
     pre_fetch_serial: u64,
     remote_cache: RemoteCache,
     rng: ThreadRng,
@@ -70,9 +68,10 @@ pub struct App {
     user_switches: UserSwitchManager,
     watcher: Watcher,
     pub cache: ImageCache,
-    pub mapping: Mapping,
     pub entries: EntryContainer,
     pub gui: Gui,
+    pub mapping: Mapping,
+    pub marker: HashMap<String, SearchKey>,
     pub paginator: Paginator,
     pub primary_tx: Sender<Operation>,
     pub query_operation: Option<Vec<String>>,
@@ -121,7 +120,7 @@ impl App {
             found_on: None,
             gui: Gui::new(&initial.window_role),
             mapping: Mapping::new(),
-            marker: Marker::new(),
+            marker: HashMap::new(),
             paginator: Paginator::new(),
             pre_fetch_serial: 0,
             primary_tx: primary_tx,

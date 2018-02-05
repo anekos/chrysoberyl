@@ -84,6 +84,12 @@ pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName
     Ok(())
 }
 
+pub fn on_change_directory(path: &str) -> EventResult {
+    Ok(env::set_current_dir(path)?).map(|_| {
+        puts_event!("change_directory", "path" => o!(path));
+    })
+}
+
 pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<OperationContext>) -> EventResult {
     use cherenkov::{Che, Modifier};
     use cherenkov::nova::Nova;

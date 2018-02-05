@@ -176,6 +176,8 @@ impl App {
             let operated = match operation {
                 AppEvent(ref event_name, ref context) =>
                     on_app_event(self, &mut updated, event_name, context),
+                ChangeDirectory(ref path) =>
+                    on_change_directory(path),
                 Cherenkov(ref parameter) =>
                     on_cherenkov(self, &mut updated, parameter, context),
                 Clear =>

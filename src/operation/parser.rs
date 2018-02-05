@@ -37,6 +37,15 @@ where T: FnOnce(usize) -> OptionUpdater {
     })
 }
 
+pub fn parse_command1<T>(args: &[String], op: T) -> Result<Operation, ParsingError>
+where T: FnOnce(String) -> Operation {
+    if let Some(arg) = args.get(1) {
+        Ok(op(arg.to_owned()))
+    } else {
+        Err(ParsingError::TooFewArguments)
+    }
+}
+
 pub fn parse_move<T>(args: &[String], op: T) -> Result<Operation, ParsingError>
 where T: FnOnce(Option<usize>, bool, MoveBy, bool) -> Operation {
     let mut ignore_views = false;

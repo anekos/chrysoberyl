@@ -38,6 +38,7 @@ use self::option::{OptionName, OptionUpdater};
 #[derive(Clone)]
 pub enum Operation {
     AppEvent(EventName, HashMap<String, String>),
+    ChangeDirectory(String),
     Cherenkov(CherenkovParameter),
     Clear,
     Clip(Region),
@@ -302,6 +303,8 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
 
         match name {
             ";"                             => parse_multi_args(args, ";", true),
+            "@cd" | "@chdir" | "@change-directory"
+                                            => parse_command1(whole, Operation::ChangeDirectory),
             "@cherenkov"                    => parse_cherenkov(whole),
             "@clear"                        => Ok(Clear),
             "@clip"                         => parse_clip(whole),
@@ -390,6 +393,7 @@ impl fmt::Debug for Operation {
 
         let s = match *self {
             AppEvent(ref ev, _) => return write!(f, "AppEvent({:?})", ev),
+            ChangeDirectory(_) => "ChangeDirectory",
             Cherenkov(_) => "Cherenkov",
             Clear => "Clear ",
             Clip(_) => "Clip",

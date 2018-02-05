@@ -209,7 +209,7 @@ impl Operation {
 
     pub fn parse_fuzziness(s: &str) -> Result<Operation, ChryError> {
         match _parse_from_str(s) {
-            Err(ParsingError::NotOperation(_)) => Ok(Operation::Push(Expandable(o!(s)), None, false)),
+            Err(ParsingError::NotOperation(_)) => Ok(Operation::Push(Expandable::new(o!(s)), None, false)),
             Err(err) => Err(ChryError::from(err)),
             Ok(op) => Ok(op)
         }
@@ -343,12 +343,12 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@page"                         => parse_page(whole),
             "@pdf-index"                    => parse_pdf_index(whole),
             "@prev" | "@p" | "@previous"    => parse_move(whole, Previous),
-            "@push"                         => parse_push(whole, |it, meta, force| Push(Expandable(it), meta, force)),
-            "@push-archive"                 => parse_push(whole, |it, meta, force| PushArchive(Expandable(it), meta, force)),
-            "@push-directory" | "@push-dir" => parse_push(whole, |it, meta, force| PushDirectory(Expandable(it), meta, force)),
+            "@push"                         => parse_push(whole, |it, meta, force| Push(Expandable::new(it), meta, force)),
+            "@push-archive"                 => parse_push(whole, |it, meta, force| PushArchive(Expandable::new(it), meta, force)),
+            "@push-directory" | "@push-dir" => parse_push(whole, |it, meta, force| PushDirectory(Expandable::new(it), meta, force)),
             "@push-image"                   => parse_push_image(whole),
             "@push-next"                    => parse_push_sibling(whole, true),
-            "@push-pdf"                     => parse_push(whole, |it, meta, force| PushPdf(Expandable(it), meta, force)),
+            "@push-pdf"                     => parse_push(whole, |it, meta, force| PushPdf(Expandable::new(it), meta, force)),
             "@push-previous" | "@push-prev" => parse_push_sibling(whole, false),
             "@push-url"                     => parse_push_url(whole),
             "@query"                        => parse_query(whole),

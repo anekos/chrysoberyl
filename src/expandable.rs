@@ -1,5 +1,5 @@
 
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use std::str::FromStr;
 use std::string::ToString;
 
@@ -11,26 +11,47 @@ use util::path::path_to_string;
 
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Expandable(pub String);
+pub enum Expandable {
+    Expanded(String),
+    Unexpanded(String),
+}
 
 
 impl ToString for Expandable {
     fn to_string(&self) -> String {
-        sh::expand(&self.0)
+        use self::Expandable::*;
+
+        match *self {
+            Expanded(ref path) => o!(path),
+            Unexpanded(ref path) => sh::expand(path),
+        }
     }
 }
+
 
 impl FromStr for Expandable {
     type Err = String;
 
     fn from_str(src: &str) -> Result<Self, String> {
-        Ok(Expandable(o!(src)))
+        Ok(Expandable::new(o!(src)))
     }
 }
 
 impl Expandable {
+    pub fn new(path: String) -> Self {
+        Expandable::Unexpanded(path)
+    }
+
+    pub fn expanded(path: String) -> Self {
+        Expandable::Expanded(path)
+    }
     pub fn expand(&self) -> PathBuf {
-        sh::expand_to_pathbuf(&self.0)
+        use self::Expandable::*;
+
+        match *self {
+            Expanded(ref path) => Path::new(path).to_path_buf(),
+            Unexpanded(ref path) => sh::expand_to_pathbuf(path),
+        }
     }
 
     pub fn search_path(&self, path_list: &app_path::PathList) -> PathBuf {

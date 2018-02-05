@@ -143,7 +143,7 @@ fn on_drag_data_received(tx: &Sender<Operation>, selection: &SelectionData, drop
         DropItemType::Path => {
             for uri in &selection.get_uris() {
                 match uri_to_path(uri) {
-                    Ok(path) => tx.send(Operation::Push(Expandable(path), None, false)).unwrap(),
+                    Ok(path) => tx.send(Operation::Push(Expandable::expanded(path), None, false)).unwrap(),
                     Err(err) => puts_error!(err),
                 }
             }

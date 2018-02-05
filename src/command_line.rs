@@ -8,6 +8,8 @@ use encoding::types::EncodingRef;
 
 use app_path;
 use constant;
+use controller;
+use expandable::Expandable;
 
 
 
@@ -27,7 +29,7 @@ pub enum Entry {
     Operation(Vec<String>),
     Path(String),
     Expand(String, bool),
-    Input(String),
+    Controller(controller::Source),
 }
 
 
@@ -123,7 +125,7 @@ fn parse_option(arg: &str, args: &mut Args, init: &mut Initial) -> Result<bool, 
             init.entries.push(Entry::Expand(value, true));
         },
         "--input" | "-i" => if let Some(value) = args.next() {
-            init.entries.push(Entry::Input(value));
+            init.entries.push(Entry::Controller(controller::Source::File(Expandable::expanded(value))));
         } else {
             return not_enough();
         },

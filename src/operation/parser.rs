@@ -159,7 +159,7 @@ pub fn parse_controller(args: &[String]) -> Result<Operation, ParsingError> {
             ap.refer(&mut path).add_argument("path", Store, "History file").required();
             parse_args(&mut ap, args)
         } .map(|_| {
-            f(Expandable(path))
+            f(Expandable::new(path))
         })
     }
 
@@ -173,7 +173,7 @@ pub fn parse_controller(args: &[String]) -> Result<Operation, ParsingError> {
             ap.refer(&mut path).add_argument("path", Store, "Path").required();
             parse_args(&mut ap, args)
         } .map(|_| {
-            f(Expandable(path), as_file)
+            f(Expandable::new(path), as_file)
         })
     }
 
@@ -420,7 +420,7 @@ pub fn parse_load(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut search_path).add_option(&["--search-path", "-p"], StoreTrue, SEARCH_PATH_DESC);
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Load(Expandable(file), search_path)
+        Operation::Load(Expandable::new(file), search_path)
     })
 }
 
@@ -650,7 +650,7 @@ pub fn parse_pdf_index(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
     } .and_then(|_| {
-        let command_line = command_line.into_iter().map(Expandable).collect();
+        let command_line = command_line.into_iter().map(Expandable::new).collect();
         Ok(Operation::PdfIndex(async, read_operations, search_path, command_line, fmt, fmt_separator))
     })
 }
@@ -691,7 +691,7 @@ pub fn parse_push_image(args: &[String]) -> Result<Operation, ParsingError> {
         parse_args(&mut ap, args)
     } .map(|_| {
         let meta = new_opt_meta(meta);
-        let ops = paths.into_iter().map(|it| Operation::PushImage(Expandable(it), meta.clone(), force, expand_level)).collect();
+        let ops = paths.into_iter().map(|it| Operation::PushImage(Expandable::new(it), meta.clone(), force, expand_level)).collect();
         Operation::Multi(ops, false)
     })
 }
@@ -791,7 +791,7 @@ pub fn parse_set_env(args: &[String]) -> Result<Operation, ParsingError> {
             .add_option(&["--system-prefix", "-P"], StoreConst(VARIABLE_PREFIX), "Insert the system prefix `CHRY_` to env name");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::SetEnv(format!("{}{}", prefix, name), value.map(Expandable))
+        Operation::SetEnv(format!("{}{}", prefix, name), value.map(Expandable::new))
     })
 }
 
@@ -851,7 +851,7 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
     } .and_then(|_| {
-        let command_line = command_line.into_iter().map(Expandable).collect();
+        let command_line = command_line.into_iter().map(Expandable::new).collect();
         Ok(Operation::Shell(async, read_operations, search_path, command_line, sessions))
     })
 }
@@ -866,7 +866,7 @@ pub fn parse_shell_filter(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
     } .and_then(|_| {
-        let command_line = command_line.into_iter().map(Expandable).collect();
+        let command_line = command_line.into_iter().map(Expandable::new).collect();
         Ok(Operation::ShellFilter(command_line, search_path))
     })
 }

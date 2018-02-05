@@ -177,8 +177,8 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
                 }
                 on_events::on_push(app, updated, file.clone(), None, false)?;
             }
-            CLE::Input(file) => {
-                controller::file::register(app.tx.clone(), file);
+            CLE::Controller(source) => {
+                controller::register(app.tx.clone(), source)?;
             },
             CLE::Expand(file, recursive) => {
                 on_events::on_push(app, updated, file.clone(), None, false)?;

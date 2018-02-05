@@ -80,6 +80,18 @@ macro_rules! def_uint {
                     *self = value;
                 }).map_err(|it| ChryError::Standard(format!("Invalid value: {} ({})", value, it)))
             }
+
+            fn increment(&mut self, delta: usize) -> Result<(), ChryError> {
+                if_let_some!(modified = self.checked_add(delta as $type), Err(ChryError::Fixed("Overflow")));
+                *self = modified;
+                Ok(())
+            }
+
+            fn decrement(&mut self, delta: usize) -> Result<(), ChryError> {
+                if_let_some!(modified = self.checked_sub(delta as $type), Err(ChryError::Fixed("Overflow")));
+                *self = modified;
+                Ok(())
+            }
         }
     }
 }
@@ -110,6 +122,20 @@ macro_rules! def_opt_uint {
                 value.parse().map(|value| {
                     *self = Some(value);
                 }).map_err(|it| ChryError::InvalidValue(s!(it)))
+            }
+
+            fn increment(&mut self, delta: usize) -> Result<(), ChryError> {
+                if_let_some!(current = *self, Ok(()));
+                if_let_some!(modified = current.checked_add(delta as $type), Err(ChryError::Fixed("Overflow")));
+                *self = Some(modified);
+                Ok(())
+            }
+
+            fn decrement(&mut self, delta: usize) -> Result<(), ChryError> {
+                if_let_some!(current = *self, Ok(()));
+                if_let_some!(modified = current.checked_sub(delta as $type), Err(ChryError::Fixed("Overflow")));
+                *self = Some(modified);
+                Ok(())
             }
         }
     }

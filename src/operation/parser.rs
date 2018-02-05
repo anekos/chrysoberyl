@@ -151,7 +151,7 @@ pub fn parse_clip(args: &[String]) -> Result<Operation, ParsingError> {
 pub fn parse_controller(args: &[String]) -> Result<Operation, ParsingError> {
     use controller::Source;
 
-    fn parse_1<T>(args: &[String], f: T) -> Result<Source, ParsingError> where T: FnOnce(String) -> Source {
+    fn parse_1<T>(args: &[String], f: T) -> Result<Source, ParsingError> where T: FnOnce(Expandable) -> Source {
         let mut path = o!("");
 
         {
@@ -159,11 +159,11 @@ pub fn parse_controller(args: &[String]) -> Result<Operation, ParsingError> {
             ap.refer(&mut path).add_argument("path", Store, "History file").required();
             parse_args(&mut ap, args)
         } .map(|_| {
-            f(path)
+            f(Expandable(path))
         })
     }
 
-    fn parse_2<T>(args: &[String], f: T) -> Result<Source, ParsingError> where T: FnOnce(String, bool) -> Source {
+    fn parse_2<T>(args: &[String], f: T) -> Result<Source, ParsingError> where T: FnOnce(Expandable, bool) -> Source {
         let mut path = o!("");
         let mut as_file = false;
 
@@ -173,7 +173,7 @@ pub fn parse_controller(args: &[String]) -> Result<Operation, ParsingError> {
             ap.refer(&mut path).add_argument("path", Store, "Path").required();
             parse_args(&mut ap, args)
         } .map(|_| {
-            f(path, as_file)
+            f(Expandable(path), as_file)
         })
     }
 

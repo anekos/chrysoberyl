@@ -37,10 +37,10 @@ where T: FnOnce(usize) -> OptionUpdater {
     })
 }
 
-pub fn parse_command1<T>(args: &[String], op: T) -> Result<Operation, ParsingError>
-where T: FnOnce(String) -> Operation {
+pub fn parse_command1<T, U>(args: &[String], op: T) -> Result<Operation, ParsingError>
+where T: FnOnce(U) -> Operation, U: FromStr {
     if let Some(arg) = args.get(1) {
-        Ok(op(arg.to_owned()))
+        U::from_str(arg).map(op).map_err(|_| ParsingError::InvalidArgument(o!(arg)))
     } else {
         Err(ParsingError::TooFewArguments)
     }
@@ -514,8 +514,8 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingEr
     }
 }
 
-pub fn parse_marker(args: &[String]) -> Result<Operation, ParsingError> {
-    let mut name = o!("");
+pub fn parse_mark(args: &[String]) -> Result<Operation, ParsingError> {
+    let mut name = Expandable::default();
     let mut path = None;
     let mut index = None;
 

@@ -60,7 +60,7 @@ pub enum Operation {
     Go(entry::SearchKey),
     Input(mapping::Input),
     InitialProcess(Vec<command_line::Entry>, bool, bool), /* command_lin::entries, shuffle, stdin_as_file */
-    Jump(String), /* marker name */
+    Jump(Expandable), /* marker name */
     KillTimer(String),
     Last(Option<usize>, bool, MoveBy, bool),
     LazyDraw(u64, bool), /* serial, to_end */
@@ -68,7 +68,7 @@ pub enum Operation {
     LoadDefault,
     MakeVisibles(Vec<Option<Region>>),
     Map(MappingTarget, Option<usize>, Vec<String>), /* target, remain, operation */
-    Mark(String, Option<entry::SearchKey>),
+    Mark(Expandable, Option<entry::SearchKey>),
     Meow,
     Message(Option<String>),
     MoveAgain(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
@@ -337,7 +337,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@last" | "@l"                  => parse_move(whole, Last),
             "@load"                         => parse_load(whole),
             "@map"                          => parse_map(whole, true),
-            "@mark"                         => parse_marker(whole),
+            "@mark"                         => parse_mark(whole),
             "@meow"                         => Ok(Meow),
             "@message"                      => parse_message(whole),
             "@move-again"                   => parse_move(whole, MoveAgain),

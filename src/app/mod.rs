@@ -239,7 +239,7 @@ impl App {
                 Map(target, remain, mapped_operation) =>
                     on_map(self, target, remain, mapped_operation),
                 Mark(name, search_key) =>
-                    on_mark(self, &mut updated, name, search_key),
+                    on_mark(self, &mut updated, &name, search_key),
                 Meow =>
                     on_meow(self, &mut updated),
                 Message(message) =>

@@ -426,8 +426,8 @@ pub fn on_initialized(app: &mut App) -> EventResult {
 }
 
 pub fn on_input(app: &mut App, input: &Input) -> EventResult {
-    if let Some(query_operation) = app.query_operation.take() {
-        if let Input::Unified(_, ref key) = *input {
+    if let Input::Unified(_, ref key) = *input {
+        if let Some(query_operation) = app.query_operation.take() {
             env::set_var(constant::env_name("query"), s!(key));
             let op = Operation::parse_from_vec(&query_operation)?;
             app.operate(op);
@@ -457,13 +457,17 @@ pub fn on_input(app: &mut App, input: &Input) -> EventResult {
     Ok(())
 }
 
-pub fn on_jump(app: &mut App, updated: &mut Updated, name: &str) -> EventResult {
-    let search_key = app.marker.get(name).ok_or(ChryError::Fixed("Mark not found"))?;
+pub fn on_jump(app: &mut App, updated: &mut Updated, name: &Expandable) -> EventResult {
+    let name = name.to_string();
+    let search_key = app.marker.get(&name).ok_or(ChryError::Fixed("Mark not found"))?;
     let index = app.entries.search(search_key).ok_or(ChryError::Fixed("Entry not found"))?;
 
     if app.paginator.update_index(Index(index)) {
         updated.pointer = true;
     }
+
+    app.update_message(None);
+    updated.label = true;
 
     return Ok(());
 }
@@ -537,8 +541,9 @@ pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, opera
     Ok(())
 }
 
-pub fn on_mark(app: &mut App, updated: &mut Updated, name: String, search_key: Option<SearchKey>) -> EventResult {
+pub fn on_mark(app: &mut App, updated: &mut Updated, name: &Expandable, search_key: Option<SearchKey>) -> EventResult {
     if let Some((ref entry, _)) = app.current() {
+        let name = name.to_string();
         app.update_message(Some(format!("Marked with {}", name)));
         let search_key = search_key.unwrap_or_else(|| SearchKey::from_key(&entry.key));
         app.marker.insert(name, search_key);

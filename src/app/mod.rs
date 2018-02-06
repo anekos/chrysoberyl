@@ -605,7 +605,7 @@ impl App {
             new_keys.insert(o!(name));
         }
         for name in self.current_env_keys.difference(&new_keys) {
-            env::remove_var(name);
+            env::remove_var(constant::env_name(name));
         }
         self.current_env_keys = new_keys;
     }

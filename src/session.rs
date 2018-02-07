@@ -135,6 +135,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         HorizontalViews => gen("horizontal-views", &st.view.cols, context),
         LogFile => gen("log-file", &st.log_file, context),
         MaskOperator => gen("mask-operator", &st.drawing.mask_operator, context),
+        OperationBox => gen("operation-box", &b2s(st.operation_box), context),
         PathList => gen("path", &st.path_list, context),
         PreFetchEnabled => gen("pre-render", &b2s(st.pre_fetch.enabled), context),
         PreFetchLimit => gen("pre-render-limit", &st.pre_fetch.limit_of_items, context),

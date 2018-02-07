@@ -1,6 +1,6 @@
 use std::error::Error;
-use std::fs::{OpenOptions, File, create_dir_all};
-use std::io::{self, Read, Write, BufReader, BufRead};
+use std::fs::{File, create_dir_all};
+use std::io::{self, Read, BufReader, BufRead};
 use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 use std::thread::spawn;
@@ -8,8 +8,9 @@ use std::thread::spawn;
 use atty;
 use readline;
 
-use operation::Operation;
 use controller::process;
+use operation::Operation;
+use util;
 
 
 
@@ -29,7 +30,7 @@ pub fn register(tx: Sender<Operation>, mut history_file: Option<PathBuf>) {
             while let Ok(line) = readline::readline("") {
                 let _ = readline::add_history(&*line);
                 if process(&tx, &*line, "input/stdin") {
-                    if let Err(error) = write_line(&line, &history_file) {
+                    if let Err(error) = util::file::write_line(&line, &history_file) {
                         puts_error!(error, "at" => "input/stdin/write_line");
                         history_file = None; // Do not retry
                     }
@@ -71,12 +72,5 @@ fn setup_readline(file: &Option<PathBuf>) -> Result<(), Box<Error>> {
         }
     }
 
-    Ok(())
-}
-
-fn write_line(line: &str, file: &Option<PathBuf>) -> Result<(), Box<Error>> {
-    if_let_some!(file = file.as_ref(), Ok(()));
-    let mut file = OpenOptions::new().read(false).write(true).append(true).create(true).open(file)?;
-    write!(file, "{}\n", line)?;
     Ok(())
 }

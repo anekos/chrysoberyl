@@ -201,3 +201,13 @@ macro_rules! ok {
         }
     }
 }
+
+macro_rules! tap {
+    ($name:ident = $value:expr, $block:expr) => {
+        {
+            let $name = $value;
+            $block;
+            $name
+        }
+    }
+}

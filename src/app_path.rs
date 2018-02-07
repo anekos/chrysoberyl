@@ -57,6 +57,12 @@ pub fn search_path<T: AsRef<Path>>(filename: &T, path_list: &PathList) -> PathBu
     Path::new(filename.as_ref()).to_path_buf()
 }
 
+pub fn entry_history() -> PathBuf {
+    let mut path = cache_dir("history");
+    path.push("entry.log");
+    path
+}
+
 
 impl OptionValue for PathList {
     fn unset(&mut self) -> Result<(), ChryError> {

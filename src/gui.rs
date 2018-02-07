@@ -1,23 +1,30 @@
 
+use std::convert::Into;
 use std::default::Default;
+use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 use std::str::FromStr;
-use std::convert::Into;
+use std::sync::mpsc::Sender;
 
 use cairo::{Context, ImageSurface, Format};
 use gdk::EventMask;
 use gdk_pixbuf::{Pixbuf, PixbufAnimationExt};
+use glib::Type;
 use gtk::prelude::*;
-use gtk::{self, Window, Image, Label, Orientation, ScrolledWindow, Adjustment, Layout, Align};
+use gtk::{Adjustment, Align, Entry, EntryCompletion, Image, Label, Layout, ListStore, Orientation, Overlay, ScrolledWindow, self, Value, Window};
 
+use app_path;
 use color::Color;
 use constant;
 use errors::*;
 use gtk_utils::new_pixbuf_from_surface;
 use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
+use operation::Operation;
 use size::{FitTo, Size, Region};
 use state::ViewState;
+use ui_event::UIEvent;
+use util;
 use util::num::feq;
 
 
@@ -31,18 +38,21 @@ enum_from_primitive! {
 }
 
 
-#[derive(Clone)]
 pub struct Gui {
-    top_spacer: Image,
     bottom_spacer: Image,
-    cell_outer: gtk::Box,
     cell_inners: Vec<CellInner>,
+    pub cell_outer: gtk::Box,
+    entry_history: ListStore,
+    operation_box: gtk::Box,
+    top_spacer: Image,
+    ui_event: Option<UIEvent>,
+    pub colors: Colors,
+    pub label: Label,
+    pub operation_entry: Entry,
     pub status_bar: Layout,
     pub status_bar_inner: gtk::Box,
-    pub colors: Colors,
-    pub window: Window,
     pub vbox: gtk::Box,
-    pub label: Label,
+    pub window: Window,
 }
 
 #[derive(Clone)]
@@ -102,13 +112,42 @@ impl Gui {
         window.set_wmclass(constant::WINDOW_CLASS, constant::WINDOW_CLASS);
         window.add_events(EventMask::SCROLL_MASK.bits() as i32);
 
-        let vbox = gtk::Box::new(Orientation::Vertical, 0);
-        let image_outer = gtk::Box::new(Orientation::Vertical, 0);
+        let cell_outer = gtk::Box::new(Orientation::Vertical, 0);
 
-        let label = Label::new(None);
-        label.set_halign(Align::Center);
+        let label = tap!(it = Label::new(None), {
+            it.set_halign(Align::Center);
+        });
 
-        {
+        let status_bar_inner = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
+            it.pack_end(&label, true, true, 0);
+        });
+
+        let status_bar = tap!(it = Layout::new(None, None), {
+            it.add(&status_bar_inner);
+        });
+
+        let entry_history = tap!(it = ListStore::new(&[Type::String]), {
+            let _ = load_initial_completion(&it);
+        });
+
+        let operation_entry = tap!(it = Entry::new(), {
+            it.set_text("");
+            it.set_completion(&tap!(it = EntryCompletion::new(), {
+                it.set_model(&entry_history);
+                it.set_text_column(0);
+                it.set_inline_completion(true);
+                it.set_inline_selection(true);
+                it.set_popup_single_match(false);
+                it.set_popup_completion(true);
+                it.set_minimum_key_length(1);
+            }));
+        });
+
+        let operation_box = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
+            it.pack_end(&operation_entry, false, false, 0);
+        });
+
+        let vbox = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
             let action = DragAction::COPY | DragAction::MOVE | DragAction::DEFAULT | DragAction::LINK | DragAction::ASK | DragAction::PRIVATE;
             let flags = TargetFlags::OTHER_WIDGET | TargetFlags::OTHER_APP;
             let targets = vec![
@@ -132,39 +171,79 @@ impl Gui {
                 // TargetEntry::new("application/x-moz-file-promise-url", flags, 0),
                 // TargetEntry::new("application/x-moz-file-promise-dest-filename", flags, 0),
             ];
-            vbox.drag_dest_set(DestDefaults::ALL, &targets, action);
-        }
+            it.drag_dest_set(DestDefaults::ALL, &targets, action);
+            it.add_events(EventMask::SCROLL_MASK.bits() as i32);
+            it.pack_end(&status_bar, false, false, 0);
+            it.pack_end(&cell_outer, true, true, 0);
+        });
 
-        let status_bar = Layout::new(None, None);
-        let status_bar_inner = gtk::Box::new(Orientation::Vertical, 0);
-        status_bar_inner.pack_end(&label, true, true, 0);
-        status_bar.add(&status_bar_inner);
+        let overlay = tap!(it = Overlay::new(), {
+            it.add_overlay(&vbox);
+            it.add_overlay(&operation_box);
+            it.show_all();
+        });
 
-        status_bar.show_all();
-
-        vbox.pack_end(&status_bar, false, false, 0);
-        vbox.pack_end(&image_outer, true, true, 0);
-        window.add(&vbox);
-
-        image_outer.show();
-        vbox.show();
+        window.add(&overlay);
 
         Gui {
-            window: window,
-            vbox: vbox,
-            top_spacer: gtk::Image::new_from_pixbuf(None),
             bottom_spacer: gtk::Image::new_from_pixbuf(None),
-            cell_outer: image_outer,
             cell_inners: vec![],
-            label: label,
+            cell_outer,
             colors: Colors::default(),
+            entry_history,
+            label,
+            operation_box,
+            operation_entry,
             status_bar,
             status_bar_inner,
+            top_spacer: gtk::Image::new_from_pixbuf(None),
+            ui_event: None,
+            vbox,
+            window,
         }
     }
 
     pub fn show(&self) {
         self.window.show();
+    }
+
+    pub fn register_ui_events(&mut self, skip: usize, app_tx: &Sender<Operation>) {
+        self.ui_event = Some(UIEvent::new(self, skip, app_tx));
+    }
+
+    pub fn pop_operation_entry(&self) -> Result<Option<Operation>, Box<Error>> {
+        if_let_some!(result = self.operation_entry.get_text(), Ok(None));
+        if result.is_empty() {
+            return Ok(None);
+        }
+
+        self.operation_entry.set_text("");
+
+        let op = Operation::parse_fuzziness(&result);
+        if op.is_ok() {
+            append_completion_entry(&self.entry_history, &result, true);
+        }
+
+        Ok(Some(op?))
+    }
+
+    pub fn set_operation_box_visibility(&self, visibility: bool) {
+        use gtk::DirectionType::*;
+
+        let current = self.operation_box.get_visible();
+        if visibility ^ current {
+            if let Some(ref ui_event) = self.ui_event {
+                ui_event.update_entry(visibility);
+            }
+
+            if visibility {
+                self.operation_entry.grab_focus();
+                self.operation_box.show();
+            } else {
+                self.operation_box.hide();
+                self.window.child_focus(Down); // To blur
+            }
+        }
     }
 
     pub fn rows(&self) -> usize {
@@ -214,15 +293,13 @@ impl Gui {
         }
     }
 
-    pub fn get_cell_size(&self, state: &ViewState, with_label: bool) -> Size {
+    pub fn get_cell_size(&self, state: &ViewState) -> Size {
         let (width, height) = self.window.get_size();
+        let label_height = if self.label.get_visible() { self.label.get_allocated_height() } else { 0 };
 
         let width = width / state.cols as i32;
-        let height = if with_label {
-            (height / state.rows as i32) - self.status_bar.get_allocated_height()
-        } else {
-            height / state.rows as i32
-        };
+        let height = height - label_height;
+        let height = height / state.rows as i32;
 
         Size::new(width, height)
     }
@@ -576,4 +653,23 @@ fn scroll_window(window: &ScrolledWindow, direction: &Direction, scroll_size_rat
         Left | Right => scroll(true),
         Up | Down => scroll(false),
     }
+}
+
+fn append_completion_entry(store: &ListStore, entry: &str, historize: bool) {
+    if historize {
+        let _ = util::file::write_line(entry, &Some(app_path::entry_history()));
+    }
+
+    let iter = store.append();
+    let value = Value::from(entry);
+    store.set_value(&iter, 0, &value);
+}
+
+fn load_initial_completion(store: &ListStore) -> Result<(), Box<Error>> {
+    let path = app_path::entry_history();
+    let lines = util::file::read_lines(&path)?;
+    for line in &lines {
+        append_completion_entry(store, line, false);
+    }
+    Ok(())
 }

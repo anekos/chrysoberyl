@@ -33,7 +33,7 @@ use gui::Direction;
 use key::Key;
 use logger;
 use operation::option::{OptionName, OptionUpdater};
-use operation::{self, Operation, OperationContext, MappingTarget, MoveBy, SortKey, OperationEntryAction};
+use operation::{MappingTarget, MoveBy, Operation, OperationContext, OperationEntryAction, self, SortKey};
 use option::user_switch::DummySwtich;
 use poppler::{PopplerDocument, self};
 use script;
@@ -168,65 +168,31 @@ pub fn on_count_digit(app: &mut App, updated: &mut Updated, digit: u8) -> EventR
     Ok(())
 }
 
-pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuffle: bool, stdin_as_file: bool) -> EventResult {
-    fn process(app: &mut App, entry: command_line::Entry, first_path: &mut Option<String>, updated: &mut Updated) -> EventResult {
-        match entry {
-            CLE::Path(file) => {
-                if first_path.is_none() {
-                    *first_path = Some(file.clone());
-                }
-                on_events::on_push(app, updated, file.clone(), None, false)?;
-            }
-            CLE::Controller(source) => {
-                controller::register(app.tx.clone(), source)?;
-            },
-            CLE::Expand(file, recursive) => {
-                on_events::on_push(app, updated, file.clone(), None, false)?;
-                app.tx.send(Operation::Expand(recursive, Some(Path::new(&file).to_path_buf()))).unwrap();
-            },
-            CLE::Operation(op) => {
-                let op = Operation::parse_from_vec(&op)?;
-                app.tx.send(op).unwrap()
-            }
-        }
-        Ok(())
-    }
-
-    use command_line::{Entry as CLE};
-
-    app.reset_view();
-
-    app.update_ui_visibility();
-
-    let mut first_path = None;
-
-    {
-        let mut updated = Updated::default();
-        for entry in entries {
-            if let Err(err) = process(app, entry, &mut first_path, &mut updated) {
-                puts_error!(err); // DONT stop entire `on_initial_process`
-            }
-        }
-    }
-
-    if stdin_as_file {
-        controller::stdin::register_as_file(app.tx.clone());
-    } else {
-        controller::stdin::register(app.tx.clone(), app.states.history_file.clone());
-    }
-
-    if shuffle {
-        let fix = first_path.map(|it| Path::new(&it).is_file()).unwrap_or(false);
-        app.tx.send(Operation::Shuffle(fix)).unwrap();
-    }
-
-    app.initialize_envs_for_options();
-    app.update_paginator_condition();
-
-    app.tx.send(EventName::Initialize.operation()).unwrap();
+pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) -> EventResult {
+    let op = app.user_switches.register(name, values)?;
+    app.operate(op);
     Ok(())
 }
 
+pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) -> EventResult {
+    let current_index = app.paginator.current_index();
+    let app_info = app.app_info();
+
+    let after_index = app.entries.delete(&app_info, current_index, Box::new(move |ref mut entry, app_info| expr.evaluate(entry, app_info)));
+
+    if let Some(after_index) = after_index {
+        app.paginator.update_index(Index(after_index));
+    } else {
+        app.paginator.reset_level();
+    }
+
+    app.update_paginator_condition();
+
+    updated.pointer = true;
+    updated.image = true;
+    updated.message = true;
+    Ok(())
+}
 
 pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Expandable], sessions: &[Session]) -> EventResult {
     let tx = app.tx.clone();
@@ -272,32 +238,6 @@ pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Op
     }
 
     updated.label = true;
-    Ok(())
-}
-
-pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) -> EventResult {
-    let op = app.user_switches.register(name, values)?;
-    app.operate(op);
-    Ok(())
-}
-
-pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) -> EventResult {
-    let current_index = app.paginator.current_index();
-    let app_info = app.app_info();
-
-    let after_index = app.entries.delete(&app_info, current_index, Box::new(move |ref mut entry, app_info| expr.evaluate(entry, app_info)));
-
-    if let Some(after_index) = after_index {
-        app.paginator.update_index(Index(after_index));
-    } else {
-        app.paginator.reset_level();
-    }
-
-    app.update_paginator_condition();
-
-    updated.pointer = true;
-    updated.image = true;
-    updated.message = true;
     Ok(())
 }
 
@@ -412,6 +352,66 @@ pub fn on_go(app: &mut App, updated: &mut Updated, key: &SearchKey) -> EventResu
     app.states.go = Some(key.clone());
     Ok(())
 }
+
+pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuffle: bool, stdin_as_file: bool) -> EventResult {
+    fn process(app: &mut App, entry: command_line::Entry, first_path: &mut Option<String>, updated: &mut Updated) -> EventResult {
+        match entry {
+            CLE::Path(file) => {
+                if first_path.is_none() {
+                    *first_path = Some(file.clone());
+                }
+                on_events::on_push(app, updated, file.clone(), None, false)?;
+            }
+            CLE::Controller(source) => {
+                controller::register(app.tx.clone(), source)?;
+            },
+            CLE::Expand(file, recursive) => {
+                on_events::on_push(app, updated, file.clone(), None, false)?;
+                app.tx.send(Operation::Expand(recursive, Some(Path::new(&file).to_path_buf()))).unwrap();
+            },
+            CLE::Operation(op) => {
+                let op = Operation::parse_from_vec(&op)?;
+                app.tx.send(op).unwrap()
+            }
+        }
+        Ok(())
+    }
+
+    use command_line::{Entry as CLE};
+
+    app.reset_view();
+
+    app.update_ui_visibility();
+
+    let mut first_path = None;
+
+    {
+        let mut updated = Updated::default();
+        for entry in entries {
+            if let Err(err) = process(app, entry, &mut first_path, &mut updated) {
+                puts_error!(err); // DONT stop entire `on_initial_process`
+            }
+        }
+    }
+
+    if stdin_as_file {
+        controller::stdin::register_as_file(app.tx.clone());
+    } else {
+        controller::stdin::register(app.tx.clone(), app.states.history_file.clone());
+    }
+
+    if shuffle {
+        let fix = first_path.map(|it| Path::new(&it).is_file()).unwrap_or(false);
+        app.tx.send(Operation::Shuffle(fix)).unwrap();
+    }
+
+    app.initialize_envs_for_options();
+    app.update_paginator_condition();
+
+    app.tx.send(EventName::Initialize.operation()).unwrap();
+    Ok(())
+}
+
 
 pub fn on_initialized(app: &mut App) -> EventResult {
     app.tx.send(Operation::UpdateUI).unwrap();
@@ -729,6 +729,24 @@ pub fn on_push_archive(app: &mut App, path: &PathBuf, meta: Option<Meta>, force:
     Ok(())
 }
 
+pub fn on_push_directory(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) -> EventResult {
+    let buffered = app.sorting_buffer.push_with_reserve(
+        QueuedOperation::PushDirectory(file, meta, force));
+    push_buffered(app, updated, buffered)
+}
+
+pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) -> EventResult {
+    let buffered = app.sorting_buffer.push_with_reserve(
+        QueuedOperation::PushImage(file, meta, force, expand_level, url));
+    push_buffered(app, updated, buffered)
+}
+
+pub fn on_push_memory(app: &mut App, updated: &mut Updated, buf: Vec<u8>) -> EventResult {
+    let buffered = app.sorting_buffer.push_with_reserve(
+        QueuedOperation::PushMemory(buf));
+    push_buffered(app, updated, buffered)
+}
+
 pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: Option<Meta>, force: bool) -> EventResult {
     if let Ok(path) = path.canonicalize() {
         if let Some(entry_type) = get_entry_type_from_filename(&path) {
@@ -748,24 +766,6 @@ pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: 
     } else {
         on_push_image(app, updated, path.clone(), meta, force, None, None)
     }
-}
-
-pub fn on_push_directory(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) -> EventResult {
-    let buffered = app.sorting_buffer.push_with_reserve(
-        QueuedOperation::PushDirectory(file, meta, force));
-    push_buffered(app, updated, buffered)
-}
-
-pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) -> EventResult {
-    let buffered = app.sorting_buffer.push_with_reserve(
-        QueuedOperation::PushImage(file, meta, force, expand_level, url));
-    push_buffered(app, updated, buffered)
-}
-
-pub fn on_push_memory(app: &mut App, updated: &mut Updated, buf: Vec<u8>) -> EventResult {
-    let buffered = app.sorting_buffer.push_with_reserve(
-        QueuedOperation::PushMemory(buf));
-    push_buffered(app, updated, buffered)
 }
 
 pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, url: Option<String>) -> EventResult {
@@ -883,6 +883,16 @@ pub fn on_save(app: &mut App, path: &Option<PathBuf>, sessions: &[Session]) -> E
     Ok(())
 }
 
+pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scroll_size: f64, crush: bool) -> EventResult {
+    let saved = app.counter.clone();
+    if !app.gui.scroll_views(direction, scroll_size, app.counter.pop(), crush) && !operation.is_empty() {
+        let op = Operation::parse_from_vec(operation)?;
+        app.counter = saved;
+        app.operate(op);
+    }
+    Ok(())
+}
+
 pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>, backward: bool, color: Color) -> EventResult {
     use cherenkov::{Che, Modifier};
 
@@ -992,16 +1002,6 @@ pub fn on_set_env(_: &mut App, name: &str, value: &Option<String>) -> EventResul
         env::set_var(name, value);
     } else {
         env::remove_var(name);
-    }
-    Ok(())
-}
-
-pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scroll_size: f64, crush: bool) -> EventResult {
-    let saved = app.counter.clone();
-    if !app.gui.scroll_views(direction, scroll_size, app.counter.pop(), crush) && !operation.is_empty() {
-        let op = Operation::parse_from_vec(operation)?;
-        app.counter = saved;
-        app.operate(op);
     }
     Ok(())
 }
@@ -1382,6 +1382,21 @@ pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) -> EventRe
     app.gui.save(path, count)
 }
 
+
+fn extract_region_from_context(context: Option<OperationContext>) -> Option<(Region, usize)> {
+    if let Some(input) = context.map(|it| it.input) {
+        if let Input::Region(ref region, _, cell_index) = input {
+            return Some((*region, cell_index));
+        }
+    }
+    None
+}
+
+fn is_url(path: &str) -> bool {
+    if_let_some!(index = path.find("://"), false);
+    index < 10
+}
+
 fn on_update_views(app: &mut App, updated: &mut Updated) -> EventResult {
     updated.image_options = true;
     let serial = app.store();
@@ -1429,18 +1444,4 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
 
     app.do_go(updated);
     Ok(())
-}
-
-fn extract_region_from_context(context: Option<OperationContext>) -> Option<(Region, usize)> {
-    if let Some(input) = context.map(|it| it.input) {
-        if let Input::Region(ref region, _, cell_index) = input {
-            return Some((*region, cell_index));
-        }
-    }
-    None
-}
-
-fn is_url(path: &str) -> bool {
-    if_let_some!(index = path.find("://"), false);
-    index < 10
 }

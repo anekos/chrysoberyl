@@ -10,24 +10,30 @@ impl Counter {
         Counter { value: None }
     }
 
+    /**
+     * If `count` is not None, overwrite `self.count`
+     */
+    pub fn overwrite(&mut self, value: Option<usize>) -> &mut Counter {
+        if value.is_some() {
+            self.value = value;
+        }
+        self
+    }
+
     pub fn peek(&self) -> usize {
         self.value.unwrap_or(1)
-    }
-
-    pub fn set(&mut self, value: Option<usize>) {
-        self.value = value;
-    }
-
-    pub fn pop_option(&mut self) -> Option<usize> {
-        if_let_some!(result = self.value, None);
-        self.set(None);
-        Some(result)
     }
 
     pub fn pop(&mut self) -> usize {
         if_let_some!(result = self.value, 1);
         self.set(None);
         result
+    }
+
+    pub fn pop_option(&mut self) -> Option<usize> {
+        if_let_some!(result = self.value, None);
+        self.set(None);
+        Some(result)
     }
 
     pub fn push_digit(&mut self, digit: u8) {
@@ -38,13 +44,7 @@ impl Counter {
         }
     }
 
-    /**
-     * If `count` is not None, overwrite `self.count`
-     */
-    pub fn overwrite(&mut self, value: Option<usize>) -> &mut Counter {
-        if value.is_some() {
-            self.value = value;
-        }
-        self
+    pub fn set(&mut self, value: Option<usize>) {
+        self.value = value;
     }
 }

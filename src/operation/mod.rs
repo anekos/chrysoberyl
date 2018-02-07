@@ -209,93 +209,6 @@ impl FromStr for Operation {
 }
 
 
-impl Operation {
-    pub fn parse_from_vec(whole: &[String]) -> Result<Operation, ChryError> {
-        _parse_from_vec(whole).map_err(ChryError::from)
-    }
-
-    pub fn parse(s: &str) -> Result<Operation, ChryError> {
-        _parse_from_str(s).map_err(ChryError::from)
-    }
-
-    pub fn parse_fuzziness(s: &str) -> Result<Operation, ChryError> {
-        match _parse_from_str(s) {
-            Err(ParsingError::NotOperation(_)) => Ok(Operation::Push(Expandable::new(o!(s)), None, false)),
-            Err(err) => Err(ChryError::from(err)),
-            Ok(op) => Ok(op)
-        }
-    }
-
-    fn user(args: &[String]) -> Operation {
-        let mut result: Vec<(String, String)> = vec![];
-        let mut index = 0;
-
-        for  arg in args {
-            let sep = arg.find('=').unwrap_or(0);
-            let (key, value) = arg.split_at(sep);
-            if key.is_empty() {
-                result.push((format!("arg{}", index), value.to_owned()));
-                index += 1;
-            } else {
-                result.push((key.to_owned(), value[1..].to_owned()));
-            }
-        }
-
-        Operation::User(result)
-    }
-}
-
-
-impl fmt::Display for ParsingError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::ParsingError::*;
-
-        match *self {
-            Fixed(err) =>
-                write!(f, "{}", err),
-            InvalidArgument(ref err) =>
-                write!(f, "Invalid argument: {}", err),
-            NotOperation(ref name) =>
-                write!(f, "Not operation: {}", name),
-            TooFewArguments =>
-                write!(f, "Too few arguments"),
-        }
-    }
-}
-
-impl error::Error for ParsingError {
-    fn description(&self) -> &str {
-        "Parsing error"
-    }
-
-    fn cause(&self) -> Option<&error::Error> {
-        None
-    }
-}
-
-impl From<ParsingError> for ChryError {
-    fn from(error: ParsingError) -> Self {
-        ChryError::Parse(s!(error))
-    }
-}
-
-
-impl EventName {
-    pub fn operation_with_context(&self, context: HashMap<String, String>) -> Operation {
-        Operation::AppEvent(self.clone(), context)
-    }
-
-    pub fn operation(&self) -> Operation {
-        self.operation_with_context(HashMap::new())
-    }
-}
-
-
-fn _parse_from_str(s: &str) -> Result<Operation, ParsingError> {
-    let ps: Vec<String> = Parser::new(s).map(|(_, it)| it).collect();
-    _parse_from_vec(ps.as_slice())
-}
-
 fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
     use self::Operation::*;
     use self::parser::*;
@@ -399,6 +312,93 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
         }
     } else {
         Ok(Nop)
+    }
+}
+
+fn _parse_from_str(s: &str) -> Result<Operation, ParsingError> {
+    let ps: Vec<String> = Parser::new(s).map(|(_, it)| it).collect();
+    _parse_from_vec(ps.as_slice())
+}
+
+
+impl Operation {
+    pub fn parse_from_vec(whole: &[String]) -> Result<Operation, ChryError> {
+        _parse_from_vec(whole).map_err(ChryError::from)
+    }
+
+    pub fn parse(s: &str) -> Result<Operation, ChryError> {
+        _parse_from_str(s).map_err(ChryError::from)
+    }
+
+    pub fn parse_fuzziness(s: &str) -> Result<Operation, ChryError> {
+        match _parse_from_str(s) {
+            Err(ParsingError::NotOperation(_)) => Ok(Operation::Push(Expandable::new(o!(s)), None, false)),
+            Err(err) => Err(ChryError::from(err)),
+            Ok(op) => Ok(op)
+        }
+    }
+
+    fn user(args: &[String]) -> Operation {
+        let mut result: Vec<(String, String)> = vec![];
+        let mut index = 0;
+
+        for  arg in args {
+            let sep = arg.find('=').unwrap_or(0);
+            let (key, value) = arg.split_at(sep);
+            if key.is_empty() {
+                result.push((format!("arg{}", index), value.to_owned()));
+                index += 1;
+            } else {
+                result.push((key.to_owned(), value[1..].to_owned()));
+            }
+        }
+
+        Operation::User(result)
+    }
+}
+
+
+impl fmt::Display for ParsingError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::ParsingError::*;
+
+        match *self {
+            Fixed(err) =>
+                write!(f, "{}", err),
+            InvalidArgument(ref err) =>
+                write!(f, "Invalid argument: {}", err),
+            NotOperation(ref name) =>
+                write!(f, "Not operation: {}", name),
+            TooFewArguments =>
+                write!(f, "Too few arguments"),
+        }
+    }
+}
+
+impl error::Error for ParsingError {
+    fn description(&self) -> &str {
+        "Parsing error"
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        None
+    }
+}
+
+impl From<ParsingError> for ChryError {
+    fn from(error: ParsingError) -> Self {
+        ChryError::Parse(s!(error))
+    }
+}
+
+
+impl EventName {
+    pub fn operation_with_context(&self, context: HashMap<String, String>) -> Operation {
+        Operation::AppEvent(self.clone(), context)
+    }
+
+    pub fn operation(&self) -> Operation {
+        self.operation_with_context(HashMap::new())
     }
 }
 

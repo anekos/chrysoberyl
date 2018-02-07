@@ -48,6 +48,16 @@ use self::info::AppInfo;
 
 
 pub struct App {
+    pub cache: ImageCache,
+    pub entries: EntryContainer,
+    pub gui: Gui,
+    pub mapping: Mapping,
+    pub marker: HashMap<String, SearchKey>,
+    pub paginator: Paginator,
+    pub primary_tx: Sender<Operation>,
+    pub query_operation: Option<Vec<String>>,
+    pub states: States,
+    pub tx: Sender<Operation>,
     counter: Counter,
     current_base_scale: Option<f64>, // Scale of first scaled image
     current_env_keys: HashSet<String>,
@@ -65,16 +75,6 @@ pub struct App {
     timers: TimerManager,
     user_switches: UserSwitchManager,
     watcher: Watcher,
-    pub cache: ImageCache,
-    pub entries: EntryContainer,
-    pub gui: Gui,
-    pub mapping: Mapping,
-    pub marker: HashMap<String, SearchKey>,
-    pub paginator: Paginator,
-    pub primary_tx: Sender<Operation>,
-    pub query_operation: Option<Vec<String>>,
-    pub states: States,
-    pub tx: Sender<Operation>,
 }
 
 

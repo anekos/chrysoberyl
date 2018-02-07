@@ -39,13 +39,7 @@ enum_from_primitive! {
 
 
 pub struct Gui {
-    bottom_spacer: Image,
-    cell_inners: Vec<CellInner>,
     pub cell_outer: gtk::Box,
-    entry_history: ListStore,
-    operation_box: gtk::Box,
-    top_spacer: Image,
-    ui_event: Option<UIEvent>,
     pub colors: Colors,
     pub label: Label,
     pub operation_entry: Entry,
@@ -53,6 +47,12 @@ pub struct Gui {
     pub status_bar_inner: gtk::Box,
     pub vbox: gtk::Box,
     pub window: Window,
+    bottom_spacer: Image,
+    cell_inners: Vec<CellInner>,
+    entry_history: ListStore,
+    operation_box: gtk::Box,
+    top_spacer: Image,
+    ui_event: Option<UIEvent>,
 }
 
 #[derive(Clone)]
@@ -203,12 +203,35 @@ impl Gui {
         }
     }
 
-    pub fn show(&self) {
-        self.window.show();
+    pub fn cells(&self, reverse: bool) -> CellIterator {
+        CellIterator { gui: self, index: 0, reverse: reverse }
     }
 
-    pub fn register_ui_events(&mut self, skip: usize, app_tx: &Sender<Operation>) {
-        self.ui_event = Some(UIEvent::new(self, skip, app_tx));
+    pub fn cols(&self) -> usize {
+        self.cell_inners.first().unwrap().cells.len()
+    }
+
+    pub fn get_cell_size(&self, state: &ViewState) -> Size {
+        let (width, height) = self.window.get_size();
+        let status_bar_height = if self.status_bar.get_visible() { self.status_bar.get_allocated_height() } else { 0 };
+
+        let width = width / state.cols as i32;
+        let height = height - status_bar_height;
+        let height = height / state.rows as i32;
+
+        Size::new(width, height)
+    }
+
+    pub fn len(&self) -> usize {
+        self.cols() * self.rows()
+    }
+
+    pub fn make_visibles(&self, regions: &[Option<Region>]) {
+        for (cell, region) in self.cells(false).zip(regions) {
+            if let Some(ref region) = *region {
+                cell.make_visible(region);
+            }
+        }
     }
 
     pub fn pop_operation_entry(&self) -> Result<Option<Operation>, Box<Error>> {
@@ -225,6 +248,49 @@ impl Gui {
         }
 
         Ok(Some(op?))
+    }
+
+    pub fn refresh_status_bar_width(&self) {
+        let width = self.vbox.get_allocated_width();
+        self.status_bar_inner.set_property_width_request(width);
+    }
+
+    pub fn register_ui_events(&mut self, skip: usize, app_tx: &Sender<Operation>) {
+        self.ui_event = Some(UIEvent::new(self, skip, app_tx));
+    }
+
+    pub fn reset_scrolls(&self, to_end: bool) {
+        for cell in self.cells(false) {
+            if let Some(adj) = cell.window.get_vadjustment() {
+                adj.set_value(if to_end { adj.get_upper() } else { 0.0 });
+                cell.window.set_vadjustment(&adj);
+            }
+            if let Some(adj) = cell.window.get_hadjustment() {
+                adj.set_value(if to_end { adj.get_upper() } else { 0.0 });
+                cell.window.set_hadjustment(&adj);
+            }
+        }
+    }
+
+    pub fn reset_view(&mut self, state: &ViewState) {
+        self.clear_images();
+        self.create_images(state);
+    }
+
+    pub fn rows(&self) -> usize {
+        self.cell_inners.len()
+    }
+
+    pub fn save<T: AsRef<Path>>(&self, path: &T, index: usize) -> Result<(), BoxedError> {
+        let cell = self.cells(false).nth(index).ok_or("Out of index")?;
+        save_image(&cell.image, path)
+    }
+    pub fn scroll_views(&self, direction: &Direction, scroll_size: f64, count: usize, crush: bool) -> bool {
+        let mut scrolled = false;
+        for cell in self.cells(false) {
+            scrolled |= scroll_window(&cell.window, direction, scroll_size, count, crush);
+        }
+        scrolled
     }
 
     pub fn set_operation_box_visibility(&self, visibility: bool) {
@@ -246,62 +312,8 @@ impl Gui {
         }
     }
 
-    pub fn rows(&self) -> usize {
-        self.cell_inners.len()
-    }
-
-    pub fn cols(&self) -> usize {
-        self.cell_inners.first().unwrap().cells.len()
-    }
-
-    pub fn len(&self) -> usize {
-        self.cols() * self.rows()
-    }
-
-    pub fn cells(&self, reverse: bool) -> CellIterator {
-        CellIterator { gui: self, index: 0, reverse: reverse }
-    }
-
-    pub fn refresh_status_bar_width(&self) {
-        let width = self.vbox.get_allocated_width();
-        self.status_bar_inner.set_property_width_request(width);
-    }
-
-    pub fn reset_view(&mut self, state: &ViewState) {
-        self.clear_images();
-        self.create_images(state);
-    }
-
-    pub fn reset_scrolls(&self, to_end: bool) {
-        for cell in self.cells(false) {
-            if let Some(adj) = cell.window.get_vadjustment() {
-                adj.set_value(if to_end { adj.get_upper() } else { 0.0 });
-                cell.window.set_vadjustment(&adj);
-            }
-            if let Some(adj) = cell.window.get_hadjustment() {
-                adj.set_value(if to_end { adj.get_upper() } else { 0.0 });
-                cell.window.set_hadjustment(&adj);
-            }
-        }
-    }
-
-    pub fn make_visibles(&self, regions: &[Option<Region>]) {
-        for (cell, region) in self.cells(false).zip(regions) {
-            if let Some(ref region) = *region {
-                cell.make_visible(region);
-            }
-        }
-    }
-
-    pub fn get_cell_size(&self, state: &ViewState) -> Size {
-        let (width, height) = self.window.get_size();
-        let status_bar_height = if self.status_bar.get_visible() { self.status_bar.get_allocated_height() } else { 0 };
-
-        let width = width / state.cols as i32;
-        let height = height - status_bar_height;
-        let height = height / state.rows as i32;
-
-        Size::new(width, height)
+    pub fn show(&self) {
+        self.window.show();
     }
 
     pub fn update_colors(&self) {
@@ -325,12 +337,13 @@ impl Gui {
         self.status_bar.set_property_height_request(height);
     }
 
-    pub fn scroll_views(&self, direction: &Direction, scroll_size: f64, count: usize, crush: bool) -> bool {
-        let mut scrolled = false;
-        for cell in self.cells(false) {
-            scrolled |= scroll_window(&cell.window, direction, scroll_size, count, crush);
+    fn clear_images(&mut self) {
+        for inner in &self.cell_inners {
+            self.cell_outer.remove(&inner.container);
         }
-        scrolled
+        self.cell_outer.remove(&self.top_spacer);
+        self.cell_outer.remove(&self.bottom_spacer);
+        self.cell_inners.clear();
     }
 
     fn create_images(&mut self, state: &ViewState) {
@@ -379,27 +392,12 @@ impl Gui {
                 cells: cells
             });
         }
-
         if state.centering {
             self.cell_outer.pack_start(&self.bottom_spacer, true, true, 0);
             self.bottom_spacer.show();
         } else {
             self.bottom_spacer.hide();
         }
-    }
-
-    fn clear_images(&mut self) {
-        for inner in &self.cell_inners {
-            self.cell_outer.remove(&inner.container);
-        }
-        self.cell_outer.remove(&self.top_spacer);
-        self.cell_outer.remove(&self.bottom_spacer);
-        self.cell_inners.clear();
-    }
-
-    pub fn save<T: AsRef<Path>>(&self, path: &T, index: usize) -> Result<(), BoxedError> {
-        let cell = self.cells(false).nth(index).ok_or("Out of index")?;
-        save_image(&cell.image, path)
     }
 }
 
@@ -453,11 +451,56 @@ impl Cell {
         self.draw_pixbuf(&new_pixbuf_from_surface(&surface), cell_size, &FitTo::Original);
     }
 
-    fn draw_static(&self, image_buffer: &StaticImageBuffer, cell_size: &Size, fit_to: &FitTo) -> Option<f64> {
-        self.draw_pixbuf(&image_buffer.get_pixbuf(), cell_size, fit_to);
-        image_buffer.original_size.map(|original_size| {
-            original_size.fit(cell_size, fit_to).0
-        })
+    pub fn get_image_size(&self) -> Option<(i32, i32)> {
+        self.image.get_pixbuf()
+            .map(|it| (it.get_width(), it.get_height()))
+            .or_else(|| {
+                self.image.get_animation()
+                    .map(|it| (it.get_width(), it.get_height()))
+            })
+    }
+
+    /** return (x, y, w, h) **/
+    pub fn get_top_left(&self) -> (i32, i32, i32, i32) {
+        fn extract(adj: &Adjustment) -> (f64, f64) {
+            (adj.get_value(), adj.get_upper())
+        }
+
+        let w = self.window.get_allocation();
+        let (sx, sw) = self.window.get_hadjustment().as_ref().map(extract).unwrap();
+        let (sy, sh) = self.window.get_vadjustment().as_ref().map(extract).unwrap();
+        (w.x - sx as i32,
+         w.y - sy as i32,
+         sw as i32,
+         sh as i32)
+    }
+
+    pub fn make_visible(&self, region: &Region) {
+        let (h_center, v_center) = region.centroids();
+
+        if let Some(adj) = self.window.get_hadjustment() {
+            let (width, page_width) = (adj.get_upper(), adj.get_page_size());
+            adj.set_value(h_center * width - page_width / 2.0);
+            self.window.set_hadjustment(&adj);
+        }
+
+        if let Some(adj) = self.window.get_vadjustment() {
+            let (height, page_height) = (adj.get_upper(), adj.get_page_size());
+            adj.set_value(v_center * height - page_height / 2.0);
+            self.window.set_vadjustment(&adj);
+        }
+    }
+
+    fn draw_animation(&self, image_buffer: &AnimationBuffer, cell_size: &Size, fg: &Color, bg: &Color) {
+        match image_buffer.get_pixbuf_animation() {
+            Ok(buf) => {
+                self.image.set_from_animation(&buf);
+                let (w, h) = (buf.get_width(), buf.get_height());
+                self.window.set_size_request(w, h);
+            }
+            Err(ref error) =>
+                self.draw_text(&s!(error), cell_size, fg, bg)
+        }
     }
 
     fn draw_pixbuf(&self, pixbuf: &Pixbuf, cell_size: &Size, fit_to: &FitTo) {
@@ -476,58 +519,14 @@ impl Cell {
         }
     }
 
-    fn draw_animation(&self, image_buffer: &AnimationBuffer, cell_size: &Size, fg: &Color, bg: &Color) {
-        match image_buffer.get_pixbuf_animation() {
-            Ok(buf) => {
-                self.image.set_from_animation(&buf);
-                let (w, h) = (buf.get_width(), buf.get_height());
-                self.window.set_size_request(w, h);
-            }
-            Err(ref error) =>
-                self.draw_text(&s!(error), cell_size, fg, bg)
-        }
-    }
-
-    /** return (x, y, w, h) **/
-    pub fn get_top_left(&self) -> (i32, i32, i32, i32) {
-        fn extract(adj: &Adjustment) -> (f64, f64) {
-            (adj.get_value(), adj.get_upper())
-        }
-
-        let w = self.window.get_allocation();
-        let (sx, sw) = self.window.get_hadjustment().as_ref().map(extract).unwrap();
-        let (sy, sh) = self.window.get_vadjustment().as_ref().map(extract).unwrap();
-        (w.x - sx as i32,
-         w.y - sy as i32,
-         sw as i32,
-         sh as i32)
-    }
-
-    pub fn get_image_size(&self) -> Option<(i32, i32)> {
-        self.image.get_pixbuf()
-            .map(|it| (it.get_width(), it.get_height()))
-            .or_else(|| {
-                self.image.get_animation()
-                    .map(|it| (it.get_width(), it.get_height()))
-            })
-    }
-
-    pub fn make_visible(&self, region: &Region) {
-        let (h_center, v_center) = region.centroids();
-
-        if let Some(adj) = self.window.get_hadjustment() {
-            let (width, page_width) = (adj.get_upper(), adj.get_page_size());
-            adj.set_value(h_center * width - page_width / 2.0);
-            self.window.set_hadjustment(&adj);
-        }
-
-        if let Some(adj) = self.window.get_vadjustment() {
-            let (height, page_height) = (adj.get_upper(), adj.get_page_size());
-            adj.set_value(v_center * height - page_height / 2.0);
-            self.window.set_vadjustment(&adj);
-        }
+    fn draw_static(&self, image_buffer: &StaticImageBuffer, cell_size: &Size, fit_to: &FitTo) -> Option<f64> {
+        self.draw_pixbuf(&image_buffer.get_pixbuf(), cell_size, fit_to);
+        image_buffer.original_size.map(|original_size| {
+            original_size.fit(cell_size, fit_to).0
+        })
     }
 }
+
 
 impl<'a> Iterator for CellIterator<'a> {
     type Item = &'a Cell;
@@ -557,11 +556,11 @@ impl<'a> Iterator for CellIterator<'a> {
 impl Default for Colors {
     fn default() -> Colors {
         Colors {
-            window_background: "#004040".parse().unwrap(),
-            status_bar: "white".parse().unwrap(),
-            status_bar_background: "#004040".parse().unwrap(),
             error: "white".parse().unwrap(),
             error_background: "red".parse().unwrap(),
+            status_bar: "white".parse().unwrap(),
+            status_bar_background: "#004040".parse().unwrap(),
+            window_background: "#004040".parse().unwrap(),
         }
     }
 }
@@ -574,14 +573,14 @@ impl FromStr for Direction {
         use self::Direction::*;
 
         match src {
-            "left" | "l" =>
-                Ok(Left),
-            "up" | "u" =>
-                Ok(Up),
-            "right" | "r" =>
-                Ok(Right),
             "down" | "d" =>
                 Ok(Down),
+            "left" | "l" =>
+                Ok(Left),
+            "right" | "r" =>
+                Ok(Right),
+            "up" | "u" =>
+                Ok(Up),
             _ =>
                 Err(format!("Invalid direction: {}", src))
         }
@@ -595,6 +594,25 @@ impl Into<u32> for DropItemType {
     }
 }
 
+
+fn append_completion_entry(store: &ListStore, entry: &str, historize: bool) {
+    if historize {
+        let _ = util::file::write_line(entry, &Some(app_path::entry_history()));
+    }
+
+    let iter = store.append();
+    let value = Value::from(entry);
+    store.set_value(&iter, 0, &value);
+}
+
+fn load_initial_completion(store: &ListStore) -> Result<(), Box<Error>> {
+    let path = app_path::entry_history();
+    let lines = util::file::read_lines(&path)?;
+    for line in &lines {
+        append_completion_entry(store, line, false);
+    }
+    Ok(())
+}
 
 fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), BoxedError> {
     use gdk::prelude::ContextExt;
@@ -653,23 +671,4 @@ fn scroll_window(window: &ScrolledWindow, direction: &Direction, scroll_size_rat
         Left | Right => scroll(true),
         Up | Down => scroll(false),
     }
-}
-
-fn append_completion_entry(store: &ListStore, entry: &str, historize: bool) {
-    if historize {
-        let _ = util::file::write_line(entry, &Some(app_path::entry_history()));
-    }
-
-    let iter = store.append();
-    let value = Value::from(entry);
-    store.set_value(&iter, 0, &value);
-}
-
-fn load_initial_completion(store: &ListStore) -> Result<(), Box<Error>> {
-    let path = app_path::entry_history();
-    let lines = util::file::read_lines(&path)?;
-    for line in &lines {
-        append_completion_entry(store, line, false);
-    }
-    Ok(())
 }

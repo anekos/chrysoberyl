@@ -295,10 +295,10 @@ impl Gui {
 
     pub fn get_cell_size(&self, state: &ViewState) -> Size {
         let (width, height) = self.window.get_size();
-        let label_height = if self.label.get_visible() { self.label.get_allocated_height() } else { 0 };
+        let status_bar_height = if self.status_bar.get_visible() { self.status_bar.get_allocated_height() } else { 0 };
 
         let width = width / state.cols as i32;
-        let height = height - label_height;
+        let height = height - status_bar_height;
         let height = height / state.rows as i32;
 
         Size::new(width, height)

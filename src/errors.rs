@@ -43,7 +43,7 @@ impl fmt::Display for ChryError {
         match *self {
             Standard(ref e) => write!(f, "{}", e),
             File(e, ref file) => write!(f, "{}: {}", e, file),
-            Fixed(e) => write!(f, "Invalid value: {}", e),
+            Fixed(e) => write!(f, "{}", e),
             NotSupported(e) => write!(f, "Not supported: {}", e),
             Parse(ref e) => write!(f, "Parsing error: {}", e),
             InvalidValue(ref e) => write!(f, "Invalid value: {}", e),

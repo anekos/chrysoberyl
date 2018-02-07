@@ -16,7 +16,7 @@ use command_line::Initial;
 use config;
 use constant;
 use counter::Counter;
-use entry::{Entry, EntryContainer, EntryContent, Serial};
+use entry::{Entry, EntryContainer, EntryContent, Serial, SearchKey};
 use error;
 use events::EventName;
 use gui::Gui;
@@ -68,9 +68,10 @@ pub struct App {
     user_switches: UserSwitchManager,
     watcher: Watcher,
     pub cache: ImageCache,
-    pub mapping: Mapping,
     pub entries: EntryContainer,
     pub gui: Gui,
+    pub mapping: Mapping,
+    pub marker: HashMap<String, SearchKey>,
     pub paginator: Paginator,
     pub primary_tx: Sender<Operation>,
     pub query_operation: Option<Vec<String>>,
@@ -119,6 +120,7 @@ impl App {
             found_on: None,
             gui: Gui::new(&initial.window_role),
             mapping: Mapping::new(),
+            marker: HashMap::new(),
             paginator: Paginator::new(),
             pre_fetch_serial: 0,
             primary_tx: primary_tx,
@@ -220,6 +222,8 @@ impl App {
                     on_initial_process(self, entries, shuffle, stdin_as_file),
                 Input(ref input) =>
                     on_input(self, input),
+                Jump(ref name) =>
+                    on_jump(self, &mut updated, name),
                 KillTimer(ref name) =>
                     on_kill_timer(self, name),
                 Last(count, ignore_views, move_by, _) =>
@@ -234,6 +238,8 @@ impl App {
                     on_make_visibles(self, regions),
                 Map(target, remain, mapped_operation) =>
                     on_map(self, target, remain, mapped_operation),
+                Mark(name, search_key) =>
+                    on_mark(self, &mut updated, &name, search_key),
                 Meow =>
                     on_meow(self, &mut updated),
                 Message(message) =>
@@ -312,6 +318,8 @@ impl App {
                     on_undo(self, &mut updated, count),
                 Unmap(target) =>
                     on_unmap(self, &target),
+                Unmark(target) =>
+                    on_unmark(self, &target),
                 Update(new_updated) =>
                     ok!(updated = new_updated),
                 UpdateUI =>

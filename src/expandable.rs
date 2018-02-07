@@ -1,4 +1,5 @@
 
+use std::default::Default;
 use std::path::{PathBuf, Path};
 use std::str::FromStr;
 use std::string::ToString;
@@ -28,12 +29,17 @@ impl ToString for Expandable {
     }
 }
 
-
 impl FromStr for Expandable {
     type Err = String;
 
     fn from_str(src: &str) -> Result<Self, String> {
         Ok(Expandable::new(o!(src)))
+    }
+}
+
+impl Default for Expandable {
+    fn default() -> Expandable {
+        Expandable::new(o!(""))
     }
 }
 

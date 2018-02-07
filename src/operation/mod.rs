@@ -60,13 +60,15 @@ pub enum Operation {
     Go(entry::SearchKey),
     Input(mapping::Input),
     InitialProcess(Vec<command_line::Entry>, bool, bool), /* command_lin::entries, shuffle, stdin_as_file */
+    Jump(Expandable), /* marker name */
     KillTimer(String),
     Last(Option<usize>, bool, MoveBy, bool),
     LazyDraw(u64, bool), /* serial, to_end */
     Load(Expandable, bool), /* path, search_path */
     LoadDefault,
-    Map(MappingTarget, Option<usize>, Vec<String>), /* target, remain, operation */
     MakeVisibles(Vec<Option<Region>>),
+    Map(MappingTarget, Option<usize>, Vec<String>), /* target, remain, operation */
+    Mark(Expandable, Option<entry::SearchKey>),
     Meow,
     Message(Option<String>),
     MoveAgain(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
@@ -106,6 +108,7 @@ pub enum Operation {
     Unclip,
     Undo(Option<usize>),
     Unmap(MappingTarget),
+    Unmark(Option<Expandable>), /* all or given */
     Update(Updated),
     UpdateOption(OptionName, OptionUpdater),
     UpdateUI,
@@ -330,10 +333,12 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@inc" | "@increment" | "@increase" | "@++"
                                             => parse_usize(whole, OptionUpdater::Increment, 10),
             "@input"                        => parse_input(whole),
+            "@jump"                         => parse_command1(whole, Jump),
             "@kill-timer"                   => parse_kill_timer(whole),
             "@last" | "@l"                  => parse_move(whole, Last),
             "@load"                         => parse_load(whole),
             "@map"                          => parse_map(whole, true),
+            "@mark"                         => parse_mark(whole),
             "@meow"                         => Ok(Meow),
             "@message"                      => parse_message(whole),
             "@move-again"                   => parse_move(whole, MoveAgain),
@@ -373,6 +378,8 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@undo"                         => parse_undo(whole),
             "@unless"                       => parse_when(whole, true),
             "@unmap"                        => parse_map(whole, false),
+            "@unmark"                       => parse_command1(whole, |it| Unmark(Some(it))),
+            "@unmark-all"                   => Ok(Unmark(None)),
             "@unset"                        => parse_option_1(whole, OptionUpdater::Unset),
             "@update"                       => parse_update(whole),
             "@user"                         => Ok(Operation::user(args)),
@@ -415,6 +422,7 @@ impl fmt::Debug for Operation {
             Go(_) => "Go",
             InitialProcess(_, _, _) => "InitialProcess",
             Input(_) => "Input",
+            Jump(_) => "Jump",
             KillTimer(_) => "KillTimer",
             Last(_, _, _, _) => "Last",
             LazyDraw(_, _) => "LazyDraw",
@@ -422,6 +430,7 @@ impl fmt::Debug for Operation {
             LoadDefault => "LoadDefault ",
             MakeVisibles(_) => "MakeVisibles",
             Map(_, _, _) => "Map",
+            Mark(_, _) => "Mark",
             Meow => "Meow",
             Message(_) => "Message",
             MoveAgain(_, _, _, _) => "MoveAgain",
@@ -461,6 +470,7 @@ impl fmt::Debug for Operation {
             Unclip => "Unclip ",
             Undo(_) => "Undo",
             Unmap(_) => "Unmap",
+            Unmark(_) => "Unmark",
             Update(_) => "Update",
             UpdateOption(ref name, _) => return write!(f, "UpdateOption({:?})", name),
             UpdateUI => "UpdateUI ",

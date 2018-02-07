@@ -37,10 +37,10 @@ where T: FnOnce(usize) -> OptionUpdater {
     })
 }
 
-pub fn parse_command1<T>(args: &[String], op: T) -> Result<Operation, ParsingError>
-where T: FnOnce(String) -> Operation {
+pub fn parse_command1<T, U>(args: &[String], op: T) -> Result<Operation, ParsingError>
+where T: FnOnce(U) -> Operation, U: FromStr {
     if let Some(arg) = args.get(1) {
-        Ok(op(arg.to_owned()))
+        U::from_str(arg).map(op).map_err(|_| ParsingError::InvalidArgument(o!(arg)))
     } else {
         Err(ParsingError::TooFewArguments)
     }
@@ -512,6 +512,24 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingEr
     } else {
         Err(ParsingError::TooFewArguments)
     }
+}
+
+pub fn parse_mark(args: &[String]) -> Result<Operation, ParsingError> {
+    let mut name = Expandable::default();
+    let mut path = None;
+    let mut index = None;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut name).add_argument("name", Store, "Marker name").required();
+        ap.refer(&mut path).add_argument("path", StoreOption, "Path");
+        ap.refer(&mut index).add_argument("index", StoreOption, "Index");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Mark(
+            name,
+            path.map(|path| SearchKey { path, index }))
+    })
 }
 
 pub fn parse_message(args: &[String]) -> Result<Operation, ParsingError> {
@@ -1042,6 +1060,8 @@ impl FromStr for Session {
                 Ok(Session::Filter),
             "reading" | "read" | "r" =>
                 Ok(Session::Reading),
+            "markers" | "marks" =>
+                Ok(Session::Markers),
             "all" | "a" =>
                 Ok(Session::All),
             _ =>

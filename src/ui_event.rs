@@ -115,7 +115,6 @@ fn register(gui: &Gui, skip: usize, app_tx: &Sender<Operation>) -> Sender<Event>
 
     thread::spawn(clone_army!([app_tx] move || main(&app_tx, &rx, skip)));
 
-    println!("registered");
     tx
 }
 
@@ -153,8 +152,6 @@ fn main(app_tx: &Sender<Operation>, rx: &Receiver<Event>, skip: usize) {
 fn entry_on_key_press(tx: &Sender<Operation>, key: &Key) {
     use operation::OperationEntryAction::*;
 
-    println!("entry_on_key_press");
-
     let action = match key.0.as_str() {
         "Return" => SendOperation,
         "Escape" => Close,
@@ -166,8 +163,6 @@ fn entry_on_key_press(tx: &Sender<Operation>, key: &Key) {
 
 fn on_key_press(tx: &Sender<Operation>, key: Key, keyval: u32) {
     use gdk::enums::key;
-
-    println!("on_key_press");
 
     if key::_0 <= keyval && keyval <= key::_9 {
         tx.send(Operation::CountDigit((keyval - key::_0) as u8)).unwrap();

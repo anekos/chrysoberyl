@@ -318,6 +318,8 @@ impl App {
                     on_undo(self, &mut updated, count),
                 Unmap(target) =>
                     on_unmap(self, &target),
+                Unmark(target) =>
+                    on_unmark(self, &target),
                 Update(new_updated) =>
                     ok!(updated = new_updated),
                 UpdateUI =>

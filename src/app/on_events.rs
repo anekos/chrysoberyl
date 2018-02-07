@@ -1160,6 +1160,19 @@ pub fn on_unmap(app: &mut App, target: &MappingTarget) -> EventResult {
     Ok(())
 }
 
+pub fn on_unmark(app: &mut App, target: &Option<Expandable>) -> EventResult {
+    match *target {
+        Some(ref target) => {
+            let target = &target.to_string();
+            if app.marker.remove(target).is_none() {
+               return Err(ChryError::Fixed("Mark not found"))?
+            }
+        },
+        None => app.marker.clear(),
+    }
+    Ok(())
+}
+
 pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &OptionName, updater: &OptionUpdater) -> EventResult {
     use option::OptionValue;
     use operation::option::OptionName::*;

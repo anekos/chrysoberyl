@@ -24,7 +24,7 @@ lazy_static! {
 macro_rules! puts_error {
     ( $err:expr $(,$name:expr => $value:expr)* ) => {
         {
-            use error;
+            use logger::error;
             let message = s!($err);
             error::push(message.clone());
             puts!("event" => "error", "message" => message $(, $name => $value)*)

@@ -295,8 +295,6 @@ impl Gui {
     }
 
     pub fn set_operation_box_visibility(&self, visibility: bool) {
-        use gtk::DirectionType::*;
-
         let current = self.operation_box.get_visible();
         if visibility ^ current {
             if let Some(ref ui_event) = self.ui_event {
@@ -427,8 +425,8 @@ impl Gui {
             return
         }
 
-        if let Some(ref inner) = self.cell_inners.first() {
-            if let Some(ref cell) = inner.cells.first() {
+        if let Some(inner) = self.cell_inners.first() {
+            if let Some(cell) = inner.cells.first() {
                 self.window.set_focus(Some(&cell.window));
             }
         }

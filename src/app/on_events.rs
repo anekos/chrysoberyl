@@ -422,7 +422,6 @@ pub fn on_initialized(app: &mut App) -> EventResult {
     app.gui.show();
     app.update_status_bar_height(); // XXX Must Do after `gui.show`
     app.gui.refresh_status_bar_width();
-    println!("inited");
     Ok(())
 }
 
@@ -1106,11 +1105,9 @@ pub fn on_sort(app: &mut App, updated: &mut Updated, fix_current: bool, sort_key
 }
 
 pub fn on_spawn(app: &mut App) -> EventResult {
-    println!("spawn");
     app.states.spawned = true;
     app.gui.refresh_status_bar_width();
     app.operate(Operation::Draw);
-    println!("spawn 3");
     Ok(())
 }
 

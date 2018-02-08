@@ -753,25 +753,17 @@ impl App {
                 } else {
                     self.states.status_format.generate()
                 };
-            self.gui.label.set_markup(&text);
+            self.gui.set_status_bar_markup(&text);
         }
     }
 
     fn update_ui_visibility(&self) {
-        if self.states.status_bar {
-            self.gui.status_bar.show();
-        } else {
-            self.gui.status_bar.hide();
-        }
+        self.gui.set_status_bar_visibility(self.states.status_bar);
         self.gui.set_operation_box_visibility(self.states.operation_box);
     }
 
-    fn update_status_bar_align(&self) {
-        self.gui.label.set_halign(self.states.status_bar_align.0);
-    }
-
     fn update_status_bar_height(&self) {
-        self.gui.update_status_bar_height(self.states.status_bar_height);
+        self.gui.set_status_bar_height(self.states.status_bar_height);
     }
 
     fn update_watcher(&self) {

@@ -1293,7 +1293,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 updated.image_options = true;
             }
             StatusBarAlign => {
-                app.update_status_bar_align();
+                app.gui.set_status_bar_align(app.states.status_bar_align.0);
             }
             StatusBarHeight => {
                 app.update_status_bar_height();

@@ -39,18 +39,18 @@ enum_from_primitive! {
 
 
 pub struct Gui {
-    pub cell_outer: gtk::Box,
     pub colors: Colors,
-    pub label: Label,
     pub operation_entry: Entry,
-    pub status_bar: Layout,
-    pub status_bar_inner: gtk::Box,
     pub vbox: gtk::Box,
     pub window: Window,
     bottom_spacer: Image,
     cell_inners: Vec<CellInner>,
+    cell_outer: gtk::Box,
     entry_history: ListStore,
+    label: Label,
     operation_box: gtk::Box,
+    status_bar: Layout,
+    status_bar_inner: gtk::Box,
     top_spacer: Image,
     ui_event: Option<UIEvent>,
 }
@@ -275,6 +275,7 @@ impl Gui {
     pub fn reset_view(&mut self, state: &ViewState) {
         self.clear_images();
         self.create_images(state);
+        self.reset_focus();
     }
 
     pub fn rows(&self) -> usize {
@@ -307,8 +308,33 @@ impl Gui {
                 self.operation_box.show();
             } else {
                 self.operation_box.hide();
-                self.window.child_focus(Down); // To blur
+                self.reset_focus();
             }
+        }
+    }
+
+    pub fn set_status_bar_align(&self, align: Align) {
+        self.label.set_halign(align);
+    }
+
+    pub fn set_status_bar_height(&self, height: Option<usize>) {
+        let height = if let Some(height) = height {
+            height as i32
+        } else {
+            self.label.get_allocated_height() * 110 / 100
+        };
+        self.status_bar.set_property_height_request(height);
+    }
+
+    pub fn set_status_bar_markup(&self, markup: &str) {
+        self.label.set_markup(markup);
+    }
+
+    pub fn set_status_bar_visibility(&self, visibility: bool) {
+        if visibility {
+            self.status_bar.show();
+        } else {
+            self.status_bar.hide();
         }
     }
 
@@ -326,15 +352,6 @@ impl Gui {
         self.status_bar.override_background_color(
             self.status_bar.get_state_flags(),
             &self.colors.status_bar_background.gdk_rgba());
-    }
-
-    pub fn update_status_bar_height(&self, height: Option<usize>) {
-        let height = if let Some(height) = height {
-            height as i32
-        } else {
-            self.label.get_allocated_height() * 110 / 100
-        };
-        self.status_bar.set_property_height_request(height);
     }
 
     fn clear_images(&mut self) {
@@ -397,6 +414,23 @@ impl Gui {
             self.bottom_spacer.show();
         } else {
             self.bottom_spacer.hide();
+        }
+    }
+
+    fn reset_focus(&self) {
+        if !self.window.get_visible() {
+            return;
+        }
+
+        if self.operation_box.get_visible() {
+            self.window.set_focus(Some(&self.operation_entry));
+            return
+        }
+
+        if let Some(ref inner) = self.cell_inners.first() {
+            if let Some(ref cell) = inner.cells.first() {
+                self.window.set_focus(Some(&cell.window));
+            }
         }
     }
 }

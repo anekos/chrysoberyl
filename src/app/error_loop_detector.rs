@@ -26,19 +26,3 @@ impl Detector {
         false
     }
 }
-        //
-        //     return false;
-        // }
-        //
-        // if previous_error == error {
-        //     self.count += 1;
-        //     if LIMIT < self.count {
-        //         self.count = 0;
-        //         self.previous_error = None;
-        //         return true;
-        //     }
-        // } else {
-        //     self.previous_error = Some(o!(error));
-        // }
-        //
-        // false

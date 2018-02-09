@@ -759,9 +759,9 @@ impl App {
 
     fn update_ui_visibility(&self) {
         if self.states.status_bar {
-            self.gui.label.show();
+            self.gui.status_bar.show();
         } else {
-            self.gui.label.hide();
+            self.gui.status_bar.hide();
         }
         self.gui.set_operation_box_visibility(self.states.operation_box);
     }

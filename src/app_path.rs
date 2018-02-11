@@ -30,7 +30,7 @@ pub fn cache_dir(path: &str) -> PathBuf {
     dir
 }
 
-pub fn config_dir() -> PathBuf {
+fn config_dir() -> PathBuf {
      get_app_root(AppDataType::UserConfig, &APP_INFO).unwrap()
 }
 
@@ -100,4 +100,3 @@ impl fmt::Display for PathList {
         Ok(())
     }
 }
-

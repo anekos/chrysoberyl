@@ -123,7 +123,7 @@ impl Gui {
 
         let hidden_bar_inner = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
             it.pack_end(&hidden_label, true, true, 0);
-            it.set_margin_top(20000);
+            it.set_margin_top(20_000);
         });
 
         let hidden_bar = tap!(it = Layout::new(None, None), {

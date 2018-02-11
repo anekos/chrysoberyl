@@ -153,6 +153,7 @@ impl Gui {
                 it.set_popup_completion(true);
                 it.set_minimum_key_length(1);
             }));
+            it.connect_key_press_event(|_, key| Inhibit(key.as_ref().keyval == ::gdk::enums::key::Tab));
         });
 
         let operation_box = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {

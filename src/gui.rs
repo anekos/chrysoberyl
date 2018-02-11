@@ -542,8 +542,8 @@ impl Cell {
         match image_buffer.get_pixbuf_animation() {
             Ok(buf) => {
                 self.image.set_from_animation(&buf);
-                let (w, h) = (buf.get_width(), buf.get_height());
-                self.window.set_size_request(w, h);
+                let (ci_width, ci_height) = (min!(buf.get_width(), cell_size.width), min!(buf.get_height(), cell_size.height));
+                self.window.set_size_request(ci_width, ci_height);
             }
             Err(ref error) =>
                 self.draw_text(&s!(error), cell_size, fg, bg)

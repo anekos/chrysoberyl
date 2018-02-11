@@ -746,15 +746,13 @@ impl App {
             self.gui.window.set_title(&text);
         }
 
-        if self.states.status_bar {
-            let text =
-                if empty {
-                    self.states.empty_status_format.generate()
-                } else {
-                    self.states.status_format.generate()
-                };
-            self.gui.set_status_bar_markup(&text);
-        }
+        let text =
+            if empty {
+                self.states.empty_status_format.generate()
+            } else {
+                self.states.status_format.generate()
+            };
+        self.gui.set_status_bar_markup(&text);
     }
 
     fn update_ui_visibility(&self) {

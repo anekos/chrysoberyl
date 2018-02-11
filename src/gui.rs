@@ -47,6 +47,7 @@ pub struct Gui {
     cell_inners: Vec<CellInner>,
     cell_outer: gtk::Box,
     entry_history: ListStore,
+    hidden_label: Label,
     label: Label,
     operation_box: gtk::Box,
     status_bar: Layout,
@@ -118,6 +119,17 @@ impl Gui {
             it.set_halign(Align::Center);
         });
 
+        let hidden_label = Label::new("HIDDEN");
+
+        let hidden_bar_inner = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
+            it.pack_end(&hidden_label, true, true, 0);
+            it.set_margin_top(20000);
+        });
+
+        let hidden_bar = tap!(it = Layout::new(None, None), {
+            it.add(&hidden_bar_inner);
+        });
+
         let status_bar_inner = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
             it.pack_end(&label, true, true, 0);
         });
@@ -179,6 +191,7 @@ impl Gui {
 
         let overlay = tap!(it = Overlay::new(), {
             it.add_overlay(&vbox);
+            it.add_overlay(&hidden_bar);
             it.add_overlay(&operation_box);
             it.show_all();
         });
@@ -191,6 +204,7 @@ impl Gui {
             cell_outer,
             colors: Colors::default(),
             entry_history,
+            hidden_label,
             label,
             operation_box,
             operation_entry,
@@ -319,18 +333,19 @@ impl Gui {
         let height = if let Some(height) = height {
             height as i32
         } else {
-            self.label.get_allocated_height() * 110 / 100
+            self.hidden_label.get_allocated_height() * 110 / 100
         };
         self.status_bar.set_property_height_request(height);
     }
 
     pub fn set_status_bar_markup(&self, markup: &str) {
         self.label.set_markup(markup);
+        self.hidden_label.set_markup(markup);
     }
 
     pub fn set_status_bar_visibility(&self, visibility: bool) {
         if visibility {
-            self.status_bar.show();
+            self.status_bar.show_all();
         } else {
             self.status_bar.hide();
         }

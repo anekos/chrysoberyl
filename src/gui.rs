@@ -12,7 +12,7 @@ use gdk::EventMask;
 use gdk_pixbuf::{Pixbuf, PixbufAnimationExt};
 use glib::Type;
 use gtk::prelude::*;
-use gtk::{Adjustment, Align, Entry, EntryCompletion, Image, Label, Layout, ListStore, Orientation, Overlay, ScrolledWindow, self, Value, Window};
+use gtk::{Adjustment, Align, Entry, EntryCompletion, Grid, Image, Label, Layout, ListStore, Overlay, ScrolledWindow, self, Value, Window};
 
 use app_path;
 use color::Color;
@@ -43,16 +43,15 @@ pub struct Gui {
     pub operation_entry: Entry,
     pub vbox: gtk::Box,
     pub window: Window,
-    bottom_spacer: Image,
-    cell_inners: Vec<CellInner>,
-    cell_outer: gtk::Box,
+    cells: Vec<Cell>,
     entry_history: ListStore,
+    grid: Grid,
+    grid_size: Size,
     hidden_label: Label,
     label: Label,
     operation_box: gtk::Box,
     status_bar: Layout,
     status_bar_inner: gtk::Box,
-    top_spacer: Image,
     ui_event: Option<UIEvent>,
 }
 
@@ -113,7 +112,13 @@ impl Gui {
         window.set_wmclass(constant::WINDOW_CLASS, constant::WINDOW_CLASS);
         window.add_events(EventMask::SCROLL_MASK.bits() as i32);
 
-        let cell_outer = gtk::Box::new(Orientation::Vertical, 0);
+        let grid = tap!(it = gtk::Grid::new(), {
+            it.set_halign(Align::Center);
+            it.set_valign(Align::Center);
+            it.set_row_spacing(0);
+            it.set_column_spacing(0);
+        });
+        let cells = vec![];
 
         let label = tap!(it = Label::new(None), {
             it.set_halign(Align::Center);
@@ -186,7 +191,7 @@ impl Gui {
             it.drag_dest_set(DestDefaults::ALL, &targets, action);
             it.add_events(EventMask::SCROLL_MASK.bits() as i32);
             it.pack_end(&status_bar, false, false, 0);
-            it.pack_end(&cell_outer, true, true, 0);
+            it.pack_end(&grid, true, true, 0);
         });
 
         let overlay = tap!(it = Overlay::new(), {
@@ -199,18 +204,17 @@ impl Gui {
         window.add(&overlay);
 
         Gui {
-            bottom_spacer: gtk::Image::new_from_pixbuf(None),
-            cell_inners: vec![],
-            cell_outer,
+            cells,
             colors: Colors::default(),
             entry_history,
+            grid,
+            grid_size: Size::new(1, 1),
             hidden_label,
             label,
             operation_box,
             operation_entry,
             status_bar,
             status_bar_inner,
-            top_spacer: gtk::Image::new_from_pixbuf(None),
             ui_event: None,
             vbox,
             window,
@@ -222,7 +226,7 @@ impl Gui {
     }
 
     pub fn cols(&self) -> usize {
-        self.cell_inners.first().unwrap().cells.len()
+        self.grid_size.width as usize
     }
 
     pub fn get_cell_size(&self, state: &ViewState) -> Size {
@@ -287,13 +291,12 @@ impl Gui {
     }
 
     pub fn reset_view(&mut self, state: &ViewState) {
-        self.clear_images();
         self.create_images(state);
         self.reset_focus();
     }
 
     pub fn rows(&self) -> usize {
-        self.cell_inners.len()
+        self.grid_size.height as usize
     }
 
     pub fn save<T: AsRef<Path>>(&self, path: &T, index: usize) -> Result<(), BoxedError> {
@@ -367,35 +370,17 @@ impl Gui {
             &self.colors.status_bar_background.gdk_rgba());
     }
 
-    fn clear_images(&mut self) {
-        for inner in &self.cell_inners {
-            self.cell_outer.remove(&inner.container);
-        }
-        self.cell_outer.remove(&self.top_spacer);
-        self.cell_outer.remove(&self.bottom_spacer);
-        self.cell_inners.clear();
-    }
-
     fn create_images(&mut self, state: &ViewState) {
-        if state.centering {
-            self.cell_outer.pack_start(&self.top_spacer, true, true, 0);
-            self.top_spacer.show();
-        } else {
-            self.top_spacer.hide();
+        for cell in &self.cells {
+            cell.image.set_from_pixbuf(None);
         }
+        for child in &self.grid.get_children() {
+            self.grid.remove(child);
+        }
+        self.cells.clear();
 
-        for _ in 0..state.rows {
-            let mut cells = vec![];
-
-            let inner = gtk::Box::new(Orientation::Horizontal, 0);
-
-            if state.centering {
-                let left_spacer = gtk::Image::new_from_pixbuf(None);
-                inner.pack_start(&left_spacer, true, true, 0);
-                left_spacer.show();
-            }
-
-            for _ in 0..state.cols {
+        for row in 0..state.rows {
+            for col in 0..state.cols {
                 let scrolled = ScrolledWindow::new(None, None);
                 let image = Image::new_from_pixbuf(None);
                 scrolled.connect_button_press_event(|_, _| Inhibit(true));
@@ -404,30 +389,13 @@ impl Gui {
                 scrolled.add_with_viewport(&image);
                 scrolled.show();
                 image.show();
-                inner.pack_start(&scrolled, !state.centering, true, 0);
-                cells.push(Cell::new(image, scrolled));
+                self.grid.attach(&scrolled, col as i32, row as i32, 1, 1);
+                self.cells.push(Cell { image, window: scrolled });
             }
-
-            if state.centering {
-                let right_spacer = gtk::Image::new_from_pixbuf(None);
-                inner.pack_start(&right_spacer, true, true, 0);
-                right_spacer.show();
-            }
-
-            self.cell_outer.pack_start(&inner, !state.centering, true, 0);
-            inner.show();
-
-            self.cell_inners.push(CellInner {
-                container: inner,
-                cells: cells
-            });
         }
-        if state.centering {
-            self.cell_outer.pack_start(&self.bottom_spacer, true, true, 0);
-            self.bottom_spacer.show();
-        } else {
-            self.bottom_spacer.hide();
-        }
+
+        self.grid_size = Size::new(state.cols as i32, state.rows as i32);
+        self.reset_focus();
     }
 
     fn reset_focus(&self) {
@@ -440,19 +408,13 @@ impl Gui {
             return
         }
 
-        if let Some(inner) = self.cell_inners.first() {
-            if let Some(cell) = inner.cells.first() {
-                self.window.set_focus(Some(&cell.window));
-            }
+        if let Some(cell) = self.cells.first() {
+            self.window.set_focus(Some(&cell.window));
         }
     }
 }
 
 impl Cell {
-    pub fn new(image: Image, window: ScrolledWindow) -> Cell {
-        Cell { image: image, window: window }
-    }
-
     /**
      * @return Scale
      */
@@ -579,23 +541,17 @@ impl<'a> Iterator for CellIterator<'a> {
     type Item = &'a Cell;
 
     fn next(&mut self) -> Option<&'a Cell> {
-        let len = self.gui.len();
-        let cols = self.gui.cols();
         let mut index = self.index;
         if self.reverse {
-            if index < len {
+            if index < self.gui.len() {
                 index = self.gui.len() - index - 1;
             } else {
                 return None
             }
         }
-        let rows = index / cols;
-        let cols = index % cols;
-        let result = self.gui.cell_inners.get(rows).and_then(|inner| {
-            inner.cells.get(cols)
-        });
-        self.index += 1;
-        result
+        tap!(it = self.gui.cells.get(index), {
+            self.index += 1;
+        })
     }
 }
 

@@ -47,7 +47,7 @@ pub fn register(tx: Sender<Operation>, mut history_file: Option<PathBuf>) {
     });
 }
 
-pub fn register_as_file(tx: Sender<Operation>) {
+pub fn register_as_binary(tx: Sender<Operation>) {
     spawn(move || {
         let stdin = io::stdin();
         let mut stdin = stdin.lock();

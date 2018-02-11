@@ -59,7 +59,7 @@ pub enum Operation {
     FlyLeaves(usize),
     Go(entry::SearchKey),
     Input(mapping::Input),
-    InitialProcess(Vec<command_line::Entry>, bool, bool), /* command_lin::entries, shuffle, stdin_as_file */
+    InitialProcess(Vec<command_line::Entry>, bool, bool), /* command_lin::entries, shuffle, stdin_as_binary */
     Jump(Expandable), /* marker name */
     KillTimer(String),
     Last(Option<usize>, bool, MoveBy, bool),

@@ -135,7 +135,7 @@ impl App {
         };
 
         script::load(&app.tx, &config::get_config_source(), &app.states.path_list);
-        app.tx.send(Operation::InitialProcess(initial.entries, initial.shuffle, initial.stdin_as_file)).unwrap();
+        app.tx.send(Operation::InitialProcess(initial.entries, initial.shuffle, initial.stdin_as_binary)).unwrap();
         logger::error::register(app.tx.clone());
 
         (app, primary_rx, rx)
@@ -216,8 +216,8 @@ impl App {
                     on_fly_leaves(self, &mut updated, n),
                 Go(ref key) =>
                     on_go(self, &mut updated, key),
-                InitialProcess(entries, shuffle, stdin_as_file) =>
-                    on_initial_process(self, entries, shuffle, stdin_as_file),
+                InitialProcess(entries, shuffle, stdin_as_binary) =>
+                    on_initial_process(self, entries, shuffle, stdin_as_binary),
                 Input(ref input) =>
                     on_input(self, input),
                 Jump(ref name) =>

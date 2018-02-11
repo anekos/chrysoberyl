@@ -34,7 +34,7 @@ pub fn register<T: AsRef<Path>>(tx: Sender<Operation>, path: T) -> Result<(), Bo
     Ok(())
 }
 
-pub fn register_as_file<T: AsRef<Path>>(tx: Sender<Operation>, path: T) -> Result<(), Box<Error>> {
+pub fn register_as_binary<T: AsRef<Path>>(tx: Sender<Operation>, path: T) -> Result<(), Box<Error>> {
     let listener = UnixListener::bind(path.as_ref())?;
 
     termination::register(termination::Process::Delete(path.as_ref().to_path_buf()));

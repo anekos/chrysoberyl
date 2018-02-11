@@ -21,7 +21,7 @@ pub struct Initial {
     pub entries: Vec<Entry>,
     pub silent: bool,
     pub window_role: String,
-    pub stdin_as_file: bool,
+    pub stdin_as_binary: bool,
 }
 
 #[derive(Clone)]
@@ -44,7 +44,7 @@ impl Default for Initial {
             encodings: vec![],
             entries: vec![],
             silent: false,
-            stdin_as_file: false,
+            stdin_as_binary: false,
             window_role: constant::WINDOW_ROLE.to_string(),
         }
     }
@@ -80,7 +80,7 @@ pub fn parse_args() -> Result<Initial, String> {
         if let Some(op) = op.as_mut() {
             op.push(arg);
         } else if arg == "-" {
-            result.stdin_as_file = true;
+            result.stdin_as_binary = true;
         } else {
             result.entries.push(Entry::Path(arg));
         }

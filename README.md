@@ -122,7 +122,7 @@ Open `<PATH>` file to control chrysoberyl.
 
 Create unix FIFO file to control chrysoberyl.
 
-## @controller socket [--as-file|-f] <PATH>
+## @controller socket [--as-binary|-b] <PATH>
 
 Create unix socket file to control chrysoberyl.
 

@@ -165,15 +165,15 @@ pub fn parse_controller(args: &[String]) -> Result<Operation, ParsingError> {
 
     fn parse_2<T>(args: &[String], f: T) -> Result<Source, ParsingError> where T: FnOnce(Expandable, bool) -> Source {
         let mut path = o!("");
-        let mut as_file = false;
+        let mut as_binary = false;
 
         {
             let mut ap = ArgumentParser::new();
-            ap.refer(&mut as_file).add_option(&["--as-file", "-f"], StoreTrue, "As image file");
+            ap.refer(&mut as_binary).add_option(&["--as-binary", "--as-bin", "-b"], StoreTrue, "As image file");
             ap.refer(&mut path).add_argument("path", Store, "Path").required();
             parse_args(&mut ap, args)
         } .map(|_| {
-            f(Expandable::new(path), as_file)
+            f(Expandable::new(path), as_binary)
         })
     }
 

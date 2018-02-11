@@ -353,7 +353,7 @@ pub fn on_go(app: &mut App, updated: &mut Updated, key: &SearchKey) -> EventResu
     Ok(())
 }
 
-pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuffle: bool, stdin_as_file: bool) -> EventResult {
+pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuffle: bool, stdin_as_binary: bool) -> EventResult {
     fn process(app: &mut App, entry: command_line::Entry, first_path: &mut Option<String>, updated: &mut Updated) -> EventResult {
         match entry {
             CLE::Path(file) => {
@@ -394,8 +394,8 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
         }
     }
 
-    if stdin_as_file {
-        controller::stdin::register_as_file(app.tx.clone());
+    if stdin_as_binary {
+        controller::stdin::register_as_binary(app.tx.clone());
     } else {
         controller::stdin::register(app.tx.clone(), app.states.history_file.clone());
     }

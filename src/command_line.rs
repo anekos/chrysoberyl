@@ -159,7 +159,7 @@ fn print_version() {
 fn print_path() {
     println!(
         "configuration: {}\ncache: {}",
-        app_path::config_file(None).to_str().unwrap(),
+        app_path::config_file().to_str().unwrap(),
         app_path::cache_dir("/").to_str().unwrap());
 }
 

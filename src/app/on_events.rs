@@ -13,7 +13,6 @@ use gtk::prelude::*;
 use natord;
 use rand::distributions::{IndependentSample, Range as RandRange};
 
-use app_path;
 use archive;
 use cherenkov::fill::Shape;
 use color::Color;
@@ -873,10 +872,7 @@ pub fn on_reset_scrolls(app: &mut App, to_end: bool) -> EventResult {
     Ok(())
 }
 
-pub fn on_save(app: &mut App, path: &Option<PathBuf>, sessions: &[Session]) -> EventResult {
-    let default = app_path::config_file(Some(app_path::DEFAULT_SESSION_FILENAME));
-    let path = path.as_ref().unwrap_or(&default);
-
+pub fn on_save(app: &mut App, path: &Path, sessions: &[Session]) -> EventResult {
     let mut file = File::create(path)?;
     file.write_all(with_ouput_string!(out, write_sessions(app, sessions, out)).as_str().as_bytes())?;
     Ok(())

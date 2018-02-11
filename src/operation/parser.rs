@@ -789,19 +789,19 @@ pub fn parse_refresh(args: &[String]) -> Result<Operation, ParsingError> {
 }
 
 pub fn parse_save(args: &[String]) -> Result<Operation, ParsingError> {
-    let mut path: Option<String> = None;
+    let mut path: String = o!("");
     let mut sources: Vec<Session> = vec![];
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut sources).add_option(&["--target", "-t"], Collect, "Target");
-        ap.refer(&mut path).add_argument("path", StoreOption, "Save to");
+        ap.refer(&mut path).add_argument("path", Store, "Save to").required();
         parse_args(&mut ap, args)
     } .and_then(|_| {
         if sources.is_empty() {
             sources.push(Session::All);
         }
-        Ok(Operation::Save(path.map(|it| sh::expand_to_pathbuf(&it)), sources))
+        Ok(Operation::Save(sh::expand_to_pathbuf(&path), sources))
     })
 }
 

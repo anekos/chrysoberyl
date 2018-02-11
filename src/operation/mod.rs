@@ -95,7 +95,7 @@ pub enum Operation {
     Refresh(bool), /* image_cache */
     ResetImage,
     ResetScrolls(bool), /* to_end */
-    Save(Option<PathBuf>, Vec<Session>),
+    Save(PathBuf, Vec<Session>),
     SearchText(Option<String>, bool, Color), /* text, backward */
     Scroll(Direction, Vec<String>, f64, bool), /* direction, operation, scroll_size_ratio, crush */
     SetEnv(String, Option<Expandable>),

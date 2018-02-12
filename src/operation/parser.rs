@@ -398,6 +398,20 @@ pub fn parse_input(args: &[String]) -> Result<Operation, ParsingError> {
     })
 }
 
+pub fn parse_jump(args: &[String]) -> Result<Operation, ParsingError> {
+    let mut name = Expandable::default();
+    let mut load = false;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut name).add_argument("name", Store, "Marker name").required();
+        ap.refer(&mut load).add_option(&["--load", "-l"], StoreTrue, "Load if the target has not been loaded");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Jump(name, load)
+    })
+}
+
 pub fn parse_kill_timer(args: &[String]) -> Result<Operation, ParsingError> {
     let mut name = o!("");
 

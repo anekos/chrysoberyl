@@ -222,8 +222,8 @@ impl App {
                     on_initial_process(self, entries, shuffle, stdin_as_binary),
                 Input(ref input) =>
                     on_input(self, input),
-                Jump(ref name) =>
-                    on_jump(self, &mut updated, name),
+                Jump(ref name, load) =>
+                    on_jump(self, &mut updated, name, load),
                 KillTimer(ref name) =>
                     on_kill_timer(self, name),
                 Last(count, ignore_views, move_by, _) =>

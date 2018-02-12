@@ -456,7 +456,7 @@ pub fn on_input(app: &mut App, input: &Input) -> EventResult {
     Ok(())
 }
 
-pub fn on_jump(app: &mut App, updated: &mut Updated, name: &Expandable) -> EventResult {
+pub fn on_jump(app: &mut App, updated: &mut Updated, name: &Expandable, load: bool) -> EventResult {
     use self::EntryType::*;
 
     let name = name.to_string();
@@ -469,6 +469,8 @@ pub fn on_jump(app: &mut App, updated: &mut Updated, name: &Expandable) -> Event
         app.update_message(None);
         updated.label = true;
         return Ok(());
+    } else if !load {
+      return Err(ChryError::Fixed("Entry not found"))?
     }
 
     let (ref entry_type, ref path, _) = *key;
@@ -566,15 +568,14 @@ pub fn on_mark(app: &mut App, updated: &mut Updated, name: &Expandable, key: Opt
             app.entries.search(&SearchKey { path: path.clone(), index: Some(index) }).and_then(|index| {
                 app.entries.nth(index).map(|it| it.key.0)
             })
-        }).ok_or(Box::new(ChryError::Fixed("Entry not found")))?;
+        }).ok_or_else(|| Box::new(ChryError::Fixed("Entry not found")))?;
         app.marker.insert(name, (entry_type, path, index));
+    } else if let Some((ref entry, _)) = app.current() {
+        app.marker.insert(name, entry.key.clone());
     } else {
-        if let Some((ref entry, _)) = app.current() {
-            app.marker.insert(name, entry.key.clone());
-        } else {
-            return Err(ChryError::Fixed("Entry is empty"))?;
-        }
+        return Err(ChryError::Fixed("Entry is empty"))?;
     }
+
     updated.label = true;
     Ok(())
 }

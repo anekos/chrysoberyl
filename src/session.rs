@@ -329,7 +329,7 @@ fn write_region_mappings(mappings: &rmap::RegionMapping, out: &mut String) {
 pub fn write_markers(marker: &HashMap<String, Key>, out: &mut String) {
     for (name, key) in marker {
         sprint!(out, "@mark {} {}", escape(name), escape(&key.1));
-        sprint!(out, " {}", key.2);
+        sprint!(out, " {}", key.2 + 1);
         sprint!(out, " {}", key.0);
         sprintln!(out, "");
     }

@@ -49,7 +49,6 @@ pub struct States {
 }
 
 pub struct ViewState {
-    pub centering: bool,
     pub cols: usize,
     pub rows: usize,
 }
@@ -153,7 +152,6 @@ impl Default for ViewState {
         ViewState {
             cols: 1,
             rows: 1,
-            centering: false,
         }
     }
 }

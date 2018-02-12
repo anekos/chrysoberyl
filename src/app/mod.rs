@@ -722,7 +722,6 @@ impl App {
                 });
                 text.push(if self.states.reverse { 'R' } else { 'r' });
                 text.push(if self.states.auto_paging { 'A' } else { 'a' });
-                text.push(if self.states.view.centering { 'C' } else { 'c' });
                 text.push(if self.states.auto_reload { 'W' } else { 'w' });
                 text
             }));

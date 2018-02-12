@@ -9,7 +9,7 @@ use color::Color;
 use constant;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::filter::writer::write as write_expr;
-use entry::{Entry, EntryContainer, EntryType, Key, SearchKey};
+use entry::{Entry, EntryContainer, EntryType, Key};
 use gui::Gui;
 use mapping::{Mapping, unified_mapping as umap, region_mapping as rmap};
 use operation::option::PreDefinedOptionName;
@@ -326,12 +326,11 @@ fn write_region_mappings(mappings: &rmap::RegionMapping, out: &mut String) {
     }
 }
 
-pub fn write_markers(marker: &HashMap<String, SearchKey>, out: &mut String) {
-    for (key, search_key) in marker {
-        sprint!(out, "@mark {} {}", escape(key), escape(&search_key.path));
-        if let Some(index) = search_key.index {
-            sprint!(out, " {}", index);
-        }
+pub fn write_markers(marker: &HashMap<String, Key>, out: &mut String) {
+    for (name, key) in marker {
+        sprint!(out, "@mark {} {}", escape(name), escape(&key.1));
+        sprint!(out, " {}", key.2);
+        sprint!(out, " {}", key.0);
         sprintln!(out, "");
     }
 }
@@ -433,6 +432,23 @@ impl fmt::Display for state::Alignment {
                 Center => "center",
                 End => "end",
                 _ => panic!("Unexpected value: {:?}", self.0)
+            };
+
+        write!(f, "{}", result)
+    }
+}
+
+impl fmt::Display for EntryType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::EntryType::*;
+
+        let result =
+            match *self {
+                Invalid => "invalid",
+                PDF => "pdf",
+                Image => "image",
+                Archive => "Archive",
+                Memory => "Memory",
             };
 
         write!(f, "{}", result)

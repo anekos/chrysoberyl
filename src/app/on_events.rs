@@ -458,8 +458,8 @@ pub fn on_input(app: &mut App, input: &Input) -> EventResult {
 
 pub fn on_jump(app: &mut App, updated: &mut Updated, name: &Expandable) -> EventResult {
     let name = name.to_string();
-    let search_key = app.marker.get(&name).ok_or(ChryError::Fixed("Mark not found"))?;
-    let index = app.entries.search(search_key).ok_or(ChryError::Fixed("Entry not found"))?;
+    let key = app.marker.get(&name).ok_or(ChryError::Fixed("Mark not found"))?;
+    let index = app.entries.search(&SearchKey::from_key(key)).ok_or(ChryError::Fixed("Entry not found"))?;
 
     if app.paginator.update_index(Index(index)) {
         updated.pointer = true;
@@ -540,12 +540,20 @@ pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, opera
     Ok(())
 }
 
-pub fn on_mark(app: &mut App, updated: &mut Updated, name: &Expandable, search_key: Option<SearchKey>) -> EventResult {
+pub fn on_mark(app: &mut App, updated: &mut Updated, name: &Expandable, key: Option<(String, usize, Option<EntryType>)>) -> EventResult {
     if let Some((ref entry, _)) = app.current() {
         let name = name.to_string();
         app.update_message(Some(format!("Marked with {}", name)));
-        let search_key = search_key.unwrap_or_else(|| SearchKey::from_key(&entry.key));
-        app.marker.insert(name, search_key);
+        if let Some((path, index, entry_type)) = key {
+            let entry_type = entry_type.or_else(|| {
+                app.entries.search(&SearchKey { path: path.clone(), index: Some(index) }).and_then(|index| {
+                    app.entries.nth(index).map(|it| it.key.0)
+                })
+            }).ok_or(Box::new(ChryError::Fixed("Entry not found")))?;
+            app.marker.insert(name, (entry_type, path, index));
+        } else {
+            app.marker.insert(name, entry.key.clone());
+        }
         updated.label = true;
     }
     Ok(())

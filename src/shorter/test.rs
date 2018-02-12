@@ -23,7 +23,7 @@ macro_rules! assert_short_url {
     ($max:expr, $original:expr, $expect:expr) => {
         {
             let original = Url::parse(&$original).unwrap();
-            let actual = shorten_url(original, $max);
+            let actual = shorten_url(&original, $max);
             assert_eq!(
                 actual,
                 $expect.to_owned());

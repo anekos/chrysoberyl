@@ -55,7 +55,7 @@ macro_rules! assert_pg_mv {
             assert_pg!(
                 $function,
                 [fly_leaves: $t_fly_leaves, len: $t_len, level: $t_level, sight_size: $t_sight_size],
-                [paging],
+                [&paging],
                 $updated,
                 [fly_leaves: $e_fly_leaves, level: $e_level]);
         }

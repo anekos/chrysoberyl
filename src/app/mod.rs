@@ -134,7 +134,9 @@ impl App {
             watcher: Watcher::new(tx.clone()),
         };
 
-        script::load(&app.tx, &config::get_config_source(initial.config_file.as_ref()), &app.states.path_list);
+        if initial.load_config {
+            script::load(&app.tx, &config::get_config_source(initial.config_file.as_ref()), &app.states.path_list);
+        }
         app.tx.send(Operation::InitialProcess(initial.entries, initial.shuffle, initial.stdin_as_binary)).unwrap();
         logger::error::register(app.tx.clone());
 

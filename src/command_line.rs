@@ -17,12 +17,13 @@ use expandable::Expandable;
 pub struct Initial {
     pub config_file: Option<String>,
     pub curl_threads: u8,
-    pub shuffle: bool,
     pub encodings: Vec<EncodingRef>,
     pub entries: Vec<Entry>,
+    pub load_config: bool,
+    pub shuffle: bool,
     pub silent: bool,
-    pub window_role: String,
     pub stdin_as_binary: bool,
+    pub window_role: String,
 }
 
 #[derive(Clone)]
@@ -42,9 +43,10 @@ impl Default for Initial {
         Initial {
             config_file: None,
             curl_threads: 3,
-            shuffle: false,
             encodings: vec![],
             entries: vec![],
+            load_config: true,
+            shuffle: false,
             silent: false,
             stdin_as_binary: false,
             window_role: constant::WINDOW_ROLE.to_string(),
@@ -118,6 +120,7 @@ fn parse_option(arg: &str, args: &mut Args, init: &mut Initial) -> Result<bool, 
         } else {
             return not_enough();
         },
+        "--no-config" => init.load_config = false,
         "--role" => if let Some(value) = args.next() {
             init.window_role = value;
         } else {

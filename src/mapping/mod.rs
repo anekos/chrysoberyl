@@ -44,6 +44,7 @@ impl Mapping {
 
     pub fn register_unified(&mut self, key: &[Key], region: Option<Region>, operation: Vec<String>) {
         self.unified_mapping.register(key, region, operation);
+        self.input_history.clear();
     }
 
     pub fn register_event(&mut self, event_name: EventName, group: Option<String>, remain: Option<usize>, operation: Vec<String>) {
@@ -56,6 +57,7 @@ impl Mapping {
 
     pub fn unregister_unified(&mut self, key: &[Key], region: &Option<Region>) {
         self.unified_mapping.unregister(key, region);
+        self.input_history.clear();
     }
 
     pub fn unregister_event(&mut self, event_name: &Option<EventName>, group: &Option<String>) {

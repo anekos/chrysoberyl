@@ -68,7 +68,7 @@ pub enum Operation {
     LoadDefault,
     MakeVisibles(Vec<Option<Region>>),
     Map(MappingTarget, Option<usize>, Vec<String>), /* target, remain, operation */
-    Mark(Expandable, Option<entry::SearchKey>),
+    Mark(Expandable, Option<(String, usize, Option<EntryType>)>),
     Meow,
     Message(Option<String>),
     MoveAgain(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */

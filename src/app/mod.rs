@@ -16,7 +16,7 @@ use command_line::Initial;
 use config;
 use constant;
 use counter::Counter;
-use entry::{Entry, EntryContainer, EntryContent, Serial, SearchKey};
+use entry::{Entry, EntryContainer, EntryContent, Serial, Key};
 use events::EventName;
 use gui::Gui;
 use image_cache::ImageCache;
@@ -52,7 +52,7 @@ pub struct App {
     pub entries: EntryContainer,
     pub gui: Gui,
     pub mapping: Mapping,
-    pub marker: HashMap<String, SearchKey>,
+    pub marker: HashMap<String, Key>,
     pub paginator: Paginator,
     pub primary_tx: Sender<Operation>,
     pub query_operation: Option<Vec<String>>,
@@ -238,8 +238,8 @@ impl App {
                     on_make_visibles(self, regions),
                 Map(target, remain, mapped_operation) =>
                     on_map(self, target, remain, mapped_operation),
-                Mark(name, search_key) =>
-                    on_mark(self, &mut updated, &name, search_key),
+                Mark(name, key) =>
+                    on_mark(self, &mut updated, &name, key),
                 Meow =>
                     on_meow(self, &mut updated),
                 Message(message) =>

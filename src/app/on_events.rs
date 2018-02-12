@@ -457,18 +457,36 @@ pub fn on_input(app: &mut App, input: &Input) -> EventResult {
 }
 
 pub fn on_jump(app: &mut App, updated: &mut Updated, name: &Expandable) -> EventResult {
-    let name = name.to_string();
-    let search_key = app.marker.get(&name).ok_or(ChryError::Fixed("Mark not found"))?;
-    let index = app.entries.search(search_key).ok_or(ChryError::Fixed("Entry not found"))?;
+    use self::EntryType::*;
 
-    if app.paginator.update_index(Index(index)) {
-        updated.pointer = true;
+    let name = name.to_string();
+    let key = app.marker.get(&name).ok_or(ChryError::Fixed("Mark not found"))?;
+
+    if let Some(index) = app.entries.search(&SearchKey::from_key(key)) {
+        if app.paginator.update_index(Index(index)) {
+            updated.pointer = true;
+        }
+        app.update_message(None);
+        updated.label = true;
+        return Ok(());
     }
 
-    app.update_message(None);
-    updated.label = true;
+    let (ref entry_type, ref path, _) = *key;
 
-    Ok(())
+    let op = match *entry_type {
+        Image => Some(Operation::PushImage(Expandable::new(path.clone()), None, false, None)),
+        Archive => Some(Operation::PushArchive(Expandable::new(path.clone()), None, false)),
+        PDF => Some(Operation::PushPdf(Expandable::new(path.clone()), None, false)),
+        _ => None,
+    };
+
+    if let Some(op) = op {
+        app.states.go = Some(SearchKey::from_key(&key));
+        app.tx.send(op).unwrap();
+        return Ok(())
+    }
+
+    Err(ChryError::Fixed("Entry not found"))?
 }
 
 pub fn on_kill_timer(app: &mut App, name: &str) -> EventResult {
@@ -540,14 +558,24 @@ pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, opera
     Ok(())
 }
 
-pub fn on_mark(app: &mut App, updated: &mut Updated, name: &Expandable, search_key: Option<SearchKey>) -> EventResult {
-    if let Some((ref entry, _)) = app.current() {
-        let name = name.to_string();
-        app.update_message(Some(format!("Marked with {}", name)));
-        let search_key = search_key.unwrap_or_else(|| SearchKey::from_key(&entry.key));
-        app.marker.insert(name, search_key);
-        updated.label = true;
+pub fn on_mark(app: &mut App, updated: &mut Updated, name: &Expandable, key: Option<(String, usize, Option<EntryType>)>) -> EventResult {
+    let name = name.to_string();
+    app.update_message(Some(format!("Marked with {}", name)));
+    if let Some((path, index, entry_type)) = key {
+        let entry_type = entry_type.or_else(|| {
+            app.entries.search(&SearchKey { path: path.clone(), index: Some(index) }).and_then(|index| {
+                app.entries.nth(index).map(|it| it.key.0)
+            })
+        }).ok_or(Box::new(ChryError::Fixed("Entry not found")))?;
+        app.marker.insert(name, (entry_type, path, index));
+    } else {
+        if let Some((ref entry, _)) = app.current() {
+            app.marker.insert(name, entry.key.clone());
+        } else {
+            return Err(ChryError::Fixed("Entry is empty"))?;
+        }
     }
+    updated.label = true;
     Ok(())
 }
 

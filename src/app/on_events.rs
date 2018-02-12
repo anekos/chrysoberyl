@@ -483,7 +483,7 @@ pub fn on_jump(app: &mut App, updated: &mut Updated, name: &Expandable, load: bo
     };
 
     if let Some(op) = op {
-        app.states.go = Some(SearchKey::from_key(&key));
+        app.states.go = Some(SearchKey::from_key(key));
         app.tx.send(op).unwrap();
         return Ok(())
     }

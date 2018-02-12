@@ -5,6 +5,9 @@ release:
 release-without-lock:
 	RUSTC_WRAPPER=`which sccache` cargo build --release
 
+build-debug:
+	CARGO_INCREMENTAL=1 RUSTC_WRAPPER=`which sccache` cargo build
+
 test:
 	RUSTC_WRAPPER=`which sccache` cargo test
 

@@ -15,6 +15,7 @@ use expandable::Expandable;
 
 #[derive(Clone)]
 pub struct Initial {
+    pub config_file: Option<String>,
     pub curl_threads: u8,
     pub shuffle: bool,
     pub encodings: Vec<EncodingRef>,
@@ -39,6 +40,7 @@ pub const README: &str = include_str!("../README.md");
 impl Default for Initial {
     fn default() -> Self {
         Initial {
+            config_file: None,
             curl_threads: 3,
             shuffle: false,
             encodings: vec![],
@@ -110,6 +112,11 @@ fn parse_option(arg: &str, args: &mut Args, init: &mut Initial) -> Result<bool, 
         "--help" | "-h" => {
             print_help();
             exit(0);
+        },
+        "--config" => if let Some(value) = args.next() {
+            init.config_file = Some(value);
+        } else {
+            return not_enough();
         },
         "--role" => if let Some(value) = args.next() {
             init.window_role = value;

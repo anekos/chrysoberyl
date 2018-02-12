@@ -11,7 +11,6 @@ use libc;
 use errors::ChryError;
 use operation::Operation;
 use termination;
-use util::path::path_to_str;
 
 use controller::process_lines;
 
@@ -41,6 +40,6 @@ pub fn register<T: AsRef<Path>>(tx: Sender<Operation>, path: &T) {
             process_lines(&tx, file, "input/fragile");
             puts_event!("input/fragile/close");
         }
-        puts_error!(ChryError::Fixed("Could not open file"), "at" => "fragile_controller", "for" => path_to_str(&path));
+        puts_error!(ChryError::Fixed("Could not open file"), "at" => "fragile_controller", "for" => p!(&path));
     });
 }

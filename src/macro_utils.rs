@@ -65,6 +65,17 @@ macro_rules! d {
     }
 }
 
+// for path debug out
+macro_rules! p {
+    ( $expr:expr ) => {
+        $expr.to_str().map(|it| {
+            format!("{}", it)
+        }).unwrap_or_else(|| {
+            d!($expr)
+        })
+    }
+}
+
 macro_rules! ignore {
     ( $body:expr )  => {
         {

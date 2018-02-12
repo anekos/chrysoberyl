@@ -8,7 +8,6 @@ use app_path::PathList;
 use config::DEFAULT_CONFIG;
 use errors::ChryError;
 use operation::Operation;
-use util::path::path_to_string;
 
 
 
@@ -19,13 +18,13 @@ pub fn load(tx: &Sender<Operation>, source: &str, path_list: &PathList) {
 }
 
 pub fn load_from_file(tx: &Sender<Operation>, file: &Path, path_list: &PathList) {
-    puts_event!("script/open", "file" => path_to_string(&file));
+    puts_event!("script/open", "file" => p!(file));
     let mut source = o!("");
     match File::open(file).and_then(|mut file| file.read_to_string(&mut source)) {
         Ok(_) => load_from_str(tx, &source, path_list),
         Err(err) => puts_error!(ChryError::Standard(s!(err)), "at" => o!("on_load")),
     }
-    puts_event!("script/close", "file" => path_to_string(&file));
+    puts_event!("script/close", "file" => p!(file));
 }
 
 fn load_from_str(tx: &Sender<Operation>, source: &str, path_list: &PathList) {

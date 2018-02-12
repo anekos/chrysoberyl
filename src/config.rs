@@ -1,6 +1,6 @@
 
 use std::error::Error;
-use std::fs::{create_dir_all, File};
+use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::Path;
 
@@ -31,7 +31,7 @@ fn create_default() -> Result<(), Box<Error>> {
     let file = app_path::config_file();
     let dir = file.parent().ok_or("WTF: Unexpected config path")?;
     create_dir_all(dir)?;
-    let mut file = File::create(&file)?;
+    let mut file = OpenOptions::new().read(true).write(false).append(false).create(false).open(&file)?;
     file.write_all(DEFAULT_CONFIG.as_bytes())?;
     Ok(())
 }

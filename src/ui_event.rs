@@ -79,17 +79,17 @@ fn register(gui: &Gui, skip: usize, app_tx: &Sender<Operation>) -> Sender<Event>
 
     gui.vbox.connect_key_press_event(clone_army!([tx] move |_, key| {
         tx.send(WindowKeyPress(Key::from(key), key.as_ref().keyval)).unwrap();
-        Inhibit(false)
+        Inhibit(true)
     }));
 
     gui.window.connect_button_press_event(clone_army!([tx] move |_, button| {
         tx.send(ButtonPress(button.get_position())).unwrap();
-        Inhibit(false)
+        Inhibit(true)
     }));
 
     gui.window.connect_button_release_event(clone_army!([tx] move |_, button| {
         tx.send(ButtonRelease(Key::from(button), button.get_position())).unwrap();
-        Inhibit(false)
+        Inhibit(true)
     }));
 
     gui.window.connect_configure_event(clone_army!([tx] move |_, ev| {
@@ -99,12 +99,12 @@ fn register(gui: &Gui, skip: usize, app_tx: &Sender<Operation>) -> Sender<Event>
 
     gui.window.connect_delete_event(clone_army!([tx] move |_, _| {
         tx.send(Delete).unwrap();
-        Inhibit(false)
+        Inhibit(true)
     }));
 
     gui.window.connect_scroll_event(clone_army!([tx] move |_, scroll| {
         tx.send(Scroll(Key::from(scroll), scroll.get_direction())).unwrap();
-        Inhibit(false)
+        Inhibit(true)
     }));
 
     gui.vbox.connect_drag_data_received(clone_army!([app_tx] move |_, _, _, _, selection, info, _| {

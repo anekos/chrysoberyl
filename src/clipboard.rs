@@ -48,7 +48,7 @@ fn from_pixbuf(pixbuf: &Pixbuf) -> Result<Vec<u8>, Box<Error>> {
     let (width, height) = (pixbuf.get_width(), pixbuf.get_height());
     let surface = ImageSurface::create(Format::ARgb32, width, height).unwrap();
     let context = Context::new(&surface);
-    context.set_source_pixbuf(&pixbuf, 0.0, 0.0);
+    context.set_source_pixbuf(pixbuf, 0.0, 0.0);
     context.paint();
     let mut vec = Vec::<u8>::new();
     surface.write_to_png(&mut vec).map_err(ChryError::from)?;

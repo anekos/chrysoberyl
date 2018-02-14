@@ -190,6 +190,8 @@ impl App {
                     return self.operate_with_context(*op, Some(context)),
                 Controller(source) =>
                     on_controller(self, source),
+                CopyToClipboard(selection) =>
+                    on_copy_to_clipbaord(self, selection),
                 Count(count) =>
                     on_count(self, &mut updated, count),
                 CountDigit(digit) =>
@@ -270,8 +272,8 @@ impl App {
                     on_push(self, &mut updated, path.to_string(), meta, force),
                 PushArchive(file, meta, force) =>
                     on_push_archive(self, &file.expand(), meta, force, None),
-                PushClipboard(selection, meta) =>
-                    on_push_clipboard(self, selection, meta),
+                PushClipboard(selection, meta, force) =>
+                    on_push_clipboard(self, selection, meta, force),
                 PushDirectory(file, meta, force) =>
                     on_push_directory(self, &mut updated, file.expand(), meta, force),
                 PushImage(file, meta, force, expand_level) =>

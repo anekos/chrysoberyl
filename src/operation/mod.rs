@@ -44,6 +44,7 @@ pub enum Operation {
     Clip(Region),
     Context(OperationContext, Box<Operation>),
     Controller(controller::Source),
+    CopyToClipboard(ClipboardSelection),
     Count(Option<usize>),
     CountDigit(u8),
     DefineUserSwitch(String, Vec<Vec<String>>),
@@ -84,7 +85,7 @@ pub enum Operation {
     Pull,
     Push(Expandable, Option<Meta>, bool), /* path, meta, force */
     PushArchive(Expandable, Option<Meta>, bool), /* path, meta, force */
-    PushClipboard(ClipboardSelection, Option<Meta>),
+    PushClipboard(ClipboardSelection, Option<Meta>, bool),
     PushDirectory(Expandable, Option<Meta>, bool), /* path, meta, force */
     PushImage(Expandable, Option<Meta>, bool, Option<u8>), /* path, meta, force, expand-level */
     PushMemory(Vec<u8>, Option<Meta>), /* memory */
@@ -240,6 +241,8 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@clear"                        => Ok(Clear),
             "@clip"                         => parse_clip(whole),
             "@controller" | "@control"      => parse_controller(whole),
+            "@copy-to-clipboard" | "@clipboard"
+                                            => parse_copy_to_clipboard(whole),
             "@count"                        => parse_count(whole),
             "@cycle"                        => parse_option_cycle(whole),
             "@dec" | "@decrement" | "@decrease" | "@--"
@@ -423,6 +426,7 @@ impl fmt::Debug for Operation {
             Clip(_) => "Clip",
             Context(_, _) => "Context",
             Controller(_) => "Controller",
+            CopyToClipboard(_) => "CopyToClipboard",
             Count(_) => "Count",
             CountDigit(_) => "CountDigit",
             DefineUserSwitch(_, _) => "DefineUserSwitch",
@@ -463,7 +467,7 @@ impl fmt::Debug for Operation {
             Pull => "Pull ",
             Push(_, _, _) => "Push",
             PushArchive(_, _, _) => "PushArchive",
-            PushClipboard(_, _) => "PushClipboard",
+            PushClipboard(_, _, _) => "PushClipboard",
             PushDirectory(_, _, _) => "PushDirectory",
             PushImage(_, _, _, _) => "PushImage",
             PushMemory(_, _) => "PushMemory",

@@ -156,6 +156,13 @@ pub fn on_controller(app: &mut App, source: controller::Source) -> EventResult {
     Ok(())
 }
 
+pub fn on_copy_to_clipbaord(app: &mut App, selection: ClipboardSelection) -> EventResult {
+    let cell = app.gui.cells(false).nth(0).ok_or(ChryError::Fixed("No image"))?;
+    let pixbuf = cell.image.get_pixbuf().ok_or(ChryError::Fixed("No static image"))?;
+    clipboard::store(&selection, &pixbuf);
+    Ok(())
+}
+
 pub fn on_count(app: &mut App, updated: &mut Updated, count: Option<usize>) -> EventResult {
     app.counter.set(count);
     updated.label = true;
@@ -757,9 +764,11 @@ pub fn on_push_archive(app: &mut App, path: &PathBuf, meta: Option<Meta>, force:
     Ok(())
 }
 
-pub fn on_push_clipboard(app: &mut App, selection: ClipboardSelection, meta: Option<Meta>) -> EventResult {
-    let op = clipboard::get_operation(&selection, meta)?;
-    app.operate(op);
+pub fn on_push_clipboard(app: &mut App, selection: ClipboardSelection, meta: Option<Meta>, force: bool) -> EventResult {
+    let ops = clipboard::get_operations(&selection, meta, force)?;
+    for op in ops {
+        app.tx.send(op).unwrap();
+    }
     Ok(())
 }
 

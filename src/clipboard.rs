@@ -15,8 +15,7 @@ use operation::{Operation, ClipboardSelection};
 
 
 pub fn get_operations(selection: &ClipboardSelection, meta: Option<Meta>, force: bool) -> Result<Vec<Operation>, Box<Error>> {
-    let selection = from_selection(selection);
-    let cb = Clipboard::get(&selection);
+    let cb = from_selection(selection);
 
     if let Some(pixbuf) = cb.wait_for_image() {
         let buffer = from_pixbuf(&pixbuf)?;
@@ -38,8 +37,7 @@ pub fn get_operations(selection: &ClipboardSelection, meta: Option<Meta>, force:
 }
 
 pub fn store(selection: &ClipboardSelection, pixbuf: &Pixbuf) {
-    let selection = from_selection(selection);
-    let cb = Clipboard::get(&selection);
+    let cb = from_selection(selection);
     cb.set_image(pixbuf);
 }
 
@@ -54,7 +52,7 @@ fn from_pixbuf(pixbuf: &Pixbuf) -> Result<Vec<u8>, Box<Error>> {
     Ok(vec)
 }
 
-fn from_selection(selection: &ClipboardSelection) -> Atom {
+fn from_selection(selection: &ClipboardSelection) -> Clipboard {
     use self::ClipboardSelection::*;
 
     let name = match *selection {
@@ -63,5 +61,5 @@ fn from_selection(selection: &ClipboardSelection) -> Atom {
         Clipboard => "CLIPBOARD",
     };
 
-    Atom::intern(name)
+    self::Clipboard::get(&Atom::intern(name))
 }

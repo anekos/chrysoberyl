@@ -203,9 +203,9 @@ pub enum OperationEntryAction {
 
 #[derive(Clone, Copy)]
 pub enum ClipboardSelection {
+    Clipboard,
     Primary,
     Secondary,
-    Clipboard,
 }
 
 impl FromStr for Operation {
@@ -402,6 +402,11 @@ impl From<ParsingError> for ChryError {
     }
 }
 
+impl Default for ClipboardSelection {
+    fn default() -> Self {
+        ClipboardSelection::Clipboard
+    }
+}
 
 impl EventName {
     pub fn operation_with_context(&self, context: HashMap<String, String>) -> Operation {

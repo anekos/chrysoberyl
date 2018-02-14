@@ -192,7 +192,7 @@ pub fn parse_controller(args: &[String]) -> Result<Operation, ParsingError> {
 }
 
 pub fn parse_copy_to_clipboard(args: &[String]) -> Result<Operation, ParsingError> {
-    let mut selection = ClipboardSelection::Clipboard;
+    let mut selection = ClipboardSelection::default();
 
     {
         let mut ap = ArgumentParser::new();
@@ -738,7 +738,7 @@ where T: Fn(String, Option<Meta>, bool) -> Operation {
 
 pub fn parse_push_clipboard(args: &[String]) -> Result<Operation, ParsingError> {
     let mut meta: Vec<MetaEntry> = vec![];
-    let mut selection = ClipboardSelection::Clipboard;
+    let mut selection = ClipboardSelection::default();
     let mut force = false;
 
     {

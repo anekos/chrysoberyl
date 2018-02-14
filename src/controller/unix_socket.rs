@@ -45,7 +45,7 @@ pub fn register_as_binary<T: AsRef<Path>>(tx: Sender<Operation>, path: T) -> Res
                 let mut stream = stream?;
                 let mut buffer = vec![];
                 stream.read_to_end(&mut buffer)?;
-                tx.send(Operation::PushMemory(buffer))?;
+                tx.send(Operation::PushMemory(buffer, None))?;
             }
         });
     });

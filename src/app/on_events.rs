@@ -15,6 +15,7 @@ use rand::distributions::{IndependentSample, Range as RandRange};
 
 use archive;
 use cherenkov::fill::Shape;
+use clipboard;
 use color::Color;
 use command_line;
 use config::DEFAULT_CONFIG;
@@ -32,7 +33,7 @@ use gui::Direction;
 use key::Key;
 use logger;
 use operation::option::{OptionName, OptionUpdater};
-use operation::{MappingTarget, MoveBy, Operation, OperationContext, OperationEntryAction, self, SortKey};
+use operation::{MappingTarget, MoveBy, Operation, OperationContext, OperationEntryAction, self, SortKey, ClipboardSelection};
 use option::user_switch::DummySwtich;
 use poppler::{PopplerDocument, self};
 use script;
@@ -756,6 +757,12 @@ pub fn on_push_archive(app: &mut App, path: &PathBuf, meta: Option<Meta>, force:
     Ok(())
 }
 
+pub fn on_push_clipboard(app: &mut App, selection: ClipboardSelection, meta: Option<Meta>) -> EventResult {
+    let op = clipboard::get_operation(&selection, meta)?;
+    app.operate(op);
+    Ok(())
+}
+
 pub fn on_push_directory(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) -> EventResult {
     let buffered = app.sorting_buffer.push_with_reserve(
         QueuedOperation::PushDirectory(file, meta, force));
@@ -768,9 +775,9 @@ pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: 
     push_buffered(app, updated, buffered)
 }
 
-pub fn on_push_memory(app: &mut App, updated: &mut Updated, buf: Vec<u8>) -> EventResult {
+pub fn on_push_memory(app: &mut App, updated: &mut Updated, buf: Vec<u8>, meta: Option<Meta>) -> EventResult {
     let buffered = app.sorting_buffer.push_with_reserve(
-        QueuedOperation::PushMemory(buf));
+        QueuedOperation::PushMemory(buf, meta));
     push_buffered(app, updated, buffered)
 }
 
@@ -1438,8 +1445,8 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
                 on_push_archive(app, &archive_path, meta, force, url)?,
             PushArchiveEntry(archive_path, entry, meta, force, url) =>
                 app.entries.push_archive_entry(&app_info, &archive_path, &entry, meta, force, url),
-            PushMemory(buf) =>
-                app.entries.push_memory(&app_info, buf, None, false, None)?,
+            PushMemory(buf, meta) =>
+                app.entries.push_memory(&app_info, buf, meta, false, None)?,
             PushPdf(pdf_path, meta, force, url) =>
                 on_push_pdf(app, updated, pdf_path, meta, force, url)?,
             PushPdfEntries(pdf_path, pages, meta, force, url) => {

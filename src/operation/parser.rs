@@ -721,6 +721,24 @@ where T: Fn(String, Option<Meta>, bool) -> Operation {
     })
 }
 
+pub fn parse_push_clipboard(args: &[String]) -> Result<Operation, ParsingError> {
+    let mut meta: Vec<MetaEntry> = vec![];
+    let mut selection = ClipboardSelection::Clipboard;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut meta).add_option(&["--meta", "-m"], Collect, "Meta data");
+        ap.refer(&mut selection)
+            .add_option(&["--clipboard", "-c"], StoreConst(ClipboardSelection::Clipboard), "Use `Clipboard`")
+            .add_option(&["--primary", "-1", "-p"], StoreConst(ClipboardSelection::Primary), "Use `Primary`")
+            .add_option(&["--secondary", "-2", "-s"], StoreConst(ClipboardSelection::Secondary), "Use `Secondary`");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        let meta = new_opt_meta(meta);
+        Operation::PushClipboard(selection, meta)
+    })
+}
+
 pub fn parse_push_image(args: &[String]) -> Result<Operation, ParsingError> {
     let mut meta: Vec<MetaEntry> = vec![];
     let mut paths = Vec::<String>::new();

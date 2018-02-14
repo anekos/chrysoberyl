@@ -270,12 +270,14 @@ impl App {
                     on_push(self, &mut updated, path.to_string(), meta, force),
                 PushArchive(file, meta, force) =>
                     on_push_archive(self, &file.expand(), meta, force, None),
+                PushClipboard(selection, meta) =>
+                    on_push_clipboard(self, selection, meta),
                 PushDirectory(file, meta, force) =>
                     on_push_directory(self, &mut updated, file.expand(), meta, force),
                 PushImage(file, meta, force, expand_level) =>
                     on_push_image(self, &mut updated, file.expand(), meta, force, expand_level, None),
-                PushMemory(buf) =>
-                    on_push_memory(self, &mut updated, buf),
+                PushMemory(buf, meta) =>
+                    on_push_memory(self, &mut updated, buf, meta),
                 PushPdf(file, meta, force) =>
                     on_push_pdf(self, &mut updated, file.expand(), meta, force, None),
                 PushSibling(next, meta, force, show) =>

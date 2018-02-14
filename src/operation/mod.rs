@@ -84,9 +84,10 @@ pub enum Operation {
     Pull,
     Push(Expandable, Option<Meta>, bool), /* path, meta, force */
     PushArchive(Expandable, Option<Meta>, bool), /* path, meta, force */
+    PushClipboard(ClipboardSelection, Option<Meta>),
     PushDirectory(Expandable, Option<Meta>, bool), /* path, meta, force */
     PushImage(Expandable, Option<Meta>, bool, Option<u8>), /* path, meta, force, expand-level */
-    PushMemory(Vec<u8>), /* memory */
+    PushMemory(Vec<u8>, Option<Meta>), /* memory */
     PushPdf(Expandable, Option<Meta>, bool),
     PushSibling(bool, Option<Meta>, bool, bool), /* next?, meta, force, show */
     PushURL(String, Option<Meta>, bool, Option<EntryType>),
@@ -164,7 +165,7 @@ pub enum QueuedOperation {
     PushArchiveEntry(PathBuf, ArchiveEntry, Option<Meta>, bool, Option<String>), /* path, archive-entry, meta, force, remote-url */
     PushDirectory(PathBuf, Option<Meta>, bool), /* path, meta, force */
     PushImage(PathBuf, Option<Meta>, bool, Option<u8>, Option<String>), /* path, meta, force, expand-level, remote-url */
-    PushMemory(Vec<u8>), /* memory */
+    PushMemory(Vec<u8>, Option<Meta>), /* memory */
     PushPdf(PathBuf, Option<Meta>, bool, Option<String>), /* path, meta, force, remote-url */
     PushPdfEntries(PathBuf, usize, Option<Meta>, bool, Option<String>), /* path, pages, meta, force, remote-url */
 }
@@ -199,6 +200,12 @@ pub enum OperationEntryAction {
     Close,
 }
 
+#[derive(Clone, Copy)]
+pub enum ClipboardSelection {
+    Primary,
+    Secondary,
+    Clipboard,
+}
 
 impl FromStr for Operation {
     type Err = ChryError;
@@ -272,6 +279,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@prev" | "@p" | "@previous"    => parse_move(whole, Previous),
             "@push"                         => parse_push(whole, |it, meta, force| Push(Expandable::new(it), meta, force)),
             "@push-archive"                 => parse_push(whole, |it, meta, force| PushArchive(Expandable::new(it), meta, force)),
+            "@push-clipboard"               => parse_push_clipboard(whole),
             "@push-directory" | "@push-dir" => parse_push(whole, |it, meta, force| PushDirectory(Expandable::new(it), meta, force)),
             "@push-image"                   => parse_push_image(whole),
             "@push-next"                    => parse_push_sibling(whole, true),
@@ -455,9 +463,10 @@ impl fmt::Debug for Operation {
             Pull => "Pull ",
             Push(_, _, _) => "Push",
             PushArchive(_, _, _) => "PushArchive",
+            PushClipboard(_, _) => "PushClipboard",
             PushDirectory(_, _, _) => "PushDirectory",
             PushImage(_, _, _, _) => "PushImage",
-            PushMemory(_) => "PushMemory",
+            PushMemory(_, _) => "PushMemory",
             PushPdf(_, _, _) => "PushPdf",
             PushSibling(_, _, _, _) => "PushSibling",
             PushURL(_, _, _, _) => "PushURL",

@@ -126,6 +126,10 @@ Create unix FIFO file to control chrysoberyl.
 
 Create unix socket file to control chrysoberyl.
 
+## @copy-to-clipboard [--meta <NAME>"="<VALUE>]... [--primary|-1|--secondary|-2|--clipboard]
+
+Copy currently viewing image to clipboard.
+
 
 ## @count
 
@@ -360,6 +364,11 @@ Add a entry.
 ## @push-archive [--meta <NAME>"="<VALUE>]... [--force|-f] <PATH>
 
 Add a archive file.
+
+
+## @push-clipboard [--meta <NAME>"="<VALUE>]... [--primary|-1|--secondary|-2|--clipboard]
+
+Add a clipboard image.
 
 
 ## (@push-directory|@push-dir) [--meta <NAME>"="<VALUE>]... [--force|-f] <DIRECTORY>

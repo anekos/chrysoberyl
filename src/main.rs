@@ -52,6 +52,7 @@ mod archive;
 mod cache;
 mod cherenkov;
 mod chrysoberyl;
+mod clipboard;
 mod color;
 mod command_line;
 mod config;

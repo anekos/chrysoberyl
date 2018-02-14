@@ -191,6 +191,21 @@ pub fn parse_controller(args: &[String]) -> Result<Operation, ParsingError> {
     }
 }
 
+pub fn parse_copy_to_clipboard(args: &[String]) -> Result<Operation, ParsingError> {
+    let mut selection = ClipboardSelection::default();
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut selection)
+            .add_option(&["--clipboard", "-c"], StoreConst(ClipboardSelection::Clipboard), "Use `Clipboard`")
+            .add_option(&["--primary", "-1", "-p"], StoreConst(ClipboardSelection::Primary), "Use `Primary`")
+            .add_option(&["--secondary", "-2", "-s"], StoreConst(ClipboardSelection::Secondary), "Use `Secondary`");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::CopyToClipboard(selection)
+    })
+}
+
 pub fn parse_count(args: &[String]) -> Result<Operation, ParsingError> {
     let mut count: Option<usize> = None;
 
@@ -718,6 +733,26 @@ where T: Fn(String, Option<Meta>, bool) -> Operation {
         let meta = new_opt_meta(meta);
         let ops = paths.into_iter().map(|it| op(it, meta.clone(), force)).collect();
         Operation::Multi(ops, false)
+    })
+}
+
+pub fn parse_push_clipboard(args: &[String]) -> Result<Operation, ParsingError> {
+    let mut meta: Vec<MetaEntry> = vec![];
+    let mut selection = ClipboardSelection::default();
+    let mut force = false;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut meta).add_option(&["--meta", "-m"], Collect, "Meta data");
+        ap.refer(&mut force).add_option(&["--force", "-f"], StoreTrue, "Meta data");
+        ap.refer(&mut selection)
+            .add_option(&["--clipboard", "-c"], StoreConst(ClipboardSelection::Clipboard), "Use `Clipboard`")
+            .add_option(&["--primary", "-1", "-p"], StoreConst(ClipboardSelection::Primary), "Use `Primary`")
+            .add_option(&["--secondary", "-2", "-s"], StoreConst(ClipboardSelection::Secondary), "Use `Secondary`");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        let meta = new_opt_meta(meta);
+        Operation::PushClipboard(selection, meta, force)
     })
 }
 

@@ -103,7 +103,7 @@
 
 # mark
 @map input M            @query --caption 'Mark to'  @mark $CHRY_QUERY
-@map input m            @query --caption 'Go to'    @jump --load $CHRY_QUERY
+@map input m            @query --caption 'Go to'    ; @message ; @jump --load $CHRY_QUERY
 
 # Clipboard
 @map input C-c          ; @copy-to-clipboard ; @message Copied

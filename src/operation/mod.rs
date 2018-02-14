@@ -71,7 +71,7 @@ pub enum Operation {
     Map(MappingTarget, Option<usize>, Vec<String>), /* target, remain, operation */
     Mark(Expandable, Option<(String, usize, Option<EntryType>)>),
     Meow,
-    Message(Option<String>),
+    Message(Option<String>, bool),
     MoveAgain(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Multi(VecDeque<Operation>, bool), /* operations, async */
     Next(Option<usize>, bool, MoveBy, bool),
@@ -458,7 +458,7 @@ impl fmt::Debug for Operation {
             Map(_, _, _) => "Map",
             Mark(_, _) => "Mark",
             Meow => "Meow",
-            Message(_) => "Message",
+            Message(_, _) => "Message",
             MoveAgain(_, _, _, _) => "MoveAgain",
             Multi(_, _) => "Multi",
             Next(_, _, _, _) => "Next",

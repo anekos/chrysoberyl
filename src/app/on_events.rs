@@ -220,7 +220,7 @@ pub fn on_error(app: &mut App, updated: &mut Updated, error: String) -> EventRes
     }
 
     env::set_var(constant::env_name("ERROR"), &error);
-    app.update_message(Some(error));
+    app.update_message(Some(error), false);
     updated.message = true;
     app.fire_event(&EventName::Error);
     Ok(())
@@ -321,7 +321,7 @@ pub fn on_filter(app: &mut App, updated: &mut Updated, dynamic: bool, expr: Opti
     updated.image = true;
     updated.message = true;
 
-    app.update_message(Some(o!("Done")));
+    app.update_message(Some(o!("Done")), false);
     Ok(())
 }
 
@@ -474,8 +474,6 @@ pub fn on_jump(app: &mut App, updated: &mut Updated, name: &Expandable, load: bo
         if app.paginator.update_index(Index(index)) {
             updated.pointer = true;
         }
-        app.update_message(None);
-        updated.label = true;
         return Ok(());
     } else if !load {
       return Err(ChryError::Fixed("Entry not found"))?
@@ -570,7 +568,7 @@ pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, opera
 
 pub fn on_mark(app: &mut App, updated: &mut Updated, name: &Expandable, key: Option<(String, usize, Option<EntryType>)>) -> EventResult {
     let name = name.to_string();
-    app.update_message(Some(format!("Marked with {}", name)));
+    app.update_message(Some(format!("Marked with {}", name)), false);
     if let Some((path, index, entry_type)) = key {
         let entry_type = entry_type.or_else(|| {
             app.entries.search(&SearchKey { path: path.clone(), index: Some(index) }).and_then(|index| {
@@ -593,9 +591,8 @@ pub fn on_meow(app: &mut App, updated: &mut Updated) -> EventResult {
     Ok(())
 }
 
-pub fn on_message(app: &mut App, updated: &mut Updated, message: Option<String>) -> EventResult {
-    app.update_message(message);
-    updated.message = true;
+pub fn on_message(app: &mut App, updated: &mut Updated, message: Option<String>, keep: bool) -> EventResult {
+    updated.message = app.update_message(message, keep);
     Ok(())
 }
 
@@ -869,7 +866,7 @@ pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Opti
 pub fn on_query(app: &mut App, updated: &mut Updated, operation: Vec<String>, caption: Option<String>) -> EventResult {
     app.query_operation = Some(operation);
     if caption.is_some() {
-        app.update_message(caption);
+        app.update_message(caption, false);
         updated.label = true;
     }
     Ok(())
@@ -942,7 +939,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
 
     if let Some(text) = text {
         if text.trim() == "" {
-            app.update_message(None);
+            app.update_message(None, false);
             updated.message = true;
             return Ok(());
         }
@@ -962,7 +959,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
 
     updated.message = true;
 
-    if_let_some!(text = app.search_text.clone(), ok!(app.update_message(Some(o!("Empty")))));
+    if_let_some!(text = app.search_text.clone(), ok!(app.update_message(Some(o!("Empty")), false)));
 
     let seq: Vec<(usize, Rc<Entry>)> = if backward {
         let skip = app.paginator.current_index().map(|index| app.entries.len() - index - 1).unwrap_or(0);
@@ -1020,7 +1017,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
             if new_found_on.is_none() {
                 updated.pointer = app.paginator.update_index(Index(index));
                 updated.image = true;
-                app.update_message(Some(o!("Found!")));
+                app.update_message(Some(o!("Found!")), false);
                 let left = index / cells * cells;
                 new_found_on = Some(left .. left + cells - 1);
             }
@@ -1028,7 +1025,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
     }
 
     if new_found_on.is_none() {
-        app.update_message(Some(o!("Not found!")));
+        app.update_message(Some(o!("Not found!")), false);
     } else {
         updated.target_regions = Some(first_regions);
     }
@@ -1404,7 +1401,7 @@ pub fn on_window_resized(app: &mut App, updated: &mut Updated) -> EventResult {
 
 pub fn on_with_message(app: &mut App, updated: &mut Updated, message: Option<String>, op: Operation) -> EventResult {
     updated.message = true;
-    app.update_message(message);
+    app.update_message(message, false);
     app.tx.send(Operation::UpdateUI)?;
     app.tx.send(op)?;
     Ok(())

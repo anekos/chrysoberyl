@@ -301,6 +301,13 @@ When `EVENT_NAME` is fired, execute `OPERATION`
 
 ## @map region <MOUSE_BUTTON> <OPERATION>
 
+
+## @message [--keep|-k] [<MESSAGE>]
+
+If `<MESSAGE>` is not given, remove message.
+If `--keep` is given, keep current message.
+
+
 ## @meow
 
 Meow

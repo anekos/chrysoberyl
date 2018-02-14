@@ -67,6 +67,7 @@ pub struct App {
     error_loop_detector: error_loop_detector::Detector,
     fetcher: ImageFetcher,
     found_on: Option<Range<usize>>,
+    last_message: Option<String>,
     pre_fetch_serial: u64,
     remote_cache: RemoteCache,
     rng: ThreadRng,
@@ -117,6 +118,7 @@ impl App {
             fetcher: ImageFetcher::new(cache),
             found_on: None,
             gui: Gui::new(&initial.window_role),
+            last_message: None,
             mapping: Mapping::new(),
             marker: HashMap::new(),
             paginator: Paginator::new(),
@@ -244,8 +246,8 @@ impl App {
                     on_mark(self, &mut updated, &name, key),
                 Meow =>
                     on_meow(self, &mut updated),
-                Message(message) =>
-                    on_message(self, &mut updated, message),
+                Message(message, keep) =>
+                    on_message(self, &mut updated, message, keep),
                 MoveAgain(count, ignore_views, move_by, wrap) =>
                     on_move_again(self, &mut updated, &mut to_end, count, ignore_views, move_by, wrap),
                 Multi(ops, async) =>
@@ -379,7 +381,7 @@ impl App {
         if updated.pointer {
             self.send_lazy_draw(None, to_end);
             if !updated.message {
-                self.update_message(None);
+                self.update_message(None, false);
             }
             if self.paginator.at_last() {
                 self.fire_event(&EventName::AtLast);
@@ -624,18 +626,25 @@ impl App {
         self.current_env_keys = new_keys;
     }
 
-    fn update_message(&self, message: Option<String>) {
+    /* Returns true if message is updated */
+    fn update_message(&mut self, message: Option<String>, keep: bool) -> bool {
         if !self.states.spawned {
-            return;
+            return false;
+        }
+
+        if keep && self.last_message.is_some() {
+            return false;
         }
 
         let name = constant::env_name("MESSAGE");
-
-        if let Some(message) = message {
+        if let Some(ref message) = message {
             env::set_var(name, message);
         } else {
             env::remove_var(name);
         }
+
+        self.last_message = message;
+        true
     }
 
     fn on_image_updated(&mut self, image_size: Option<Size>) {

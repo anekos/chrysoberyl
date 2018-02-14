@@ -566,12 +566,15 @@ pub fn parse_mark(args: &[String]) -> Result<Operation, ParsingError> {
 
 pub fn parse_message(args: &[String]) -> Result<Operation, ParsingError> {
     let mut message = None;
+    let mut keep = false;
+
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut message).add_argument("message", StoreOption, "Message");
+        ap.refer(&mut keep).add_option(&["--keep", "-k"], StoreTrue, "Keep current message (No overwrite)");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Message(message)
+        Operation::Message(message, keep)
     })
 }
 

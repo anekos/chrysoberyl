@@ -52,6 +52,7 @@ pub enum Operation {
     Draw,
     Editor(Option<Expandable>, Vec<Expandable>, Vec<Session>),
     Error(String),
+    Eval(Vec<String>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     FileChanged(PathBuf),
     Fill(Shape, Option<Region>, Color, bool, usize), /* region, mask, cell index */
@@ -61,7 +62,7 @@ pub enum Operation {
     Go(entry::SearchKey),
     Input(mapping::Input),
     InitialProcess(Vec<command_line::Entry>, bool, bool), /* command_lin::entries, shuffle, stdin_as_binary */
-    Jump(Expandable, bool), /* marker name, load */
+    Jump(String, bool), /* marker name, load */
     KillTimer(String),
     Last(Option<usize>, bool, MoveBy, bool),
     LazyDraw(u64, bool), /* serial, to_end */
@@ -69,7 +70,7 @@ pub enum Operation {
     LoadDefault,
     MakeVisibles(Vec<Option<Region>>),
     Map(MappingTarget, Option<usize>, Vec<String>), /* target, remain, operation */
-    Mark(Expandable, Option<(String, usize, Option<EntryType>)>),
+    Mark(String, Option<(String, usize, Option<EntryType>)>),
     Meow,
     Message(Option<String>, bool),
     MoveAgain(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
@@ -111,7 +112,7 @@ pub enum Operation {
     Unclip,
     Undo(Option<usize>),
     Unmap(MappingTarget),
-    Unmark(Option<Expandable>), /* all or given */
+    Unmark(Option<String>), /* all or given */
     Update(Updated),
     UpdateOption(OptionName, OptionUpdater),
     UpdateUI,
@@ -255,6 +256,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@editor"                       => parse_editor(whole),
             "@enable"                       => parse_option_1(whole, OptionUpdater::Enable),
             "@entry"                        => parse_operation_entry(whole),
+            "@eval"                         => Ok(Operation::Eval(whole[1..].to_vec())),
             "@expand"                       => parse_expand(whole),
             "@file"                         => parse_file(whole),
             "@fill"                         => parse_fill(whole),
@@ -439,6 +441,7 @@ impl fmt::Debug for Operation {
             Draw => "Draw ",
             Editor(_, _, _) => "Editor",
             Error(ref error) => return write!(f, "Error({:?})", error),
+            Eval(_) => "Eval",
             Expand(_, _) => "Expand",
             First(_, _, _, _) => "First",
             FileChanged(_) => "FileChanged",

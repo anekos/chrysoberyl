@@ -102,8 +102,8 @@
 @map input C-e          @shell --operation --search-path script/export.sh
 
 # mark
-@map input M            @query --caption 'Mark to'  @mark $CHRY_QUERY
-@map input m            @query --caption 'Go to'    ; @message ; @jump --load $CHRY_QUERY
+@map input M            @query --caption 'Mark to'  @eval @mark $CHRY_QUERY
+@map input m            @query --caption 'Go to'    ; @message ; @eval @jump --load $CHRY_QUERY
 
 # Clipboard
 @map input C-c          ; @copy-to-clipboard ; @message Copied

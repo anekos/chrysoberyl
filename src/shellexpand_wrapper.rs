@@ -6,6 +6,10 @@ use shellexpand;
 
 
 
+pub fn expand_env(s: &str) -> String {
+    shellexpand::env_with_context_no_errors(&s, context).into_owned()
+}
+
 pub fn expand(s: &str) -> String {
     shellexpand::full_with_context_no_errors(&s, home_dir, context).into_owned()
 }

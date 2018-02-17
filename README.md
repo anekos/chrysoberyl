@@ -204,6 +204,18 @@ Enable `OPTION_NAME`.
 `@enable reverse` equals `@set reverse true`.
 
 
+## @eval <OPERATION>...
+
+Expand ENV variables in `<OPERATION>...`.
+
+e.g)
+
+```
+@query @eval @mark $CHRY_QUERY
+@query @eval @jump --load $CHRY_QUERY
+```
+
+
 ## @expand [--recursive|-r|--rec] [<PATH>]
 
 Add directory entries (image) on `PATH`.

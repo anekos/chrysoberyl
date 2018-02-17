@@ -414,7 +414,7 @@ pub fn parse_input(args: &[String]) -> Result<Operation, ParsingError> {
 }
 
 pub fn parse_jump(args: &[String]) -> Result<Operation, ParsingError> {
-    let mut name = Expandable::default();
+    let mut name = o!("");
     let mut load = false;
 
     {
@@ -544,7 +544,7 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingEr
 }
 
 pub fn parse_mark(args: &[String]) -> Result<Operation, ParsingError> {
-    let mut name = Expandable::default();
+    let mut name = o!("");
     let mut path = None;
     let mut index: Option<usize> = None;
     let mut entry_type = None;

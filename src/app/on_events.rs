@@ -40,6 +40,7 @@ use script;
 use session::{Session, write_sessions};
 use shell;
 use shell_filter;
+use shellexpand_wrapper as sh;
 use state;
 use util::num::range_contains;
 use util::path::{path_to_str, path_to_string};
@@ -223,6 +224,13 @@ pub fn on_error(app: &mut App, updated: &mut Updated, error: String) -> EventRes
     app.update_message(Some(error), false);
     updated.message = true;
     app.fire_event(&EventName::Error);
+    Ok(())
+}
+
+pub fn on_eval(app: &mut App, op: &[String]) -> EventResult {
+    let op: Vec<String> = op.iter().map(|it| sh::expand_env(it)).collect();
+    let op = Operation::parse_from_vec(&op)?;
+    app.operate(op);
     Ok(())
 }
 
@@ -464,11 +472,10 @@ pub fn on_input(app: &mut App, input: &Input) -> EventResult {
     Ok(())
 }
 
-pub fn on_jump(app: &mut App, updated: &mut Updated, name: &Expandable, load: bool) -> EventResult {
+pub fn on_jump(app: &mut App, updated: &mut Updated, name: &str, load: bool) -> EventResult {
     use self::EntryType::*;
 
-    let name = name.to_string();
-    let key = app.marker.get(&name).ok_or(ChryError::Fixed("Mark not found"))?;
+    let key = app.marker.get(name).ok_or(ChryError::Fixed("Mark not found"))?;
 
     if let Some(index) = app.entries.search(&SearchKey::from_key(key)) {
         if app.paginator.update_index(Index(index)) {
@@ -566,8 +573,7 @@ pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, opera
     Ok(())
 }
 
-pub fn on_mark(app: &mut App, updated: &mut Updated, name: &Expandable, key: Option<(String, usize, Option<EntryType>)>) -> EventResult {
-    let name = name.to_string();
+pub fn on_mark(app: &mut App, updated: &mut Updated, name: String, key: Option<(String, usize, Option<EntryType>)>) -> EventResult {
     app.update_message(Some(format!("Marked with {}", name)), false);
     if let Some((path, index, entry_type)) = key {
         let entry_type = entry_type.or_else(|| {
@@ -1215,10 +1221,9 @@ pub fn on_unmap(app: &mut App, target: &MappingTarget) -> EventResult {
     Ok(())
 }
 
-pub fn on_unmark(app: &mut App, target: &Option<Expandable>) -> EventResult {
+pub fn on_unmark(app: &mut App, target: &Option<String>) -> EventResult {
     match *target {
         Some(ref target) => {
-            let target = &target.to_string();
             if app.marker.remove(target).is_none() {
                return Err(ChryError::Fixed("Mark not found"))?
             }

@@ -208,6 +208,8 @@ impl App {
                    on_editor(self, editor_command.clone(), files, sessions),
                 Error(error) =>
                     on_error(self, &mut updated, error),
+                Eval(ref op) =>
+                    on_eval(self, op),
                 Expand(recursive, ref base) =>
                     on_expand(self, &mut updated, recursive, base.clone()),
                 FileChanged(ref path) =>
@@ -243,7 +245,7 @@ impl App {
                 Map(target, remain, mapped_operation) =>
                     on_map(self, target, remain, mapped_operation),
                 Mark(name, key) =>
-                    on_mark(self, &mut updated, &name, key),
+                    on_mark(self, &mut updated, name, key),
                 Meow =>
                     on_meow(self, &mut updated),
                 Message(message, keep) =>

@@ -274,8 +274,8 @@ impl App {
                     on_push(self, &mut updated, path.to_string(), meta, force),
                 PushArchive(file, meta, force) =>
                     on_push_archive(self, &file.expand(), meta, force, None),
-                PushClipboard(selection, meta, force) =>
-                    on_push_clipboard(self, selection, meta, force),
+                PushClipboard(selection, as_operation, meta, force) =>
+                    on_push_clipboard(self, selection, as_operation, meta, force),
                 PushDirectory(file, meta, force) =>
                     on_push_directory(self, &mut updated, file.expand(), meta, force),
                 PushImage(file, meta, force, expand_level) =>

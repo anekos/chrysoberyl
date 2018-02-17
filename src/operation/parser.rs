@@ -741,12 +741,16 @@ where T: Fn(String, Option<Meta>, bool) -> Operation {
 
 pub fn parse_push_clipboard(args: &[String]) -> Result<Operation, ParsingError> {
     let mut meta: Vec<MetaEntry> = vec![];
+    let mut as_operation = false;
     let mut selection = ClipboardSelection::default();
     let mut force = false;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut meta).add_option(&["--meta", "-m"], Collect, "Meta data");
+        ap.refer(&mut as_operation)
+            .add_option(&["--operation", "-o"], StoreTrue, "As operation")
+            .add_option(&["--no-operation", "-O"], StoreTrue, "As path");
         ap.refer(&mut force).add_option(&["--force", "-f"], StoreTrue, "Meta data");
         ap.refer(&mut selection)
             .add_option(&["--clipboard", "-c"], StoreConst(ClipboardSelection::Clipboard), "Use `Clipboard`")
@@ -755,7 +759,7 @@ pub fn parse_push_clipboard(args: &[String]) -> Result<Operation, ParsingError> 
         parse_args(&mut ap, args)
     } .map(|_| {
         let meta = new_opt_meta(meta);
-        Operation::PushClipboard(selection, meta, force)
+        Operation::PushClipboard(selection, as_operation, meta, force)
     })
 }
 

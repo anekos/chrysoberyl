@@ -373,7 +373,7 @@ Add a entry.
 Add a archive file.
 
 
-## @push-clipboard [--meta <NAME>"="<VALUE>]... [--primary|-1|--secondary|-2|--clipboard]
+## @push-clipboard [--meta <NAME>"="<VALUE>]... [--operation|-o] [--primary|-1|--secondary|-2|--clipboard]
 
 Add a clipboard image.
 

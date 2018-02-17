@@ -761,8 +761,8 @@ pub fn on_push_archive(app: &mut App, path: &PathBuf, meta: Option<Meta>, force:
     Ok(())
 }
 
-pub fn on_push_clipboard(app: &mut App, selection: ClipboardSelection, meta: Option<Meta>, force: bool) -> EventResult {
-    let ops = clipboard::get_operations(&selection, meta, force)?;
+pub fn on_push_clipboard(app: &mut App, selection: ClipboardSelection, as_operation: bool, meta: Option<Meta>, force: bool) -> EventResult {
+    let ops = clipboard::get_operations(&selection, as_operation, meta, force)?;
     for op in ops {
         app.tx.send(op).unwrap();
     }

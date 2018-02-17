@@ -14,7 +14,7 @@ use operation::{Operation, ClipboardSelection};
 
 
 
-pub fn get_operations(selection: &ClipboardSelection, meta: Option<Meta>, force: bool) -> Result<Vec<Operation>, Box<Error>> {
+pub fn get_operations(selection: &ClipboardSelection, as_operation: bool, meta: Option<Meta>, force: bool) -> Result<Vec<Operation>, Box<Error>> {
     let cb = from_selection(selection);
 
     if let Some(pixbuf) = cb.wait_for_image() {
@@ -30,7 +30,15 @@ pub fn get_operations(selection: &ClipboardSelection, meta: Option<Meta>, force:
     }
 
     if let Some(text) = cb.wait_for_text() {
-        return Ok(text.lines().into_iter().map(|line| Operation::Push(Expandable::expanded(o!(line)), meta.clone(), force)).collect())
+        return Ok(text.lines().into_iter().flat_map(|line| {
+            if as_operation {
+                Operation::parse_fuzziness(line).map_err(|err| {
+                    puts_error!(err, "operation" => o!(line), "at" => "clipboard/get_operations");
+                })
+            } else {
+                Ok(Operation::Push(Expandable::expanded(o!(line)), meta.clone(), force))
+            }
+        }).collect());
     }
 
     Err(ChryError::Fixed("Invalid clipboard"))?

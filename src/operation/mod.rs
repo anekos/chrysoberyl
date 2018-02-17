@@ -85,7 +85,7 @@ pub enum Operation {
     Pull,
     Push(Expandable, Option<Meta>, bool), /* path, meta, force */
     PushArchive(Expandable, Option<Meta>, bool), /* path, meta, force */
-    PushClipboard(ClipboardSelection, Option<Meta>, bool),
+    PushClipboard(ClipboardSelection, bool, Option<Meta>, bool), /* selection, as_operation, meta, force */
     PushDirectory(Expandable, Option<Meta>, bool), /* path, meta, force */
     PushImage(Expandable, Option<Meta>, bool, Option<u8>), /* path, meta, force, expand-level */
     PushMemory(Vec<u8>, Option<Meta>), /* memory */
@@ -472,7 +472,7 @@ impl fmt::Debug for Operation {
             Pull => "Pull ",
             Push(_, _, _) => "Push",
             PushArchive(_, _, _) => "PushArchive",
-            PushClipboard(_, _, _) => "PushClipboard",
+            PushClipboard(_, _, _, _) => "PushClipboard",
             PushDirectory(_, _, _) => "PushDirectory",
             PushImage(_, _, _, _) => "PushImage",
             PushMemory(_, _) => "PushMemory",

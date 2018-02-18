@@ -67,12 +67,12 @@ impl EntryInfo {
                 name: name,
                 archive_page: archive_page as i64,
             },
-            lazy_info: Lazy::default()
+            lazy_info: Lazy::new()
         }
 
     }
 
-    pub fn lazy(&mut self, content: &EntryContent) -> &LazyEntryInfo {
+    pub fn lazy(&self, content: &EntryContent) -> &LazyEntryInfo {
         self.lazy_info.get(|| LazyEntryInfo::new(content))
     }
 }

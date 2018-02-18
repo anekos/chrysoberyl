@@ -67,7 +67,7 @@ impl EntryInfo {
                 name: name,
                 archive_page: archive_page as i64,
             },
-            lazy_info: Lazy::default()
+            lazy_info: Lazy::new()
         }
 
     }

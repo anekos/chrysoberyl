@@ -1,27 +1,40 @@
 
+use std::cell::RefCell;
+
+
+
 #[derive(Clone)]
 pub struct Lazy<T> {
-    item: Option<T>,
+    inner: RefCell<Inner<T>>,
+}
+
+#[derive(Clone)]
+enum Inner<T> {
+    Initial,
+    Evaludated(T),
 }
 
 
 impl<T> Lazy<T> {
-    pub fn get<F>(&mut self, generate: F) -> &T
-    where F: FnOnce() -> T {
-        if self.item.is_none() {
-            self.item = Some(generate());
-        }
-        if let Some(ref item) = self.item {
-            item
-        } else {
-            panic!("WTF: item is empty")
+    pub fn new() -> Self {
+        Lazy { inner: RefCell::new(Inner::Initial) }
+    }
+
+    pub fn get<F>(&self, ctor: F) -> &T where F: FnOnce() -> T {
+        self.evaluate(ctor);
+        let inner = unsafe { self.inner.as_ptr().as_ref().unwrap() };
+        match *inner {
+            Inner::Evaludated(ref v) => v,
+            _ => panic!("WTF"),
         }
     }
-}
 
+    pub fn evaluate<F>(&self, ctor: F) where F: FnOnce() -> T {
+        if let Inner::Evaludated(_) = *self.inner.borrow() {
+            return;
+        }
 
-impl<T> Default for Lazy<T> {
-    fn default() -> Self {
-        Lazy { item: None }
+        let mut inner = self.inner.borrow_mut();
+        *inner = Inner::Evaludated((ctor)());
     }
 }

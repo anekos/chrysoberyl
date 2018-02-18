@@ -220,7 +220,8 @@ impl EntryContainer {
     }
 
     pub fn validate_nth(&mut self, index: usize, expr: FilterExpr, app_info: &AppInfo) -> Option<bool> {
-        self.entries.validate_nth(index, app_info, Box::new(move |ref mut entry, app_info| expr.evaluate(entry, app_info)))
+        let pred: FilterPred = Box::new(move |entry, app_info| expr.evaluate(entry, app_info));
+        self.entries.validate_nth(index, app_info, &pred)
     }
 
     pub fn expand(&mut self, app_info: &AppInfo, center: Option<(PathBuf, usize, Entry)>, dir: Option<PathBuf>, n: u8, recursive: u8) -> bool {
@@ -285,7 +286,7 @@ impl EntryContainer {
         self.entries.sort(app_info)
     }
 
-    pub fn sort_by(&mut self, app_info: &AppInfo, compare: &mut Compare<Entry>) -> Option<usize> {
+    pub fn sort_by(&mut self, app_info: &AppInfo, compare: &Compare<Entry>) -> Option<usize> {
         self.entries.sort_by(app_info, compare)
     }
 
@@ -401,7 +402,7 @@ impl EntryContainer {
         let entry = Rc::new(entry);
 
         if force || !self.is_duplicated(&entry) {
-            self.entries.push(app_info, entry);
+            self.entries.push(app_info, &entry);
         }
     }
 

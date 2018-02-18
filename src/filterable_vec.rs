@@ -10,8 +10,8 @@ use rand::{thread_rng, Rng, ThreadRng};
 
 
 
-pub type Pred<T, U> = Box<FnMut(&mut T, &U) -> bool>;
-pub type Compare<T> = Box<FnMut(&mut T, &mut T) -> Ordering>;
+pub type Pred<T, U> = Box<Fn(&T, &U) -> bool>;
+pub type Compare<T> = Box<Fn(&T, &T) -> Ordering>;
 
 pub struct FilterableVec<T: Clone + Hash + Eq + Sized, U> {
     original: Vec<Rc<T>>,
@@ -61,10 +61,8 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
         self.filtered.get(index)
     }
 
-    pub fn validate_nth(&mut self, index: usize, info: &U, mut pred: Pred<T, U>) -> Option<bool> {
-        self.filtered.get_mut(index).map(|mut it| {
-            (*pred)(Rc::make_mut(&mut it), info)
-        })
+    pub fn validate_nth(&mut self, index: usize, info: &U, pred: &Pred<T, U>) -> Option<bool> {
+        self.filtered.get(index).map(|it| (*pred)(it, info))
     }
 
     pub fn split_at(&self, index: usize) -> (&[Rc<T>], &[Rc<T>]) {
@@ -87,7 +85,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
         self.filter(info, None)
     }
 
-    pub fn sort_by(&mut self, info: &U, compare: &mut Compare<T>) -> Option<usize> {
+    pub fn sort_by(&mut self, info: &U, compare: &Compare<T>) -> Option<usize> {
         {
             let len = self.original.len();
             let xs: &mut [Rc<T>] = self.original.as_mut_slice();
@@ -111,11 +109,11 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
         let len = self.original.len();
 
         let entries =
-            if let Some(ref mut static_pred) = self.static_pred {
+            if let Some(ref static_pred) = self.static_pred {
                 let entries = entries.to_vec();
                 let mut targets = vec![];
-                for mut entry in &mut entries.into_iter() {
-                    if (static_pred)(Rc::make_mut(&mut entry), info) {
+                for entry in entries {
+                    if static_pred(&entry, info) {
                         targets.push(Rc::clone(&entry));
                     }
                 }
@@ -126,12 +124,12 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
 
         self.original.extend_from_slice(&*entries);
 
-        let targets = if let Some(ref mut dynamic_pred) = self.dynamic_pred {
+        let targets = if let Some(ref dynamic_pred) = self.dynamic_pred {
             let mut targets = vec![];
-            for (index, mut entry) in &mut entries.into_iter().enumerate() {
-                if (dynamic_pred)(Rc::make_mut(&mut entry), info) {
-                    self.original_indices.insert(Rc::clone(&entry), len + index);
-                    targets.push(Rc::clone(&entry));
+            for (index, entry) in entries.iter().enumerate() {
+                if dynamic_pred(entry, info) {
+                    self.original_indices.insert(Rc::clone(entry), len + index);
+                    targets.push(Rc::clone(entry));
                 }
             }
             targets
@@ -146,23 +144,23 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
         }
     }
 
-    pub fn push(&mut self, info: &U, mut entry: Rc<T>) {
-        if let Some(ref mut static_pred) = self.static_pred {
-            if !(static_pred)(Rc::make_mut(&mut entry), info) {
+    pub fn push(&mut self, info: &U, entry: &Rc<T>) {
+        if let Some(ref static_pred) = self.static_pred {
+            if !static_pred(&*entry, info) {
                 return;
             }
         };
 
-        self.original_indices.insert(Rc::clone(&entry), self.original.len());
-        self.original.push(Rc::clone(&entry));
+        self.original_indices.insert(Rc::clone(entry), self.original.len());
+        self.original.push(Rc::clone(entry));
 
-        if let Some(ref mut dynamic_pred) = self.dynamic_pred {
-            if !(dynamic_pred)(Rc::make_mut(&mut entry), info) {
+        if let Some(ref dynamic_pred) = self.dynamic_pred {
+            if !(dynamic_pred)(&*entry, info) {
                 return;
             }
         };
 
-        self.push_filtered(Rc::clone(&entry));
+        self.push_filtered(Rc::clone(entry));
     }
 
     pub fn update_filter(&mut self, info: &U, dynamic: bool, index_before_filter: Option<usize>, pred: Option<Pred<T, U>>) -> Option<usize> {
@@ -186,7 +184,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
         if let Some(ref mut static_pred) = self.static_pred {
             let mut new_originals = vec![];
             for mut entry in &mut self.original.iter_mut() {
-                if (static_pred)(Rc::make_mut(&mut entry), info) {
+                if (static_pred)(entry, info) {
                     new_originals.push(Rc::clone(entry));
                 }
             }
@@ -204,7 +202,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
         if let Some(ref mut dynamic_pred) = self.dynamic_pred {
             self.filtered = vec![];
             for (index, mut entry) in &mut self.original.iter_mut().enumerate() {
-                if (dynamic_pred)(Rc::make_mut(&mut entry), info) {
+                if dynamic_pred(entry, info) {
                      self.filtered.push(Rc::clone(entry));
 
                      if let Some(original_index_before) = original_index_before {
@@ -252,7 +250,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
 }
 
 
-fn partition<T: Clone>(xs: &mut [Rc<T>], left: usize, right: usize, compare: &mut Compare<T>) -> usize {
+fn partition<T: Clone>(xs: &mut [Rc<T>], left: usize, right: usize, compare: &Compare<T>) -> usize {
     let mut i = 0;
 
     {
@@ -261,7 +259,7 @@ fn partition<T: Clone>(xs: &mut [Rc<T>], left: usize, right: usize, compare: &mu
         for j in 0..(right - left - 1) {
             let less = {
                 let it: &mut Rc<T> = &mut rights[j];
-                (compare)(Rc::make_mut(it), Rc::make_mut(pivot)) == Ordering::Less
+                (compare)(it, pivot) == Ordering::Less
             };
             if less {
                 rights.swap(i, j);
@@ -276,7 +274,7 @@ fn partition<T: Clone>(xs: &mut [Rc<T>], left: usize, right: usize, compare: &mu
 }
 
 
-fn quicksort<T: Clone>(xs: &mut [Rc<T>], left: usize, right: usize, compare: &mut Compare<T>) {
+fn quicksort<T: Clone>(xs: &mut [Rc<T>], left: usize, right: usize, compare: &Compare<T>) {
   if right - left <= 1 {
     return;
   }

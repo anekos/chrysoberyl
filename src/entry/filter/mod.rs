@@ -16,18 +16,18 @@ use self::expression::*;
 
 struct Info<'a> {
     app: &'a AppInfo,
-    entry: &'a mut EntryInfo,
+    entry: &'a EntryInfo,
 }
 
 impl Expr {
-    pub fn evaluate(&self, entry: &mut Entry, app_info: &AppInfo) -> bool {
-        let mut info = Info { app: app_info, entry: &mut entry.info };
-        eval(&mut info, &entry.content, self)
+    pub fn evaluate(&self, entry: &Entry, app_info: &AppInfo) -> bool {
+        let info = Info { app: app_info, entry: &entry.info };
+        eval(&info, &entry.content, self)
     }
 }
 
 
-fn eval(info: &mut Info, content: &EntryContent, expr: &Expr) -> bool {
+fn eval(info: &Info, content: &EntryContent, expr: &Expr) -> bool {
     use self::Expr::*;
 
     match *expr {
@@ -44,7 +44,7 @@ fn eval(info: &mut Info, content: &EntryContent, expr: &Expr) -> bool {
     }
 }
 
-fn eval_if(info: &mut Info, content: &EntryContent, cond: &Expr, true_clause: &Expr, false_clause: &Expr) -> bool {
+fn eval_if(info: &Info, content: &EntryContent, cond: &Expr, true_clause: &Expr, false_clause: &Expr) -> bool {
     if eval(info, content, cond) {
         eval(info, content, true_clause)
     } else {
@@ -52,7 +52,7 @@ fn eval_if(info: &mut Info, content: &EntryContent, cond: &Expr, true_clause: &E
     }
 }
 
-fn eval_when(info: &mut Info, content: &EntryContent, reverse: bool, cond: &Expr, clause: &Expr) -> bool {
+fn eval_when(info: &Info, content: &EntryContent, reverse: bool, cond: &Expr, clause: &Expr) -> bool {
     if reverse ^ eval(info, content, cond) {
         eval(info, content, clause)
     } else {
@@ -60,7 +60,7 @@ fn eval_when(info: &mut Info, content: &EntryContent, reverse: bool, cond: &Expr
     }
 }
 
-fn eval_bool(info: &mut Info, content: &EntryContent, b: &EBool) -> bool {
+fn eval_bool(info: &Info, content: &EntryContent, b: &EBool) -> bool {
     use self::EBool::*;
     use self::ECompOp::*;
     use self::EICompOp::*;
@@ -107,7 +107,7 @@ fn eval_bool(info: &mut Info, content: &EntryContent, b: &EBool) -> bool {
     true
 }
 
-fn eval_logic(info: &mut Info, content: &EntryContent, l: &Expr, op: &ELogicOp, r: &Expr) -> bool {
+fn eval_logic(info: &Info, content: &EntryContent, l: &Expr, op: &ELogicOp, r: &Expr) -> bool {
     use self::ELogicOp::*;
 
     let l = eval(info, content, l);
@@ -119,7 +119,7 @@ fn eval_logic(info: &mut Info, content: &EntryContent, l: &Expr, op: &ELogicOp, 
     }
 }
 
-fn eval_value_as_i(info: &mut Info, content: &EntryContent, v: &EValue) -> Option<i64> {
+fn eval_value_as_i(info: &Info, content: &EntryContent, v: &EValue) -> Option<i64> {
     use self::EValue::*;
 
     match *v {
@@ -143,7 +143,7 @@ fn eval_value_as_g(v: &EValue) -> Option<Vec<GlobMatcher>> {
     }
 }
 
-fn eval_value_as_s(info: &mut Info, content: &EntryContent, v: &EValue) -> Option<String> {
+fn eval_value_as_s(info: &Info, content: &EntryContent, v: &EValue) -> Option<String> {
     use self::EValue::*;
 
     match *v {
@@ -154,7 +154,7 @@ fn eval_value_as_s(info: &mut Info, content: &EntryContent, v: &EValue) -> Optio
     }
 }
 
-fn eval_variable(info: &mut Info, content: &EntryContent, v: &EVariable) -> Option<i64> {
+fn eval_variable(info: &Info, content: &EntryContent, v: &EVariable) -> Option<i64> {
     use self::EVariable::*;
 
     match *v {
@@ -170,7 +170,7 @@ fn eval_variable(info: &mut Info, content: &EntryContent, v: &EVariable) -> Opti
     }
 }
 
-fn eval_variable_as_s(info: &mut Info, content: &EntryContent, v: &EVariable) -> Option<String> {
+fn eval_variable_as_s(info: &Info, content: &EntryContent, v: &EVariable) -> Option<String> {
     use self::EVariable::*;
 
     match *v {

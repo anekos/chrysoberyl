@@ -186,7 +186,7 @@ pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) -> Even
     let current_index = app.paginator.current_index();
     let app_info = app.app_info();
 
-    let after_index = app.entries.delete(&app_info, current_index, Box::new(move |ref mut entry, app_info| expr.evaluate(entry, app_info)));
+    let after_index = app.entries.delete(&app_info, current_index, Box::new(move |entry, app_info| expr.evaluate(entry, app_info)));
 
     if let Some(after_index) = after_index {
         app.paginator.update_index(Index(after_index));
@@ -1117,7 +1117,7 @@ pub fn on_sort(app: &mut App, updated: &mut Updated, fix_current: bool, sort_key
             it
         };
 
-        let mut compare: Compare<Entry> = match sort_key {
+        let compare: Compare<Entry> = match sort_key {
             Natural =>
                 Box::new(move |a, b| r(entry::compare_key(&a.key, &b.key))),
             FileSize =>
@@ -1135,7 +1135,7 @@ pub fn on_sort(app: &mut App, updated: &mut Updated, fix_current: bool, sort_key
             Width =>
                 Box::new(move |a, b| r(a.info.lazy(&a.content).dimensions.map(|it| it.height).cmp(&b.info.lazy(&b.content).dimensions.map(|it| it.height)))),
         };
-        app.entries.sort_by(&app_info, &mut compare);
+        app.entries.sort_by(&app_info, &compare);
     }
 
     if fix_current {

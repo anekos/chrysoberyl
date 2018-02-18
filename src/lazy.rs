@@ -35,6 +35,6 @@ impl<T> Lazy<T> {
         }
 
         let mut inner = self.inner.borrow_mut();
-        *inner = Inner::Evaludated((ctor)());
+        *inner = Inner::Evaludated(ctor());
     }
 }

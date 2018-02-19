@@ -17,7 +17,7 @@ use archive::ArchiveEntry;
 use entry::filter::expression::Expr as FilterExpr;
 use errors::ChryError;
 use file_extension::{is_valid_image_filename};
-use filterable_vec::{FilterableVec, Pred, Compare};
+use filterable_vec::{FilterableVec, Pred};
 use shorter::*;
 use util::path::path_to_str;
 
@@ -282,7 +282,7 @@ impl EntryContainer {
         self.entries.sort(app_info)
     }
 
-    pub fn sort_by(&mut self, app_info: &AppInfo, compare: &Compare<Entry>) -> Option<usize> {
+    pub fn sort_by<F>(&mut self, app_info: &AppInfo, compare: F) -> Option<usize> where F: Fn(&Entry, &Entry) -> Ordering {
         self.entries.sort_by(app_info, compare)
     }
 

@@ -11,7 +11,6 @@ use rand::{thread_rng, Rng, ThreadRng};
 
 
 pub type Pred<T, U> = Box<Fn(&T, &U) -> bool>;
-pub type Compare<T> = Box<Fn(&T, &T) -> Ordering>;
 
 pub struct FilterableVec<T: Hash + Eq + Sized, U> {
     original: Vec<Arc<T>>,
@@ -87,11 +86,11 @@ impl<T: Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
         self.filter(info, None)
     }
 
-    pub fn sort_by(&mut self, info: &U, compare: &Compare<T>) -> Option<usize> {
+    pub fn sort_by<F>(&mut self, info: &U, compare: F) -> Option<usize> where F: Fn(&T, &T) -> Ordering {
         {
             let len = self.original.len();
             let xs: &mut [Arc<T>] = self.original.as_mut_slice();
-            quicksort::<T>(xs, 0, len, compare);
+            quicksort::<T, F>(xs, 0, len, &compare);
         }
         self.filter(info, None)
     }
@@ -252,7 +251,7 @@ impl<T: Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
 }
 
 
-fn partition<T>(xs: &mut [Arc<T>], left: usize, right: usize, compare: &Compare<T>) -> usize {
+fn partition<T, F>(xs: &mut [Arc<T>], left: usize, right: usize, compare: &F) -> usize where F: Fn(&T, &T) -> Ordering {
     let mut i = 0;
 
     {
@@ -276,7 +275,7 @@ fn partition<T>(xs: &mut [Arc<T>], left: usize, right: usize, compare: &Compare<
 }
 
 
-fn quicksort<T>(xs: &mut [Arc<T>], left: usize, right: usize, compare: &Compare<T>) {
+fn quicksort<T, F>(xs: &mut [Arc<T>], left: usize, right: usize, compare: &F) where F: Fn(&T, &T) -> Ordering {
   if right - left <= 1 {
     return;
   }

@@ -1121,19 +1121,19 @@ pub fn on_sort(app: &mut App, updated: &mut Updated, fix_current: bool, sort_key
             Natural =>
                 Box::new(move |a, b| r(entry::compare_key(&a.key, &b.key))),
             FileSize =>
-                Box::new(move |a, b| { r(a.info.lazy(&a.content).file_size.cmp(&b.info.lazy(&b.content).file_size)) }),
+                Box::new(move |a, b| { r(a.info.lazy(&a.content, |it| it.file_size).cmp(&b.info.lazy(&b.content, |it| it.file_size))) }),
             Created =>
-                Box::new(move |a, b| r(a.info.lazy(&a.content).created.cmp(&b.info.lazy(&b.content).created))),
+                Box::new(move |a, b| r(a.info.lazy(&a.content, |it| it.created).cmp(&b.info.lazy(&b.content, |it| it.created)))),
             Accessed =>
-                Box::new(move |a, b| r(a.info.lazy(&a.content).accessed.cmp(&b.info.lazy(&b.content).accessed))),
+                Box::new(move |a, b| r(a.info.lazy(&a.content, |it| it.accessed).cmp(&b.info.lazy(&b.content, |it| it.accessed)))),
             Modified =>
-                Box::new(move |a, b| r(a.info.lazy(&a.content).modified.cmp(&b.info.lazy(&b.content).modified))),
+                Box::new(move |a, b| r(a.info.lazy(&a.content, |it| it.modified).cmp(&b.info.lazy(&b.content, |it| it.modified)))),
             Dimensions =>
-                Box::new(move |a, b| r(a.info.lazy(&a.content).dimensions.cmp(&b.info.lazy(&b.content).dimensions))),
+                Box::new(move |a, b| r(a.info.lazy(&a.content, |it| it.dimensions).cmp(&b.info.lazy(&b.content, |it| it.dimensions)))),
             Height =>
-                Box::new(move |a, b| r(a.info.lazy(&a.content).dimensions.map(|it| it.height).cmp(&b.info.lazy(&b.content).dimensions.map(|it| it.height)))),
+                Box::new(move |a, b| r(a.info.lazy(&a.content, |it| it.dimensions).map(|it| it.height).cmp(&b.info.lazy(&b.content, |it| it.dimensions).map(|it| it.height)))),
             Width =>
-                Box::new(move |a, b| r(a.info.lazy(&a.content).dimensions.map(|it| it.height).cmp(&b.info.lazy(&b.content).dimensions.map(|it| it.height)))),
+                Box::new(move |a, b| r(a.info.lazy(&a.content, |it| it.dimensions).map(|it| it.height).cmp(&b.info.lazy(&b.content, |it| it.dimensions).map(|it| it.height)))),
         };
         app.entries.sort_by(&app_info, &compare);
     }

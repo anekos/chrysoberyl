@@ -66,11 +66,10 @@ impl EntryInfo {
             },
             lazy_info: Lazy::new()
         }
-
     }
 
-    pub fn lazy(&self, content: &EntryContent) -> &LazyEntryInfo {
-        self.lazy_info.get(|| LazyEntryInfo::new(content))
+    pub fn lazy<T, F>(&self, content: &EntryContent, get: F) -> T where F: FnOnce(&LazyEntryInfo) -> T {
+        self.lazy_info.get(|| LazyEntryInfo::new(content), get)
     }
 }
 

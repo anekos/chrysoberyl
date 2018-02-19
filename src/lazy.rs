@@ -19,14 +19,16 @@ impl<T> Lazy<T> {
         Lazy { inner: Mutex::new(RefCell::new(Inner::Initial)) }
     }
 
-    pub fn get<F>(&self, ctor: F) -> &T where F: FnOnce() -> T {
+    pub fn get<F, G, U>(&self, ctor: F, fetch: G) -> U where F: FnOnce() -> T, G: FnOnce(&T) -> U {
         self.evaluate(ctor);
 
         let inner = self.inner.lock().unwrap();
+        let inner = inner.borrow();
 
-        let inner = unsafe { inner.as_ptr().as_ref().unwrap() };
         match *inner {
-            Inner::Evaludated(ref v) => v,
+            Inner::Evaludated(ref v) => {
+                fetch(v)
+            },
             _ => panic!("WTF"),
         }
     }

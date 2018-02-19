@@ -2,9 +2,10 @@
 use globset::GlobMatcher;
 
 use app::info::AppInfo;
-use entry::info::{EntryInfo, LazyEntryInfo};
+use entry::info::EntryInfo;
 use entry::{Entry, EntryContent};
 use resolution;
+use size::Size;
 
 pub mod expression;
 pub mod parser;
@@ -93,11 +94,11 @@ fn eval_bool(info: &Info, content: &EntryContent, b: &EBool) -> bool {
         },
         Variable(ref name) => {
             return match *name {
-                Animation => info.entry.lazy(content).is_animated
+                Animation => info.entry.lazy(content, |it| it.is_animated)
             }
         },
         Resolution(w, h) =>
-            return resolution_match(info.entry.lazy(content), w, h),
+            return resolution_match(info.entry.lazy(content, |it| it.dimensions), w, h),
         True =>
             return true,
         False =>
@@ -160,12 +161,12 @@ fn eval_variable(info: &Info, content: &EntryContent, v: &EVariable) -> Option<i
     match *v {
         ArchivePage => Some(info.entry.strict.archive_page),
         CurrentPage => info.app.current_page.map(|it| it as i64),
-        Width => info.entry.lazy(content).dimensions.map(|it| i64!(it.width)),
-        Height => info.entry.lazy(content).dimensions.map(|it| i64!(it.height)),
-        Dimentions => info.entry.lazy(content).dimensions.map(|it| i64!(it.dimensions())),
+        Width => info.entry.lazy(content, |it| it.dimensions).map(|it| i64!(it.width)),
+        Height => info.entry.lazy(content, |it| it.dimensions).map(|it| i64!(it.height)),
+        Dimentions => info.entry.lazy(content, |it| it.dimensions).map(|it| i64!(it.dimensions())),
         Pages => Some(info.app.pages as i64),
         RealPages => Some(info.app.real_pages as i64),
-        FileSize => info.entry.lazy(content).file_size.map(|it| it as i64),
+        FileSize => info.entry.lazy(content, |it| it.file_size).map(|it| it as i64),
         AspectRatio | Type | Path | Name | Extension => None,
     }
 }
@@ -174,7 +175,7 @@ fn eval_variable_as_s(info: &Info, content: &EntryContent, v: &EVariable) -> Opt
     use self::EVariable::*;
 
     match *v {
-        AspectRatio => info.entry.lazy(content).dimensions.map(|it| {
+        AspectRatio => info.entry.lazy(content, |it| it.dimensions).map(|it| {
             let (w, h) = it.ratio();
             format!("{}:{}", w, h)
         }),
@@ -186,7 +187,7 @@ fn eval_variable_as_s(info: &Info, content: &EntryContent, v: &EVariable) -> Opt
     }
 }
 
-fn resolution_match(info: &LazyEntryInfo, w: i64, h: i64) -> bool {
-    if_let_some!(dim = info.dimensions, false);
+fn resolution_match(dims: Option<Size>, w: i64, h: i64) -> bool {
+    if_let_some!(dim = dims, false);
     i64!(dim.width) == w && i64!(dim.height) == h
 }

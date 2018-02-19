@@ -1,6 +1,7 @@
 
 use std::collections::VecDeque;
 use std::default::Default;
+use std::sync::Arc;
 use std::sync::mpsc::{channel, Sender};
 use std::thread::spawn;
 
@@ -21,7 +22,7 @@ pub struct ImageFetcher {
 pub struct FetchTarget {
     cell_size: Size,
     drawing: DrawingState,
-    entries: VecDeque<Entry>,
+    entries: VecDeque<Arc<Entry>>,
 }
 
 pub enum FetcherOperation {
@@ -37,7 +38,7 @@ impl ImageFetcher {
         }
     }
 
-    pub fn new_target(&self, entries: VecDeque<Entry>, cell_size: Size, drawing: DrawingState) {
+    pub fn new_target(&self, entries: VecDeque<Arc<Entry>>, cell_size: Size, drawing: DrawingState) {
         self.main_tx.send(
             FetcherOperation::Refresh(
                 FetchTarget {
@@ -90,7 +91,7 @@ fn main(mut cache: ImageCache) -> Sender<FetcherOperation> {
 }
 
 
-pub fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mut VecDeque<Entry>, idles: &mut usize, cell_size: Size, drawing: &DrawingState) {
+pub fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mut VecDeque<Arc<Entry>>, idles: &mut usize, cell_size: Size, drawing: &DrawingState) {
     while 0 < *idles {
         if let Some(entry) = entries.pop_front() {
             if cache.mark_fetching(entry.key.clone()) {
@@ -104,9 +105,9 @@ pub fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mu
 }
 
 
-pub fn fetch(tx: Sender<FetcherOperation>, entry: Entry, cell_size: Size, drawing: DrawingState) {
+pub fn fetch(tx: Sender<FetcherOperation>, entry: Arc<Entry>, cell_size: Size, drawing: DrawingState) {
     spawn(move || {
         let image = entry::image::get_image_buffer(&entry, &cell_size, &drawing).map_err(|it| s!(it));
-        tx.send(FetcherOperation::Done(entry.key, image)).unwrap();
+        tx.send(FetcherOperation::Done(entry.key.clone(), image)).unwrap();
     });
 }

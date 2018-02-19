@@ -704,9 +704,9 @@ pub fn on_page(app: &mut App, updated: &mut Updated, page: usize) -> EventResult
 
 pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, search_path: bool, command_line: &[Expandable], fmt: &poppler::index::Format, separator: Option<&str>) -> EventResult {
     if_let_some!((entry, _) = app.current(), Ok(()));
-    if let EntryContent::Pdf(path, _) = entry.content {
+    if let EntryContent::Pdf(ref path, _) = entry.content {
         let mut stdin = o!("");
-        PopplerDocument::new_from_file(&*path).index().write(fmt, separator, &mut stdin);
+        PopplerDocument::new_from_file(&**path).index().write(fmt, separator, &mut stdin);
         shell::call(async, &expand_all(command_line, search_path, &app.states.path_list), Some(stdin), option!(read_operations, app.tx.clone()));
         Ok(())
     } else {
@@ -967,7 +967,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
 
     if_let_some!(text = app.search_text.clone(), ok!(app.update_message(Some(o!("Empty")), false)));
 
-    let seq: Vec<(usize, Rc<Entry>)> = if backward {
+    let seq: Vec<(usize, Arc<Entry>)> = if backward {
         let skip = app.paginator.current_index().map(|index| app.entries.len() - index - 1).unwrap_or(0);
         app.entries.iter().cloned().enumerate().rev().skip(skip).collect()
     } else {

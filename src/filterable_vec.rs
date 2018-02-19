@@ -3,8 +3,8 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::mem::swap;
-use std::rc::Rc;
 use std::slice;
+use std::sync::Arc;
 
 use rand::{thread_rng, Rng, ThreadRng};
 
@@ -13,18 +13,18 @@ use rand::{thread_rng, Rng, ThreadRng};
 pub type Pred<T, U> = Box<Fn(&T, &U) -> bool>;
 pub type Compare<T> = Box<Fn(&T, &T) -> Ordering>;
 
-pub struct FilterableVec<T: Clone + Hash + Eq + Sized, U> {
-    original: Vec<Rc<T>>,
-    filtered: Vec<Rc<T>>,
-    original_indices: HashMap<Rc<T>, usize>,
-    filtered_indices: HashMap<Rc<T>, usize>,
+pub struct FilterableVec<T: Hash + Eq + Sized, U> {
+    original: Vec<Arc<T>>,
+    filtered: Vec<Arc<T>>,
+    original_indices: HashMap<Arc<T>, usize>,
+    filtered_indices: HashMap<Arc<T>, usize>,
     rng: ThreadRng,
     dynamic_pred: Option<Pred<T, U>>,
     static_pred: Option<Pred<T, U>>,
 }
 
 
-impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
+impl<T: Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
     pub fn new() -> Self {
         FilterableVec {
             original: vec![],
@@ -53,24 +53,26 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
         self.filtered_indices.get(entry).cloned()
     }
 
-    pub fn iter(&self) -> slice::Iter<Rc<T>> {
+    pub fn iter(&self) -> slice::Iter<Arc<T>> {
         self.filtered.iter()
     }
 
-    pub fn get(&self, index: usize) -> Option<&Rc<T>> {
-        self.filtered.get(index)
+    pub fn get(&self, index: usize) -> Option<Arc<T>> {
+        self.filtered.get(index).cloned()
     }
 
     pub fn validate_nth(&mut self, index: usize, info: &U, pred: &Pred<T, U>) -> Option<bool> {
         self.filtered.get(index).map(|it| (*pred)(it, info))
     }
 
-    pub fn split_at(&self, index: usize) -> (&[Rc<T>], &[Rc<T>]) {
+    pub fn split_at(&self, index: usize) -> (&[Arc<T>], &[Arc<T>]) {
         self.filtered.split_at(index)
     }
 
-    pub fn clone_filtered(&self) -> Vec<Rc<T>> {
-        self.filtered.clone()
+    pub fn clone_filtered(&self) -> Vec<Arc<T>> {
+        // fixme
+        // self.filtered.iter().map(|it| it.clone()).collect()
+        vec![]
     }
 
     pub fn clear(&mut self) {
@@ -88,7 +90,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
     pub fn sort_by(&mut self, info: &U, compare: &Compare<T>) -> Option<usize> {
         {
             let len = self.original.len();
-            let xs: &mut [Rc<T>] = self.original.as_mut_slice();
+            let xs: &mut [Arc<T>] = self.original.as_mut_slice();
             quicksort::<T>(xs, 0, len, compare);
         }
         self.filter(info, None)
@@ -105,7 +107,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
         self.filter(info, None);
     }
 
-    pub fn extend_from_slice(&mut self, info: &U, entries: &[Rc<T>]) {
+    pub fn extend_from_slice(&mut self, info: &U, entries: &[Arc<T>]) {
         let len = self.original.len();
 
         let entries =
@@ -114,7 +116,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
                 let mut targets = vec![];
                 for entry in entries {
                     if static_pred(&entry, info) {
-                        targets.push(Rc::clone(&entry));
+                        targets.push(Arc::clone(&entry));
                     }
                 }
                 targets
@@ -128,8 +130,8 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
             let mut targets = vec![];
             for (index, entry) in entries.iter().enumerate() {
                 if dynamic_pred(entry, info) {
-                    self.original_indices.insert(Rc::clone(entry), len + index);
-                    targets.push(Rc::clone(entry));
+                    self.original_indices.insert(Arc::clone(entry), len + index);
+                    targets.push(Arc::clone(entry));
                 }
             }
             targets
@@ -144,15 +146,15 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
         }
     }
 
-    pub fn push(&mut self, info: &U, entry: &Rc<T>) {
+    pub fn push(&mut self, info: &U, entry: &Arc<T>) {
         if let Some(ref static_pred) = self.static_pred {
             if !static_pred(&*entry, info) {
                 return;
             }
         };
 
-        self.original_indices.insert(Rc::clone(entry), self.original.len());
-        self.original.push(Rc::clone(entry));
+        self.original_indices.insert(Arc::clone(entry), self.original.len());
+        self.original.push(Arc::clone(entry));
 
         if let Some(ref dynamic_pred) = self.dynamic_pred {
             if !(dynamic_pred)(&*entry, info) {
@@ -160,7 +162,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
             }
         };
 
-        self.push_filtered(Rc::clone(entry));
+        self.push_filtered(Arc::clone(entry));
     }
 
     pub fn update_filter(&mut self, info: &U, dynamic: bool, index_before_filter: Option<usize>, pred: Option<Pred<T, U>>) -> Option<usize> {
@@ -185,7 +187,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
             let mut new_originals = vec![];
             for mut entry in &mut self.original.iter_mut() {
                 if (static_pred)(entry, info) {
-                    new_originals.push(Rc::clone(entry));
+                    new_originals.push(Arc::clone(entry));
                 }
             }
             self.original = new_originals;
@@ -203,7 +205,7 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
             self.filtered = vec![];
             for (index, mut entry) in &mut self.original.iter_mut().enumerate() {
                 if dynamic_pred(entry, info) {
-                     self.filtered.push(Rc::clone(entry));
+                     self.filtered.push(Arc::clone(entry));
 
                      if let Some(original_index_before) = original_index_before {
                          if index == original_index_before {
@@ -232,33 +234,33 @@ impl<T: Clone + Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
         })
     }
 
-    fn push_filtered(&mut self, entry: Rc<T>) {
-        self.filtered_indices.insert(Rc::clone(&entry), self.filtered.len());
+    fn push_filtered(&mut self, entry: Arc<T>) {
+        self.filtered_indices.insert(Arc::clone(&entry), self.filtered.len());
         self.filtered.push(entry);
     }
 
     fn reset_indices(&mut self) {
         self.filtered_indices.clear();
         for (index, entry) in self.filtered.iter().enumerate() {
-            self.filtered_indices.insert(Rc::clone(entry), index);
+            self.filtered_indices.insert(Arc::clone(entry), index);
         }
         self.original_indices.clear();
         for (index, entry) in self.original.iter().enumerate() {
-            self.original_indices.insert(Rc::clone(entry), index);
+            self.original_indices.insert(Arc::clone(entry), index);
         }
     }
 }
 
 
-fn partition<T: Clone>(xs: &mut [Rc<T>], left: usize, right: usize, compare: &Compare<T>) -> usize {
+fn partition<T>(xs: &mut [Arc<T>], left: usize, right: usize, compare: &Compare<T>) -> usize {
     let mut i = 0;
 
     {
         let (lefts, rights) = xs.split_at_mut(left + 1);
-        let pivot: &mut Rc<T> = &mut lefts[left];
+        let pivot: &mut Arc<T> = &mut lefts[left];
         for j in 0..(right - left - 1) {
             let less = {
-                let it: &mut Rc<T> = &mut rights[j];
+                let it: &mut Arc<T> = &mut rights[j];
                 (compare)(it, pivot) == Ordering::Less
             };
             if less {
@@ -274,7 +276,7 @@ fn partition<T: Clone>(xs: &mut [Rc<T>], left: usize, right: usize, compare: &Co
 }
 
 
-fn quicksort<T: Clone>(xs: &mut [Rc<T>], left: usize, right: usize, compare: &Compare<T>) {
+fn quicksort<T>(xs: &mut [Arc<T>], left: usize, right: usize, compare: &Compare<T>) {
   if right - left <= 1 {
     return;
   }

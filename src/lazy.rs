@@ -4,12 +4,10 @@ use std::cell::RefCell;
 
 
 
-#[derive(Clone)]
 pub struct Lazy<T> {
     inner: Arc<Mutex<RefCell<Inner<T>>>>,
 }
 
-#[derive(Clone)]
 enum Inner<T> {
     Initial,
     Evaludated(T),

@@ -6,7 +6,6 @@ use std::hash::{Hash, Hasher};
 use std::io::{self, Read};
 use std::ops;
 use std::path::{PathBuf, Path};
-use std::rc::Rc;
 use std::slice;
 use std::sync::Arc;
 
@@ -18,7 +17,7 @@ use archive::ArchiveEntry;
 use entry::filter::expression::Expr as FilterExpr;
 use errors::ChryError;
 use file_extension::{is_valid_image_filename};
-use filterable_vec::{FilterableVec, Pred, Compare};
+use filterable_vec::{FilterableVec, Pred};
 use shorter::*;
 use util::path::path_to_str;
 
@@ -40,7 +39,6 @@ pub struct EntryContainer {
 #[derive(Clone, Copy, PartialEq)]
 pub struct Serial(usize);
 
-#[derive(Clone)]
 pub struct Entry {
     pub serial: Serial,
     pub key: Key,
@@ -197,7 +195,7 @@ impl EntryContainer {
         result
     }
 
-    pub fn iter(&self) -> slice::Iter<Rc<Entry>> {
+    pub fn iter(&self) -> slice::Iter<Arc<Entry>> {
         self.entries.iter()
     }
 
@@ -213,10 +211,8 @@ impl EntryContainer {
         self.entries.real_len()
     }
 
-    pub fn nth(&self, index: usize) -> Option<Entry> {
-        self.entries.get(index).map(|it: &Rc<Entry>| {
-            (**it).clone()
-        })
+    pub fn nth(&self, index: usize) -> Option<Arc<Entry>> {
+        self.entries.get(index)
     }
 
     pub fn validate_nth(&mut self, index: usize, expr: FilterExpr, app_info: &AppInfo) -> Option<bool> {
@@ -224,19 +220,19 @@ impl EntryContainer {
         self.entries.validate_nth(index, app_info, &pred)
     }
 
-    pub fn expand(&mut self, app_info: &AppInfo, center: Option<(PathBuf, usize, Entry)>, dir: Option<PathBuf>, n: u8, recursive: u8) -> bool {
+    pub fn expand(&mut self, app_info: &AppInfo, center: Option<(PathBuf, usize, Arc<Entry>)>, dir: Option<PathBuf>, n: u8, recursive: u8) -> bool {
         let result =
             if let Some((file, index, current_entry)) = center {
                 let dir = n_parents(file.clone(), n);
                 expand(&dir.to_path_buf(), recursive).ok().and_then(|middle| {
                     let serial = self.new_serials(middle.len());
 
-                    let mut middle: Vec<Rc<Entry>> = middle.into_iter().enumerate().map(|(index, it)| {
+                    let mut middle: Vec<Arc<Entry>> = middle.into_iter().enumerate().map(|(index, it)| {
                         let serial = if it == file { current_entry.serial } else { serial + index };
                         Entry::new_local(serial, EntryContent::Image(it), current_entry.meta.clone())
                     }).filter(|entry| {
-                        current_entry == *entry || (!self.is_duplicated(entry) && self.is_valid_image(entry))
-                    }).map(Rc::new).collect();
+                        *current_entry == *entry || (!self.is_duplicated(entry) && self.is_valid_image(entry))
+                    }).map(Arc::new).collect();
 
                     middle.sort();
 
@@ -255,11 +251,11 @@ impl EntryContainer {
                     let serial = self.new_serials(files.len());
 
                     let mut result = self.entries.clone_filtered();
-                    let mut tail: Vec<Rc<Entry>> = files.into_iter().enumerate().map(|(index, it)| {
+                    let mut tail: Vec<Arc<Entry>> = files.into_iter().enumerate().map(|(index, it)| {
                         Entry::new_local(serial + index, EntryContent::Image(it), None)
                     }).filter(|entry| {
                         !self.is_duplicated(entry) && self.is_valid_image(entry)
-                    }).map(Rc::new).collect();
+                    }).map(Arc::new).collect();
                     tail.sort();
                     result.extend_from_slice(tail.as_slice());
                     result
@@ -286,7 +282,7 @@ impl EntryContainer {
         self.entries.sort(app_info)
     }
 
-    pub fn sort_by(&mut self, app_info: &AppInfo, compare: &Compare<Entry>) -> Option<usize> {
+    pub fn sort_by<F>(&mut self, app_info: &AppInfo, compare: F) -> Option<usize> where F: Fn(&Entry, &Entry) -> Ordering {
         self.entries.sort_by(app_info, compare)
     }
 
@@ -319,7 +315,7 @@ impl EntryContainer {
         None
     }
 
-    pub fn find_next_archive(&self, current: Option<(Entry, usize)>, mut count: usize) -> Option<usize> {
+    pub fn find_next_archive(&self, current: Option<(Arc<Entry>, usize)>, mut count: usize) -> Option<usize> {
         current.map(|(entry, base_index)| {
             let mut current_archive = entry.archive_name().to_owned();
             for (index, it) in self.entries.iter().enumerate().skip(base_index + 1) {
@@ -369,7 +365,7 @@ impl EntryContainer {
         })
     }
 
-    pub fn find_previous_archive(&self, current: Option<(Entry, usize)>, mut count: usize) -> Option<usize> {
+    pub fn find_previous_archive(&self, current: Option<(Arc<Entry>, usize)>, mut count: usize) -> Option<usize> {
         current.map(|(entry, base_index)| {
             let current_archive = entry.archive_name().to_owned();
             let mut previous_archive: Option<&str> = None;
@@ -399,7 +395,7 @@ impl EntryContainer {
     }
 
     fn push_entry(&mut self, app_info: &AppInfo, entry: Entry, force: bool) {
-        let entry = Rc::new(entry);
+        let entry = Arc::new(entry);
 
         if force || !self.is_duplicated(&entry) {
             self.entries.push(app_info, &entry);

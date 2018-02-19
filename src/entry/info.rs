@@ -12,13 +12,11 @@ use util::path::path_to_str;
 
 
 
-#[derive(Clone)]
 pub struct EntryInfo {
     lazy_info: Lazy<LazyEntryInfo>,
     pub strict: StrictEntryInfo,
 }
 
-#[derive(Clone)]
 pub struct LazyEntryInfo {
     pub dimensions: Option<Size>, // PDF makes None
     pub is_animated: bool,
@@ -29,7 +27,6 @@ pub struct LazyEntryInfo {
 }
 
 
-#[derive(Clone)]
 pub struct StrictEntryInfo {
     pub path: String, // local filepath, archive filepath or url
     pub name: String, // local filepath, inner filename in archive filepath or url
@@ -69,11 +66,10 @@ impl EntryInfo {
             },
             lazy_info: Lazy::new()
         }
-
     }
 
-    pub fn lazy(&self, content: &EntryContent) -> &LazyEntryInfo {
-        self.lazy_info.get(|| LazyEntryInfo::new(content))
+    pub fn lazy<T, F>(&self, content: &EntryContent, get: F) -> T where F: FnOnce(&LazyEntryInfo) -> T {
+        self.lazy_info.get(|| LazyEntryInfo::new(content), get)
     }
 }
 

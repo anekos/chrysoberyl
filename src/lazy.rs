@@ -1,11 +1,11 @@
 
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use std::cell::RefCell;
 
 
 
 pub struct Lazy<T> {
-    inner: Arc<Mutex<RefCell<Inner<T>>>>,
+    inner: Mutex<RefCell<Inner<T>>>,
 }
 
 enum Inner<T> {
@@ -16,7 +16,7 @@ enum Inner<T> {
 
 impl<T> Lazy<T> {
     pub fn new() -> Self {
-        Lazy { inner: Arc::new(Mutex::new(RefCell::new(Inner::Initial))) }
+        Lazy { inner: Mutex::new(RefCell::new(Inner::Initial)) }
     }
 
     pub fn get<F>(&self, ctor: F) -> &T where F: FnOnce() -> T {

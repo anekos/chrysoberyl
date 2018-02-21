@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::env;
 use std::fmt;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use app::App;
 use color::Color;
@@ -57,7 +58,7 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
         Options => write_options(&app.states, &app.gui, false, out),
         Entries => write_entries(&app.entries, out),
         Paths => write_paths(&app.entries, out),
-        Position => write_paginator(&app.current().map(|it| it.0), &app.paginator, out),
+        Position => write_paginator(app.current().map(|it| it.0), &app.paginator, out),
         Mappings => write_mappings(&app.mapping, out),
         Markers => write_markers(&app.marker, out),
         Envs => write_envs(out),
@@ -67,7 +68,7 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
             write_entries(&app.entries, out);
             write_mappings(&app.mapping, out);
             write_markers(&app.marker, out);
-            write_paginator(&app.current().map(|it| it.0), &app.paginator, out);
+            write_paginator(app.current().map(|it| it.0), &app.paginator, out);
         }
         All => {
             write_options(&app.states, &app.gui, false, out);
@@ -76,7 +77,7 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
             write_markers(&app.marker, out);
             write_envs(out);
             write_filters(&app.states.last_filter, out);
-            write_paginator(&app.current().map(|it| it.0), &app.paginator, out);
+            write_paginator(app.current().map(|it| it.0), &app.paginator, out);
         }
     }
 }
@@ -269,8 +270,8 @@ fn write_path(entry: &Entry, out: &mut String) {
     out.push_str("\n");
 }
 
-pub fn write_paginator(entry: &Option<Entry>, paginator: &Paginator, out: &mut String) {
-    if let Some(ref entry) = *entry {
+pub fn write_paginator(entry: Option<Arc<Entry>>, paginator: &Paginator, out: &mut String) {
+    if let Some(entry) = entry {
         let (_, ref path, index) = entry.key;
         sprintln!(out, "@go {} {}", escape(path), index + 1);
     }

@@ -28,7 +28,6 @@ use events::EventName;
 use expandable::{Expandable, expand_all};
 use file_extension::get_entry_type_from_filename;
 use filer;
-use filterable_vec::Compare;
 use gui::Direction;
 use key::Key;
 use logger;
@@ -704,9 +703,9 @@ pub fn on_page(app: &mut App, updated: &mut Updated, page: usize) -> EventResult
 
 pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, search_path: bool, command_line: &[Expandable], fmt: &poppler::index::Format, separator: Option<&str>) -> EventResult {
     if_let_some!((entry, _) = app.current(), Ok(()));
-    if let EntryContent::Pdf(path, _) = entry.content {
+    if let EntryContent::Pdf(ref path, _) = entry.content {
         let mut stdin = o!("");
-        PopplerDocument::new_from_file(&*path).index().write(fmt, separator, &mut stdin);
+        PopplerDocument::new_from_file(&**path).index().write(fmt, separator, &mut stdin);
         shell::call(async, &expand_all(command_line, search_path, &app.states.path_list), Some(stdin), option!(read_operations, app.tx.clone()));
         Ok(())
     } else {
@@ -967,7 +966,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
 
     if_let_some!(text = app.search_text.clone(), ok!(app.update_message(Some(o!("Empty")), false)));
 
-    let seq: Vec<(usize, Rc<Entry>)> = if backward {
+    let seq: Vec<(usize, Arc<Entry>)> = if backward {
         let skip = app.paginator.current_index().map(|index| app.entries.len() - index - 1).unwrap_or(0);
         app.entries.iter().cloned().enumerate().rev().skip(skip).collect()
     } else {
@@ -1117,25 +1116,34 @@ pub fn on_sort(app: &mut App, updated: &mut Updated, fix_current: bool, sort_key
             it
         };
 
-        let compare: Compare<Entry> = match sort_key {
-            Natural =>
-                Box::new(move |a, b| r(entry::compare_key(&a.key, &b.key))),
-            FileSize =>
-                Box::new(move |a, b| { r(a.info.lazy(&a.content).file_size.cmp(&b.info.lazy(&b.content).file_size)) }),
-            Created =>
-                Box::new(move |a, b| r(a.info.lazy(&a.content).created.cmp(&b.info.lazy(&b.content).created))),
-            Accessed =>
-                Box::new(move |a, b| r(a.info.lazy(&a.content).accessed.cmp(&b.info.lazy(&b.content).accessed))),
-            Modified =>
-                Box::new(move |a, b| r(a.info.lazy(&a.content).modified.cmp(&b.info.lazy(&b.content).modified))),
-            Dimensions =>
-                Box::new(move |a, b| r(a.info.lazy(&a.content).dimensions.cmp(&b.info.lazy(&b.content).dimensions))),
-            Height =>
-                Box::new(move |a, b| r(a.info.lazy(&a.content).dimensions.map(|it| it.height).cmp(&b.info.lazy(&b.content).dimensions.map(|it| it.height)))),
-            Width =>
-                Box::new(move |a, b| r(a.info.lazy(&a.content).dimensions.map(|it| it.height).cmp(&b.info.lazy(&b.content).dimensions.map(|it| it.height)))),
-        };
-        app.entries.sort_by(&app_info, &compare);
+        app.entries.sort_by(&app_info, move |a, b| {
+            if sort_key == Natural {
+                return r(entry::compare_key(&a.key, &b.key));
+            }
+
+            a.info.lazy(&a.content, |ai| {
+                b.info.lazy(&b.content, |bi| {
+                    let result = match sort_key {
+                        Natural => panic!("WTF!"),
+                        FileSize =>
+                            ai.file_size.cmp(&bi.file_size),
+                        Created =>
+                            ai.created.cmp(&bi.created),
+                        Accessed =>
+                            ai.accessed.cmp(&bi.accessed),
+                        Modified =>
+                            ai.modified.cmp(&bi.modified),
+                        Dimensions =>
+                            ai.dimensions.cmp(&bi.dimensions),
+                        Height =>
+                            ai.dimensions.map(|it| it.height).cmp(&bi.dimensions.map(|it| it.height)),
+                        Width =>
+                            ai.dimensions.map(|it| it.height).cmp(&bi.dimensions.map(|it| it.height)),
+                    };
+                    r(result)
+                })
+            })
+        });
     }
 
     if fix_current {

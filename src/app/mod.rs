@@ -3,6 +3,7 @@ use std::collections::{HashSet, HashMap, VecDeque};
 use std::env;
 use std::ops::Range;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::{sleep, spawn};
 use std::time::Duration;
@@ -410,20 +411,20 @@ impl App {
         }
     }
 
-    pub fn current(&self) -> Option<(Entry, usize)> {
+    pub fn current(&self) -> Option<(Arc<Entry>, usize)> {
         self.current_with(0)
     }
 
-    pub fn current_with(&self, delta: usize) -> Option<(Entry, usize)> {
+    pub fn current_with(&self, delta: usize) -> Option<(Arc<Entry>, usize)> {
         self.paginator.current_index_with(delta).and_then(|index| {
             self.entries.nth(index).map(|it| (it, index))
         })
     }
 
-    pub fn current_for_file(&self) -> Option<(PathBuf, usize, Entry)> {
+    pub fn current_for_file(&self) -> Option<(PathBuf, usize, Arc<Entry>)> {
         self.current().and_then(|(entry, index)| {
             match entry.content {
-                EntryContent::Image(ref path) => Some((path.clone(), index, entry.clone())),
+                EntryContent::Image(ref path) => Some((path.clone(), index, Arc::clone(&entry))),
                 _ => None
             }
         })
@@ -432,7 +433,7 @@ impl App {
     /**
      * @return (entry, index of entry, number of non fly leave pages)
      */
-    pub fn current_non_fly_leave(&self) -> Option<(Entry, usize, usize)> {
+    pub fn current_non_fly_leave(&self) -> Option<(Arc<Entry>, usize, usize)> {
         let len = self.gui.len();
         for delta in 0..len {
             if let Some((entry, index)) = self.current_with(delta) {
@@ -662,7 +663,7 @@ impl App {
             envs_sub.push((o!("abbrev_path"), entry.abbrev_path(self.states.abbrev_length)));
             envs_sub.push((o!("base_name"), entry.abbrev_path(0)));
 
-            if let Some(meta) = entry.meta {
+            if let Some(ref meta) = entry.meta {
                 for entry in meta.iter() {
                     envs.push((format!("meta_{}", entry.key), entry.value.clone()));
                 }
@@ -691,8 +692,8 @@ impl App {
                 }
             }
 
-            if let Some(url) = entry.url {
-                envs.push((o!("url"), o!(*url)));
+            if let Some(ref url) = entry.url {
+                envs.push((o!("url"), o!(**url)));
                 if let Some(path) = entry.content.local_file_path() {
                     envs.push((o!("cache_path"), o!(path_to_str(&path))));
                 }

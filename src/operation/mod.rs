@@ -318,7 +318,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@unset"                        => parse_option_1(whole, OptionUpdater::Unset),
             "@update"                       => parse_update(whole),
             "@user"                         => Ok(Operation::user(args)),
-            "@views"                        => parse_views(whole),
+            "@views" | "@v"                 => parse_views(whole),
             "@when"                         => parse_when(whole, false),
             "@write"                        => parse_write(whole),
             _ => Err(ParsingError::NotOperation(o!(name)))

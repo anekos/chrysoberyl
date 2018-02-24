@@ -599,8 +599,8 @@ auto-reload
 :   Reload current viewingly images when they are updated.
 
 auto-paging
-:   type: boolean
-:   Go next page when a new page is pushed (only at last page)
+:   type: enum
+:   values: no, always, smart
 
 centering
 :   type: boolean

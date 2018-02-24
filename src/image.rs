@@ -44,10 +44,18 @@ impl ImageBuffer {
             Static(ref image) =>
                 image.original_size,
             Animation(ref image) =>
-                immeta::load_from_buf(&image.source).ok().map(|img| {
-                    let dim = img.dimensions();
-                    Size::new(dim.width as i32, dim.height as i32)
-                })
+                image.get_original_size().ok(),
+        }
+    }
+
+    pub fn get_fit_size(&self) -> Option<Size> {
+        use self::ImageBuffer::*;
+
+        match *self {
+            Static(ref image) =>
+                Some(Size::new(image.width, image.height)),
+            Animation(_) =>
+                None,
         }
     }
 }
@@ -96,6 +104,13 @@ impl AnimationBuffer {
         loader.loader_write(&*self.source.as_slice()).map(|_| {
             loader.close().unwrap();
             loader.get_animation().unwrap()
+        })
+    }
+
+    pub fn get_original_size(&self) -> Result<Size, immeta::Error> {
+        immeta::load_from_buf(&self.source).map(|img| {
+            let dim = img.dimensions();
+            Size::new(dim.width as i32, dim.height as i32)
         })
     }
 }

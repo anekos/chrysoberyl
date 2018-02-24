@@ -404,8 +404,8 @@ impl App {
         }
 
         if updated.image || updated.image_options {
-            let image_size = time!("show_image" => self.show_image(to_end, updated.target_regions.clone()));
-            self.on_image_updated(image_size);
+            let (original_image_size, fit_image_size) = time!("show_image" => self.show_image(to_end, updated.target_regions.clone()));
+            self.on_image_updated(original_image_size, fit_image_size);
             self.update_watcher();
         }
 
@@ -540,8 +540,12 @@ impl App {
         self.fetcher.new_target(entries, cell_size, self.states.drawing.clone());
     }
 
-    fn show_image(&mut self, to_end: bool, target_regions: Option<Vec<Option<Region>>>) -> Option<Size> {
-        let mut image_size = None;
+    /**
+     * @return (Original size, Fit size)
+     */
+    fn show_image(&mut self, to_end: bool, target_regions: Option<Vec<Option<Region>>>) -> (Option<Size>, Option<Size>) {
+        let mut original_image_size = None;
+        let mut fit_image_size = None;
         let cell_size = self.gui.get_cell_size(&self.states.view);
 
         self.cancel_lazy_draw();
@@ -566,7 +570,8 @@ impl App {
                         }
                         invalid_all = false;
                         if index == 0 {
-                            image_size = image_buffer.get_original_size();
+                            original_image_size = image_buffer.get_original_size();
+                            fit_image_size = image_buffer.get_fit_size();
                         }
                     }
                     Err(error) =>
@@ -608,7 +613,7 @@ impl App {
             }
         }
 
-        image_size
+        (original_image_size, fit_image_size)
     }
 
     fn update_counter_env(&mut self, do_pop: bool) {
@@ -653,7 +658,7 @@ impl App {
         true
     }
 
-    fn on_image_updated(&mut self, image_size: Option<Size>) {
+    fn on_image_updated(&mut self, original_image_size: Option<Size>, fit_image_size: Option<Size>) {
         use entry::EntryContent::*;
 
         let mut envs: Vec<(String, String)> = vec![];
@@ -707,11 +712,18 @@ impl App {
             envs.push((o!("end_page"), s!(index + pages)));
             envs.push((o!("pages"), s!(len)));
 
-            if let Some(image_size) = image_size {
-                envs.push((o!("width"), s!(image_size.width)));
-                envs.push((o!("height"), s!(image_size.height)));
-                let (w, h) = image_size.ratio();
+            if let Some(size) = original_image_size {
+                envs.push((o!("width"), s!(size.width)));
+                envs.push((o!("height"), s!(size.height)));
+                let (w, h) = size.ratio();
                 envs.push((o!("ratio"), format!("{}:{}", w, h)));
+            }
+
+            if let Some(size) = fit_image_size.or(original_image_size) {
+                envs_sub.push((o!("fit_width"), s!(size.width)));
+                envs_sub.push((o!("fit_height"), s!(size.height)));
+                let (w, h) = size.ratio();
+                envs_sub.push((o!("fit_ratio"), format!("{}:{}", w, h)));
             }
 
             envs_sub.push((o!("paging"), {

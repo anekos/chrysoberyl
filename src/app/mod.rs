@@ -726,6 +726,11 @@ impl App {
                 envs_sub.push((o!("fit_ratio"), format!("{}:{}", w, h)));
             }
 
+            if let (Some(original), Some(fit)) = (original_image_size, fit_image_size) {
+                envs_sub.push((o!("scale"), format!("{}", fit.width as f32 / original.width as f32)));
+                envs_sub.push((o!("scale_pct"), format!("{}", fit.width * 100 / original.width)));
+            }
+
             envs_sub.push((o!("paging"), {
                 let (from, to) = (index + 1, min!(index + pages, len));
                 if gui_len > 1 {

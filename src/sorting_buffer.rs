@@ -1,7 +1,8 @@
 
 use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::collections::HashMap;
+use std::mem::swap;
 
 
 pub type Ticket = usize;
@@ -10,8 +11,10 @@ pub type Ticket = usize;
 #[derive(Clone)]
 pub struct SortingBuffer<T> {
     reserved: Arc<AtomicUsize>,
+    stable: Arc<AtomicBool>,
     shipped: Arc<Mutex<Ticket>>,
-    buffer: Arc<Mutex<HashMap<Ticket, Option<T>>>>
+    buffer: Arc<Mutex<HashMap<Ticket, Option<T>>>>,
+    unstable_buffer: Arc<Mutex<Vec<T>>>,
 }
 
 
@@ -20,8 +23,10 @@ impl<T> SortingBuffer<T> {
     pub fn new() -> SortingBuffer<T> {
         SortingBuffer {
             reserved: Arc::new(AtomicUsize::new(0)),
+            stable: Arc::new(AtomicBool::new(true)),
             shipped: Arc::new(Mutex::new(1)),
-            buffer: Arc::new(Mutex::new(HashMap::new()))
+            buffer: Arc::new(Mutex::new(HashMap::new())),
+            unstable_buffer: Arc::new(Mutex::new(vec!())),
         }
     }
 
@@ -34,13 +39,17 @@ impl<T> SortingBuffer<T> {
     }
 
     pub fn push(&mut self, ticket: Ticket, entry: T) {
-        let mut buffer = self.buffer.lock().unwrap();
-        buffer.insert(ticket, Some(entry));
+        let stable = self.stable.load(Ordering::Acquire);
+        if stable {
+            self.buffer.lock().unwrap().insert(ticket, Some(entry));
+        } else {
+            self.unstable_buffer.lock().unwrap().push(entry);
+            self.skip(ticket);
+        }
     }
 
     pub fn skip(&mut self, ticket: Ticket) {
-        let mut buffer = self.buffer.lock().unwrap();
-        buffer.insert(ticket, None);
+        self.buffer.lock().unwrap().insert(ticket, None);
     }
 
     pub fn push_with_reserve(&mut self, entry: T) -> Vec<T> {
@@ -49,7 +58,10 @@ impl<T> SortingBuffer<T> {
         buffer.insert(ticket, Some(entry));
 
         let mut shipped = self.shipped.lock().unwrap();
-        pull_all(&mut buffer, &mut shipped)
+
+        let mut result = vec![];
+        pull_all(&mut result, &mut buffer, &mut shipped);
+        result
     }
 
     // pub fn skip_with_reserve(&mut self, ticket: Ticket);
@@ -57,28 +69,35 @@ impl<T> SortingBuffer<T> {
     pub fn pull_all(&mut self) -> Vec<T> {
         let mut shipped = self.shipped.lock().unwrap();
         let mut buffer = self.buffer.lock().unwrap();
+        let mut unstable_buffer = self.unstable_buffer.lock().unwrap();
 
-        pull_all(&mut buffer, &mut shipped)
+        let mut result = vec![];
+        swap(&mut result, &mut unstable_buffer);
+
+        pull_all(&mut result, &mut buffer, &mut shipped);
+        result
     }
 
     pub fn len(&self) -> usize {
         let buffer = self.buffer.lock().unwrap();
         buffer.len()
     }
+
+    pub fn set_stability(&self, stable: bool) {
+        self.stable.store(stable, Ordering::Release);
+    }
 }
 
 
 fn reserve_n(reserved: &AtomicUsize, n: usize) -> Ticket {
-    reserved.fetch_add(n, Ordering::Relaxed) + 1
+    reserved.fetch_add(n, Ordering::AcqRel) + 1
 }
 
-fn pull_all<T>(buffer: &mut HashMap<Ticket, Option<T>>, shipped: &mut Ticket) -> Vec<T> {
-    let mut result = vec![];
-
+fn pull_all<T>(result: &mut Vec<T>, buffer: &mut HashMap<Ticket, Option<T>>, shipped: &mut Ticket) {
     while !buffer.is_empty() {
         match buffer.remove(&*shipped) {
             None =>
-                return result,
+                return,
             Some(next) => {
                 *shipped += 1;
                 if let Some(next) = next {
@@ -87,6 +106,4 @@ fn pull_all<T>(buffer: &mut HashMap<Ticket, Option<T>>, shipped: &mut Ticket) ->
             },
         }
     }
-
-    result
 }

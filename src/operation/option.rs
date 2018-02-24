@@ -49,13 +49,14 @@ iterable_enum!(PreDefinedOptionName =>
     Reverse,
     Rotation,
     SkipResizeWindow,
+    StablePush,
     StatusBar,
     StatusBarAlign,
     StatusBarHeight,
-    StdOut,
     StatusFormat,
-    UpdateCacheAccessTime,
+    StdOut,
     TitleFormat,
+    UpdateCacheAccessTime,
     VerticalViews,
     WatchFiles,
 );
@@ -89,6 +90,7 @@ impl FromStr for PreDefinedOptionName {
             "pre-render-pages"                     => PreFetchPageSize,
             "reverse" | "rev"                      => Reverse,
             "rotation"                             => Rotation,
+            "stable-push"                          => StablePush,
             "status-bar" | "status"                => StatusBar,
             "status-bar-align" | "status-align"    => StatusBarAlign,
             "status-bar-height" | "status-height"  => StatusBarHeight,
@@ -119,7 +121,7 @@ impl PreDefinedOptionName {
                 ColorError | ColorErrorBackground | ColorStatusBar | ColorStatusBarBackground | ColorWindowBackground |
                 FitTo | HorizontalViews | LogFile | MaskOperator |
                 OperationBox | PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
-                Reverse | Rotation | SkipResizeWindow | StatusBar | StatusBarAlign | StatusBarHeight | StatusFormat | EmptyStatusFormat | StdOut | UpdateCacheAccessTime | TitleFormat | VerticalViews | WatchFiles | HistoryFile => false,
+                Reverse | Rotation | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusFormat | EmptyStatusFormat | StdOut | UpdateCacheAccessTime | TitleFormat | VerticalViews | WatchFiles | HistoryFile => false,
             CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => true,
         }
     }

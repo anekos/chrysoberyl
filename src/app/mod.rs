@@ -221,6 +221,8 @@ impl App {
                     on_filter(self, &mut updated, dynamic, *expr),
                 First(count, ignore_views, move_by, _) =>
                     on_first(self, &mut updated, count, ignore_views, move_by),
+                Flush =>
+                    on_flush(self, &mut updated),
                 FlyLeaves(n) =>
                     on_fly_leaves(self, &mut updated, n),
                 Go(ref key) =>

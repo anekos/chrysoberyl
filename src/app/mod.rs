@@ -33,7 +33,7 @@ use remote_cache::RemoteCache;
 use script;
 use size::{Size, FitTo, Region};
 use sorting_buffer::SortingBuffer;
-use state::{States, PreFetchState};
+use state::{AutoPaging, States, PreFetchState};
 use termination;
 use timer::TimerManager;
 use util::path::path_to_str;
@@ -369,7 +369,10 @@ impl App {
             if let Some(index) = self.paginator.current_index() {
                 if index < len && len < index + gui_len {
                     updated.image = true;
-                } else if self.states.auto_paging && gui_len <= len && len - gui_len == index {
+                } else if self.states.auto_paging == AutoPaging::Always {
+                    self.operate(Operation::Last(None, false, MoveBy::Page, false));
+                    return
+                } else if self.states.auto_paging == AutoPaging::Smart && gui_len <= len && len - gui_len == index {
                     self.operate(Operation::Next(None, false, MoveBy::Page, false));
                     return
                 }
@@ -737,7 +740,7 @@ impl App {
                     Scale(_) => 'S',
                 });
                 text.push(if self.states.reverse { 'R' } else { 'r' });
-                text.push(if self.states.auto_paging { 'A' } else { 'a' });
+                text.push(if self.states.auto_paging.enabled() { 'A' } else { 'a' });
                 text.push(if self.states.auto_reload { 'W' } else { 'w' });
                 text
             }));

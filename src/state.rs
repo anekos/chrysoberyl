@@ -21,7 +21,7 @@ use size::{FitTo, Region};
 
 pub struct States {
     pub abbrev_length: usize,
-    pub auto_paging: bool,
+    pub auto_paging: AutoPaging,
     pub auto_reload: bool,
     pub curl_options: CurlOptions,
     pub drawing: DrawingState,
@@ -86,6 +86,13 @@ pub struct Filters {
     pub dynamic_filter: Option<FilterExpr>,
 }
 
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub enum AutoPaging {
+    DoNot,
+    Always,
+    Smart,
+}
+
 
 impl Default for States {
     fn default() -> Self {
@@ -94,7 +101,7 @@ impl Default for States {
 
         States {
             abbrev_length: 30,
-            auto_paging: false,
+            auto_paging: AutoPaging::default(),
             auto_reload: false,
             curl_options: CurlOptions::default(),
             drawing: DrawingState::default(),
@@ -174,6 +181,30 @@ impl Default for Filters {
     }
 }
 
+impl AutoPaging {
+    pub fn enabled(&self) -> bool {
+        AutoPaging::DoNot != *self
+    }
+}
+
+impl fmt::Display for AutoPaging {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use state::AutoPaging::*;
+        let result =
+            match *self {
+                DoNot => "no",
+                Always => "always",
+                Smart => "smart",
+            };
+        write!(f, "{}", result)
+    }
+}
+
+impl Default for AutoPaging {
+    fn default() -> Self {
+        AutoPaging::DoNot
+    }
+}
 
 macro_rules! gen_format {
     ($t:tt, $default:expr) => {

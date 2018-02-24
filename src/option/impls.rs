@@ -8,7 +8,7 @@ use color::Color;
 use option::*;
 use resolution;
 use size::FitTo;
-use state::{MaskOperator, Alignment};
+use state::{Alignment, AutoPaging, MaskOperator};
 
 use option::common;
 
@@ -147,6 +147,54 @@ def_opt_uint!(u32);
 def_uint!(usize);
 def_uint!(u8);
 
+
+impl FromStr for AutoPaging {
+    type Err = ChryError;
+
+    fn from_str(src: &str) -> Result<Self, ChryError> {
+        use self::AutoPaging::*;
+
+        common::parse_bool(src).map(|it| {
+            if it { AutoPaging::Always } else { AutoPaging::Smart }
+        }).or_else(|_| {
+            let result = match src {
+                "always" | "a" => Always,
+                "smart" | "s" => Smart,
+                _ => return Err(ChryError::InvalidValue(o!(src)))
+            };
+            Ok(result)
+        })
+    }
+}
+
+impl OptionValue for AutoPaging {
+    fn is_enabled(&self) -> Result<bool, ChryError> {
+        Ok(self.enabled())
+    }
+
+    fn enable(&mut self) -> Result<(), ChryError> {
+        *self = AutoPaging::Always;
+        Ok(())
+    }
+
+    fn disable(&mut self) -> Result<(), ChryError> {
+        *self = AutoPaging::DoNot;
+        Ok(())
+    }
+
+    fn cycle(&mut self, reverse: bool) -> Result<(), ChryError> {
+        use self::AutoPaging::*;
+        *self = cycled(*self, &[DoNot, Always, Smart], reverse);
+        Ok(())
+    }
+
+    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+        value.parse().map(|value| {
+            *self = value;
+            ()
+        })
+    }
+}
 
 impl OptionValue for Color {
     // CSS Color names

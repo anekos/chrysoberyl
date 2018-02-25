@@ -58,7 +58,7 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
     match *session {
         Options => write_options(&app.states, &app.gui, false, out),
         Entries => write_entries(&app.entries, out),
-        Queue => write_queue(app.remote_cache.state.clone(), out),
+        Queue => write_queue(&app.remote_cache.state, out),
         Paths => write_paths(&app.entries, out),
         Position => write_paginator(app.current().map(|it| it.0), &app.paginator, out),
         Mappings => write_mappings(&app.mapping, out),
@@ -68,7 +68,7 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
         Reading => {
             write_options(&app.states, &app.gui, true, out);
             write_entries(&app.entries, out);
-            write_queue(app.remote_cache.state.clone(), out);
+            write_queue(&app.remote_cache.state, out);
             write_mappings(&app.mapping, out);
             write_markers(&app.marker, out);
             write_paginator(app.current().map(|it| it.0), &app.paginator, out);
@@ -76,7 +76,7 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
         All => {
             write_options(&app.states, &app.gui, false, out);
             write_entries(&app.entries, out);
-            write_queue(app.remote_cache.state.clone(), out);
+            write_queue(&app.remote_cache.state, out);
             write_mappings(&app.mapping, out);
             write_markers(&app.marker, out);
             write_envs(out);
@@ -196,7 +196,7 @@ pub fn write_options(st: &States, gui: &Gui, reading: bool, out: &mut String) {
     }
 }
 
-pub fn write_queue(state: Arc<Mutex<::remote_cache::State>>, out: &mut String) {
+pub fn write_queue(state: &Arc<Mutex<::remote_cache::State>>, out: &mut String) {
     use entry::EntryType::*;
 
     let state = state.lock().unwrap();

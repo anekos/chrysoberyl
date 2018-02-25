@@ -317,7 +317,7 @@ fn update_atime<T: AsRef<Path>>(path: &T) -> Result<(), ChryError> {
 
 impl State {
     pub fn requests(&self) -> Vec<Request> {
-        let mut result: Vec<Request> = self.processing.iter().map(Clone::clone).collect();
+        let mut result: Vec<Request> = self.processing.iter().cloned().collect();
         for it in &self.queued {
             result.push(it.clone());
         }

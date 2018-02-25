@@ -107,7 +107,7 @@ fn register(gui: &Gui, skip: usize, app_tx: &Sender<Operation>) -> Sender<Event>
         Inhibit(true)
     }));
 
-    gui.vbox.connect_drag_data_received(clone_army!([app_tx] move |_, _, _, _, selection, info, _| {
+    gui.overlay.connect_drag_data_received(clone_army!([app_tx] move |_, _, _, _, selection, info, _| {
         if let Some(drop_item_type) = DropItemType::from_u32(info) {
             on_drag_data_received(&app_tx, selection, &drop_item_type)
         }

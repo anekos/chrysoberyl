@@ -41,6 +41,7 @@ enum_from_primitive! {
 pub struct Gui {
     pub colors: Colors,
     pub operation_entry: Entry,
+    pub overlay: Overlay,
     pub vbox: gtk::Box,
     pub window: Window,
     cells: Vec<Cell>,
@@ -98,8 +99,6 @@ const PADDING: f64 = 5.0;
 impl Gui {
     pub fn new(window_role: &str) -> Gui {
         use gtk::Orientation;
-        use gdk::DragAction;
-        use gtk::{DestDefaults, TargetEntry, TargetFlags};
 
         gtk::init().unwrap();
 
@@ -166,36 +165,12 @@ impl Gui {
         });
 
         let vbox = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
-            let action = DragAction::COPY | DragAction::MOVE | DragAction::DEFAULT | DragAction::LINK | DragAction::ASK | DragAction::PRIVATE;
-            let flags = TargetFlags::OTHER_WIDGET | TargetFlags::OTHER_APP;
-            let targets = vec![
-                TargetEntry::new("text/uri-list", flags, DropItemType::Path.into()),
-                TargetEntry::new("text/plain", flags, DropItemType::URI.into()),
-
-                // TargetEntry::new("text/html", flags, 0),
-                // TargetEntry::new("text/x-moz-url", flags, 0),
-
-                // TargetEntry::new("application/x-moz-file", flags, 0),
-                // TargetEntry::new("text/unicode", flags, 0),
-                // TargetEntry::new("text/plain;charset=utf-8", flags, 0),
-                // TargetEntry::new("application/x-moz-custom-clipdata", flags, 0),
-                // TargetEntry::new("text/_moz_htmlcontext", flags, 0),
-                // TargetEntry::new("text/_moz_htmlinfo", flags, 0),
-                // TargetEntry::new("_NETSCAPE_URL", flags, 0),
-                // TargetEntry::new("text/x-moz-url-data", flags, 0),
-                // TargetEntry::new("text/x-moz-url-desc", flags, 0),
-                // TargetEntry::new("application/x-moz-nativeimage", flags, 0),
-                // TargetEntry::new("application/x-moz-file-promise", flags, 0),
-                // TargetEntry::new("application/x-moz-file-promise-url", flags, 0),
-                // TargetEntry::new("application/x-moz-file-promise-dest-filename", flags, 0),
-            ];
-            it.drag_dest_set(DestDefaults::ALL, &targets, action);
-            it.add_events(EventMask::SCROLL_MASK.bits() as i32);
             it.pack_end(&status_bar, false, false, 0);
             it.pack_end(&grid, true, true, 0);
         });
 
         let overlay = tap!(it = Overlay::new(), {
+            setup_drag(&it);
             it.add_overlay(&vbox);
             it.add_overlay(&hidden_bar);
             it.add_overlay(&operation_box);
@@ -214,6 +189,7 @@ impl Gui {
             label,
             operation_box,
             operation_entry,
+            overlay,
             status_bar,
             status_bar_inner,
             ui_event: None,
@@ -675,4 +651,36 @@ fn scroll_window(window: &ScrolledWindow, direction: &Direction, scroll_size_rat
         Left | Right => scroll(true),
         Up | Down => scroll(false),
     }
+}
+
+fn setup_drag<T: WidgetExt + WidgetExtManual >(widget: &T) {
+    use gdk::DragAction;
+    use gtk::{DestDefaults, TargetEntry, TargetFlags};
+
+    let action = DragAction::COPY | DragAction::MOVE | DragAction::DEFAULT | DragAction::LINK | DragAction::ASK | DragAction::PRIVATE;
+    let flags = TargetFlags::OTHER_WIDGET | TargetFlags::OTHER_APP;
+    let targets = vec![
+        TargetEntry::new("text/uri-list", flags, DropItemType::Path.into()),
+        TargetEntry::new("text/plain", flags, DropItemType::URI.into()),
+
+        // TargetEntry::new("text/html", flags, 0),
+        // TargetEntry::new("text/x-moz-url", flags, 0),
+
+        // TargetEntry::new("application/x-moz-file", flags, 0),
+        // TargetEntry::new("text/unicode", flags, 0),
+        // TargetEntry::new("text/plain;charset=utf-8", flags, 0),
+        // TargetEntry::new("application/x-moz-custom-clipdata", flags, 0),
+        // TargetEntry::new("text/_moz_htmlcontext", flags, 0),
+        // TargetEntry::new("text/_moz_htmlinfo", flags, 0),
+        // TargetEntry::new("_NETSCAPE_URL", flags, 0),
+        // TargetEntry::new("text/x-moz-url-data", flags, 0),
+        // TargetEntry::new("text/x-moz-url-desc", flags, 0),
+        // TargetEntry::new("application/x-moz-nativeimage", flags, 0),
+        // TargetEntry::new("application/x-moz-file-promise", flags, 0),
+        // TargetEntry::new("application/x-moz-file-promise-url", flags, 0),
+        // TargetEntry::new("application/x-moz-file-promise-dest-filename", flags, 0),
+    ];
+    widget.drag_dest_set(DestDefaults::ALL, &targets, action);
+    widget.add_events(EventMask::SCROLL_MASK.bits() as i32);
+
 }

@@ -349,7 +349,7 @@ pub fn on_first(app: &mut App, updated: &mut Updated, count: Option<usize>, igno
     Ok(())
 }
 
-pub fn on_flush(app: &mut App, updated: &mut Updated) -> EventResult {
+pub fn on_flush_buffer(app: &mut App, updated: &mut Updated) -> EventResult {
     let buffered = app.sorting_buffer.flush();
     push_buffered(app, updated, buffered)
 }

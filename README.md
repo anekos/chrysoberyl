@@ -255,6 +255,12 @@ Filter entries.
 Show `COUNT`th entry.
 
 
+## @flush-buffer
+
+Pull all buffered entries.
+See `$CHRY_REMOTE_BUFFER`, if you want to get the number of buffered entries.
+
+
 ## @fly-leaves <NUMBER>
 
 Insert `NUMBER` [flyleaves](https://en.wikipedia.org/wiki/Book_design#Front_cover,_spine,_and_back_cover_of_the_dust-jacket).

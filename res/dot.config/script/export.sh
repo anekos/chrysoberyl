@@ -9,10 +9,11 @@ set -euC
 check_app
 
 DIR="$(dirname "${CHRY_PATH:-$PWD}")"
+NAME="${CHRY_BASE_NAME:-export.png}"
 
 function dialog {
   yanity --file-selection \
-    --filename="$DIR/export.png" \
+    --filename="$DIR/$NAME" \
     --confirm-overwrite \
     --save \
     --file-filter "All files (*.*)"

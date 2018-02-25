@@ -349,6 +349,11 @@ pub fn on_first(app: &mut App, updated: &mut Updated, count: Option<usize>, igno
     Ok(())
 }
 
+pub fn on_flush_buffer(app: &mut App, updated: &mut Updated) -> EventResult {
+    let buffered = app.sorting_buffer.flush();
+    push_buffered(app, updated, buffered)
+}
+
 pub fn on_fly_leaves(app: &mut App, updated: &mut Updated, n: usize) -> EventResult {
     updated.pointer = app.paginator.set_fly_leaves(n);
     Ok(())

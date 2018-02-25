@@ -56,8 +56,9 @@ pub enum Operation {
     Expand(bool, Option<PathBuf>), /* recursive, base */
     FileChanged(PathBuf),
     Fill(Shape, Option<Region>, Color, bool, usize), /* region, mask, cell index */
-    First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Filter(bool, Box<Option<entry::filter::expression::Expr>>), /* dynamic, filter expression */
+    First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
+    FlushBuffer,
     FlyLeaves(usize),
     Go(entry::SearchKey),
     Input(mapping::Input),
@@ -262,6 +263,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@fill"                         => parse_fill(whole),
             "@filter"                       => parse_filter(whole),
             "@first" | "@f"                 => parse_move(whole, First),
+            "@flush-buffer"                 => Ok(FlushBuffer),
             "@fly-leaves"                   => parse_fly_leaves(whole),
             "@go"                           => parse_go(whole),
             "@inc" | "@increment" | "@increase" | "@++"
@@ -447,6 +449,7 @@ impl fmt::Debug for Operation {
             FileChanged(_) => "FileChanged",
             Fill(_, _, _, _, _) => "Fill",
             Filter(_, _) => "Filter",
+            FlushBuffer => "FlushBuffer",
             FlyLeaves(_) => "FlyLeaves",
             Go(_) => "Go",
             InitialProcess(_, _, _) => "InitialProcess",

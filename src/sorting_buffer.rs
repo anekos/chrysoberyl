@@ -78,6 +78,29 @@ impl<T> SortingBuffer<T> {
         result
     }
 
+    pub fn flush(&mut self) -> Vec<T> {
+        let mut buffer = self.buffer.lock().unwrap();
+        let mut shipped = self.shipped.lock().unwrap();
+        let mut currents = vec![];
+
+        let mut result = vec![];
+        pull_all(&mut result, &mut buffer, &mut shipped);
+
+        for (ticket, entry) in buffer.iter_mut() {
+            let mut current = None;
+            swap(&mut current, entry);
+            if let Some(current) = current {
+                currents.push((ticket, current))
+            }
+        }
+
+        currents.sort_by_key(|it| it.0);
+        let mut currents = currents.into_iter().map(|it| it.1).collect();
+        result.append(&mut currents);
+
+        result
+    }
+
     pub fn len(&self) -> usize {
         let buffer = self.buffer.lock().unwrap();
         buffer.len()

@@ -44,6 +44,7 @@ pub struct RemoteCache {
 
 #[derive(Default)]
 pub struct State {
+    curl_options: CurlOptions,
     idles: Vec<TID>,
     processing: BTreeSet<Request>,
     queued: VecDeque<Request>,
@@ -66,7 +67,6 @@ pub struct Request {
 enum Getter {
     Queue(String, PathBuf, Option<Meta>, bool, Option<EntryType>),
     Done(usize, Request),
-    UpdateCurlOptions(CurlOptions),
     Fail(usize, String, Request),
 }
 
@@ -114,7 +114,8 @@ impl RemoteCache {
     }
 
     pub fn update_curl_options(&self, options: CurlOptions) {
-        self.main_tx.send(Getter::UpdateCurlOptions(options)).unwrap();
+        let mut state = self.state.lock().unwrap();
+        state.curl_options = options;
     }
 }
 
@@ -124,8 +125,6 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
 
     spawn(clone_army!([main_tx] move || {
         use self::Getter::*;
-
-        let mut options = CurlOptions::default();
 
         {
             let mut state = state.lock().unwrap();
@@ -143,7 +142,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                     let mut state = state.lock().unwrap();
                     let ticket = buffer.reserve();
 
-                    let request = Request { ticket: ticket, url: url.clone(), cache_filepath: cache_filepath, meta: meta, force: force, entry_type: entry_type, options: options.clone() };
+                    let request = Request { ticket: ticket, url: url.clone(), cache_filepath: cache_filepath, meta: meta, force: force, entry_type: entry_type, options: state.curl_options.clone() };
 
                     if let Some(worker) = state.idles.pop() {
                         state.processing.insert(request.clone());
@@ -171,9 +170,6 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                     app_tx.send(Operation::Pull).unwrap();
                     try_next(&app_tx, thread_id, &mut state);
                     log_status(&SP::Fail(thread_id, err, request.url), &state, buffer.len());
-                }
-                UpdateCurlOptions(new_options) => {
-                    options = new_options;
                 }
             }
         }

@@ -1,10 +1,12 @@
 
-use std::collections::VecDeque;
+use std::cmp::Ordering;
+use std::collections::{BTreeSet, VecDeque};
 use std::env;
 use std::error::Error;
 use std::fs::{self, File, create_dir_all};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel, Sender};
 use std::thread::spawn;
 
@@ -32,23 +34,32 @@ use self::curl_options::CurlOptions;
 
 type TID = usize;
 
-#[derive(Clone)]
 pub struct RemoteCache {
-    app_tx: Sender<Operation>,
     main_tx: Sender<Getter>,
     sorting_buffer: SortingBuffer<QueuedOperation>,
+    pub state: Arc<Mutex<State>>,
     pub do_update_atime: bool,
 }
 
+
+#[derive(Default)]
+pub struct State {
+    curl_options: CurlOptions,
+    idles: Vec<TID>,
+    processing: BTreeSet<Request>,
+    queued: VecDeque<Request>,
+    threads: Vec<Sender<Request>>,
+}
+
 #[derive(Clone)]
-struct Request {
-    ticket: usize,
-    url: String,
+pub struct Request {
+    pub entry_type: Option<EntryType>,
+    pub url: String,
     cache_filepath: PathBuf,
-    meta: Option<Meta>,
     force: bool,
-    entry_type: Option<EntryType>,
+    meta: Option<Meta>,
     options: CurlOptions,
+    ticket: usize,
 }
 
 
@@ -56,13 +67,13 @@ struct Request {
 enum Getter {
     Queue(String, PathBuf, Option<Meta>, bool, Option<EntryType>),
     Done(usize, Request),
-    UpdateCurlOptions(CurlOptions),
     Fail(usize, String, Request),
 }
 
 // Status Paramter
 enum SP {
     Initial,
+    Process(String),
     Queue(String),
     Complete(usize),
     Fail(usize, String, String),
@@ -71,8 +82,9 @@ enum SP {
 
 impl RemoteCache {
     pub fn new(max_threads: u8, app_tx: Sender<Operation>, sorting_buffer: SortingBuffer<QueuedOperation>) -> Self {
-        let main_tx = main(max_threads, app_tx.clone(), sorting_buffer.clone());
-        RemoteCache { app_tx: app_tx, main_tx: main_tx, sorting_buffer: sorting_buffer, do_update_atime: false }
+        let state = Arc::new(Mutex::new(State::default()));
+        let main_tx = main(max_threads, app_tx, sorting_buffer.clone(), state.clone());
+        RemoteCache { main_tx, sorting_buffer, do_update_atime: false, state }
     }
 
     pub fn fetch(&mut self, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) -> Vec<QueuedOperation> {
@@ -102,59 +114,62 @@ impl RemoteCache {
     }
 
     pub fn update_curl_options(&self, options: CurlOptions) {
-        self.main_tx.send(Getter::UpdateCurlOptions(options)).unwrap();
+        let mut state = self.state.lock().unwrap();
+        state.curl_options = options;
     }
 }
 
 
-fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<QueuedOperation>) -> Sender<Getter> {
+fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<QueuedOperation>, state: Arc<Mutex<State>>) -> Sender<Getter> {
     let (main_tx, main_rx) = channel();
 
     spawn(clone_army!([main_tx] move || {
         use self::Getter::*;
 
-        let mut threads: Vec<Sender<Request>> = vec![];
-        let mut idles: Vec<TID> = vec![];
-        let mut queued = VecDeque::<Request>::new();
-        let mut options = CurlOptions::default();
-
-        for thread_id in 0..max_threads as usize {
-            threads.push(processor(thread_id, main_tx.clone()));
-            idles.push(thread_id);
+        {
+            let mut state = state.lock().unwrap();
+            for thread_id in 0..max_threads as usize {
+                state.threads.push(processor(thread_id, main_tx.clone()));
+                state.idles.push(thread_id);
+            }
+            log_status(&SP::Initial, &state, buffer.len());
         }
 
-        log_status(&SP::Initial, queued.len(), buffer.len(), idles.len(), threads.len());
 
         while let Ok(it) = main_rx.recv() {
             match it {
                 Queue(url, cache_filepath, meta, force, entry_type) => {
+                    let mut state = state.lock().unwrap();
                     let ticket = buffer.reserve();
 
-                    let request = Request { ticket: ticket, url: url.clone(), cache_filepath: cache_filepath, meta: meta, force: force, entry_type: entry_type, options: options.clone() };
+                    let request = Request { ticket: ticket, url: url.clone(), cache_filepath: cache_filepath, meta: meta, force: force, entry_type: entry_type, options: state.curl_options.clone() };
 
-                    if let Some(worker) = idles.pop() {
-                        threads[worker].send(request).unwrap();
+                    if let Some(worker) = state.idles.pop() {
+                        state.processing.insert(request.clone());
+                        state.threads[worker].send(request).unwrap();
+                        log_status(&SP::Process(url), &state, buffer.len());
                     } else {
-                        queued.push_back(request);
-                        log_status(&SP::Queue(url), queued.len(), buffer.len(), idles.len(), threads.len());
+                        state.queued.push_back(request);
+                        log_status(&SP::Queue(url), &state, buffer.len());
                     }
                 }
                 Done(thread_id, request) => {
+                    let mut state = state.lock().unwrap();
+                    state.processing.remove(&request);
                     buffer.push(
                         request.ticket,
                         make_queued_operation(request.cache_filepath, request.url, request.meta, request.force, request.entry_type));
                     app_tx.send(Operation::Pull).unwrap();
-                    try_next(&app_tx, thread_id, queued.pop_front(), &mut threads, &mut idles);
-                    log_status(&SP::Complete(thread_id), queued.len(), buffer.len(), idles.len(), threads.len());
+                    try_next(&app_tx, thread_id, &mut state);
+                    log_status(&SP::Complete(thread_id), &state, buffer.len());
                 }
                 Fail(thread_id, err, request) => {
+                    let mut state = state.lock().unwrap();
+                    state.processing.remove(&request);
                     buffer.skip(request.ticket);
                     app_tx.send(Operation::Pull).unwrap();
-                    try_next(&app_tx, thread_id, queued.pop_front(), &mut threads, &mut idles);
-                    log_status(&SP::Fail(thread_id, err, request.url), queued.len(), buffer.len(), idles.len(), threads.len());
-                }
-                UpdateCurlOptions(new_options) => {
-                    options = new_options;
+                    try_next(&app_tx, thread_id, &mut state);
+                    log_status(&SP::Fail(thread_id, err, request.url), &state, buffer.len());
                 }
             }
         }
@@ -256,24 +271,27 @@ fn make_queued_operation(file: PathBuf, url: String, meta: Option<Meta>, force: 
     }
 }
 
-fn try_next(app_tx: &Sender<Operation>, thread_id: TID, next: Option<Request>, threads: &mut Vec<Sender<Request>>, idles: &mut Vec<TID>) {
-    if let Some(next) = next {
-        threads[thread_id].send(next).unwrap();
+fn try_next(app_tx: &Sender<Operation>, thread_id: TID, state: &mut State) {
+    if let Some(next) = state.queued.pop_front() {
+        state.threads[thread_id].send(next).unwrap();
     } else {
-        idles.push(thread_id);
+        state.idles.push(thread_id);
     }
 
-    if idles.len() == threads.len() {
+    if state.idles.len() == state.threads.len() {
         app_tx.send(Operation::Input(mapping::Input::Event(EventName::DownloadAll))).unwrap();
     }
 }
 
-fn log_status(sp: &SP, queues: usize, buffers: usize, idles: usize, threads: usize) {
+fn log_status(sp: &SP, state: &State, buffers: usize) {
     use self::SP::*;
 
-    let (q, b, w, t) = (s!(queues), s!(buffers), s!(idles), s!((threads - idles)));
+    let idles = state.idles.len();
+    let (q, b, w, t) = (s!(state.queued.len()), s!(buffers), s!(idles), s!((state.threads.len() - idles)));
     match *sp {
         Initial => (),
+        Process(ref url) =>
+            puts_event!("remote/process", "url" => url, "queue" => q, "buffer" => b, "idles" => w),
         Queue(ref url) =>
             puts_event!("remote/queue", "url" => url, "queue" => q, "buffer" => b, "idles" => w),
         Complete(ref thread_id) =>
@@ -294,4 +312,37 @@ fn update_atime<T: AsRef<Path>>(path: &T) -> Result<(), ChryError> {
     let mtime = FileTime::from_last_modification_time(&meta);
     let atime = FileTime::from_seconds_since_1970(ts.sec as u64, ts.nsec as u32);
     set_file_times(path, atime, mtime).map_err(|it| ChryError::Standard(s!(it)))
+}
+
+
+impl State {
+    pub fn requests(&self) -> Vec<Request> {
+        let mut result: Vec<Request> = self.processing.iter().cloned().collect();
+        for it in &self.queued {
+            result.push(it.clone());
+        }
+        result
+    }
+}
+
+
+impl Ord for Request {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.ticket.cmp(&other.ticket)
+    }
+}
+
+impl PartialOrd for Request {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.ticket.partial_cmp(&other.ticket)
+    }
+}
+
+impl Eq for Request {
+}
+
+impl PartialEq for Request {
+    fn eq(&self, other: &Self) -> bool {
+        self.ticket == other.ticket
+    }
 }

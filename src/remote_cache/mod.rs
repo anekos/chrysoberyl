@@ -52,13 +52,13 @@ pub struct State {
 
 #[derive(Clone)]
 pub struct Request {
-    ticket: usize,
-    url: String,
+    pub entry_type: Option<EntryType>,
+    pub url: String,
     cache_filepath: PathBuf,
-    meta: Option<Meta>,
     force: bool,
-    entry_type: Option<EntryType>,
+    meta: Option<Meta>,
     options: CurlOptions,
+    ticket: usize,
 }
 
 
@@ -320,7 +320,7 @@ fn update_atime<T: AsRef<Path>>(path: &T) -> Result<(), ChryError> {
 
 
 impl State {
-    fn entries(&self) -> Vec<Request> {
+    pub fn requests(&self) -> Vec<Request> {
         let mut result: Vec<Request> = self.processing.iter().map(Clone::clone).collect();
         for it in &self.queued {
             result.push(it.clone());

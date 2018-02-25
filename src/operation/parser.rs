@@ -1119,6 +1119,8 @@ impl FromStr for Session {
                 Ok(Session::Options),
             "entries" | "entry" | "e" =>
                 Ok(Session::Entries),
+            "queue" | "que" | "q" =>
+                Ok(Session::Queue),
             "paths" | "path" | "P" =>
                 Ok(Session::Paths),
             "position" | "pos" | "p" =>

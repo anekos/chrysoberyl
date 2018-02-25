@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::env;
 use std::fmt;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use app::App;
 use color::Color;
@@ -28,6 +28,7 @@ use util::shell::{escape, escape_pathbuf};
 pub enum Session {
     Options,
     Entries,
+    Queue,
     Position,
     Paths,
     Mappings,
@@ -57,6 +58,7 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
     match *session {
         Options => write_options(&app.states, &app.gui, false, out),
         Entries => write_entries(&app.entries, out),
+        Queue => write_queue(app.remote_cache.state.clone(), out),
         Paths => write_paths(&app.entries, out),
         Position => write_paginator(app.current().map(|it| it.0), &app.paginator, out),
         Mappings => write_mappings(&app.mapping, out),
@@ -66,6 +68,7 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
         Reading => {
             write_options(&app.states, &app.gui, true, out);
             write_entries(&app.entries, out);
+            write_queue(app.remote_cache.state.clone(), out);
             write_mappings(&app.mapping, out);
             write_markers(&app.marker, out);
             write_paginator(app.current().map(|it| it.0), &app.paginator, out);
@@ -73,6 +76,7 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
         All => {
             write_options(&app.states, &app.gui, false, out);
             write_entries(&app.entries, out);
+            write_queue(app.remote_cache.state.clone(), out);
             write_mappings(&app.mapping, out);
             write_markers(&app.marker, out);
             write_envs(out);
@@ -189,6 +193,29 @@ pub fn write_options(st: &States, gui: &Gui, reading: bool, out: &mut String) {
         sprintln!(out, "@clip {} {} {} {}", c.left, c.top, c.right, c.bottom);
     } else {
         sprintln!(out, "@unclip");
+    }
+}
+
+pub fn write_queue(state: Arc<Mutex<::remote_cache::State>>, out: &mut String) {
+    use entry::EntryType::*;
+
+    let state = state.lock().unwrap();
+    let requests = state.requests();
+    for request in requests {
+        let entry_type = request.entry_type.and_then(|entry_type| {
+            let entry_type = match entry_type {
+                PDF => "pdf",
+                Image => "image",
+                Archive => "archive",
+                _ => return None,
+            };
+            Some(entry_type)
+        });
+        sprint!(out, "@push-url ");
+        if let Some(entry_type) = entry_type {
+            sprint!(out, "--as {} ", entry_type);
+        }
+        sprintln!(out, "{}", escape(&request.url));
     }
 }
 

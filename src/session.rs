@@ -10,7 +10,7 @@ use color::Color;
 use constant;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::filter::writer::write as write_expr;
-use entry::{Entry, EntryContainer, EntryType, Key};
+use entry::{Entry, EntryContainer, EntryType, Key, Meta};
 use gui::Gui;
 use mapping::{Mapping, unified_mapping as umap, region_mapping as rmap};
 use operation::option::PreDefinedOptionName;
@@ -211,11 +211,12 @@ pub fn write_queue(state: &Arc<Mutex<::remote_cache::State>>, out: &mut String) 
             };
             Some(entry_type)
         });
-        sprint!(out, "@push-url ");
+        sprint!(out, "@push-url");
         if let Some(entry_type) = entry_type {
-            sprint!(out, "--as {} ", entry_type);
+            sprint!(out, " --as {}", entry_type);
         }
-        sprintln!(out, "{}", escape(&request.url));
+        sprint!(out, "{}", meta_args(&request.meta));
+        sprintln!(out, " {}", escape(&request.url));
     }
 }
 
@@ -235,22 +236,22 @@ fn write_entry(entry: &Entry, out: &mut String, previous: &mut Key) {
         let url = &*url;
         match entry.content {
             Image(_) =>
-                sprintln!(out, "@push-url --as image {}", escape(url)),
+                sprintln!(out, "@push-url --as image{} {}", meta_args(&entry.meta), escape(url)),
             Archive(_, _) if path_changed =>
-                sprintln!(out, "@push-url --as archive {}", escape(url)),
+                sprintln!(out, "@push-url --as archive{} {}", meta_args(&entry.meta), escape(url)),
             Pdf(_, _) if path_changed =>
-                sprintln!(out, "@push-url --as pdf {}", escape(url)),
+                sprintln!(out, "@push-url --as pdf{} {}", meta_args(&entry.meta), escape(url)),
             Archive(_, _) | Pdf(_, _) | Memory(_, _) =>
                 (),
         }
     } else {
         match entry.content {
             Image(ref path) =>
-                sprintln!(out, "@push-image {}", escape_pathbuf(path)),
+                sprintln!(out, "@push-image{} {}", meta_args(&entry.meta), escape_pathbuf(path)),
             Archive(ref path, _) if path_changed =>
-                sprintln!(out, "@push-archive {}", escape_pathbuf(&*path)),
+                sprintln!(out, "@push-archive{} {}", meta_args(&entry.meta), escape_pathbuf(&*path)),
             Pdf(ref path, _) if path_changed =>
-                sprintln!(out, "@push-pdf {}", escape_pathbuf(&*path)),
+                sprintln!(out, "@push-pdf{} {}", meta_args(&entry.meta), escape_pathbuf(&*path)),
             Archive(_, _) | Pdf(_, _) | Memory(_, _) =>
                 (),
         }
@@ -260,6 +261,15 @@ fn write_entry(entry: &Entry, out: &mut String, previous: &mut Key) {
     if (previous.0.is_container() != entry.key.0.is_container()) || *previous.1 != entry.key.1 {
         *previous = entry.key.clone();
     }
+}
+
+fn meta_args(meta: &Option<Meta>) -> String {
+    let mut result = o!("");
+    if_let_some!(meta = meta.as_ref(), result);
+    for entry in meta.iter() {
+        sprint!(result, " --meta {}={}", escape(&entry.key), escape(&entry.value));
+    }
+    result
 }
 
 pub fn write_paths(entries: &EntryContainer, out: &mut String) {

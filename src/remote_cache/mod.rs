@@ -54,10 +54,10 @@ pub struct State {
 #[derive(Clone)]
 pub struct Request {
     pub entry_type: Option<EntryType>,
+    pub meta: Option<Meta>,
     pub url: String,
     cache_filepath: PathBuf,
     force: bool,
-    meta: Option<Meta>,
     options: CurlOptions,
     ticket: usize,
 }

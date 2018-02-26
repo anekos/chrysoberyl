@@ -3,7 +3,7 @@
 pkgname=chrysoberyl-git
 _pkgname=chrysoberyl
 pkgdesc="Viewer for (local/remote) (images|PDFs|images in archive)"
-pkgver=0.1.0.916
+pkgver=0.1.0.1185
 pkgrel=1
 arch=('x86_64')
 conflicts=("chrysoberyl")
@@ -12,6 +12,7 @@ url="https://github.com/anekos/chrysoberyl"
 license=('GPL')
 source=('git://github.com/anekos/chrysoberyl.git')
 sha256sums=('SKIP')
+makedepends=('rust' 'cairo' 'gtk3' 'cmake' 'poppler-glib')
 
 prepare() {
   :

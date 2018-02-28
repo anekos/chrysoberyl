@@ -39,6 +39,7 @@ iterable_enum!(PreDefinedOptionName =>
     FitTo,
     HistoryFile,
     HorizontalViews,
+    InitialPosition,
     LogFile,
     MaskOperator,
     OperationBox,
@@ -81,6 +82,7 @@ impl FromStr for PreDefinedOptionName {
             "fit-to" | "fit"                       => FitTo,
             "history-file"                         => HistoryFile,
             "horizontal-views"                     => HorizontalViews,
+            "initial-position"                     => InitialPosition,
             "log-file" | "log"                     => LogFile,
             "mask-operator"                        => MaskOperator,
             "operation-box" | "operation"          => OperationBox,
@@ -119,9 +121,10 @@ impl PreDefinedOptionName {
         match *self {
             AbbrevLength | AutoReload | AutoPaging |
                 ColorError | ColorErrorBackground | ColorStatusBar | ColorStatusBarBackground | ColorWindowBackground |
-                FitTo | HorizontalViews | LogFile | MaskOperator |
+                FitTo | HorizontalViews | InitialPosition | LogFile | MaskOperator |
                 OperationBox | PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
-                Reverse | Rotation | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusFormat | EmptyStatusFormat | StdOut | UpdateCacheAccessTime | TitleFormat | VerticalViews | WatchFiles | HistoryFile => false,
+                Reverse | Rotation | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusFormat | EmptyStatusFormat |
+                StdOut | UpdateCacheAccessTime | TitleFormat | VerticalViews | WatchFiles | HistoryFile => false,
             CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => true,
         }
     }

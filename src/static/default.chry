@@ -1,8 +1,8 @@
 # scroll or move
-@map input h            @scroll --size 0.8 left  @previous
-@map input j            @scroll --size 0.8 down  @next
-@map input k            @scroll --size 0.8 up    @previous
-@map input l            @scroll --size 0.8 right @next
+@map input h            @scroll --size 0.8 --reset left     @scroll --size 0.8 up      @previous
+@map input j            @scroll --size 0.8 --reset down     @scroll --size 0.8 right   @next
+@map input k            @scroll --size 0.8 --reset up       @scroll --size 0.8 left    @previous
+@map input l            @scroll --size 0.8 --reset right    @scroll --size 0.8 down    @next
 @map input space        @next
 @map input BackSpace    @previous
 

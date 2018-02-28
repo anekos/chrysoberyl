@@ -920,7 +920,7 @@ pub fn on_reset_image(app: &mut App, updated: &mut Updated) -> EventResult {
 }
 
 pub fn on_reset_scrolls(app: &mut App, to_end: bool) -> EventResult {
-    app.gui.reset_scrolls(to_end);
+    app.gui.reset_scrolls(app.states.initial_position, to_end);
     Ok(())
 }
 
@@ -930,9 +930,9 @@ pub fn on_save(app: &mut App, path: &Path, sessions: &[Session]) -> EventResult 
     Ok(())
 }
 
-pub fn on_scroll(app: &mut App, direction: &Direction, operation: &[String], scroll_size: f64, crush: bool) -> EventResult {
+pub fn on_scroll(app: &mut App, direction: &Direction, scroll_size: f64, crush: bool, reset_at_end: bool, operation: &[String]) -> EventResult {
     let saved = app.counter.clone();
-    if !app.gui.scroll_views(direction, scroll_size, app.counter.pop(), crush) && !operation.is_empty() {
+    if !app.gui.scroll_views(direction, scroll_size, crush, reset_at_end, app.counter.pop()) && !operation.is_empty() {
         let op = Operation::parse_from_vec(operation)?;
         app.counter = saved;
         app.operate(op);
@@ -1270,6 +1270,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 FitTo => &mut app.states.drawing.fit_to,
                 HistoryFile => &mut app.states.history_file,
                 HorizontalViews => &mut app.states.view.cols,
+                InitialPosition => &mut app.states.initial_position,
                 LogFile => &mut app.states.log_file,
                 MaskOperator => &mut app.states.drawing.mask_operator,
                 OperationBox => &mut app.states.operation_box,

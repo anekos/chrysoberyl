@@ -137,6 +137,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         FitTo => gen("fit-to", &st.drawing.fit_to, context),
         HistoryFile => genp("history-file", &st.history_file, context),
         HorizontalViews => gen("horizontal-views", &st.view.cols, context),
+        InitialPosition => gen("initial-position", &st.initial_position, context),
         LogFile => gen("log-file", &st.log_file, context),
         MaskOperator => gen("mask-operator", &st.drawing.mask_operator, context),
         OperationBox => gen("operation-box", &b2s(st.operation_box), context),

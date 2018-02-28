@@ -459,7 +459,7 @@ Write the session data to `PATH`.
 You can `@load` `PATH` file to restore current session.
 
 
-## @scroll <DIRECTION> [(-s|--size) <SIZE>] [--crush|-c]
+## @scroll <DIRECTION> [(-s|--size) <SIZE>] [--crush|-c] [--reset|-r] [<OPERATION>...]
 
 Scroll image.
 If no `SIZE` is given, scroll size is `1.0`.
@@ -651,6 +651,11 @@ history-file
 horizontal-views
 :   type: unsigned integer (>= 1)
 :   Number of horizontal cells.
+
+initial-positoin
+:   type: enum
+:   values: top-left, top-right, bottom-left, bottom-right
+:   Initial image position in cell.
 
 log-file
 :   type: path

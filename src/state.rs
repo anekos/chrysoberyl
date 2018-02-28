@@ -12,6 +12,7 @@ use app_path::{PathList, cache_dir};
 use entry::SearchKey;
 use entry::filter::expression::Expr as FilterExpr;
 use errors::ChryError;
+use gui::{Views, Position};
 use logger;
 use option::OptionValue;
 use remote_cache::curl_options::CurlOptions;
@@ -27,6 +28,7 @@ pub struct States {
     pub drawing: DrawingState,
     pub go: Option<SearchKey>,
     pub history_file: Option<PathBuf>,
+    pub initial_position: Position,
     pub last_direction: Direction,
     pub last_filter: Filters,
     pub log_file: logger::file::File,
@@ -45,13 +47,8 @@ pub struct States {
     pub stdout: logger::stdout::StdOut,
     pub title_format: TitleFormat,
     pub update_cache_atime: bool,
-    pub view: ViewState,
+    pub view: Views,
     pub watch_files: bool,
-}
-
-pub struct ViewState {
-    pub cols: usize,
-    pub rows: usize,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -108,6 +105,7 @@ impl Default for States {
             empty_status_format: EmptyStatusFormat::default(),
             go: None,
             history_file: Some(history_file),
+            initial_position: Position::default(),
             last_direction: Direction::Forward,
             last_filter: Filters::default(),
             log_file: logger::file::File::new(),
@@ -125,7 +123,7 @@ impl Default for States {
             stdout: logger::stdout::StdOut::new(),
             title_format: TitleFormat::default(),
             update_cache_atime: false,
-            view: ViewState::default(),
+            view: Views::default(),
             watch_files: false,
         }
     }
@@ -152,22 +150,6 @@ impl Default for PreFetchState {
             page_size: 5,
             limit_of_items: 100,
         }
-    }
-}
-
-
-impl Default for ViewState {
-    fn default() -> Self {
-        ViewState {
-            cols: 1,
-            rows: 1,
-        }
-    }
-}
-
-impl ViewState {
-    pub fn len(&self) -> usize {
-        self.rows * self.cols
     }
 }
 

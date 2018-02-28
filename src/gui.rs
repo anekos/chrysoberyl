@@ -2,7 +2,9 @@
 use std::convert::Into;
 use std::default::Default;
 use std::error::Error;
+use std::fmt;
 use std::fs::File;
+use std::ops;
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::mpsc::Sender;
@@ -22,7 +24,6 @@ use gtk_utils::new_pixbuf_from_surface;
 use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use operation::Operation;
 use size::{FitTo, Size, Region};
-use state::ViewState;
 use ui_event::UIEvent;
 use util;
 use util::num::feq;
@@ -91,6 +92,18 @@ pub enum Direction {
     Down
 }
 
+pub struct Views {
+    pub cols: usize,
+    pub rows: usize,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum Position {
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+}
 
 const FONT_SIZE: f64 = 12.0;
 const PADDING: f64 = 5.0;
@@ -206,7 +219,7 @@ impl Gui {
         self.grid_size.width as usize
     }
 
-    pub fn get_cell_size(&self, state: &ViewState) -> Size {
+    pub fn get_cell_size(&self, state: &Views) -> Size {
         let (width, height) = self.window.get_size();
         let status_bar_height = if self.status_bar.get_visible() { self.status_bar.get_allocated_height() } else { 0 };
 
@@ -254,20 +267,13 @@ impl Gui {
         self.ui_event = Some(UIEvent::new(self, skip, app_tx));
     }
 
-    pub fn reset_scrolls(&self, to_end: bool) {
+    pub fn reset_scrolls(&self, position: Position, to_end: bool) {
         for cell in self.cells(false) {
-            if let Some(adj) = cell.window.get_vadjustment() {
-                adj.set_value(if to_end { adj.get_upper() } else { 0.0 });
-                cell.window.set_vadjustment(&adj);
-            }
-            if let Some(adj) = cell.window.get_hadjustment() {
-                adj.set_value(if to_end { adj.get_upper() } else { 0.0 });
-                cell.window.set_hadjustment(&adj);
-            }
+            cell.reset_scroll(position, to_end);
         }
     }
 
-    pub fn reset_view(&mut self, state: &ViewState) {
+    pub fn reset_view(&mut self, state: &Views) {
         self.create_images(state);
         self.reset_focus();
     }
@@ -280,10 +286,10 @@ impl Gui {
         let cell = self.cells(false).nth(index).ok_or("Out of index")?;
         save_image(&cell.image, path)
     }
-    pub fn scroll_views(&self, direction: &Direction, scroll_size: f64, count: usize, crush: bool) -> bool {
+    pub fn scroll_views(&self, direction: &Direction, scroll_size: f64, crush: bool, reset_at_end: bool, count: usize) -> bool {
         let mut scrolled = false;
         for cell in self.cells(false) {
-            scrolled |= scroll_window(&cell.window, direction, scroll_size, count, crush);
+            scrolled |= scroll_window(&cell.window, direction, scroll_size, crush, reset_at_end, count);
         }
         scrolled
     }
@@ -347,7 +353,7 @@ impl Gui {
             &self.colors.status_bar_background.gdk_rgba());
     }
 
-    fn create_images(&mut self, state: &ViewState) {
+    fn create_images(&mut self, state: &Views) {
         for cell in &self.cells {
             cell.image.set_from_pixbuf(None);
         }
@@ -511,6 +517,31 @@ impl Cell {
             original_size.fit(cell_size, fit_to).0
         })
     }
+
+    fn reset_scroll(&self, position: Position, to_end: bool) {
+        use self::Position::*;
+
+        if_let_some!(h_adj = self.window.get_hadjustment(), ());
+        if_let_some!(v_adj = self.window.get_vadjustment(), ());
+
+        let (h_upper, v_upper) = (h_adj.get_upper(), v_adj.get_upper());
+
+        let position = if to_end { !position } else { position };
+        println!("position: {:?}", position);
+
+        let (h, v) = match position {
+            TopLeft => (0.0, 0.0),
+            TopRight => (h_upper, 0.0),
+            BottomLeft => (0.0, v_upper),
+            BottomRight => (h_upper, v_upper),
+        };
+
+        v_adj.set_value(v);
+        h_adj.set_value(h);
+
+        self.window.set_vadjustment(&v_adj);
+        self.window.set_hadjustment(&h_adj);
+    }
 }
 
 
@@ -547,9 +578,9 @@ impl Default for Colors {
 
 
 impl FromStr for Direction {
-    type Err = String;
+    type Err = ChryError;
 
-    fn from_str(src: &str) -> Result<Direction, String> {
+    fn from_str(src: &str) -> Result<Direction, ChryError> {
         use self::Direction::*;
 
         match src {
@@ -562,7 +593,7 @@ impl FromStr for Direction {
             "up" | "u" =>
                 Ok(Up),
             _ =>
-                Err(format!("Invalid direction: {}", src))
+                Err(ChryError::InvalidValue(o!(src))),
         }
     }
 }
@@ -571,6 +602,79 @@ impl FromStr for Direction {
 impl Into<u32> for DropItemType {
     fn into(self) -> u32 {
         self as u32
+    }
+}
+
+
+impl Default for Position {
+    fn default() -> Self {
+        Position::TopLeft
+    }
+}
+
+impl ops::Not for Position {
+    type Output = Self;
+
+    fn not(self) -> Self {
+        use self::Position::*;
+
+        match self {
+            TopLeft => BottomRight,
+            TopRight => BottomLeft,
+            BottomLeft => TopRight,
+            BottomRight => TopLeft,
+        }
+    }
+}
+
+impl FromStr for Position {
+    type Err = ChryError;
+
+    fn from_str(src: &str) -> Result<Position, ChryError> {
+        use self::Position::*;
+
+        match src {
+            "top-left" | "left-top" | "tl" =>
+                Ok(TopLeft),
+            "top-right" | "right-top" | "tr" =>
+                Ok(TopRight),
+            "bottom-left" | "left-bottom" | "bl" =>
+                Ok(BottomLeft),
+            "bottom-right" | "right-bottom" | "br" =>
+                Ok(BottomRight),
+            _ =>
+                Err(ChryError::InvalidValue(o!(src))),
+        }
+    }
+}
+
+impl fmt::Display for Position {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::Position::*;
+
+        let name = match *self {
+            TopLeft => "top-left",
+            TopRight => "top-right",
+            BottomLeft => "bottom-left",
+            BottomRight => "bottom-right",
+        };
+        write!(f, "{}", name)
+    }
+}
+
+
+impl Default for Views {
+    fn default() -> Self {
+        Views {
+            cols: 1,
+            rows: 1,
+        }
+    }
+}
+
+impl Views {
+    pub fn len(&self) -> usize {
+        self.rows * self.cols
     }
 }
 
@@ -608,43 +712,74 @@ fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), BoxedError>
     Ok(())
 }
 
-fn scroll_window(window: &ScrolledWindow, direction: &Direction, scroll_size_ratio: f64, count: usize, crush: bool) -> bool {
+fn reset_scroll(window: &ScrolledWindow, direction: &Direction) {
+    use self::Direction::*;
+
+    let f = |horizontal| {
+        let adj = if horizontal { window.get_hadjustment() } else { window.get_vadjustment() };
+        if_let_some!(adj = adj, ());
+
+        let value = match *direction {
+            Right | Down => 0.0,
+            Left | Up => adj.get_upper(),
+        };
+
+        adj.set_value(value);
+
+        if horizontal {
+            window.set_hadjustment(&adj)
+        } else {
+            window.set_vadjustment(&adj)
+        }
+    };
+
+    match *direction {
+        Left | Right => f(true),
+        Up | Down => f(false),
+    }
+}
+
+fn scroll_window(window: &ScrolledWindow, direction: &Direction, scroll_size_ratio: f64, crush: bool, reset_at_end: bool, count: usize) -> bool {
     use self::Direction::*;
 
     let scroll = |horizontal| -> bool {
         let adj = if horizontal { window.get_hadjustment() } else { window.get_vadjustment() };
-        if let Some(adj) = adj {
-            let page_size = adj.get_page_size();
-            let scroll_size = page_size * scroll_size_ratio * count as f64;
-            let space = page_size * (1.0 - scroll_size_ratio);
-            let value = adj.get_value();
-            let scroll_size = match *direction {
-                Right | Down => {
-                    let rest = adj.get_upper() - value - scroll_size - page_size;
-                    if rest < space && crush {
-                        scroll_size + rest
-                    } else {
-                        scroll_size
-                    }
-                }
-                Left | Up => {
-                    let rest = value - scroll_size;
-                    if rest < space && crush {
-                        -(scroll_size + rest)
-                    } else {
-                        -scroll_size
-                    }
-                }
-            };
+        if_let_some!(adj = adj, false);
 
-            adj.set_value(value + scroll_size);
-
-            if !feq(adj.get_value(), value, 0.0000001) {
-                if horizontal { window.set_hadjustment(&adj) } else { window.set_vadjustment(&adj) }
-                return true
+        let page_size = adj.get_page_size();
+        let scroll_size = page_size * scroll_size_ratio * count as f64;
+        let space = page_size * (1.0 - scroll_size_ratio);
+        let value = adj.get_value();
+        let scroll_size = match *direction {
+            Right | Down => {
+                let rest = adj.get_upper() - value - scroll_size - page_size;
+                if rest < space && crush {
+                    scroll_size + rest
+                } else {
+                    scroll_size
+                }
             }
+            Left | Up => {
+                let rest = value - scroll_size;
+                if rest < space && crush {
+                    -(scroll_size + rest)
+                } else {
+                    -scroll_size
+                }
+            }
+        };
+
+        adj.set_value(value + scroll_size);
+
+        if feq(adj.get_value(), value, 0.0000001) {
+            if reset_at_end {
+                reset_scroll(window, direction);
+            }
+            false
+        } else {
+            if horizontal { window.set_hadjustment(&adj) } else { window.set_vadjustment(&adj) }
+            true
         }
-        false
     };
 
     match *direction {

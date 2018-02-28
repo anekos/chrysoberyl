@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use cairo;
 
 use color::Color;
+use gui::Position;
 use option::*;
 use resolution;
 use size::FitTo;
@@ -281,6 +282,16 @@ fn get_scale(fit_to: &FitTo) -> usize {
     match *fit_to {
         FitTo::Scale(scale) => scale,
         _ => 100,
+    }
+}
+
+
+impl OptionValue for Position {
+    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+        value.parse().map(|value| {
+            *self = value;
+            ()
+        })
     }
 }
 

@@ -8,6 +8,7 @@ use std::thread::spawn;
 
 use errors::ChryError;
 use operation::Operation;
+use termination;
 use util::string::join;
 
 
@@ -26,11 +27,9 @@ pub fn call(async: bool, command_line: &[String], stdin: Option<String>, tx: Opt
 }
 
 fn run(tx: Option<Sender<Operation>>, envs: Option<Envs>, command_line: &[String], stdin: Option<String>) {
-    let (command_name, args) = command_line.split_first().expect("WTF: Empty command line");
-
-    let mut command = Command::new(command_name);
+    let mut command = Command::new("setsid");
     command
-        .args(args);
+        .args(command_line);
     command
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -43,15 +42,16 @@ fn run(tx: Option<Sender<Operation>>, envs: Option<Envs>, command_line: &[String
 
     let child = command.spawn().unwrap();
 
-    // let terminator = termination::Process::Kill(child.id());
-    // termination::register(terminator.clone());
-    //
+    let terminator = termination::Process::Kill(child.id());
+    termination::register(terminator.clone());
+
     puts_event!("shell/open");
     match process_stdout(tx, child, stdin) {
         Ok(_) => puts_event!("shell/close"),
         Err(err) => puts_error!(err, "at" => "shell", "for" => join(command_line, ',')),
     }
-    // termination::unregister(&terminator);
+
+    termination::unregister(&terminator);
 }
 
 fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<String>) -> Result<(), ChryError> {

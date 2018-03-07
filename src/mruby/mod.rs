@@ -4,6 +4,7 @@ use std::env;
 use std::error;
 use std::rc::Rc;
 
+use marksman_escape::Escape;
 use mrusty::{Mruby, MrubyImpl, Value, MrubyFile};
 
 use app::info::AppInfo;
@@ -37,7 +38,7 @@ impl MRubyEnv {
             });
 
             def_self!("const_missing", |mruby, slf: Value, name: Value| {
-                fetch_var(&mruby, &name).unwrap_or_else(|_| mruby.nil())
+                fetch_escaped_var(&mruby, &name).unwrap_or_else(|_| mruby.nil())
             });
         });
 
@@ -88,9 +89,10 @@ impl MRubyEnv {
     }
 }
 
-fn fetch_var(mruby: &Rc<RefCell<Mruby>>, name: &Value) -> Result<Value, Box<error::Error>> {
+fn fetch_escaped_var(mruby: &Rc<RefCell<Mruby>>, name: &Value) -> Result<Value, Box<error::Error>> {
     let name = name.to_str()?;
     let name = constant::env_name(name);
     let value = env::var(name)?;
-    Ok(mruby.string(&value))
+    let escaped = String::from_utf8(Escape::new(value.bytes()).collect())?;
+    Ok(mruby.string(&escaped))
 }

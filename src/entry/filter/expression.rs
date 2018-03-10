@@ -71,6 +71,7 @@ pub enum EVariable {
 
 #[derive(Clone, Debug, Copy)]
 pub enum EBVariable {
+    Active, // AppWindowActive
     Animation,
 }
 

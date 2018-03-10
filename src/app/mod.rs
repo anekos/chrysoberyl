@@ -462,6 +462,7 @@ impl App {
 
     pub fn app_info(&self) -> AppInfo {
         AppInfo {
+            active: self.gui.window.is_active(),
             pages: self.entries.len(),
             real_pages: self.entries.real_len(),
             current_page: self.current().map(|it| it.1 + 1),

@@ -765,5 +765,5 @@ CmpOp ← '<' | '<=' | '>' | '>=' | '=' | '==' | '!=' | '=*' | '!*'
 Value ← Glob | Integer | Variable
 Variable ← 'type' | 'width' | 'height' | 'path' | 'ext' | 'extension' | 'dimensions' | 'name' | 'filesize' | 'page' | 'pages' | 'real-pages' | 'ratio'
 Glob ← '<' string '>'
-BoolVariable ← 'animation'
+BoolVariable ← 'animation' | 'active'
 ```

@@ -88,6 +88,7 @@ fn write_bool(b: &EBool, out: &mut String) {
         }
         Variable(ref name) => {
             match *name {
+                Active => sprint!(out, "active"),
                 Animation => sprint!(out, "animation")
             }
         },

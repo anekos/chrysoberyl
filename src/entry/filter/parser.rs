@@ -128,7 +128,13 @@ fn compare() -> Parser<char, EBool> {
 }
 
 fn bool_variable() -> Parser<char, EBool> {
-    seq("animation").map(|_| EBool::Variable(EBVariable::Animation))
+    use self::EBVariable::*;
+
+    fn gen(name: &'static str, var: EBVariable) -> Parser<char, EBool> {
+        seq(name).map(move |_| EBool::Variable(var))
+    }
+
+    gen("active", Active) | gen("animation", Animation)
 }
 
 fn lit_true() -> Parser<char, EBool> {

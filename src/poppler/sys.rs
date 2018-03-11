@@ -15,7 +15,7 @@ pub struct page_t(c_void);
 pub struct page_index_iter_t(c_void);
 #[repr(C)]
 pub struct action_t {
-    pub action_type: c_char, // only for 2
+    pub action_type: ActionType, // only for 2
     pub title: *const c_char,
     pub dest: *const dest_t,
 }
@@ -35,10 +35,28 @@ pub struct dest_t {
 }
 #[repr(C)]#[derive(Debug)]
 pub struct rectangle_t {
-  pub x1: c_double, /* gdouble */
-  pub y1: c_double, /* gdouble */
-  pub x2: c_double, /* gdouble */
-  pub y2: c_double, /* gdouble */
+      pub x1: c_double, /* gdouble */
+      pub y1: c_double, /* gdouble */
+      pub x2: c_double, /* gdouble */
+      pub y2: c_double, /* gdouble */
+}
+#[repr(C)]#[derive(Debug)]
+pub struct link_mapping_t {
+    pub area: rectangle_t,
+    pub action: *const action_t,
+}
+#[repr(C)]#[derive(Debug)]#[allow(dead_code)]
+pub enum ActionType {
+    Any,
+    GotoDest,
+    GotoRemote,
+    Launch,
+    Uri,
+    Named,
+    Movie,
+    Rendition,
+    OCGState,
+    Javascript,
 }
 
 
@@ -51,6 +69,8 @@ extern "C" {
     pub fn poppler_page_render(page: *const page_t, cairo: *const cairo_sys::cairo_t);
     pub fn poppler_page_get_size(page: *const page_t, width: *mut c_double, height: *mut c_double);
     pub fn poppler_page_find_text(page: *const page_t, text: *const c_char) -> *mut GList;
+    pub fn poppler_page_get_link_mapping(page: *const page_t) -> *mut GList;
+    pub fn poppler_page_free_link_mapping(list: *const GList);
 
     pub fn poppler_index_iter_new(doc: *const document_t) -> *const page_index_iter_t;
     pub fn poppler_index_iter_free(iter: *const page_index_iter_t);

@@ -598,6 +598,21 @@ pub fn on_mark(app: &mut App, updated: &mut Updated, name: String, key: Option<(
 
 #[allow(unused_variables)]
 pub fn on_meow(app: &mut App, updated: &mut Updated) -> EventResult {
+    use entry::EntryContent::*;
+
+    if let Some((entry, _)) = app.current() {
+        match entry.content {
+            Pdf(ref path, index) => {
+                let name = entry.page_filename();
+                let page = PopplerDocument::new_from_file(&**path).nth_page(index);
+                let links = page.get_links();
+                for link in links {
+                    println!("link: {:?}", link);
+                }
+            },
+            _ => (),
+        };
+    }
     Ok(())
 }
 

@@ -6,6 +6,7 @@ use std::default::Default;
 use gdk::{self, EventButton, EventKey, EventScroll, ScrollDirection, ModifierType};
 
 use errors::ChryError;
+use size::Region;
 
 
 
@@ -105,6 +106,12 @@ impl Coord {
 
     pub fn is_valid(&self) -> bool {
         !self.relative_x().is_nan() && !self.relative_y().is_nan()
+    }
+
+    pub fn on_region(&self, region: &Region) -> bool {
+        let x = self.relative_x() as f64;
+        let y = self.relative_y() as f64;
+        region.left <= x && region.right <= x && y <= region.top && region.bottom <= y
     }
 }
 

@@ -46,8 +46,8 @@ pub struct File(*const GFile);
 
 #[derive(Debug)]
 pub struct Link {
-    page: usize,
-    region: Region,
+    pub page: usize,
+    pub region: Region,
 }
 
 

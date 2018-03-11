@@ -376,6 +376,14 @@ Chrysoberyl passes PDF Index data to the STDIN of the `COMMAND` process.
 - "indented" | "indent" | "i"
 
 
+## @pdf-link-action [<OPERATION>...]
+
+e.g)
+
+```
+@map input button-1 @pdf-link-action @next
+```
+
 ## (@prev|@p| @previous) [--wrap|-w] [--archive|-a] [--ignore-views|-i] [<COUNT>]
 
 Show `COUNT`th previous entry.

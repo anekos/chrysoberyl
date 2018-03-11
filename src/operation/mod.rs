@@ -82,6 +82,7 @@ pub enum Operation {
     OperationEntry(OperationEntryAction),
     Page(usize),
     PdfIndex(bool, bool, bool, Vec<Expandable>, poppler::index::Format, Option<String>), /* async, read_operations, search_path, ... */
+    PdfLinkAction(Vec<String>),
     PreFetch(u64),
     Previous(Option<usize>, bool, MoveBy, bool),
     Pull,
@@ -283,6 +284,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@nop"                          => Ok(Nop),
             "@page"                         => parse_page(whole),
             "@pdf-index"                    => parse_pdf_index(whole),
+            "@pdf-link-action" | "@pdf-link"=> Ok(Operation::PdfLinkAction(whole[1..].to_vec())),
             "@prev" | "@p" | "@previous"    => parse_move(whole, Previous),
             "@push"                         => parse_push(whole, |it, meta, force| Push(Expandable::new(it), meta, force)),
             "@push-archive"                 => parse_push(whole, |it, meta, force| PushArchive(Expandable::new(it), meta, force)),
@@ -473,6 +475,7 @@ impl fmt::Debug for Operation {
             OperationEntry(_) => "OperationEntry",
             Page(_) => "Page",
             PdfIndex(_, _, _, _, _, _) => "PdfIndex",
+            PdfLinkAction(_) => "PdfLinkAction",
             PreFetch(_) => "PreFetch",
             Previous(_, _, _, _) => "Previous",
             Pull => "Pull ",

@@ -23,6 +23,7 @@ use size::{Size, Region};
 use state::DrawingState;
 
 mod sys;
+mod util;
 pub mod index;
 
 
@@ -42,6 +43,12 @@ pub struct PopplerDocument(*const sys::document_t);
 pub struct PopplerPage(*const sys::page_t);
 
 pub struct File(*const GFile);
+
+#[derive(Debug)]
+pub struct Link {
+    pub page: usize,
+    pub region: Region,
+}
 
 
 impl PopplerDocument {
@@ -162,13 +169,42 @@ impl PopplerPage {
             for n in 0..g_list_length(listed) {
                 let data = g_list_nth_data(listed, n);
                 let data = &*transmute::<*mut c_void, *const sys::rectangle_t>(data);
-                result.push(new_region_on(data, &size));
+                result.push(util::new_region_on(data, &size));
             }
 
             g_list_free(listed);
 
             result
         }
+    }
+
+    pub fn get_links(&self) -> Vec<Link> {
+        let mut result = vec![];
+
+        unsafe {
+            let listed = sys::poppler_page_get_link_mapping(self.0);
+
+            if listed.is_null() {
+                return result;
+            }
+
+            let size = self.get_size();
+
+            for n in 0..g_list_length(listed) {
+                let data = g_list_nth_data(listed, n);
+                let data = &*transmute::<*mut c_void, *const sys::link_mapping_t>(data);
+                if let Some(action) = util::extract_action(&*data.action) {
+                    let page = action.page;
+                    let region = util::new_region_on(&data.area, &size);
+                    result.push(Link { page, region });
+                }
+            }
+
+            sys::poppler_page_free_link_mapping(listed);
+
+            result
+        }
+
     }
 }
 
@@ -199,16 +235,5 @@ impl Drop for File {
             let ptr = transmute::<*const GFile, *mut GObject>(self.0);
             g_object_unref(ptr);
         }
-    }
-}
-
-
-fn new_region_on(pdf_region: &sys::rectangle_t, size: &Size) -> Region {
-    let (w, h) = (f64!(size.width), f64!(size.height));
-    Region {
-        left: pdf_region.x1 / w,
-        top: 1.0 - (pdf_region.y1 / h),
-        right: pdf_region.x2 / w,
-        bottom: 1.0 - (pdf_region.y2 / h),
     }
 }

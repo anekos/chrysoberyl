@@ -598,6 +598,21 @@ pub fn on_mark(app: &mut App, updated: &mut Updated, name: String, key: Option<(
 
 #[allow(unused_variables)]
 pub fn on_meow(app: &mut App, updated: &mut Updated) -> EventResult {
+    use entry::EntryContent::*;
+
+    if let Some((entry, _)) = app.current() {
+        match entry.content {
+            Pdf(ref path, index) => {
+                let name = entry.page_filename();
+                let page = PopplerDocument::new_from_file(&**path).nth_page(index);
+                let links = page.get_links();
+                for link in links {
+                    println!("link: {:?}", link);
+                }
+            },
+            _ => (),
+        };
+    }
     Ok(())
 }
 
@@ -716,6 +731,34 @@ pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, search_path: 
     } else {
         Err(Box::new(ChryError::Fixed("current entry is not PDF")))
     }
+}
+
+pub fn on_pdf_link_action(app: &mut App, updated: &mut Updated, operation: &[String], context: Option<OperationContext>) -> EventResult {
+    use entry::EntryContent::*;
+
+    if let Some(Input::Unified(coord, _)) = context.map(|it| it.input) {
+        if_let_some!((entry, _) = app.current(), Ok(()));
+
+        match entry.content {
+            Pdf(ref path, index) => {
+                let page = PopplerDocument::new_from_file(&**path).nth_page(index);
+                let links = page.get_links();
+                for link in links {
+                    if coord.on_region(&link.region) {
+                        let paging = app.paging_with_count(false, false, Some(link.page));
+                        updated.pointer = app.paginator.show(&paging);
+                        return Ok(());
+                    }
+                }
+            },
+            _ => (),
+        }
+    }
+
+    let op = Operation::parse_from_vec(operation)?;
+    app.operate(op);
+
+    Ok(())
 }
 
 pub fn on_pre_fetch(app: &mut App, serial: u64) -> EventResult {

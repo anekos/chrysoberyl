@@ -1,10 +1,9 @@
 
 use std::default::Default;
-use std::ffi::CStr;
 use std::str::FromStr;
 
-use errors::ChryError;
 use poppler::sys;
+use poppler::util;
 
 
 
@@ -40,7 +39,7 @@ impl Index {
                     break;
                 }
 
-                if let Some(mut entry) = extract_action(action) {
+                if let Some(mut entry) = util::extract_action(action).map(IndexEntry::from_action) {
                     let child = sys::poppler_index_iter_get_child(iter);
                     entry.child = if child.is_null() {
                         None
@@ -76,34 +75,14 @@ impl Index {
 }
 
 
-fn extract_action(action: *const sys::action_t) -> Option<IndexEntry> {
-    unsafe {
-        let action_type = (*action).action_type;
-
-        if action_type != 2 {
-            return None;
+impl IndexEntry {
+    pub fn from_action(action: util::Action) -> IndexEntry {
+        let page = action.page;
+        IndexEntry {
+            title: action.title.unwrap_or_else(move || s!(page)),
+            page,
+            child: None
         }
-
-        let dest = (*action).dest;
-
-        if dest.is_null() {
-            return None;
-        }
-
-        let title = (*action).title;
-        if title.is_null() {
-            return None;
-        }
-
-        CStr::from_ptr(title).to_str().map(|title| {
-            IndexEntry {
-                title: o!(title),
-                page: (*dest).page as usize,
-                child: None,
-            }
-        }).map_err(|err| {
-            puts_error!(ChryError::Standard(s!(err)), "at" => "poppler/extract_action")
-        }).ok()
     }
 }
 

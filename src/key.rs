@@ -109,8 +109,8 @@ impl Coord {
     }
 
     pub fn on_region(&self, region: &Region) -> bool {
-        let x = self.relative_x() as f64;
-        let y = self.relative_y() as f64;
+        let x = f64::from(self.relative_x());
+        let y = f64::from(self.relative_y());
         region.left <= x && region.right <= x && y <= region.top && region.bottom <= y
     }
 }

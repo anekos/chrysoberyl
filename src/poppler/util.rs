@@ -21,7 +21,6 @@ pub fn extract_action(action: *const sys::action_t) -> Option<Action> {
 
         if let sys::ActionType::GotoRemote = *action_type {
         } else {
-            println!("type: {:?}", *action_type);
             return None;
         }
 

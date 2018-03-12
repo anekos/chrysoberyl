@@ -14,7 +14,7 @@ use cairo;
 use gdk_pixbuf::Pixbuf;
 use glib::translate::ToGlibPtr;
 use libc::{c_int, c_double, c_void};
-use self::glib_sys::{g_list_free, g_list_length, g_list_nth_data};
+use self::glib_sys::g_list_free;
 use self::gio_sys::{g_file_new_for_path, GFile};
 use self::gobject_sys::{GObject, g_object_unref};
 
@@ -154,27 +154,17 @@ impl PopplerPage {
     }
 
     pub fn find_text(&self, text: &str) -> Vec<Region> {
-        let mut result = vec![];
-
         unsafe {
             let cstr = CString::new(text.as_bytes()).unwrap();
             let listed = sys::poppler_page_find_text(self.0, cstr.as_ptr());
 
             if listed.is_null() {
-                return result;
+                return vec![];
             }
 
             let size = self.get_size();
 
-            for n in 0..g_list_length(listed) {
-                let data = g_list_nth_data(listed, n);
-                let data = &*transmute::<*mut c_void, *const sys::rectangle_t>(data);
-                result.push(util::new_region_on(data, &size));
-            }
-
-            g_list_free(listed);
-
-            result
+            tap!(g_list_map!(it: *const sys::rectangle_t = listed => util::new_region_on(it, &size)), g_list_free(listed))
         }
     }
 
@@ -190,15 +180,13 @@ impl PopplerPage {
 
             let size = self.get_size();
 
-            for n in 0..g_list_length(listed) {
-                let data = g_list_nth_data(listed, n);
-                let data = &*transmute::<*mut c_void, *const sys::link_mapping_t>(data);
+            g_list_for!(data: *const sys::link_mapping_t = listed => {
                 if let Some(action) = util::extract_action(&*data.action) {
                     let page = action.page;
                     let region = util::new_region_on(&data.area, &size);
                     result.push(Link { page, region });
                 }
-            }
+            });
 
             sys::poppler_page_free_link_mapping(listed);
 

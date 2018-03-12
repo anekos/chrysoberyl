@@ -220,5 +220,13 @@ macro_rules! tap {
             $block;
             $name
         }
+    };
+
+    ($value:expr, $block:expr) => {
+        {
+            let result = $value;
+            $block;
+            result
+        }
     }
 }

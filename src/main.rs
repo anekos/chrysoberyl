@@ -46,6 +46,7 @@ extern crate url;
 #[macro_use] mod logger;
 #[macro_use] mod errors;
 #[macro_use] mod from_macro;
+#[macro_use] mod gtk_utils;
 
 mod app;
 mod app_path;
@@ -67,7 +68,6 @@ mod expandable;
 mod file_extension;
 mod filer;
 mod filterable_vec;
-mod gtk_utils;
 mod gui;
 mod image;
 mod image_cache;

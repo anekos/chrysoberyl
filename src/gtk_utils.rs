@@ -36,3 +36,31 @@ pub fn context_rotate(context: &Context, page: &Size, rotation: u8) {
         context.rotate(PI / 2.0 * f64!(rotation));
     }
 }
+
+macro_rules! g_list_for {
+    ( $val:ident : $type:ty = $list:expr => $body:expr ) => {
+        {
+            let mut current = $list;
+            while !current.is_null() {
+                let $val = &*transmute::<*mut c_void, $type>((*current).data);
+                $body;
+                current = (*current).next;
+            }
+        }
+
+    }
+}
+
+macro_rules! g_list_map {
+    ( $val:ident : $type:ty = $list:expr => $body:expr ) => {
+        {
+            let mut result = vec![];
+            g_list_for!($val: $type = $list => {
+                let entry = $body;
+                result.push(entry);
+            });
+            result
+        }
+
+    }
+}

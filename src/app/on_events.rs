@@ -1316,11 +1316,12 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 UpdateCacheAccessTime => &mut app.states.update_cache_atime,
                 VerticalViews => &mut app.states.view.rows,
                 WatchFiles => &mut app.states.watch_files,
-                ColorWindowBackground => &mut app.gui.colors.window_background,
-                ColorStatusBar => &mut app.gui.colors.status_bar,
-                ColorStatusBarBackground => &mut app.gui.colors.status_bar_background,
                 ColorError => &mut app.gui.colors.error,
                 ColorErrorBackground => &mut app.gui.colors.error_background,
+                ColorLink => &mut app.states.drawing.link_color,
+                ColorStatusBar => &mut app.gui.colors.status_bar,
+                ColorStatusBarBackground => &mut app.gui.colors.status_bar_background,
+                ColorWindowBackground => &mut app.gui.colors.window_background,
             },
             UserDefined(ref option_name) => {
                 if let Some(switch) = app.user_switches.get(option_name) {
@@ -1389,6 +1390,10 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 app.cache.update_limit(app.states.pre_fetch.limit_of_items),
             ColorWindowBackground | ColorStatusBar | ColorStatusBarBackground =>
                 app.gui.update_colors(),
+            ColorLink => {
+                app.cache.clear();
+                updated.image = true;
+            },
             VerticalViews | HorizontalViews =>
                 on_update_views(app, updated)?,
             UpdateCacheAccessTime =>

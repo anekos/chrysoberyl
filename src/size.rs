@@ -212,11 +212,16 @@ impl Region {
     }
 
     pub fn contains(&self, x: i32, y: i32, width: i32, height: i32) -> bool {
+        let (l, r, t, b) = self.absolute(width, height);
+        (l <= x && x <= r && t <= y && y <= b)
+    }
+
+    pub fn absolute(&self, width: i32, height: i32) -> (i32, i32, i32, i32) {
         let l = (f64!(width) * self.left) as i32;
         let r = (f64!(width) * self.right) as i32;
         let t = (f64!(height) * self.top) as i32;
         let b = (f64!(height) * self.bottom) as i32;
-        (l <= x && x <= r && t <= y && y <= b)
+        (l, r, t, b)
     }
 }
 

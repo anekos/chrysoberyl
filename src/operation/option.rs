@@ -27,6 +27,7 @@ iterable_enum!(PreDefinedOptionName =>
     AutoPaging,
     ColorError,
     ColorErrorBackground,
+    ColorLink,
     ColorStatusBar,
     ColorStatusBarBackground,
     ColorWindowBackground,
@@ -108,6 +109,7 @@ impl FromStr for PreDefinedOptionName {
             "status-bar-background-color"          => ColorStatusBarBackground,
             "error-color"                          => ColorError,
             "error-background-color"               => ColorErrorBackground,
+            "link-color"                           => ColorLink,
             _                                      => return Err(format!("Invalid option name: {}", src))
         };
         Ok(result)
@@ -120,7 +122,7 @@ impl PreDefinedOptionName {
 
         match *self {
             AbbrevLength | AutoReload | AutoPaging |
-                ColorError | ColorErrorBackground | ColorStatusBar | ColorStatusBarBackground | ColorWindowBackground |
+                ColorError | ColorErrorBackground | ColorLink | ColorStatusBar | ColorStatusBarBackground | ColorWindowBackground |
                 FitTo | HorizontalViews | InitialPosition | LogFile | MaskOperator |
                 OperationBox | PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
                 Reverse | Rotation | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusFormat | EmptyStatusFormat |

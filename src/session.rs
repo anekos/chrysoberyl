@@ -126,6 +126,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         AutoPaging => gen("auto-paging", &st.auto_paging, context),
         ColorError => gen("error-color", &c2s(&gui.colors.error), context),
         ColorErrorBackground => gen("error-background-color", &c2s(&gui.colors.error_background), context),
+        ColorLink => gen("link-color", &c2s(&st.drawing.link_color), context),
         ColorStatusBar => gen("status-bar-color", &c2s(&gui.colors.status_bar), context),
         ColorStatusBarBackground => gen("status-bar-background-color", &c2s(&gui.colors.status_bar_background), context),
         ColorWindowBackground => gen("window-background-color", &c2s(&gui.colors.window_background), context),

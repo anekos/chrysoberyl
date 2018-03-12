@@ -9,6 +9,7 @@ use cairo;
 use gtk;
 
 use app_path::{PathList, cache_dir};
+use color::Color;
 use entry::SearchKey;
 use entry::filter::expression::Expr as FilterExpr;
 use errors::ChryError;
@@ -55,6 +56,7 @@ pub struct States {
 pub struct DrawingState {
     pub clipping: Option<Region>,
     pub fit_to: FitTo,
+    pub link_color: Color,
     pub mask_operator: MaskOperator,
     pub rotation: u8,
 }
@@ -134,8 +136,9 @@ impl Default for States {
 impl Default for DrawingState {
     fn default() -> Self {
         DrawingState {
-            fit_to: FitTo::Cell,
             clipping: None,
+            fit_to: FitTo::Cell,
+            link_color: Color::new4(0, 0, 255, 64),
             mask_operator: MaskOperator(cairo::Operator::DestIn),
             rotation: 0,
         }

@@ -56,6 +56,15 @@ impl Color {
             alpha: f64!(self.a),
         }
     }
+
+    pub fn option(&self) -> Option<&Color> {
+        if self.a == 0 {
+            None
+        } else {
+            Some(self)
+        }
+
+    }
 }
 
 

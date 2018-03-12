@@ -18,6 +18,7 @@ use self::glib_sys::g_list_free;
 use self::gio_sys::{g_file_new_for_path, GFile};
 use self::gobject_sys::{GObject, g_object_unref};
 
+use color::Color;
 use gtk_utils::{new_pixbuf_from_surface, context_rotate};
 use size::{Size, Region};
 use state::DrawingState;
@@ -93,14 +94,27 @@ impl Drop for PopplerDocument {
 }
 
 impl PopplerPage {
-    pub fn render(&self, context: &cairo::Context) {
+    pub fn render(&self, context: &cairo::Context, link_color: Option<&Color>) {
         #[cfg(feature = "poppler_lock")]
         let mut count = (*LOCK).lock().unwrap();
         #[cfg(feature = "poppler_lock")]
         trace!("render/start: {:?}", *count);
 
-        let context = context.to_glib_none().0;
-        unsafe { sys::poppler_page_render(self.0, context) };
+        unsafe {
+            let context = context.to_glib_none().0;
+            sys::poppler_page_render(self.0, context);
+        };
+
+        if let Some(color) = link_color.and_then(Color::option) {
+            let size = self.get_size();
+            let (r, g, b, a) = color.tupled4();
+            context.set_source_rgba(r, g, b, a);
+            for link in self.get_links() {
+                let (l, r, t, b) = link.region.absolute(size.width, size.height);
+                context.rectangle(l as f64, t as f64, (r - l) as f64, (b - t) as f64);
+                context.fill();
+            }
+        }
 
         #[cfg(feature = "poppler_lock")]
         {
@@ -118,7 +132,7 @@ impl PopplerPage {
         let surface = ImageSurface::create(Format::ARgb32, fitted.width, fitted.height).unwrap();
         let context = Context::new(&surface);
         context.scale(scale, scale);
-        self.render(&context);
+        self.render(&context, None);
         let mut result = vec![];
         surface.write_to_png(&mut result).expect("get_png_data");
         result
@@ -147,7 +161,7 @@ impl PopplerPage {
             }
             context_rotate(&context, &page, drawing.rotation);
             context.paint();
-            self.render(&context);
+            self.render(&context, Some(&drawing.link_color));
         }
 
         new_pixbuf_from_surface(&surface)

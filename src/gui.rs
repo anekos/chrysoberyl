@@ -527,8 +527,6 @@ impl Cell {
         let (h_upper, v_upper) = (h_adj.get_upper(), v_adj.get_upper());
 
         let position = if to_end { !position } else { position };
-        println!("position: {:?}", position);
-
         let (h, v) = match position {
             TopLeft => (0.0, 0.0),
             TopRight => (h_upper, 0.0),

@@ -20,6 +20,7 @@ use counter::Counter;
 use entry::{Entry, EntryContainer, EntryContent, Serial, Key};
 use events::EventName;
 use gui::Gui;
+use history::History;
 use image_cache::ImageCache;
 use image_fetcher::ImageFetcher;
 use logger;
@@ -52,6 +53,7 @@ pub struct App {
     pub cache: ImageCache,
     pub entries: EntryContainer,
     pub gui: Gui,
+    pub history: History,
     pub mapping: Mapping,
     pub marker: HashMap<String, Key>,
     pub paginator: Paginator,
@@ -119,6 +121,7 @@ impl App {
             fetcher: ImageFetcher::new(cache),
             found_on: None,
             gui: Gui::new(&initial.window_role),
+            history: History::default(),
             last_message: None,
             mapping: Mapping::new(),
             marker: HashMap::new(),
@@ -181,6 +184,8 @@ impl App {
             let operated = match operation {
                 AppEvent(ref event_name, ref context) =>
                     on_app_event(self, &mut updated, event_name, context),
+                Backward =>
+                    on_histoy_go(self, &mut updated, false),
                 ChangeDirectory(ref path) =>
                     on_change_directory(path),
                 Cherenkov(ref parameter) =>
@@ -225,6 +230,8 @@ impl App {
                     on_flush_buffer(self, &mut updated),
                 FlyLeaves(n) =>
                     on_fly_leaves(self, &mut updated, n),
+                Forward =>
+                    on_histoy_go(self, &mut updated, true),
                 Go(ref key) =>
                     on_go(self, &mut updated, key),
                 InitialProcess(entries, shuffle, stdin_as_binary) =>
@@ -299,6 +306,8 @@ impl App {
                     on_query(self, &mut updated, operation, caption),
                 Random =>
                     on_random(self, &mut updated, len),
+                Record(ref op) =>
+                    on_record(self, op),
                 Refresh(image) =>
                     on_refresh(self, &mut updated, image),
                 ResetImage =>

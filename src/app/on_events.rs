@@ -361,6 +361,23 @@ pub fn on_go(app: &mut App, updated: &mut Updated, key: &SearchKey) -> EventResu
     Ok(())
 }
 
+pub fn on_histoy_go(app: &mut App, updated: &mut Updated, forward: bool) -> EventResult {
+    if_let_some!((entry, _) = app.current(), Ok(()));
+
+    loop {
+        if_let_some!(key = app.history.go(forward), Ok(()));
+        if *key == entry.key {
+            continue;
+        }
+        if let Some(index) = app.entries.search(&SearchKey::from_key(key)) {
+            updated.pointer = app.paginator.update_index(Index(index));
+            break;
+        }
+    }
+
+    Ok(())
+}
+
 pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuffle: bool, stdin_as_binary: bool) -> EventResult {
     fn process(app: &mut App, entry: command_line::Entry, first_path: &mut Option<String>, updated: &mut Updated) -> EventResult {
         match entry {
@@ -918,6 +935,16 @@ pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) -> EventResul
         app.paginator.show(&paging);
         updated.image = true;
     }
+    Ok(())
+}
+
+pub fn on_record(app: &mut App, operation: &[String]) -> EventResult {
+    if let Some((entry, _)) = app.current() {
+        app.history.record(entry.key.clone());
+    }
+
+    let op = Operation::parse_from_vec(operation)?;
+    app.operate(op);
     Ok(())
 }
 

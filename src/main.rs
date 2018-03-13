@@ -69,6 +69,7 @@ mod file_extension;
 mod filer;
 mod filterable_vec;
 mod gui;
+mod history;
 mod image;
 mod image_cache;
 mod image_fetcher;

@@ -138,7 +138,7 @@ impl Default for DrawingState {
         DrawingState {
             clipping: None,
             fit_to: FitTo::Cell,
-            link_color: Color::new4(0, 0, 255, 64),
+            link_color: Color::new4(0, 0, 255, 32),
             mask_operator: MaskOperator(cairo::Operator::DestIn),
             rotation: 0,
         }

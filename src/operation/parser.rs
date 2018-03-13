@@ -11,9 +11,10 @@ use color::Color;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta, EntryType};
 use expandable::Expandable;
-use key::{Key, new_key_sequence, Coord};
+use key::{Key, new_key_sequence};
 use mapping::{Input, InputType};
 use shellexpand_wrapper as sh;
+use size::CoordPx;
 use util::string::join;
 
 use operation::*;
@@ -386,7 +387,7 @@ pub fn parse_input(args: &[String]) -> Result<Operation, ParsingError> {
         pub fn input_from_text(&self, text: &str) -> Result<Input, ParsingError> {
             match *self {
                 InputType::Unified =>
-                    Ok(Input::Unified(Coord::default(), Key(o!(text)))),
+                    Ok(Input::Unified(CoordPx::default(), Key(o!(text)))),
                 InputType::Event => {
                     match text.parse() {
                         Ok(event) => Ok(Input::Event(event)),

@@ -23,7 +23,7 @@ use errors::*;
 use gtk_utils::new_pixbuf_from_surface;
 use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use operation::Operation;
-use size::{FitTo, Size, Region};
+use size::{Coord, CoordPx, FitTo, Region, Size};
 use ui_event::UIEvent;
 use util;
 use util::num::feq;
@@ -465,6 +465,27 @@ impl Cell {
          w.y - sy as i32,
          sw as i32,
          sh as i32)
+    }
+
+    pub fn get_position_on_image(&self, coord: &CoordPx) -> Option<(Coord)> {
+        let a = self.window.get_allocation();
+
+        if !(a.x <= coord.x && coord.x <= a.x + a.width && a.y <= coord.y && coord.y <= a.y + a.height) {
+            return None;
+        }
+
+        let (cx, cy, cw, ch) = map!(f64, a.x, a.y, a.width, a.height);
+        self.get_image_size().and_then(|(iw, ih)| {
+            let (iw, ih) = map!(f64, iw, ih);
+            let (ix, iy) = (cx + (cw - iw) / 2.0 , cy + (ch - ih) / 2.0);
+            let (rx, ry) = ((f64!(coord.x) - ix) / cw, (f64!(coord.y) - iy) / ch);
+            if 0.0 <= rx && 0.0 <= ry {
+                Some(Coord { x: rx, y: ry })
+            } else {
+                None
+            }
+        })
+
     }
 
     pub fn make_visible(&self, region: &Region) {

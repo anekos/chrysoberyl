@@ -12,6 +12,20 @@ use util::num::feq;
 
 
 
+#[derive(Debug)]
+pub struct Coord {
+    pub x: f64,
+    pub y: f64,
+}
+
+#[derive(Eq, PartialEq, Hash, Clone, Debug, Copy)]
+pub struct CoordPx {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+}
+
 #[derive(Clone, PartialEq, Eq, Copy, Debug, Default, Ord)]
 pub struct Size {
     pub width: i32,
@@ -41,6 +55,44 @@ pub enum FitTo {
 const FERROR: f64 = 0.000001;
 const MINIMUM_SCALE: usize = 10;
 const MAXIMUM_SCALE: usize = 1000;
+
+
+impl Coord {
+    pub fn on_region(&self, region: &Region) -> bool {
+        region.left <= self.x && self.x <= region.right && region.top <= self.y && self.y <= region.bottom
+    }
+}
+
+
+impl CoordPx {
+    fn relative_x(&self) -> f32 {
+        self.x as f32 / self.width as f32
+    }
+
+    fn relative_y(&self) -> f32 {
+        self.y as f32 / self.height as f32
+    }
+
+    pub fn is_valid(&self) -> bool {
+        !self.relative_x().is_nan() && !self.relative_y().is_nan()
+    }
+}
+
+impl Default for CoordPx {
+    fn default() -> Self {
+        CoordPx { x: 0, y: 0, width: 0, height: 0 }
+    }
+}
+
+impl fmt::Display for CoordPx {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{:1.2}x{:1.2}",
+            self.x as f32 / self.width as f32,
+            self.y as f32 / self.height as f32)
+    }
+}
 
 
 impl Size {

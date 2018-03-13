@@ -1,8 +1,8 @@
 
 use std::collections::{VecDeque, HashMap};
 
-use key::{Key, Coord, key_sequence_to_string};
-use size::Region;
+use key::{Key, key_sequence_to_string};
+use size::{CoordPx, Region};
 
 
 
@@ -89,7 +89,7 @@ impl UnifiedMapping {
         }
     }
 
-    pub fn matched(&self, history: &InputHistory, coord: Coord, width: i32, height: i32) -> Option<(String, Vec<String>)> {
+    pub fn matched(&self, history: &InputHistory, coord: CoordPx, width: i32, height: i32) -> Option<(String, Vec<String>)> {
         let entries = &history.entries;
         let len = entries.len();
         for i in 0..len {
@@ -181,7 +181,7 @@ impl LeafNode {
         self.entries.is_empty()
     }
 
-    pub fn matched(&self, coord: Coord, width: i32, height: i32) -> Option<OperationCode> {
+    pub fn matched(&self, coord: CoordPx, width: i32, height: i32) -> Option<OperationCode> {
         let mut found = None;
 
         for entry in &self.entries {

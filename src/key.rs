@@ -6,20 +6,11 @@ use std::default::Default;
 use gdk::{self, EventButton, EventKey, EventScroll, ScrollDirection, ModifierType};
 
 use errors::ChryError;
-use size::Region;
 
 
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct Key(pub String);
-
-#[derive(Eq, PartialEq, Hash, Clone, Debug, Copy)]
-pub struct Coord {
-    pub x: i32,
-    pub y: i32,
-    pub width: u32,
-    pub height: u32,
-}
 
 pub type KeySequence = Vec<Key>;
 
@@ -92,43 +83,6 @@ fn get_direction_text(direction: &ScrollDirection) -> String {
         __Unknown(n) => return format!("scroll-x{}", n)
     };
     format!("scroll-{}", name)
-}
-
-
-impl Coord {
-    fn relative_x(&self) -> f32 {
-        self.x as f32 / self.width as f32
-    }
-
-    fn relative_y(&self) -> f32 {
-        self.y as f32 / self.height as f32
-    }
-
-    pub fn is_valid(&self) -> bool {
-        !self.relative_x().is_nan() && !self.relative_y().is_nan()
-    }
-
-    pub fn on_region(&self, region: &Region) -> bool {
-        let x = f64::from(self.relative_x());
-        let y = f64::from(self.relative_y());
-        region.left <= x && x <= region.right && y <= region.top && y <= region.bottom
-    }
-}
-
-impl Default for Coord {
-    fn default() -> Self {
-        Coord { x: 0, y: 0, width: 0, height: 0 }
-    }
-}
-
-impl fmt::Display for Coord {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{:1.2}x{:1.2}",
-            self.x as f32 / self.width as f32,
-            self.y as f32 / self.height as f32)
-    }
 }
 
 

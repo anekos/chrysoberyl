@@ -2,8 +2,8 @@
 use std::fmt;
 
 use events::EventName;
-use key::{Key, Coord};
-use size::Region;
+use key::Key;
+use size::{Region, CoordPx};
 
 pub mod event_mapping;
 pub mod region_mapping;
@@ -13,7 +13,7 @@ pub mod unified_mapping;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Input {
-    Unified(Coord, Key),
+    Unified(CoordPx, Key),
     Event(EventName),
     Region(Region, Key, usize), // region, button, cell_index
 }

@@ -99,19 +99,8 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
 
         for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
             if let Some((entry, _)) = app.current_with(index) {
-                let (x1, y1, w, h) = {
-                    let (cx, cy, cw, ch) = cell.get_top_left();
-                    if let Some((iw, ih)) = cell.get_image_size() {
-                        (cx + (cw - iw) / 2, cy + (ch - ih) / 2, iw, ih)
-                    } else {
-                        continue;
-                    }
-                };
-                let (x2, y2) = (x1 + w, y1 + h);
-                if x1 <= coord.x && coord.x <= x2 && y1 <= coord.y && coord.y <= y2 {
-                    let center = (
-                        f64!(parameter.x.unwrap_or_else(|| coord.x - x1)) / f64!(w),
-                        f64!(parameter.y.unwrap_or_else(|| coord.y - y1)) / f64!(h));
+                if let Some(coord) = cell.get_position_on_image(&coord) {
+                    let center = (parameter.x.unwrap_or(coord.x), parameter.y.unwrap_or(coord.y));
                     app.cache.cherenkov1(
                         &entry,
                         &cell_size,
@@ -544,6 +533,41 @@ pub fn on_lazy_draw(app: &mut App, updated: &mut Updated, to_end: &mut bool, ser
     Ok(())
 }
 
+pub fn on_link_action(app: &mut App, updated: &mut Updated, operation: &[String], context: Option<OperationContext>) -> EventResult {
+    use entry::EntryContent::*;
+
+    let mut clicked = None;
+
+    if let Some(Input::Unified(coord, _)) = context.map(|it| it.input) {
+        for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
+            if let Some((entry, _)) = app.current_with(index) {
+                if let Some(coord) = cell.get_position_on_image(&coord) {
+                    if let Pdf(ref path, index) = entry.content  {
+                        let page = PopplerDocument::new_from_file(&**path).nth_page(index);
+                        let links = page.get_links();
+                        for link in links {
+                            if coord.on_region(&link.region) {
+                                clicked = Some(link.page);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if let Some(clicked) = clicked {
+        let paging = app.paging_with_count(false, false, Some(clicked));
+        updated.pointer = app.paginator.show(&paging);
+    } else {
+        let op = Operation::parse_from_vec(operation)?;
+        app.operate(op);
+    }
+
+    Ok(())
+}
+
 pub fn on_load(app: &mut App, file: &Expandable, search_path: bool) -> EventResult {
     let path = if search_path { file.search_path(&app.states.path_list) } else { file.expand() };
     script::load_from_file(&app.tx, &path, &app.states.path_list);
@@ -716,31 +740,6 @@ pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, search_path: 
     } else {
         Err(Box::new(ChryError::Fixed("current entry is not PDF")))
     }
-}
-
-pub fn on_pdf_link_action(app: &mut App, updated: &mut Updated, operation: &[String], context: Option<OperationContext>) -> EventResult {
-    use entry::EntryContent::*;
-
-    if let Some(Input::Unified(coord, _)) = context.map(|it| it.input) {
-        if_let_some!((entry, _) = app.current(), Ok(()));
-
-        if let Pdf(ref path, index) = entry.content  {
-            let page = PopplerDocument::new_from_file(&**path).nth_page(index);
-            let links = page.get_links();
-            for link in links {
-                if coord.on_region(&link.region) {
-                    let paging = app.paging_with_count(false, false, Some(link.page));
-                    updated.pointer = app.paginator.show(&paging);
-                    return Ok(());
-                }
-            }
-        }
-    }
-
-    let op = Operation::parse_from_vec(operation)?;
-    app.operate(op);
-
-    Ok(())
 }
 
 pub fn on_pre_fetch(app: &mut App, serial: u64) -> EventResult {

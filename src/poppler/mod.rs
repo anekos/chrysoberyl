@@ -111,7 +111,8 @@ impl PopplerPage {
             context.set_source_rgba(r, g, b, a);
             for link in self.get_links() {
                 let (l, r, t, b) = link.region.absolute(size.width, size.height);
-                context.rectangle(l as f64, t as f64, (r - l) as f64, (b - t) as f64);
+                let (l, r, w, h) = map!(f64, l, t, r - l, b - t);
+                context.rectangle(l, r, w, h);
                 context.fill();
             }
         }
@@ -194,13 +195,13 @@ impl PopplerPage {
 
             let size = self.get_size();
 
-            g_list_for!(data: *const sys::link_mapping_t = listed => {
+            g_list_for!(
+                data: *const sys::link_mapping_t = listed =>
                 if let Some(action) = util::extract_action(&*data.action) {
                     let page = action.page;
                     let region = util::new_region_on(&data.area, &size);
                     result.push(Link { page, region });
-                }
-            });
+                });
 
             sys::poppler_page_free_link_mapping(listed);
 

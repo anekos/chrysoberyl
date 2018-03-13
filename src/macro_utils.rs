@@ -230,3 +230,9 @@ macro_rules! tap {
         }
     }
 }
+
+macro_rules! map {
+    ($macro:tt $(,$values:expr)*) => {
+        ($($macro!($values),)*)
+    }
+}

@@ -45,12 +45,14 @@ pub fn extract_action(action: *const sys::action_t) -> Option<Action> {
 }
 
 
-pub fn new_region_on(pdf_region: &sys::rectangle_t, size: &Size) -> Region {
+pub fn new_region_on(r: &sys::rectangle_t, size: &Size) -> Region {
     let (w, h) = (f64!(size.width), f64!(size.height));
+    let (x1, x2) = if r.x1 < r.x2 { (r.x1, r.x2 ) } else { (r.x2, r.x1) };
+    let (y1, y2) = if r.y1 < r.y2 { (r.y1, r.y2 ) } else { (r.y2, r.y1) };
     Region {
-        left: pdf_region.x1 / w,
-        top: 1.0 - (pdf_region.y1 / h),
-        right: pdf_region.x2 / w,
-        bottom: 1.0 - (pdf_region.y2 / h),
+        left: x1 / w,
+        top: 1.0 - (y2 / h),
+        right: x2 / w,
+        bottom: 1.0 - (y1 / h),
     }
 }

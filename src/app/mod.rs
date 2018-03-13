@@ -239,6 +239,8 @@ impl App {
                     on_last(self, &mut updated, count, ignore_views, move_by),
                 LazyDraw(serial, new_to_end) =>
                     on_lazy_draw(self, &mut updated, &mut to_end, serial, new_to_end),
+                LinkAction(ref operation) =>
+                    on_link_action(self, &mut updated, operation, context),
                 Load(ref file, search_path) =>
                     on_load(self, file, search_path),
                 LoadDefault =>
@@ -269,8 +271,6 @@ impl App {
                     on_page(self, &mut updated, page),
                 PdfIndex(async, read_operations, search_path, ref command_line, ref fmt, ref separator) =>
                     on_pdf_index(self, async, read_operations, search_path, command_line, fmt, separator.as_ref().map(String::as_str)),
-                PdfLinkAction(ref operation) =>
-                    on_pdf_link_action(self, &mut updated, operation, context),
                 PreFetch(pre_fetch_serial) =>
                     on_pre_fetch(self, pre_fetch_serial),
                 Previous(count, ignore_views, move_by, wrap) =>

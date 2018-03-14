@@ -46,7 +46,7 @@ impl Paginator {
         self.fly_leaves.0
     }
 
-    fn position(&self) -> Option<Position> {
+    pub fn position(&self) -> Option<Position> {
         self.level.map(|level| level.to_position(self.sight_size))
     }
 

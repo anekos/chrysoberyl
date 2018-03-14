@@ -32,7 +32,7 @@ use gui::Direction;
 use key::Key;
 use logger;
 use operation::option::{OptionName, OptionUpdater};
-use operation::{MappingTarget, MoveBy, Operation, OperationContext, OperationEntryAction, self, SortKey, ClipboardSelection};
+use operation::{ClipboardSelection, MappingTarget, MoveBy, Operation, OperationContext, OperationEntryAction, self, SortKey};
 use option::user_switch::DummySwtich;
 use poppler::{PopplerDocument, self};
 use script;
@@ -361,6 +361,21 @@ pub fn on_go(app: &mut App, updated: &mut Updated, key: &SearchKey) -> EventResu
     Ok(())
 }
 
+pub fn on_histoy_go(app: &mut App, updated: &mut Updated, forward: bool) -> EventResult {
+    if_let_some!((entry, _) = app.current(), Ok(()));
+
+    loop {
+        if_let_some!(key = app.history.go(forward), Err(ChryError::Fixed("No history"))?);
+        if *key == entry.key {
+            continue;
+        }
+        if let Some(index) = app.entries.search(&SearchKey::from_key(key)) {
+            updated.pointer = app.paginator.update_index(Index(index));
+            return Ok(());
+        }
+    }
+}
+
 pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuffle: bool, stdin_as_binary: bool) -> EventResult {
     fn process(app: &mut App, entry: command_line::Entry, first_path: &mut Option<String>, updated: &mut Updated) -> EventResult {
         match entry {
@@ -538,7 +553,7 @@ pub fn on_link_action(app: &mut App, updated: &mut Updated, operation: &[String]
 
     let mut clicked = None;
 
-    if let Some(Input::Unified(coord, _)) = context.map(|it| it.input) {
+    if let Some(&Input::Unified(ref coord, _)) = context.as_ref().map(|it| &it.input) {
         for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
             if let Some((entry, _)) = app.current_with(index) {
                 if let Some(coord) = cell.get_position_on_image(&coord) {
@@ -562,7 +577,7 @@ pub fn on_link_action(app: &mut App, updated: &mut Updated, operation: &[String]
         updated.pointer = app.paginator.show(&paging);
     } else {
         let op = Operation::parse_from_vec(operation)?;
-        app.operate(op);
+        app.operate_with_context(op, context);
     }
 
     Ok(())
@@ -918,6 +933,26 @@ pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) -> EventResul
         app.paginator.show(&paging);
         updated.image = true;
     }
+    Ok(())
+}
+
+pub fn on_record(app: &mut App, minimum_move: usize, before: usize, key: entry::Key) -> EventResult {
+    if let Some((_, current)) = app.current() {
+        let d = before.checked_sub(current).unwrap_or_else(|| current - before);
+        if minimum_move <= d {
+            app.history.record(key);
+        }
+    }
+    Ok(())
+}
+
+pub fn on_record_pre(app: &mut App, operation: &[String], minimum_move: usize, context: Option<OperationContext>) -> EventResult {
+    if let Some((entry, index)) = app.current() {
+        app.tx.send(Operation::Record(minimum_move, index, entry.key.clone())).unwrap();
+    }
+
+    let op = Operation::parse_from_vec(operation)?;
+    app.operate_with_context(op, context);
     Ok(())
 }
 

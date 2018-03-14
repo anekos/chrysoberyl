@@ -38,6 +38,7 @@ use self::option::{OptionName, OptionUpdater};
 #[derive(Clone)]
 pub enum Operation {
     AppEvent(EventName, HashMap<String, String>),
+    Backward,
     ChangeDirectory(String),
     Cherenkov(CherenkovParameter),
     Clear,
@@ -60,6 +61,7 @@ pub enum Operation {
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     FlushBuffer,
     FlyLeaves(usize),
+    Forward,
     Go(entry::SearchKey),
     Input(mapping::Input),
     InitialProcess(Vec<command_line::Entry>, bool, bool), /* command_lin::entries, shuffle, stdin_as_binary */
@@ -97,6 +99,8 @@ pub enum Operation {
     PushURL(String, Option<Meta>, bool, Option<EntryType>),
     Query(Vec<String>, Option<String>), /* operation, caption */
     Random,
+    Record(usize, usize, entry::Key), /* minimum_move, index, key */
+    RecordPre(Vec<String>, usize),
     Refresh(bool), /* image_cache */
     ResetImage,
     ResetScrolls(bool), /* to_end */
@@ -211,6 +215,7 @@ pub enum ClipboardSelection {
     Secondary,
 }
 
+
 impl FromStr for Operation {
     type Err = ChryError;
 
@@ -238,6 +243,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
 
         match name {
             ";"                             => parse_multi_args(args, ";", true),
+            "@backward" | "@back"           => Ok(Backward),
             "@cd" | "@chdir" | "@change-directory"
                                             => parse_command1(whole, Operation::ChangeDirectory),
             "@cherenkov"                    => parse_cherenkov(whole),
@@ -266,6 +272,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@first" | "@f"                 => parse_move(whole, First),
             "@flush-buffer"                 => Ok(FlushBuffer),
             "@fly-leaves"                   => parse_fly_leaves(whole),
+            "@forward" | "@fwd"             => Ok(Forward),
             "@go"                           => parse_go(whole),
             "@inc" | "@increment" | "@increase" | "@++"
                                             => parse_usize(whole, OptionUpdater::Increment, 10),
@@ -297,6 +304,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@push-url"                     => parse_push_url(whole),
             "@query"                        => parse_query(whole),
             "@quit"                         => Ok(EventName::Quit.operation()),
+            "@record"                       => parse_record_pre(whole),
             "@random" | "@rand"             => Ok(Random),
             "@refresh" | "@r"               => parse_refresh(whole),
             "@reset-image"                  => Ok(ResetImage),
@@ -431,6 +439,7 @@ impl fmt::Debug for Operation {
 
         let s = match *self {
             AppEvent(ref ev, _) => return write!(f, "AppEvent({:?})", ev),
+            Backward => "Backward",
             ChangeDirectory(_) => "ChangeDirectory",
             Cherenkov(_) => "Cherenkov",
             Clear => "Clear ",
@@ -453,6 +462,7 @@ impl fmt::Debug for Operation {
             Filter(_, _) => "Filter",
             FlushBuffer => "FlushBuffer",
             FlyLeaves(_) => "FlyLeaves",
+            Forward => "Forward",
             Go(_) => "Go",
             InitialProcess(_, _, _) => "InitialProcess",
             Input(_) => "Input",
@@ -490,6 +500,8 @@ impl fmt::Debug for Operation {
             PushURL(_, _, _, _) => "PushURL",
             Query(_, _) => "Query",
             Random => "Random ",
+            Record(_, _, _) => "Record",
+            RecordPre(_, _) => "RecordPre",
             Refresh(_) => "Refresh",
             ResetImage => "ResetImage ",
             ResetScrolls(_) => "ResetScrolls",

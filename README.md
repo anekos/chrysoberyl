@@ -93,6 +93,10 @@ $ chrysoberyl --print-path
 You can use below commands on STDIN of chrysoberyl.
 
 
+## @backword
+
+Backword history
+
 ## @cd <PATH>
 
 Change working directory.
@@ -264,6 +268,11 @@ See `$CHRY_REMOTE_BUFFER`, if you want to get the number of buffered entries.
 ## @fly-leaves <NUMBER>
 
 Insert `NUMBER` [flyleaves](https://en.wikipedia.org/wiki/Book_design#Front_cover,_spine,_and_back_cover_of_the_dust-jacket).
+
+
+## @forwrd
+
+Forword history
 
 
 ## @fragile <PATH>
@@ -448,6 +457,11 @@ See you.
 ## (@random|@rand)
 
 Show a entry randomly.
+
+
+## @record <OPERATION>...
+
+Record to history
 
 
 ## (@refresh|@r) [--image|-i]

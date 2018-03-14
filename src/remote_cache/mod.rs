@@ -302,7 +302,7 @@ fn log_status(sp: &SP, state: &State, buffers: usize) {
     env::set_var(env_name("remote_queue"), q);
     env::set_var(env_name("remote_buffer"), b);
     env::set_var(env_name("remote_idles"), w);
-    env::set_var(env_name("remote_thread"), t);
+    env::set_var(env_name("remote_threads"), t);
 }
 
 

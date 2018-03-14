@@ -309,7 +309,7 @@ impl App {
                 Record(minimum_move, position, key) =>
                     on_record(self, minimum_move, position, key),
                 RecordPre(op, minimum_move) =>
-                    on_record_pre(self, &op, minimum_move),
+                    on_record_pre(self, &op, minimum_move, context),
                 Refresh(image) =>
                     on_refresh(self, &mut updated, image),
                 ResetImage =>

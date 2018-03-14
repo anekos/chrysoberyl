@@ -553,7 +553,7 @@ pub fn on_link_action(app: &mut App, updated: &mut Updated, operation: &[String]
 
     let mut clicked = None;
 
-    if let Some(Input::Unified(coord, _)) = context.map(|it| it.input) {
+    if let Some(&Input::Unified(ref coord, _)) = context.as_ref().map(|it| &it.input) {
         for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
             if let Some((entry, _)) = app.current_with(index) {
                 if let Some(coord) = cell.get_position_on_image(&coord) {
@@ -577,7 +577,7 @@ pub fn on_link_action(app: &mut App, updated: &mut Updated, operation: &[String]
         updated.pointer = app.paginator.show(&paging);
     } else {
         let op = Operation::parse_from_vec(operation)?;
-        app.operate(op);
+        app.operate_with_context(op, context);
     }
 
     Ok(())
@@ -946,13 +946,13 @@ pub fn on_record(app: &mut App, minimum_move: usize, before: usize, key: entry::
     Ok(())
 }
 
-pub fn on_record_pre(app: &mut App, operation: &[String], minimum_move: usize) -> EventResult {
+pub fn on_record_pre(app: &mut App, operation: &[String], minimum_move: usize, context: Option<OperationContext>) -> EventResult {
     if let Some((entry, index)) = app.current() {
         app.tx.send(Operation::Record(minimum_move, index, entry.key.clone())).unwrap();
     }
 
     let op = Operation::parse_from_vec(operation)?;
-    app.operate(op);
+    app.operate_with_context(op, context);
     Ok(())
 }
 

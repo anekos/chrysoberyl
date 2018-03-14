@@ -306,8 +306,10 @@ impl App {
                     on_query(self, &mut updated, operation, caption),
                 Random =>
                     on_random(self, &mut updated, len),
-                Record(ref op) =>
-                    on_record(self, op),
+                Record(minimum_move, position, key) =>
+                    on_record(self, minimum_move, position, key),
+                RecordPre(op, minimum_move) =>
+                    on_record_pre(self, &op, minimum_move),
                 Refresh(image) =>
                     on_refresh(self, &mut updated, image),
                 ResetImage =>

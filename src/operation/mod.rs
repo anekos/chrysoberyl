@@ -99,7 +99,8 @@ pub enum Operation {
     PushURL(String, Option<Meta>, bool, Option<EntryType>),
     Query(Vec<String>, Option<String>), /* operation, caption */
     Random,
-    Record(Vec<String>),
+    Record(usize, usize, entry::Key), /* minimum_move, index, key */
+    RecordPre(Vec<String>, usize),
     Refresh(bool), /* image_cache */
     ResetImage,
     ResetScrolls(bool), /* to_end */
@@ -214,6 +215,7 @@ pub enum ClipboardSelection {
     Secondary,
 }
 
+
 impl FromStr for Operation {
     type Err = ChryError;
 
@@ -302,7 +304,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@push-url"                     => parse_push_url(whole),
             "@query"                        => parse_query(whole),
             "@quit"                         => Ok(EventName::Quit.operation()),
-            "@record"                       => Ok(Operation::Record(whole[1..].to_vec())),
+            "@record"                       => parse_record_pre(whole),
             "@random" | "@rand"             => Ok(Random),
             "@refresh" | "@r"               => parse_refresh(whole),
             "@reset-image"                  => Ok(ResetImage),
@@ -498,7 +500,8 @@ impl fmt::Debug for Operation {
             PushURL(_, _, _, _) => "PushURL",
             Query(_, _) => "Query",
             Random => "Random ",
-            Record(_) => "Record",
+            Record(_, _, _) => "Record",
+            RecordPre(_, _) => "RecordPre",
             Refresh(_) => "Refresh",
             ResetImage => "ResetImage ",
             ResetScrolls(_) => "ResetScrolls",

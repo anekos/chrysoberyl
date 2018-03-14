@@ -836,6 +836,20 @@ pub fn parse_query(args: &[String]) -> Result<Operation, ParsingError> {
     })
 }
 
+pub fn parse_record_pre(args: &[String]) -> Result<Operation, ParsingError> {
+    let mut operation = vec![];
+    let mut minimum_move = 1;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut minimum_move).add_option(&["--minimum", "-m"], Store, "Minium move");
+        ap.refer(&mut operation).add_argument("Operation", Collect, "Operation");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::RecordPre(operation, minimum_move)
+    })
+}
+
 pub fn parse_refresh(args: &[String]) -> Result<Operation, ParsingError> {
     let mut image = false;
 

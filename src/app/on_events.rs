@@ -32,7 +32,7 @@ use gui::Direction;
 use key::Key;
 use logger;
 use operation::option::{OptionName, OptionUpdater};
-use operation::{MappingTarget, MoveBy, Operation, OperationContext, OperationEntryAction, self, SortKey, ClipboardSelection};
+use operation::{ClipboardSelection, MappingTarget, MoveBy, Operation, OperationContext, OperationEntryAction, self, SortKey};
 use option::user_switch::DummySwtich;
 use poppler::{PopplerDocument, self};
 use script;
@@ -365,17 +365,15 @@ pub fn on_histoy_go(app: &mut App, updated: &mut Updated, forward: bool) -> Even
     if_let_some!((entry, _) = app.current(), Ok(()));
 
     loop {
-        if_let_some!(key = app.history.go(forward), Ok(()));
+        if_let_some!(key = app.history.go(forward), Err(ChryError::Fixed("No history"))?);
         if *key == entry.key {
             continue;
         }
         if let Some(index) = app.entries.search(&SearchKey::from_key(key)) {
             updated.pointer = app.paginator.update_index(Index(index));
-            break;
+            return Ok(());
         }
     }
-
-    Ok(())
 }
 
 pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuffle: bool, stdin_as_binary: bool) -> EventResult {
@@ -938,9 +936,19 @@ pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) -> EventResul
     Ok(())
 }
 
-pub fn on_record(app: &mut App, operation: &[String]) -> EventResult {
-    if let Some((entry, _)) = app.current() {
-        app.history.record(entry.key.clone());
+pub fn on_record(app: &mut App, minimum_move: usize, before: usize, key: entry::Key) -> EventResult {
+    if let Some((_, current)) = app.current() {
+        let d = before.checked_sub(current).unwrap_or_else(|| current - before);
+        if minimum_move <= d {
+            app.history.record(key);
+        }
+    }
+    Ok(())
+}
+
+pub fn on_record_pre(app: &mut App, operation: &[String], minimum_move: usize) -> EventResult {
+    if let Some((entry, index)) = app.current() {
+        app.tx.send(Operation::Record(minimum_move, index, entry.key.clone())).unwrap();
     }
 
     let op = Operation::parse_from_vec(operation)?;

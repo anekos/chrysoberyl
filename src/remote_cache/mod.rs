@@ -49,8 +49,8 @@ pub struct State {
     processing: BTreeSet<Request>,
     queued: VecDeque<Request>,
     threads: Vec<Sender<Request>>,
-    oks: usize,
-    fails: usize,
+    ok: usize,
+    fail: usize,
 }
 
 #[derive(Clone)]
@@ -157,7 +157,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                 }
                 Done(thread_id, request) => {
                     let mut state = state.lock().unwrap();
-                    state.oks += 1;
+                    state.ok += 1;
                     state.processing.remove(&request);
                     buffer.push(
                         request.ticket,
@@ -168,7 +168,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                 }
                 Fail(thread_id, err, request) => {
                     let mut state = state.lock().unwrap();
-                    state.fails += 1;
+                    state.fail += 1;
                     state.processing.remove(&request);
                     buffer.skip(request.ticket);
                     app_tx.send(Operation::Pull).unwrap();
@@ -291,24 +291,24 @@ fn log_status(sp: &SP, state: &State, buffers: usize) {
     use self::SP::*;
 
     let idles = state.idles.len();
-    let (q, b, w, t, o, f) = (s!(state.queued.len()), s!(buffers), s!(idles), s!((state.threads.len() - idles)), s!(state.oks), s!(state.fails));
+    let (q, b, w, t, o, f) = (s!(state.queued.len()), s!(buffers), s!(idles), s!((state.threads.len() - idles)), s!(state.ok), s!(state.fail));
     match *sp {
         Initial => (),
         Process(ref url) =>
-            puts_event!("remote/process", "url" => url, "queue" => q, "buffer" => b, "idles" => w, "oks" => o, "fails" => f),
+            puts_event!("remote/process", "url" => url, "queue" => q, "buffer" => b, "idle" => w, "ok" => o, "fail" => f),
         Queue(ref url) =>
-            puts_event!("remote/queue", "url" => url, "queue" => q, "buffer" => b, "idles" => w, "oks" => o, "fails" => f),
+            puts_event!("remote/queue", "url" => url, "queue" => q, "buffer" => b, "idle" => w, "ok" => o, "fail" => f),
         Complete(ref thread_id) =>
-            puts_event!("remote/complete", "thread_id" => s!(thread_id), "queue" => q, "buffer" => b, "idles" => w, "oks" => o, "fails" => f),
+            puts_event!("remote/complete", "thread_id" => s!(thread_id), "queue" => q, "buffer" => b, "idle" => w, "ok" => o, "fail" => f),
         Fail(ref thread_id, ref error, ref url) =>
-            puts_event!("remote/fail", "thread_id" => s!(thread_id), "reason" => error, "url" => url, "queue" => q, "buffer" => b, "idles" => w, "oks" => o, "fails" => f),
+            puts_event!("remote/fail", "thread_id" => s!(thread_id), "reason" => error, "url" => url, "queue" => q, "buffer" => b, "idle" => w, "ok" => o, "fail" => f),
     }
     env::set_var(env_name("remote_queue"), q);
     env::set_var(env_name("remote_buffer"), b);
-    env::set_var(env_name("remote_idles"), w);
-    env::set_var(env_name("remote_threads"), t);
-    env::set_var(env_name("remote_oks"), o);
-    env::set_var(env_name("remote_fails"), f);
+    env::set_var(env_name("remote_idle"), w);
+    env::set_var(env_name("remote_thread"), t);
+    env::set_var(env_name("remote_ok"), o);
+    env::set_var(env_name("remote_fail"), f);
 }
 
 

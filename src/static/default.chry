@@ -1,31 +1,31 @@
 # scroll or move
-@map input h            @scroll --size 0.8 --reset left     @scroll --size 0.8 up      @previous
-@map input j            @scroll --size 0.8 --reset down     @scroll --size 0.8 right   @next
-@map input k            @scroll --size 0.8 --reset up       @scroll --size 0.8 left    @previous
-@map input l            @scroll --size 0.8 --reset right    @scroll --size 0.8 down    @next
-@map input space        @next
-@map input BackSpace    @previous
+@map input h            @record --minimum 10 @scroll --size 0.8 --reset left     @scroll --size 0.8 up      @previous
+@map input j            @record --minimum 10 @scroll --size 0.8 --reset down     @scroll --size 0.8 right   @next
+@map input k            @record --minimum 10 @scroll --size 0.8 --reset up       @scroll --size 0.8 left    @previous
+@map input l            @record --minimum 10 @scroll --size 0.8 --reset right    @scroll --size 0.8 down    @next
+@map input space        @record --minimum 10 @next
+@map input BackSpace    @record --minimum 10 @previous
 
-@map input scroll-left  @scroll --size 0.2 left  @previous
+@map input scroll-left  @backward
+@map input scroll-right @forward
 @map input scroll-down  @scroll --size 0.2 down  @next
 @map input scroll-up    @scroll --size 0.2 up    @previous
-@map input scroll-right @scroll --size 0.2 right @next
 
 # move --ignore-views
-@map input J            @next --ignore-views
-@map input K            @previous --ignore-views
-@map input w,j          @next --wrap
-@map input w,k          @previous --wrap
+@map input J            @record --minimum 10 @next --ignore-views
+@map input K            @record --minimum 10 @previous --ignore-views
+@map input w,j          @record --minimum 10 @next --wrap
+@map input w,k          @record --minimum 10 @previous --wrap
 
 # move --archive
 @map input C-n          @next --archive
 @map input C-p          @previous --archive
 
-# move
-@map input asciicircum  @first # ^
-@map input dollar       @last
-@map input g            @first
-@map input G            @last
+# move (edge)
+@map input asciicircum  @record @first # ^
+@map input dollar       @record @last
+@map input g            @record @first
+@map input G            @record @last
 
 # move (ignore views)
 @map input H            @previous --ignore-views
@@ -36,6 +36,12 @@
 # move (archive)
 @map input p            @previous --archive
 @map input n            @next     --archive
+
+# move (history)
+@map input C-i          @forward
+@map input C-o          @backward
+@map input C-f          @forward
+@map input C-b          @backward
 
 # toggle a option
 @map input t,a          @toggle auto-paging
@@ -83,7 +89,7 @@
 @map input colon        @entry open
 
 # Mouse
-@map input button-1     @link-action            @scroll --size 0.8 down         @next
+@map input button-1     @record   @link-action   @scroll --size 0.8 down   @next
 @map input button-2     @cherenkov --radius 0.02 --color random --spokes 50
 @map input button-3     @scroll --size 0.8 up   @previous
 
@@ -93,17 +99,17 @@
 
 # script
 @map input at           @shell --operation --search-path script/shell.sh
-@map input C-o          @shell --operation --search-path script/open-file-dialog.sh
-@map input C-d          @shell --operation --search-path script/open-directory-dialog.sh
-@map input C-i          @shell --operation --search-path script/pdf-index.sh
-@map input C-g          @shell --operation --search-path script/go-page.sh
-@map input C-s          @shell --operation --search-path script/save-session.sh
-@map input C-l          @shell --operation --search-path script/load-session.sh
-@map input C-e          @shell --operation --search-path script/export.sh
+@map input exclam,o     @shell --operation --search-path script/open-file-dialog.sh
+@map input exclam,d     @shell --operation --search-path script/open-directory-dialog.sh
+@map input exclam,i     @shell --operation --search-path script/pdf-index.sh
+@map input exclam,g     @shell --operation --search-path script/go-page.sh
+@map input exclam,s     @shell --operation --search-path script/save-session.sh
+@map input exclam,l     @shell --operation --search-path script/load-session.sh
+@map input exclam,e     @shell --operation --search-path script/export.sh
 
 # mark
 @map input M            @query --caption 'Mark to'  @eval @mark $CHRY_QUERY
-@map input m            @query --caption 'Go to'    ; @message ; @eval @jump --load $CHRY_QUERY
+@map input m            @query --caption 'Go to'    ; @message ; @eval @record @jump --load $CHRY_QUERY
 
 # Clipboard
 @map input C-c          ; @copy-to-clipboard ; @message Copied

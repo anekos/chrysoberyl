@@ -468,24 +468,35 @@ impl Cell {
     }
 
     pub fn get_position_on_image(&self, coord: &CoordPx) -> Option<(Coord)> {
+        fn extract(adj: &Adjustment) -> (f64, f64) {
+            (adj.get_value(), adj.get_upper())
+        }
+
         let a = self.window.get_allocation();
 
         if !(a.x <= coord.x && coord.x <= a.x + a.width && a.y <= coord.y && coord.y <= a.y + a.height) {
             return None;
         }
 
-        let (cx, cy, cw, ch) = map!(f64, a.x, a.y, a.width, a.height);
-        self.get_image_size().and_then(|(iw, ih)| {
-            let (iw, ih) = map!(f64, iw, ih);
-            let (ix, iy) = (cx + (cw - iw) / 2.0 , cy + (ch - ih) / 2.0);
-            let (rx, ry) = ((f64!(coord.x) - ix) / cw, (f64!(coord.y) - iy) / ch);
-            if 0.0 <= rx && 0.0 <= ry {
-                Some(Coord { x: rx, y: ry })
-            } else {
-                None
-            }
-        })
+        let (px, py) = map!(f64, coord.x, coord.y);
 
+        let (cx, cy) = map!(f64, a.x, a.y);
+
+        let (sx, sw) = self.window.get_hadjustment().as_ref().map(extract).unwrap();
+        let (sy, sh) = self.window.get_vadjustment().as_ref().map(extract).unwrap();
+        let (sx, sy, sw, sh) = map!(f64, sx, sy, sw, sh);
+
+        let (ix, iy) = (px - cx + sx, py - cy + sy);
+        let (rx, ry) = (ix / sw, iy / sh);
+
+        // println!("is: {}x{}", iw, ih);
+        // println!("i: {}x{}, p: {}x{}, s: {}x{}-{}x{}, c: {}x{}, r: {}x{}", ix, iy, px, py, sx, sy, sw, sh, cx, cy, rx, ry);
+        //
+        if 0.0 <= rx && 0.0 <= ry {
+            Some(Coord { x: rx, y: ry })
+        } else {
+            None
+        }
     }
 
     pub fn make_visible(&self, region: &Region) {

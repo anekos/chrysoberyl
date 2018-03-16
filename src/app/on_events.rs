@@ -555,7 +555,7 @@ pub fn on_link_action(app: &mut App, updated: &mut Updated, operation: &[String]
     if let Some(&Input::Unified(ref coord, _)) = context.as_ref().map(|it| &it.input) {
         for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
             if let Some((entry, _)) = app.current_with(index) {
-                if let Some(coord) = cell.get_position_on_image(&coord, &app.states.drawing) {
+                if let Some(coord) = cell.get_position_on_image(coord, &app.states.drawing) {
                     if let Pdf(ref path, index) = entry.content  {
                         let page = PopplerDocument::new_from_file(&**path).nth_page(index);
                         let links = page.get_links();

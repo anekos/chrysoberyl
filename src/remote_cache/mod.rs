@@ -287,6 +287,7 @@ fn try_next(app_tx: &Sender<Operation>, thread_id: TID, state: &mut State) {
     }
 }
 
+#[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
 fn log_status(sp: &SP, state: &State, buffers: usize) {
     use self::SP::*;
 

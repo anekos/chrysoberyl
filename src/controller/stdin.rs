@@ -9,6 +9,7 @@ use atty;
 use readline;
 
 use controller::process;
+use joiner::Joiner;
 use operation::Operation;
 use util;
 
@@ -25,14 +26,17 @@ pub fn register(tx: Sender<Operation>, mut history_file: Option<PathBuf>) {
 
     spawn(move || {
         let stdin = io::stdin();
+        let mut joiner = Joiner::new();
         if atty::is(atty::Stream::Stdin) {
             puts_event!("input/stdin/open", "type" => "readline");
             while let Ok(line) = readline::readline("") {
-                let _ = readline::add_history(&*line);
-                if process(&tx, &*line, "input/stdin") {
-                    if let Err(error) = util::file::write_line(&line, &history_file) {
-                        puts_error!(error, "at" => "input/stdin/write_line");
-                        history_file = None; // Do not retry
+                if let Some(line) = joiner.push(&line) {
+                    let _ = readline::add_history(&*line);
+                    if process(&tx, &*line, "input/stdin") {
+                        if let Err(error) = util::file::write_line(&line, &history_file) {
+                            puts_error!(error, "at" => "input/stdin/write_line");
+                            history_file = None; // Do not retry
+                        }
                     }
                 }
             }
@@ -40,7 +44,9 @@ pub fn register(tx: Sender<Operation>, mut history_file: Option<PathBuf>) {
             puts_event!("input/stdin/open", "type" => "standard");
             for line in stdin.lock().lines() {
                 let line = line.unwrap();
-                process(&tx, &*line, "input/stdin");
+                if let Some(line) = joiner.push(&line) {
+                    process(&tx, &*line, "input/stdin");
+                }
             }
         }
         puts_event!("input/stdin/close");

@@ -7,6 +7,7 @@ use std::sync::mpsc::Sender;
 use app_path::PathList;
 use config::DEFAULT_CONFIG;
 use errors::ChryError;
+use joiner::Joiner;
 use operation::Operation;
 
 
@@ -29,13 +30,16 @@ pub fn load_from_file(tx: &Sender<Operation>, file: &Path, path_list: &PathList)
 
 fn load_from_str(tx: &Sender<Operation>, source: &str, path_list: &PathList) {
     let lines: Vec<&str> = source.lines().collect();
+    let mut joiner = Joiner::new();
 
     for line in lines {
-        match Operation::parse(line) {
-            Ok(op) =>
-                process(tx, op, path_list),
-            Err(err) =>
-                puts_error!(ChryError::Standard(s!(err)), "at" => "script/line", "for" => o!(line)),
+        if let Some(line) = joiner.push(line) {
+            match Operation::parse(&line) {
+                Ok(op) =>
+                    process(tx, op, path_list),
+                Err(err) =>
+                    puts_error!(ChryError::Standard(s!(err)), "at" => "script/line", "for" => o!(line)),
+            }
         }
     }
 }

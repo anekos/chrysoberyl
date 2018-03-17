@@ -349,8 +349,8 @@ impl Gui {
         self.label.override_color(
             self.label.get_state_flags(),
             &self.colors.status_bar.gdk_rgba());
-        self.status_bar.override_background_color(
-            self.status_bar.get_state_flags(),
+        self.status_bar_inner.override_background_color(
+            self.status_bar_inner.get_state_flags(),
             &self.colors.status_bar_background.gdk_rgba());
     }
 

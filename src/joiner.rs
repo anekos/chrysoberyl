@@ -17,7 +17,7 @@ impl Joiner {
     }
 
     pub fn push(&mut self, line: &str) -> Option<String> {
-        if let Some(found) = self.pattern.find(&line) {
+        if let Some(found) = self.pattern.find(line) {
             if (found.end() - found.start()) % 2 == 1 {
                 self.buffer.push_str(&line[0..line.len() - 1]);
                 return None;

@@ -9,7 +9,7 @@ use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse
 use cherenkov::fill::Shape;
 use color::Color;
 use entry::filter::expression::Expr as FilterExpr;
-use entry::{Meta, MetaEntry, SearchKey, new_opt_meta, EntryType};
+use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
 use expandable::Expandable;
 use key::{Key, new_key_sequence};
 use mapping::{Input, InputType};
@@ -981,6 +981,7 @@ pub fn parse_sort(args: &[String]) -> Result<Operation, ParsingError> {
     let mut fix = false;
     let mut sort_key = SortKey::Natural;
     let mut reverse = false;
+    let mut command = vec![];
 
     {
         let mut ap = ArgumentParser::new();
@@ -994,11 +995,17 @@ pub fn parse_sort(args: &[String]) -> Result<Operation, ParsingError> {
             .add_option(&["--height", "-h"], StoreConst(SortKey::Height), "Sort by heigth")
             .add_option(&["--dimensions", "-d"], StoreConst(SortKey::Dimensions), "Sort by width x height");
         ap.refer(&mut reverse).add_option(&["--reverse", "-r"], StoreTrue, "Reversed");
+        ap.refer(&mut command).add_argument("command", Collect, "Commadn");
         parse_args(&mut ap, args)
     } .map(|_| {
+        let op = if command.is_empty() {
+            Operation::Sort(fix, sort_key, reverse)
+        } else {
+            Operation::Sorter(fix, command, reverse)
+        };
         Operation::WithMessage(
             Some(o!("Sorting")),
-            Box::new(Operation::Sort(fix, sort_key, reverse)))
+            Box::new(op))
     })
 }
 
@@ -1176,23 +1183,6 @@ impl FromStr for MetaEntry {
     }
 }
 
-
-impl FromStr for EntryType {
-    type Err = String;
-
-    fn from_str(src: &str) -> Result<Self, String> {
-        match src {
-            "image" | "img" | "o" =>
-                Ok(EntryType::Image),
-            "archive" | "arc" | "a" =>
-                Ok(EntryType::Archive),
-            "pdf" | "p" | "portable-document-format" =>
-                Ok(EntryType::PDF),
-            _ =>
-                Err(format!("Invalid type: {}", src))
-        }
-    }
-}
 
 impl FromStr for OperationEntryAction {
     type Err = String;

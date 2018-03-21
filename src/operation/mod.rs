@@ -112,7 +112,8 @@ pub enum Operation {
     ShellFilter(Vec<Expandable>, bool), /* path, search_path */
     Show(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Shuffle(bool), /* Fix current */
-    Sort(bool, SortKey, bool), /* fix, key, reverse */
+    Sort(bool, SortKey, bool), /* fix_current, key, reverse */
+    Sorter(bool, Vec<Expandable>, bool), /* fix_current, command, reverse */
     TellRegion(f64, f64, f64, f64, Key), /* lef,t top, right, bottom, mousesbutton */
     Timer(String, Vec<String>, Duration, Option<usize>),
     Unclip,
@@ -513,7 +514,8 @@ impl fmt::Debug for Operation {
             ShellFilter(_, _) => "ShellFilter",
             Show(_, _, _, _) => "Show",
             Shuffle(_) => "Shuffle",
-            Sort(_, _, _) => "Sort ",
+            Sort(_, _, _) => "Sort",
+            Sorter(_, _, _) => "Sorter",
             TellRegion(_, _, _, _, _) => "TellRegion",
             Timer(_, _, _, _) => "Timer",
             Unclip => "Unclip ",

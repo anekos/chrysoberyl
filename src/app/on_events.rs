@@ -1,4 +1,5 @@
 
+use std::cmp::Ordering;
 use std::env;
 use std::error::Error;
 use std::fs::File;
@@ -1160,7 +1161,6 @@ pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) -> Ev
 }
 
 pub fn on_sort(app: &mut App, updated: &mut Updated, fix_current: bool, sort_key: SortKey, reverse: bool) -> EventResult {
-    use std::cmp::Ordering;
     use self::SortKey::*;
 
     let serial = app.store();
@@ -1169,19 +1169,9 @@ pub fn on_sort(app: &mut App, updated: &mut Updated, fix_current: bool, sort_key
     if sort_key == SortKey::Natural && !reverse {
         app.entries.sort(&app_info);
     } else {
-        let r = move |it| if reverse {
-            match it {
-                Ordering::Greater => Ordering::Less,
-                Ordering::Less => Ordering::Greater,
-                other => other,
-            }
-        } else {
-            it
-        };
-
         app.entries.sort_by(&app_info, move |a, b| {
             if sort_key == Natural {
-                return r(entry::compare_key(&a.key, &b.key));
+                return maybe_reverse(reverse, entry::compare_key(&a.key, &b.key));
             }
 
             a.info.lazy(&a.content, |ai| {
@@ -1203,7 +1193,7 @@ pub fn on_sort(app: &mut App, updated: &mut Updated, fix_current: bool, sort_key
                         Width =>
                             ai.dimensions.map(|it| it.height).cmp(&bi.dimensions.map(|it| it.height)),
                     };
-                    r(result)
+                    maybe_reverse(reverse, result)
                 })
             })
         });
@@ -1216,6 +1206,70 @@ pub fn on_sort(app: &mut App, updated: &mut Updated, fix_current: bool, sort_key
         updated.image = true;
         updated.pointer = true;
     }
+
+    Ok(())
+}
+
+pub fn on_sorter(app: &mut App, updated: &mut Updated, fix_current: bool, sorter_command: &[Expandable], reverse: bool) -> EventResult {
+    use std::process::{Command, Stdio};
+
+    let output = {
+        let mut input = o!("");
+
+        for entry in app.entries.iter() {
+            let key = &entry.key;
+            sprintln!(input, "{}\t{}\t{}", key.0, key.1, key.2);
+        }
+
+        let (head, args) = sorter_command.split_first().ok_or("Empty command")?;
+        let mut command = Command::new(&head.expand());
+        for arg in args {
+            command.arg(&arg.expand());
+        }
+        command
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+
+        let child = command.spawn()?;
+        child.stdin.ok_or("No stdin")?.write_all(input.as_bytes())?;
+        let mut output = o!("");
+        child.stdout.ok_or("Not stdout")?.read_to_string(&mut output)?;
+
+        output
+    };
+
+    let mut orders = HashMap::new();
+
+    for (index, line) in output.lines().enumerate() {
+        if line.is_empty() {
+            continue;
+        }
+        let columns: Vec<&str> = line.split('\t').collect();
+        if columns.len() != 3 {
+            return Err("Invalid format")?;
+        }
+        let key: entry::Key = (columns[0].parse()?, o!(columns[1]), columns[2].parse()?);
+        orders.insert(key, index);
+    }
+
+    let app_info = app.app_info();
+    let serial = app.store();
+
+    app.entries.sort_by(&app_info, move |a, b| {
+        let a = orders.get(&a.key);
+        let b = orders.get(&b.key);
+        maybe_reverse(reverse, a.cmp(&b))
+    });
+
+    if fix_current {
+        app.restore_or_first(updated, serial);
+        updated.image = 1 < app.gui.len();
+    } else {
+        updated.image = true;
+        updated.pointer = true;
+    }
+
     Ok(())
 }
 
@@ -1559,4 +1613,16 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
 
     app.do_go(updated);
     Ok(())
+}
+
+fn maybe_reverse(reverse: bool, original: Ordering) -> Ordering {
+    if reverse {
+        match original {
+            Ordering::Greater => Ordering::Less,
+            Ordering::Less => Ordering::Greater,
+            other => other,
+        }
+    } else {
+        original
+    }
 }

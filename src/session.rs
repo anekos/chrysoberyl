@@ -477,20 +477,3 @@ impl fmt::Display for state::Alignment {
         write!(f, "{}", result)
     }
 }
-
-impl fmt::Display for EntryType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::EntryType::*;
-
-        let result =
-            match *self {
-                Invalid => "invalid",
-                PDF => "pdf",
-                Image => "image",
-                Archive => "Archive",
-                Memory => "Memory",
-            };
-
-        write!(f, "{}", result)
-    }
-}

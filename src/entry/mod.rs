@@ -1,12 +1,14 @@
 
 use std::cmp::{PartialEq, PartialOrd, Ord, Ordering};
 use std::error;
+use std::fmt;
 use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::{self, Read};
 use std::ops;
 use std::path::{PathBuf, Path};
 use std::slice;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use natord;
@@ -600,6 +602,40 @@ impl EntryType {
         match *self {
             PDF | Archive => true,
             _ => false,
+        }
+    }
+}
+
+impl fmt::Display for EntryType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::EntryType::*;
+
+        let result =
+            match *self {
+                Invalid => "invalid",
+                PDF => "pdf",
+                Image => "image",
+                Archive => "archive",
+                Memory => "memory",
+            };
+
+        write!(f, "{}", result)
+    }
+}
+
+impl FromStr for EntryType {
+    type Err = String;
+
+    fn from_str(src: &str) -> Result<Self, String> {
+        match src {
+            "image" | "img" | "o" =>
+                Ok(EntryType::Image),
+            "archive" | "arc" | "a" =>
+                Ok(EntryType::Archive),
+            "pdf" | "p" | "portable-document-format" =>
+                Ok(EntryType::PDF),
+            _ =>
+                Err(format!("Invalid type: {}", src))
         }
     }
 }

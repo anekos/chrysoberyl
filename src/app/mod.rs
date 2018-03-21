@@ -334,6 +334,8 @@ impl App {
                     on_shuffle(self, &mut updated, fix_current),
                 Sort(fix_current, sort_key, reverse) =>
                     on_sort(self, &mut updated, fix_current, sort_key, reverse),
+                Sorter(fix_current, ref command, reverse) =>
+                    on_sorter(self, &mut updated, fix_current, command, reverse),
                 TellRegion(left, top, right, bottom, button) =>
                     on_tell_region(self, left, top, right, bottom, &button),
                 Timer(name, op, interval, repeat) =>

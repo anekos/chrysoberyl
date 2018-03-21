@@ -537,7 +537,7 @@ This operation does not consider `views`.
 Shuffle entries.
 
 
-## @sort [--accessed|-a] [--created|-c] [--modified|-m] [--reverse|-r]
+## @sort [--accessed|-a] [--created|-c] [--modified|-m] [--reverse|-r] [--fix|-f] [<COMMAND> <COMMAND_ARG1>...]
 
 Sort entries.
 

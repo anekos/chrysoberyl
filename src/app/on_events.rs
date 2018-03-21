@@ -1239,9 +1239,7 @@ pub fn on_sorter(app: &mut App, updated: &mut Updated, fix_current: bool, sorter
         output
     };
 
-    let mut orders = HashMap::new();
-
-    for (index, line) in output.lines().enumerate() {
+    let orders = tap!(mut orders = HashMap::new(), for (index, line) in output.lines().enumerate() {
         if line.is_empty() {
             continue;
         }
@@ -1251,20 +1249,37 @@ pub fn on_sorter(app: &mut App, updated: &mut Updated, fix_current: bool, sorter
         }
         let key: entry::Key = (columns[0].parse()?, o!(columns[1]), columns[2].parse()?);
         orders.insert(key, index);
-    }
+    });
 
-    let app_info = app.app_info();
+    let removed = {
+        let mut removes = HashSet::new();
+        for (index, entry) in app.entries.iter().enumerate() {
+            if !orders.contains_key(&entry.key) {
+                removes.insert(index);
+            }
+        }
+
+        tap!(removed = !removes.is_empty(), if removed {
+            let app_info = app.app_info();
+            app.entries.remove(&app_info, &removes);
+            app.update_paginator_condition();
+        })
+    };
+
     let serial = app.store();
 
-    app.entries.sort_by(&app_info, move |a, b| {
-        let a = orders.get(&a.key);
-        let b = orders.get(&b.key);
-        maybe_reverse(reverse, a.cmp(&b))
-    });
+    {
+        let app_info = app.app_info();
+        app.entries.sort_by(&app_info, move |a, b| {
+            let a = orders.get(&a.key);
+            let b = orders.get(&b.key);
+            maybe_reverse(reverse, a.cmp(&b))
+        });
+    }
 
     if fix_current {
         app.restore_or_first(updated, serial);
-        updated.image = 1 < app.gui.len();
+        updated.image = 1 < app.gui.len() || removed;
     } else {
         updated.image = true;
         updated.pointer = true;

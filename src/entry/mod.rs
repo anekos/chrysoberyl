@@ -1,5 +1,6 @@
 
 use std::cmp::{PartialEq, PartialOrd, Ord, Ordering};
+use std::collections::HashSet;
 use std::error;
 use std::fmt;
 use std::fs::File;
@@ -203,6 +204,10 @@ impl EntryContainer {
 
     pub fn clear(&mut self) {
         self.entries.clear();
+    }
+
+    pub fn remove(&mut self, app_info:&AppInfo, indices: &HashSet<usize>) {
+        self.entries.remove(indices, app_info);
     }
 
     pub fn len(&self) -> usize {

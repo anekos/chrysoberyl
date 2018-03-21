@@ -1,6 +1,6 @@
 
 use std::cmp::Ordering;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::mem::swap;
 use std::slice;
@@ -162,6 +162,19 @@ impl<T: Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
         };
 
         self.push_filtered(Arc::clone(entry));
+    }
+
+    pub fn remove(&mut self, indices: &HashSet<usize>, info: &U) {
+        let mut old = vec![];
+        swap(&mut old, &mut self.original);
+
+        for (index, entry) in old.into_iter().enumerate() {
+            if !indices.contains(&index) {
+                self.original.push(entry);
+            }
+        }
+
+        self.filter(info, None);
     }
 
     pub fn update_filter(&mut self, info: &U, dynamic: bool, index_before_filter: Option<usize>, pred: Option<Pred<T, U>>) -> Option<usize> {

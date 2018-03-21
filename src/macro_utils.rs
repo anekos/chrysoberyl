@@ -222,6 +222,14 @@ macro_rules! tap {
         }
     };
 
+    (mut $name:ident = $value:expr, $block:expr) => {
+        {
+            let mut $name = $value;
+            $block;
+            $name
+        }
+    };
+
     ($value:expr, $block:expr) => {
         {
             let result = $value;

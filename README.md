@@ -773,6 +773,23 @@ unsigned integer
 :   @set, @unset, @increase, @decrease, @cycle
 
 
+# Events
+
+- at-first
+- at-last
+- download-all
+- error
+- file-changed
+- initialize
+- invalid-all
+- mapped-input
+- quit
+- resize-window
+- show-image-pre
+- show-image
+- spawn
+- void
+
 # Filter Expression
 
 ```

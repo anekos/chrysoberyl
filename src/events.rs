@@ -18,6 +18,7 @@ pub enum EventName {
     Quit,
     ResizeWindow,
     ShowImage,
+    ShowImagePre,
     Spawn,
     Void,
     User(String),
@@ -42,6 +43,7 @@ impl FromStr for EventName {
             "quit" => Ok(Quit),
             "resize-window" | "resize" => Ok(ResizeWindow),
             "show-image" => Ok(ShowImage),
+            "show-image-pre" => Ok(ShowImagePre),
             "spawn" => Ok(Spawn),
             "void" => Ok(Void),
             _ => Ok(User(o!(src)))
@@ -65,6 +67,7 @@ impl fmt::Display for EventName {
                 MappedInput => "mapped-input",
                 Quit => "quit",
                 ResizeWindow => "resize-window",
+                ShowImagePre => "show-image-pre",
                 ShowImage => "show-image",
                 Spawn => "spawn",
                 Void => "void",

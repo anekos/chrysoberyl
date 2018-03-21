@@ -421,9 +421,13 @@ impl App {
         }
 
         if updated.image || updated.image_options {
-            let (original_image_size, fit_image_size) = time!("show_image" => self.show_image(to_end, updated.target_regions.clone()));
+            self.fire_event(&EventName::ShowImagePre);
+            let (showed, original_image_size, fit_image_size) = time!("show_image" => self.show_image(to_end, updated.target_regions.clone()));
             self.on_image_updated(original_image_size, fit_image_size);
             self.update_watcher();
+            if showed {
+                self.fire_event(&EventName::ShowImage);
+            }
         }
 
         if updated.image || updated.image_options || updated.label || updated.message {
@@ -561,7 +565,7 @@ impl App {
     /**
      * @return (Original size, Fit size)
      */
-    fn show_image(&mut self, to_end: bool, target_regions: Option<Vec<Option<Region>>>) -> (Option<Size>, Option<Size>) {
+    fn show_image(&mut self, to_end: bool, target_regions: Option<Vec<Option<Region>>>) -> (bool, Option<Size>, Option<Size>) {
         let mut original_image_size = None;
         let mut fit_image_size = None;
         let cell_size = self.gui.get_cell_size(&self.states.view);
@@ -623,15 +627,11 @@ impl App {
             });
         }
 
-        if showed {
-            trace!("showed");
-            self.fire_event(&EventName::ShowImage);
-            if invalid_all {
-                self.fire_event(&EventName::InvalidAll);
-            }
+        if showed && invalid_all {
+            self.fire_event(&EventName::InvalidAll);
         }
 
-        (original_image_size, fit_image_size)
+        (showed, original_image_size, fit_image_size)
     }
 
     fn update_counter_env(&mut self, do_pop: bool) {

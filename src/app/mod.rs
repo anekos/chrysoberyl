@@ -194,8 +194,6 @@ impl App {
                     on_clear(self, &mut updated),
                 Clip(region) =>
                     on_clip(self, &mut updated, region, context),
-                Context(context, op) =>
-                    return self.operate_with_context(*op, Some(context)),
                 Controller(source) =>
                     on_controller(self, source),
                 CopyToClipboard(selection) =>
@@ -237,7 +235,7 @@ impl App {
                 InitialProcess(entries, shuffle, stdin_as_binary) =>
                     on_initial_process(self, entries, shuffle, stdin_as_binary),
                 Input(ref input) =>
-                    on_input(self, input),
+                    on_input(self, input, &context),
                 Jump(ref name, load) =>
                     on_jump(self, &mut updated, name, load),
                 KillTimer(ref name) =>

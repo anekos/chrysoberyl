@@ -449,7 +449,7 @@ pub fn on_initialized(app: &mut App) -> EventResult {
     Ok(())
 }
 
-pub fn on_input(app: &mut App, input: &Input) -> EventResult {
+pub fn on_input(app: &mut App, input: &Input, context: &Option<OperationContext>) -> EventResult {
     if let Input::Unified(_, ref key) = *input {
         if let Some(query_operation) = app.query_operation.take() {
             env::set_var(constant::env_name("query"), s!(key));
@@ -471,7 +471,8 @@ pub fn on_input(app: &mut App, input: &Input) -> EventResult {
 
     for op in operations {
         let op = Operation::parse_from_vec(&op)?;
-        app.operate(Operation::Context(OperationContext { input: input.clone(), cell_index: None }, Box::new(op)));
+        let context = context.clone().unwrap_or_else(|| OperationContext { input: input.clone(), cell_index: None });
+        app.operate_with_context(op, Some(context));
     }
 
     if let Input::Unified(coord, _) = *input {

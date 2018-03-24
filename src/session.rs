@@ -12,7 +12,7 @@ use entry::filter::expression::Expr as FilterExpr;
 use entry::filter::writer::write as write_expr;
 use entry::{Entry, EntryContainer, EntryType, Key, Meta};
 use gui::Gui;
-use mapping::{Mapping, unified_mapping as umap, region_mapping as rmap};
+use mapping::{Mapping, unified_mapping as umap, region_mapping as rmap, event_mapping as emap};
 use operation::option::PreDefinedOptionName;
 use option::common::{bool_to_str as b2s};
 use paginator::Paginator;
@@ -321,6 +321,7 @@ pub fn write_paginator(entry: Option<Arc<Entry>>, paginator: &Paginator, out: &m
 pub fn write_mappings(mappings: &Mapping, out: &mut String) {
     write_unified_mappings(None, &mappings.unified_mapping, out);
     write_region_mappings(&mappings.region_mapping, out);
+    write_event_mappings(&mappings.event_mapping, out);
 }
 
 fn write_unified_mappings(base: Option<&str>, mappings: &umap::UnifiedMapping, out: &mut String) {
@@ -363,6 +364,30 @@ fn write_region_mappings(mappings: &rmap::RegionMapping, out: &mut String) {
             sprint!(out, " {}", escape(it));
         }
         sprintln!(out, "");
+    }
+}
+
+fn write_event_mappings(mappings: &emap::EventMapping, out: &mut String) {
+    for (name, entries) in &mappings.table {
+        for entry in entries.iter() {
+            sprint!(out, "@map event");
+            if let Some(group) = entry.group.as_ref() {
+                sprint!(out, " --group {}", escape(group));
+            }
+            if let Some(remain) = entry.remain {
+                if remain == 1 {
+                    sprint!(out, " --once");
+                } else {
+                    sprint!(out, " --repeat {}", remain);
+                }
+            }
+            sprint!(out, " {}", escape(&s!(name)));
+            for it in &entry.operation {
+                sprint!(out, " {}", escape(it));
+            }
+            sprintln!(out, "");
+
+        }
     }
 }
 

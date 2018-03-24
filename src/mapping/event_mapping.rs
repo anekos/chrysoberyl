@@ -10,9 +10,9 @@ pub struct EventMapping {
 }
 
 pub struct EventMappingEntry {
-    group: Option<String>,
-    operation: Vec<String>,
-    remain: Option<usize>,
+    pub group: Option<String>,
+    pub operation: Vec<String>,
+    pub remain: Option<usize>,
 }
 
 

@@ -1062,7 +1062,7 @@ pub fn parse_update(args: &[String]) -> Result<Operation, ParsingError> {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut updated.image).add_option(&["--image", "-i"], StoreTrue, "Update image");
         ap.refer(&mut updated.image_options).add_option(&["--image-options", "-o"], StoreTrue, "Update image_options");
-        ap.refer(&mut updated.label).add_option(&["--label", "-l"], StoreTrue, "Update label");
+        ap.refer(&mut updated.label).add_option(&["--status", "-s"], StoreTrue, "Update status bar");
         ap.refer(&mut updated.message).add_option(&["--message", "-m"], StoreTrue, "Update message");
         ap.refer(&mut updated.pointer).add_option(&["--pointer", "-p"], StoreTrue, "Update pointer");
         parse_args(&mut ap, args)

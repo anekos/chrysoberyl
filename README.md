@@ -583,7 +583,7 @@ Unmap the `@map`ped.
 Set default value.
 
 
-## @update [--image] [--image-options|-o] [--label|-l] [--message|-m] [--pointer|-p]
+## @update [--image] [--image-options|-o] [--status|-s] [--message|-m] [--pointer|-p]
 
 For developper.
 

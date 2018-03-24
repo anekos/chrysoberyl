@@ -419,8 +419,9 @@ pub fn write_filters(filters: &Filters, out: &mut String) {
 pub fn write_filter(expr: &Option<FilterExpr>, arg: &str, out: &mut String) {
     sprint!(out, "@filter{}", arg);
     if let Some(ref expr) = *expr {
-        sprint!(out, " ");
-        write_expr(expr, out);
+        let mut expr_text = o!("");
+        write_expr(expr, &mut expr_text);
+        sprint!(out, " {}", escape(&expr_text));
     }
     sprintln!(out, "");
 }

@@ -31,6 +31,11 @@ pub fn extract_action(action: *const sys::action_t) -> Option<Action> {
             return None;
         }
 
+        let page = (*dest).page;
+        if page <= 0 {
+            return None;
+        }
+
         let title = (*action).title;
         let title = if title.is_null() {
             None
@@ -40,7 +45,7 @@ pub fn extract_action(action: *const sys::action_t) -> Option<Action> {
             }).ok()
         };
 
-        Some(Action {title: title, page: (*dest).page as usize})
+        Some(Action {title, page: page as usize})
     }
 }
 

@@ -30,7 +30,7 @@ pub fn main() {
         for op in primary_rx.try_iter() {
             match op {
                 UpdateUI => continue 'outer,
-                op => app.operate(op),
+                op => app.operate(op, None),
             }
         }
 
@@ -39,7 +39,7 @@ pub fn main() {
         for op in secondary_rx.try_iter() {
             match op {
                 UpdateUI => continue 'outer,
-                op => app.operate(op),
+                op => app.operate(op, None),
             }
             if t.elapsed() > Duration::from_millis(10) {
                 continue 'outer;

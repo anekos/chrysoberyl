@@ -156,7 +156,7 @@ impl App {
 
         match *event_name {
             Initialize => self.tx.send(op).unwrap(),
-            _ => self.operate(op),
+            _ => self.operate(op, None),
         }
     }
 
@@ -164,11 +164,7 @@ impl App {
         self.fire_event_with_context(event_name, HashMap::new())
     }
 
-    pub fn operate(&mut self, operation: Operation) {
-        self.operate_with_context(operation, None)
-    }
-
-    pub fn operate_with_context(&mut self, operation: Operation, context: Option<OperationContext>) {
+    pub fn operate(&mut self, operation: Operation, context: Option<OperationContext>) {
         use self::Operation::*;
         use self::on_events::*;
 
@@ -203,7 +199,7 @@ impl App {
                 CountDigit(digit) =>
                     on_count_digit(self, &mut updated, digit),
                 DefineUserSwitch(name, values) =>
-                    on_define_switch(self, name, values),
+                    on_define_switch(self, name, values, context),
                 Delete(expr) =>
                     on_delete(self, &mut updated, *expr),
                 Draw =>
@@ -213,7 +209,7 @@ impl App {
                 Error(error) =>
                     on_error(self, &mut updated, error),
                 Eval(ref op) =>
-                    on_eval(self, op),
+                    on_eval(self, op, context),
                 Expand(recursive, ref base) =>
                     on_expand(self, &mut updated, recursive, base.clone()),
                 FileChanged(ref path) =>
@@ -235,7 +231,7 @@ impl App {
                 InitialProcess(entries, shuffle, stdin_as_binary) =>
                     on_initial_process(self, entries, shuffle, stdin_as_binary),
                 Input(ref input) =>
-                    on_input(self, input, &context),
+                    on_input(self, input, context),
                 Jump(ref name, load) =>
                     on_jump(self, &mut updated, name, load),
                 KillTimer(ref name) =>
@@ -263,7 +259,7 @@ impl App {
                 MoveAgain(count, ignore_views, move_by, wrap) =>
                     on_move_again(self, &mut updated, &mut to_end, count, ignore_views, move_by, wrap),
                 Multi(ops, async) =>
-                    on_multi(self, ops, async),
+                    on_multi(self, ops, async, context),
                 Next(count, ignore_views, move_by, wrap) =>
                     on_next(self, &mut updated, count, ignore_views, move_by, wrap),
                 Nop =>
@@ -321,7 +317,7 @@ impl App {
                 SetEnv(name, value) =>
                     on_set_env(self, &name, &value.map(|it| it.to_string())),
                 Scroll(ref direction, scroll_size, crush, reset_at_end, ref operation) =>
-                    on_scroll(self, direction, scroll_size, crush, reset_at_end, operation),
+                    on_scroll(self, direction, scroll_size, crush, reset_at_end, operation, context),
                 Shell(async, read_operations, search_path, ref command_line, ref stdin_sources) =>
                     on_shell(self, async, read_operations, search_path, command_line, stdin_sources),
                 ShellFilter(ref command_line, search_path) =>
@@ -359,7 +355,7 @@ impl App {
                 ViewsFellow(for_rows) =>
                     on_views_fellow(self, &mut updated, for_rows),
                 When(filter, unless, op) =>
-                    on_when(self, filter, unless, &op),
+                    on_when(self, filter, unless, &op, context),
                 WithMessage(message, op) =>
                     on_with_message(self, &mut updated, message, *op),
                 Write(ref path, ref index) =>
@@ -385,10 +381,10 @@ impl App {
                 if index < len && len < index + gui_len {
                     updated.image = true;
                 } else if self.states.auto_paging == AutoPaging::Always {
-                    self.operate(Operation::Last(None, false, MoveBy::Page, false));
+                    self.operate(Operation::Last(None, false, MoveBy::Page, false), None);
                     return
                 } else if self.states.auto_paging == AutoPaging::Smart && gui_len <= len && len - gui_len == index {
-                    self.operate(Operation::Next(None, false, MoveBy::Page, false));
+                    self.operate(Operation::Next(None, false, MoveBy::Page, false), None);
                     return
                 }
             }

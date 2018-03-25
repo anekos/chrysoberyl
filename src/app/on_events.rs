@@ -95,30 +95,30 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
     use cherenkov::{Che, Modifier};
     use cherenkov::nova::Nova;
 
-    if let Some(Input::Unified(coord, _)) = context.map(|it| it.input) {
-        let cell_size = app.gui.get_cell_size(&app.states.view);
+    let context_coord = context.map(|it| it.input).and_then(|it| if let Input::Unified(coord, _) = it { Some(coord) } else { None });
 
-        for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
-            if let Some((entry, _)) = app.current_with(index) {
-                if let Some(coord) = cell.get_position_on_image(&coord, &app.states.drawing) {
-                    let center = (parameter.x.unwrap_or(coord.x), parameter.y.unwrap_or(coord.y));
-                    app.cache.cherenkov1(
-                        &entry,
-                        &cell_size,
-                        Modifier {
-                            search_highlight: false,
-                            che: Che::Nova(Nova {
-                                center: center,
-                                n_spokes: parameter.n_spokes,
-                                radius: parameter.radius,
-                                random_hue: parameter.random_hue,
-                                color: parameter.color,
-                            })
-                        },
-                        &app.states.drawing);
-                    updated.image = true;
-                }
-            }
+    let cell_size = app.gui.get_cell_size(&app.states.view);
+
+    for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
+        if let Some((entry, _)) = app.current_with(index) {
+            let coord = context_coord.and_then(|it| cell.get_position_on_image(&it, &app.states.drawing));
+            let x = if let Some(it) = parameter.x.or_else(|| coord.as_ref().map(|it| it.x)) { it } else { continue };
+            let y = if let Some(it) = parameter.y.or_else(|| coord.as_ref().map(|it| it.y)) { it } else { continue };
+            app.cache.cherenkov1(
+                &entry,
+                &cell_size,
+                Modifier {
+                    search_highlight: false,
+                    che: Che::Nova(Nova {
+                        center: (x, y),
+                        n_spokes: parameter.n_spokes,
+                        radius: parameter.radius,
+                        random_hue: parameter.random_hue,
+                        color: parameter.color,
+                    })
+                },
+                &app.states.drawing);
+            updated.image = true;
         }
     }
 

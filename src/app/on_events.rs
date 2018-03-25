@@ -75,7 +75,7 @@ pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName
         for (k, v) in context {
             env::set_var(constant::env_name(k), v);
         }
-        app.operate(op);
+        app.operate(op, None);
     }
 
     if *event_name == Quit {
@@ -165,9 +165,9 @@ pub fn on_count_digit(app: &mut App, updated: &mut Updated, digit: u8) -> EventR
     Ok(())
 }
 
-pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>) -> EventResult {
+pub fn on_define_switch(app: &mut App, name: String, values: Vec<Vec<String>>, context: Option<OperationContext>) -> EventResult {
     let op = app.user_switches.register(name, values)?;
-    app.operate(op);
+    app.operate(op, context);
     Ok(())
 }
 
@@ -216,10 +216,10 @@ pub fn on_error(app: &mut App, updated: &mut Updated, error: String) -> EventRes
     Ok(())
 }
 
-pub fn on_eval(app: &mut App, op: &[String]) -> EventResult {
+pub fn on_eval(app: &mut App, op: &[String], context: Option<OperationContext>) -> EventResult {
     let op: Vec<String> = op.iter().map(|it| sh::expand_env(it)).collect();
     let op = Operation::parse_from_vec(&op)?;
-    app.operate(op);
+    app.operate(op, context);
     Ok(())
 }
 
@@ -449,12 +449,12 @@ pub fn on_initialized(app: &mut App) -> EventResult {
     Ok(())
 }
 
-pub fn on_input(app: &mut App, input: &Input) -> EventResult {
+pub fn on_input(app: &mut App, input: &Input, context: Option<OperationContext>) -> EventResult {
     if let Input::Unified(_, ref key) = *input {
         if let Some(query_operation) = app.query_operation.take() {
             env::set_var(constant::env_name("query"), s!(key));
             let op = Operation::parse_from_vec(&query_operation)?;
-            app.operate(op);
+            app.operate(op, context);
             return Ok(())
         }
     }
@@ -471,7 +471,8 @@ pub fn on_input(app: &mut App, input: &Input) -> EventResult {
 
     for op in operations {
         let op = Operation::parse_from_vec(&op)?;
-        app.operate(Operation::Context(OperationContext { input: input.clone(), cell_index: None }, Box::new(op)));
+        let context = context.clone().unwrap_or_else(|| OperationContext { input: input.clone(), cell_index: None });
+        app.operate(op, Some(context));
     }
 
     if let Input::Unified(coord, _) = *input {
@@ -577,7 +578,7 @@ pub fn on_link_action(app: &mut App, updated: &mut Updated, operation: &[String]
         updated.pointer = app.paginator.show(&paging);
     } else {
         let op = Operation::parse_from_vec(operation)?;
-        app.operate_with_context(op, context);
+        app.operate(op, context);
     }
 
     Ok(())
@@ -654,17 +655,17 @@ pub fn on_move_again(app: &mut App, updated: &mut Updated, to_end: &mut bool, co
     }
 }
 
-pub fn on_multi(app: &mut App, mut operations: VecDeque<Operation>, async: bool) -> EventResult {
+pub fn on_multi(app: &mut App, mut operations: VecDeque<Operation>, async: bool, context: Option<OperationContext>) -> EventResult {
     if async {
         if let Some(op) = operations.pop_front() {
-            app.operate(op);
+            app.operate(op, context);
         }
         if !operations.is_empty() {
             app.tx.send(Operation::Multi(operations, async))?;
         }
     } else {
         for op in operations {
-            app.operate(op);
+            app.operate(op, context.clone());
         }
     }
     Ok(())
@@ -952,7 +953,7 @@ pub fn on_record_pre(app: &mut App, operation: &[String], minimum_move: usize, c
     }
 
     let op = Operation::parse_from_vec(operation)?;
-    app.operate_with_context(op, context);
+    app.operate(op, context);
     Ok(())
 }
 
@@ -989,12 +990,12 @@ pub fn on_save(app: &mut App, path: &Path, sessions: &[Session]) -> EventResult 
     Ok(())
 }
 
-pub fn on_scroll(app: &mut App, direction: &Direction, scroll_size: f64, crush: bool, reset_at_end: bool, operation: &[String]) -> EventResult {
+pub fn on_scroll(app: &mut App, direction: &Direction, scroll_size: f64, crush: bool, reset_at_end: bool, operation: &[String], context: Option<OperationContext>) -> EventResult {
     let saved = app.counter.clone();
     if !app.gui.scroll_views(direction, scroll_size, crush, reset_at_end, app.counter.pop()) && !operation.is_empty() {
         let op = Operation::parse_from_vec(operation)?;
         app.counter = saved;
-        app.operate(op);
+        app.operate(op, context);
     }
     Ok(())
 }
@@ -1291,7 +1292,7 @@ pub fn on_sorter(app: &mut App, updated: &mut Updated, fix_current: bool, sorter
 pub fn on_spawn(app: &mut App) -> EventResult {
     app.states.spawned = true;
     app.gui.refresh_status_bar_width();
-    app.operate(Operation::Draw);
+    app.operate(Operation::Draw, None);
     Ok(())
 }
 
@@ -1533,14 +1534,14 @@ pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool) -> 
     on_update_views(app, updated)
 }
 
-pub fn on_when(app: &mut App, filter: FilterExpr, unless: bool, op: &[String]) -> EventResult {
+pub fn on_when(app: &mut App, filter: FilterExpr, unless: bool, op: &[String], context: Option<OperationContext>) -> EventResult {
     let app_info = app.app_info();
     if_let_some!((_, index, _) = app.current_non_fly_leave(), Ok(()));
     if_let_some!(r = app.entries.validate_nth(index, filter, &app_info), Ok(()));
 
     if r ^ unless {
         let op = Operation::parse_from_vec(op)?;
-        app.operate(op);
+        app.operate(op, context);
     }
     Ok(())
 }

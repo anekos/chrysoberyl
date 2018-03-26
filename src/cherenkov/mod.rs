@@ -132,6 +132,35 @@ impl CacheEntry {
 }
 
 
+impl Modifier {
+    fn fix(&self, drawing: &DrawingState) -> Self {
+        let che = self.che.fix(drawing);
+        Modifier { che, search_highlight: self.search_highlight }
+    }
+}
+
+
+impl Che {
+    fn fix(&self, drawing: &DrawingState) -> Self {
+        if let Che::Nova(ref che) = *self {
+            let center = if let Some(clipping) = drawing.clipping {
+                let (x, y) = che.center;
+                let x = (x - clipping.left) / clipping.width();
+                let y = (y - clipping.top) / clipping.height();
+                (x, y)
+            } else {
+                che.center
+            };
+            let mut che = che.clone();
+            che.center = center;
+            Che::Nova(che)
+        } else {
+            self.clone()
+        }
+    }
+}
+
+
 fn get_image_buffer(cache_entry: &mut CacheEntry, entry: &Entry, cell_size: &Size, drawing: &DrawingState) -> Result<ImageBuffer, Box<Error>> {
     if let Some(image) = cache_entry.get(cell_size, drawing) {
         return Ok(ImageBuffer::Static(image))
@@ -153,6 +182,7 @@ fn re_cherenkov(entry: &Entry, cell_size: &Size, drawing: &DrawingState, modifie
         let mut mask = None;
         let mut modified = Modified::P(buf.get_pixbuf());
         for modifier in modifiers {
+            let modifier = modifier.fix(drawing);
             let (_modified, _mask) = cherenkov_pixbuf(modified, mask, &modifier.che);
             modified = _modified;
             mask = _mask;

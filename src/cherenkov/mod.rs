@@ -149,9 +149,9 @@ impl Che {
                 let (x, y) = che.center;
                 let x = (x - clipping.left) / cw;
                 let y = (y - clipping.top) / ch;
-                if let &Some(original_size) = original_size {
+                if let Some(original_size) = *original_size {
                     let r = f64!(original_size.width) / f64!(original_size.height);
-                    che.radius = che.radius * ((r * r + 1.0).sqrt() / (cw * cw * r * r + ch * ch).sqrt());
+                    che.radius *= (r * r + 1.0).sqrt() / (cw * cw * r * r + ch * ch).sqrt();
                 }
                 che.center = (x, y);
             }

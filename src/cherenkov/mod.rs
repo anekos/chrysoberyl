@@ -133,26 +133,28 @@ impl CacheEntry {
 
 
 impl Modifier {
-    fn fix(&self, drawing: &DrawingState) -> Self {
-        let che = self.che.fix(drawing);
+    fn fix(&self, original_size: &Option<Size>, drawing: &DrawingState) -> Self {
+        let che = self.che.fix(original_size, drawing);
         Modifier { che, search_highlight: self.search_highlight }
     }
 }
 
 
 impl Che {
-    fn fix(&self, drawing: &DrawingState) -> Self {
+    fn fix(&self, original_size: &Option<Size>, drawing: &DrawingState) -> Self {
         if let Che::Nova(ref che) = *self {
-            let center = if let Some(clipping) = drawing.clipping {
-                let (x, y) = che.center;
-                let x = (x - clipping.left) / clipping.width();
-                let y = (y - clipping.top) / clipping.height();
-                (x, y)
-            } else {
-                che.center
-            };
             let mut che = che.clone();
-            che.center = center;
+            if let Some(clipping) = drawing.clipping {
+                let (cw, ch) = (clipping.width(), clipping.height());
+                let (x, y) = che.center;
+                let x = (x - clipping.left) / cw;
+                let y = (y - clipping.top) / ch;
+                if let &Some(original_size) = original_size {
+                    let r = f64!(original_size.width) / f64!(original_size.height);
+                    che.radius = che.radius * ((r * r + 1.0).sqrt() / (cw * cw * r * r + ch * ch).sqrt());
+                }
+                che.center = (x, y);
+            }
             Che::Nova(che)
         } else {
             self.clone()
@@ -182,7 +184,7 @@ fn re_cherenkov(entry: &Entry, cell_size: &Size, drawing: &DrawingState, modifie
         let mut mask = None;
         let mut modified = Modified::P(buf.get_pixbuf());
         for modifier in modifiers {
-            let modifier = modifier.fix(drawing);
+            let modifier = modifier.fix(&buf.original_size, drawing);
             let (_modified, _mask) = cherenkov_pixbuf(modified, mask, &modifier.che);
             modified = _modified;
             mask = _mask;

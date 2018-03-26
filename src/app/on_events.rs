@@ -122,6 +122,9 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
         }
     }
 
+    updated.message = true;
+    app.update_message(None, false);
+
     Ok(())
 }
 
@@ -1554,11 +1557,15 @@ pub fn on_window_resized(app: &mut App, updated: &mut Updated) -> EventResult {
     Ok(())
 }
 
-pub fn on_with_message(app: &mut App, updated: &mut Updated, message: Option<String>, op: Operation) -> EventResult {
+pub fn on_with_message(app: &mut App, updated: &mut Updated, message: Option<String>, op: Operation, context: Option<OperationContext>) -> EventResult {
     updated.message = true;
     app.update_message(message, false);
     app.tx.send(Operation::UpdateUI)?;
-    app.tx.send(op)?;
+    if let Some(context) = context {
+        app.tx.send(Operation::Context(context, Box::new(op)))?;
+    } else {
+        app.tx.send(op)?;
+    }
     Ok(())
 }
 

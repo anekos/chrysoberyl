@@ -190,6 +190,8 @@ impl App {
                     on_clear(self, &mut updated),
                 Clip(region) =>
                     on_clip(self, &mut updated, region, context),
+                Context(context, op) =>
+                    return self.operate(*op, Some(context)),
                 Controller(source) =>
                     on_controller(self, source),
                 CopyToClipboard(selection) =>
@@ -357,7 +359,7 @@ impl App {
                 When(filter, unless, op) =>
                     on_when(self, filter, unless, &op, context),
                 WithMessage(message, op) =>
-                    on_with_message(self, &mut updated, message, *op),
+                    on_with_message(self, &mut updated, message, *op, context),
                 Write(ref path, ref index) =>
                     on_write(self, path, index),
             };

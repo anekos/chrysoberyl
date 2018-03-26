@@ -84,7 +84,7 @@ pub fn parse_cherenkov(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut color).add_option(&["-c", "--color"], Store, "CSS Color");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Cherenkov(
+        let op = Operation::Cherenkov(
             CherenkovParameter {
                 radius: radius,
                 random_hue: random_hue,
@@ -92,7 +92,8 @@ pub fn parse_cherenkov(args: &[String]) -> Result<Operation, ParsingError> {
                 x: x,
                 y: y,
                 color: color
-            })
+            });
+        Operation::WithMessage(Some(o!("Cherenkoving")), Box::new(op))
     })
 }
 

@@ -150,6 +150,7 @@ impl Gui {
 
         let status_bar_inner = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
             it.pack_end(&label, true, true, 0);
+            it.set_margin_top(2); // FIXME Magical number to remove bottom blank space.
         });
 
         let status_bar = tap!(it = Layout::new(None, None), {

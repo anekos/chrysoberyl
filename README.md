@@ -64,6 +64,8 @@ chrysoberyl (--help|-h)
 :   Set filename encoding for archives (zip, rar, ...).
 `--role <WINDOW_ROLE>`
 :   Set window role
+`--use-gtk-theme`
+:   Use GTK theme
 
 
 ## Example

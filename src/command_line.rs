@@ -18,6 +18,7 @@ pub struct Initial {
     pub config_file: Option<String>,
     pub curl_threads: u8,
     pub encodings: Vec<EncodingRef>,
+    pub enforce_gtk_theme: bool,
     pub entries: Vec<Entry>,
     pub load_config: bool,
     pub shuffle: bool,
@@ -44,6 +45,7 @@ impl Default for Initial {
             config_file: None,
             curl_threads: 3,
             encodings: vec![],
+            enforce_gtk_theme: true,
             entries: vec![],
             load_config: true,
             shuffle: false,
@@ -156,6 +158,7 @@ fn parse_option(arg: &str, args: &mut Args, init: &mut Initial) -> Result<bool, 
         } else {
             return not_enough();
         },
+        "--use-gtk-theme" => init.enforce_gtk_theme = false,
         _ => return Ok(false)
     }
 

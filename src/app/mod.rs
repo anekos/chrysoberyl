@@ -89,6 +89,10 @@ impl App {
 
         let mut states = States::default();
 
+        if initial.enforce_gtk_theme {
+            env::set_var("GTK_THEME", "Adwaita:light");
+        }
+
         if initial.encodings.is_empty() {
             use encoding::all::*;
             initial.encodings.push(UTF_8);

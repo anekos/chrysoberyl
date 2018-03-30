@@ -44,7 +44,8 @@
 @map input C-b          @backward
 
 # toggle a option
-@map input t,a          @toggle auto-paging
+@map input t,a          @toggle animation
+@map input t,p          @toggle auto-paging
 @map input t,o          @toggle operation-box
 @map input t,s          @toggle status-bar
 @map input t,r          @toggle reverse

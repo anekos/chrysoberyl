@@ -1390,6 +1390,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
         let value: &mut OptionValue = match *option_name {
             PreDefined(ref option_name) => match *option_name {
                 AbbrevLength => &mut app.states.abbrev_length,
+                Animation => &mut app.states.drawing.animation,
                 AutoReload => &mut app.states.auto_reload,
                 AutoPaging => &mut app.states.auto_paging,
                 CurlConnectTimeout => &mut app.states.curl_options.connect_timeout,
@@ -1496,7 +1497,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 app.cache.update_limit(app.states.pre_fetch.limit_of_items),
             ColorWindowBackground | ColorStatusBar | ColorStatusBarBackground =>
                 app.gui.update_colors(),
-            ColorLink => {
+            Animation | ColorLink => {
                 app.cache.clear();
                 updated.image = true;
             },

@@ -35,7 +35,7 @@ pub fn is_animation(entry: &Entry) -> bool {
 }
 
 pub fn get_image_buffer(entry: &Entry, cell: &Size, drawing: &DrawingState) -> Result<ImageBuffer, Box<error::Error>> {
-    if is_animation(entry) {
+    if drawing.animation && is_animation(entry) {
         Ok(get_animation_buffer(entry).map(ImageBuffer::Animation)?)
     } else {
         get_static_image_buffer(entry, cell, drawing).map(ImageBuffer::Static)

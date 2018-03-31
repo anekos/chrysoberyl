@@ -624,6 +624,10 @@ abbrev-length
 :   type: unsigned integer
 :   Max length for `CRHY_ABBREV_PATH`
 
+animation
+:   type: boolean
+:   Support animation GIF
+
 auto-reload
 :   type: boolean
 :   Reload current viewingly images when they are updated.

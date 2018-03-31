@@ -54,6 +54,7 @@ pub struct States {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DrawingState {
+    pub animation: bool,
     pub clipping: Option<Region>,
     pub fit_to: FitTo,
     pub link_color: Color,
@@ -136,6 +137,7 @@ impl Default for States {
 impl Default for DrawingState {
     fn default() -> Self {
         DrawingState {
+            animation: true,
             clipping: None,
             fit_to: FitTo::Cell,
             link_color: Color::new4(0, 0, 255, 32),

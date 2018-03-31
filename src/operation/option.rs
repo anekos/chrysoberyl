@@ -23,8 +23,9 @@ pub enum OptionName {
 
 iterable_enum!(PreDefinedOptionName =>
     AbbrevLength,
-    AutoReload,
+    Animation,
     AutoPaging,
+    AutoReload,
     ColorError,
     ColorErrorBackground,
     ColorLink,
@@ -72,6 +73,7 @@ impl FromStr for PreDefinedOptionName {
 
         let result = match src {
             "abbrev-length" | "abbr-length"        => AbbrevLength,
+            "animation" | "anim"                   => Animation,
             "auto-reload"                          => AutoReload,
             "auto-page" | "auto-paging" | "paging" => AutoPaging,
             "curl-connect-timeout"                 => CurlConnectTimeout,
@@ -121,7 +123,7 @@ impl PreDefinedOptionName {
         use self::PreDefinedOptionName::*;
 
         match *self {
-            AbbrevLength | AutoReload | AutoPaging |
+            AbbrevLength | Animation | AutoReload | AutoPaging |
                 ColorError | ColorErrorBackground | ColorLink | ColorStatusBar | ColorStatusBarBackground | ColorWindowBackground |
                 FitTo | HorizontalViews | InitialPosition | LogFile | MaskOperator |
                 OperationBox | PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |

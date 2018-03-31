@@ -21,19 +21,6 @@ use util::path::path_to_str;
 
 
 
-pub fn is_animation(entry: &Entry) -> bool {
-    if let Some(img) = get_meta(entry) {
-        if let Ok(img) = img {
-            if let Ok(gif) = img.into::<Gif>() {
-                if gif.is_animated() {
-                    return true
-                }
-            }
-        }
-    }
-    false
-}
-
 pub fn get_image_buffer(entry: &Entry, cell: &Size, drawing: &DrawingState) -> Result<ImageBuffer, Box<error::Error>> {
     if drawing.animation && is_animation(entry) {
         Ok(get_animation_buffer(entry).map(ImageBuffer::Animation)?)
@@ -69,6 +56,20 @@ pub fn get_animation_buffer(entry: &Entry) -> Result<AnimationBuffer, Box<error:
             Ok(AnimationBuffer::new_from_slice(&*entry.content)),
         _ => Err(Box::new(ChryError::Fixed("Not implemented: get_animation_buffer"))),
     }
+}
+
+
+fn is_animation(entry: &Entry) -> bool {
+    if let Some(img) = get_meta(entry) {
+        if let Ok(img) = img {
+            if let Ok(gif) = img.into::<Gif>() {
+                if gif.is_animated() {
+                    return true
+                }
+            }
+        }
+    }
+    false
 }
 
 fn make_scaled(buffer: &[u8], cell: &Size, drawing: &DrawingState) -> Result<StaticImageBuffer, Box<error::Error>> {

@@ -31,6 +31,7 @@ extern crate md5;
 extern crate mkstemp;
 extern crate natord;
 extern crate notify;
+extern crate num;
 extern crate num_cpus;
 extern crate pom;
 extern crate rand;

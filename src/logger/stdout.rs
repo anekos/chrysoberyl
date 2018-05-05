@@ -4,6 +4,8 @@ use std::io::{self, Write};
 use std::sync::mpsc::{Sender, channel};
 use std::thread::spawn;
 
+use num::Integer;
+
 use errors::ChryError;
 use logger;
 use option::OptionValue;
@@ -55,8 +57,12 @@ impl OptionValue for StdOut {
         Ok(())
     }
 
-    fn cycle(&mut self, _: bool) -> Result<(), ChryError> {
-        self.toggle()
+    fn cycle(&mut self, _: bool, n: usize) -> Result<(), ChryError> {
+        if n.is_odd() {
+            self.toggle()
+        } else {
+            Ok(())
+        }
     }
 
     fn set(&mut self, path: &str) -> Result<(), ChryError> {

@@ -3,8 +3,11 @@ use std::collections::{HashMap, VecDeque};
 use std::error::Error;
 use std::sync::mpsc::Sender;
 
+use num::Integer;
+
 use option::*;
 use operation::Operation;
+
 
 
 const NO_VALUE_ERROR: &str = "User switch has no value.";
@@ -48,16 +51,18 @@ impl UserSwitchManager {
 
 impl OptionValue for UserSwitch {
     fn toggle(&mut self) -> Result<(), ChryError> {
-        self.cycle(false).and_then(|_| self.send())
+        self.cycle(false, 1).and_then(|_| self.send())
     }
 
-    fn cycle(&mut self, reverse: bool) -> Result<(), ChryError> {
-        if reverse {
-            let back = self.values.pop_back().expect(NO_VALUE_ERROR);
-            self.values.push_front(back);
-        } else {
-            let front = self.values.pop_front().expect(NO_VALUE_ERROR);
-            self.values.push_back(front);
+    fn cycle(&mut self, reverse: bool, n: usize) -> Result<(), ChryError> {
+        for _ in 0 .. n {
+            if reverse {
+                let back = self.values.pop_back().expect(NO_VALUE_ERROR);
+                self.values.push_front(back);
+            } else {
+                let front = self.values.pop_front().expect(NO_VALUE_ERROR);
+                self.values.push_back(front);
+            }
         }
         self.send()
     }
@@ -102,7 +107,11 @@ impl OptionValue for DummySwtich {
         Err(ChryError::InvalidValue(o!(self.name)))
     }
 
-    fn cycle(&mut self, _: bool) -> Result<(), ChryError> {
-        self.toggle()
+    fn cycle(&mut self, _: bool, n: usize) -> Result<(), ChryError> {
+        if n.is_odd() {
+            self.toggle()
+        } else {
+            Ok(())
+        }
     }
 }

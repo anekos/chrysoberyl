@@ -1454,7 +1454,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
         };
 
         match *updater {
-            Cycle(ref reverse) => value.cycle(*reverse)?,
+            Cycle(ref reverse) => value.cycle(*reverse, app.counter.pop())?,
             Disable => value.disable()?,
             Enable => value.enable()?,
             Set(ref arg) => value.set(arg)?,

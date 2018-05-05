@@ -3,6 +3,7 @@ use std::str::FromStr;
 use std::path::{Path, PathBuf};
 
 use cairo;
+use num::Integer;
 
 use color::Color;
 use gui::Position;
@@ -30,8 +31,12 @@ impl OptionValue for bool {
         Ok(())
     }
 
-    fn cycle(&mut self, _: bool) -> Result<(), ChryError> {
-        self.toggle()
+    fn cycle(&mut self, _: bool, n: usize) -> Result<(), ChryError> {
+        if n.is_odd() {
+            self.toggle()
+        } else {
+            Ok(())
+        }
     }
 
     fn set(&mut self, value: &str) -> Result<(), ChryError> {
@@ -57,15 +62,17 @@ impl OptionValue for Option<PathBuf> {
 macro_rules! def_uint {
     ($type:ty) => {
         impl OptionValue for $type {
-            fn cycle(&mut self, reverse: bool) -> Result<(), ChryError> {
-                if reverse {
-                    if *self != 0 {
-                        *self -= 1;
+            fn cycle(&mut self, reverse: bool, n: usize) -> Result<(), ChryError> {
+                for _ in 0 .. n {
+                    if reverse {
+                        if *self != 0 {
+                            *self -= 1;
+                        }
+                    } else if *self < <$type>::max_value() {
+                        *self += 1;
+                    } else {
+                        *self = 0
                     }
-                } else if *self < <$type>::max_value() {
-                    *self += 1;
-                } else {
-                    *self = 0
                 }
 
                 Ok(())
@@ -100,15 +107,17 @@ macro_rules! def_uint {
 macro_rules! def_opt_uint {
     ($type:ty) => {
         impl OptionValue for Option<$type> {
-            fn cycle(&mut self, reverse: bool) -> Result<(), ChryError> {
+            fn cycle(&mut self, reverse: bool, n: usize) -> Result<(), ChryError> {
                 if_let_some!(v = self.as_mut(), Ok(()));
 
-                if reverse {
-                    if *v != 0 {
-                        *v -= 1;
+                for _ in 0 .. n {
+                    if reverse {
+                        if *v != 0 {
+                            *v -= 1;
+                        }
+                    } else {
+                        *v += 1;
                     }
-                } else {
-                    *v += 1;
                 }
 
                 Ok(())
@@ -183,9 +192,9 @@ impl OptionValue for AutoPaging {
         Ok(())
     }
 
-    fn cycle(&mut self, reverse: bool) -> Result<(), ChryError> {
+    fn cycle(&mut self, reverse: bool, n: usize) -> Result<(), ChryError> {
         use self::AutoPaging::*;
-        *self = cycled(*self, &[DoNot, Always, Smart], reverse);
+        *self = cycled(*self, &[DoNot, Always, Smart], reverse, n);
         Ok(())
     }
 
@@ -259,9 +268,9 @@ impl OptionValue for FitTo {
         Ok(())
     }
 
-    fn cycle(&mut self, reverse: bool) -> Result<(), ChryError> {
+    fn cycle(&mut self, reverse: bool, n: usize) -> Result<(), ChryError> {
         use self::FitTo::*;
-        *self = cycled(*self, &[Cell, OriginalOrCell, Original, Width, Height], reverse);
+        *self = cycled(*self, &[Cell, OriginalOrCell, Original, Width, Height], reverse, n);
         Ok(())
     }
 
@@ -347,7 +356,7 @@ impl OptionValue for MaskOperator {
         })
     }
 
-    fn cycle(&mut self, reverse: bool) -> Result<(), ChryError> {
+    fn cycle(&mut self, reverse: bool, n: usize) -> Result<(), ChryError> {
         use self::cairo::Operator::*;
 
         self.0 = cycled(self.0, &[
@@ -380,24 +389,31 @@ impl OptionValue for MaskOperator {
             HslSaturation,
             HslColor,
             HslLuminosity,
-        ], reverse);
+        ], reverse, n);
 
         Ok(())
     }
 }
 
 
-pub fn cycled<T>(current: T, order: &[T], reverse: bool) -> T
+pub fn cycled<T>(current: T, order: &[T], reverse: bool, n: usize) -> T
 where T: PartialEq + Copy {
+    let len = order.len();
+    let n = n % len;
     let i = order.iter().position(|it| *it == current).expect("Invalid value");
     if reverse {
-        if i == 0 {
-            order.last().cloned().unwrap()
+        if n <= i {
+            order[i - n]
         } else {
-            order[i - 1]
+            order[len - (n - i)]
         }
     } else {
-        order.get(i + 1).cloned().unwrap_or_else(|| order[0])
+        let new = i + n;
+        if new < len {
+            order[new]
+        } else {
+            order[new - len]
+        }
     }
 }
 
@@ -419,9 +435,9 @@ impl FromStr for Alignment {
 }
 
 impl OptionValue for Alignment {
-    fn cycle(&mut self, reverse: bool) -> Result<(), ChryError> {
+    fn cycle(&mut self, reverse: bool, n: usize) -> Result<(), ChryError> {
         use gtk::Align::*;
-        *self = cycled(*self, &[Alignment(Start), Alignment(Center), Alignment(End)], reverse);
+        *self = cycled(*self, &[Alignment(Start), Alignment(Center), Alignment(End)], reverse, n);
         Ok(())
     }
 

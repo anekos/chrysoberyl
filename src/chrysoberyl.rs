@@ -1,4 +1,5 @@
 
+use std::collections::HashMap;
 use std::process::exit;
 use std::sync::mpsc::Receiver;
 use std::thread::sleep;
@@ -9,8 +10,12 @@ use gtk;
 
 use app;
 use command_line;
+use events::EventName;
 use operation::Operation;
 
+
+
+const IDLE_DELAY: usize = 20;
 
 
 pub fn main() {
@@ -22,12 +27,15 @@ pub fn main() {
 
     let (mut app, primary_rx, secondary_rx) = parse_arguments();
 
+    let mut idles: usize = 0;
+
     'outer: loop {
         while gtk::events_pending() {
             gtk::main_iteration();
         }
 
         for op in primary_rx.try_iter() {
+            idles = 0;
             match op {
                 UpdateUI => continue 'outer,
                 op => app.operate(op, None),
@@ -37,6 +45,7 @@ pub fn main() {
         let t = Instant::now();
 
         for op in secondary_rx.try_iter() {
+            idles = 0;
             match op {
                 UpdateUI => continue 'outer,
                 op => app.operate(op, None),
@@ -44,6 +53,11 @@ pub fn main() {
             if t.elapsed() > Duration::from_millis(10) {
                 continue 'outer;
             }
+        }
+
+        idles = idles.saturating_add(1);
+        if idles == IDLE_DELAY {
+            app.operate(Operation::AppEvent(EventName::Idle, HashMap::new()), None);
         }
 
         sleep(Duration::from_millis(10));

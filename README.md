@@ -786,6 +786,7 @@ unsigned integer
 - download-all
 - error
 - file-changed
+- idle
 - initialize
 - invalid-all
 - mapped-input

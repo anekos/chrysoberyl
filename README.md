@@ -11,7 +11,7 @@ The controllable image viewer
 - Multi cell view
 - Many operation commands
 - Support HTTP(s)
-- Support Archive (zip, lha, rar, tar.gz)
+- Support Archive (zip, lha, rar, tar.gz and more)
 - Color config (window, statusbar, error text)
 - Shuffle
 - Directory expanding

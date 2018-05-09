@@ -12,7 +12,7 @@ pub fn get_entry_type_from_filename<T: AsRef<Path>>(path: &T) -> Option<EntryTyp
 
     match &*ext {
         // https://github.com/libarchive/libarchive/wiki/LibarchiveFormats
-        "7z" | "ar" | "cab" | "cpio" | "iso9660" | "lha" | "lzh" | "mtree" | "pax" | "rar" | "shar" | "tar" | "xar" | "zip" =>
+        "7z" | "ar" | "cab" | "cbz" | "cpio" | "iso9660" | "lha" | "lzh" | "mtree" | "pax" | "rar" | "shar" | "tar" | "xar" | "zip" =>
             Some(EntryType::Archive),
         "pdf" =>
             Some(EntryType::PDF),

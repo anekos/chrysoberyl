@@ -61,6 +61,7 @@ pub struct App {
     pub query_operation: Option<Vec<String>>,
     pub remote_cache: RemoteCache,
     pub states: States,
+    pub timers: TimerManager,
     pub tx: Sender<Operation>,
     counter: Counter,
     current_base_scale: Option<f64>, // Scale of first scaled image
@@ -76,7 +77,6 @@ pub struct App {
     rng: ThreadRng,
     search_text: Option<String>,
     sorting_buffer: SortingBuffer<QueuedOperation>,
-    timers: TimerManager,
     user_switches: UserSwitchManager,
     watcher: Watcher,
 }

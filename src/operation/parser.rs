@@ -1035,7 +1035,8 @@ pub fn parse_timer(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut repeat)
             .add_option(&["--repeat", "-r"], StoreOption, "Repeat (0 means infinitely)")
             .add_option(&["--infinity", "-i"], StoreConst(None), "Repeat infinitely");
-        ap.refer(&mut name).add_argument("name", StoreOption, "Name");
+        ap.refer(&mut name)
+            .add_option(&["--name", "-n"], StoreOption, "Name");
         ap.refer(&mut interval_seconds).add_argument("interval", Store, "Interval").required();
         ap.refer(&mut op).add_argument("operation", Collect, "Operation").required();
         parse_args(&mut ap, args)
@@ -1160,6 +1161,8 @@ impl FromStr for Session {
                 Ok(Session::Reading),
             "markers" | "marks" =>
                 Ok(Session::Markers),
+            "timers" | "t" =>
+                Ok(Session::Timers),
             "all" | "a" =>
                 Ok(Session::All),
             _ =>

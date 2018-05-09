@@ -63,6 +63,8 @@ shellexpand = "*"
 time = "*"
 tldextract = "*"
 url = "*"
+uuid = "*"
+uuid_to_pokemon = "*"
 
 # https://github.com/gtk-rs/gtk/blob/master/Cargo.toml
 [dependencies.gtk]

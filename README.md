@@ -544,7 +544,7 @@ Shuffle entries.
 Sort entries.
 
 
-## @timer [(--repeat|-r) <TIME>] [--infinity|-i] <NAME> <INTERVAL_SEC> <OPERATION>...
+## @timer [(--name|-n) <NAME>] [(--repeat|-r) <TIME>] [--infinity|-i] <INTERVAL_SEC> <OPERATION>...
 
 Execute `OPERATION` repeatedly.
 

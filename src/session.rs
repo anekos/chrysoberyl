@@ -18,6 +18,7 @@ use option::common::{bool_to_str as b2s};
 use paginator::Paginator;
 use size::FitTo;
 use state::{self, States, Filters};
+use timer::TimerManager;
 use util::path::path_to_str;
 use util::shell::{escape, escape_pathbuf};
 
@@ -35,6 +36,7 @@ pub enum Session {
     Markers,
     Envs,
     Filter,
+    Timers,
     Reading,
     All,
 }
@@ -65,6 +67,7 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
         Markers => write_markers(&app.marker, out),
         Envs => write_envs(out),
         Filter => write_filters(&app.states.last_filter, out),
+        Timers => write_timers(&app.timers, out),
         Reading => {
             write_options(&app.states, &app.gui, true, out);
             write_entries(&app.entries, out);
@@ -81,6 +84,7 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
             write_markers(&app.marker, out);
             write_envs(out);
             write_filters(&app.states.last_filter, out);
+            write_timers(&app.timers, out);
             write_paginator(app.current().map(|it| it.0), &app.paginator, out);
         }
     }
@@ -425,6 +429,27 @@ pub fn write_filter(expr: &Option<FilterExpr>, arg: &str, out: &mut String) {
         sprint!(out, " {}", escape(&expr_text));
     }
     sprintln!(out, "");
+}
+
+
+pub fn write_timers(timers: &TimerManager, out: &mut String) {
+    for (name, timer) in &timers.table {
+        if !timer.is_live() {
+            continue;
+        }
+
+        let interval = timer.interval.as_secs() as f64 + timer.interval.subsec_nanos() as f64 * 1e-9;
+        sprint!(out, "@timer --name {} --interval {}", escape(name), interval);
+        if let Some(repeat) = timer.repeat {
+            sprint!(out, " --repeat {}", repeat);
+        } else {
+            sprint!(out, " --infinity");
+        }
+        for it in &timer.operation {
+            sprint!(out, " {}", escape(it));
+        }
+        sprintln!(out, "");
+    }
 }
 
 

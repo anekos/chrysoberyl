@@ -6,16 +6,22 @@ use std::sync::mpsc::{Sender, channel};
 use std::thread::{spawn, sleep};
 use std::time::Duration;
 
+use uuid::Uuid;
+use uuid_to_pokemon::uuid_to_pokemon;
+
 use operation::Operation;
 
 
 
 pub struct TimerManager {
-    table: HashMap<String, Timer>,
+    pub table: HashMap<String, Timer>,
     app_tx: Sender<Operation>,
 }
 
 pub struct Timer {
+    pub interval: Duration,
+    pub operation: Vec<String>,
+    pub repeat: Option<usize>,
     tx: Sender<TimerOperation>,
     live: Arc<AtomicBool>,
 }
@@ -35,10 +41,14 @@ impl TimerManager {
         }
     }
 
-    pub fn register(&mut self, name: String, op: Vec<String>, interval: Duration, repeat: Option<usize>) {
+    pub fn register(&mut self, name: Option<String>, op: Vec<String>, interval: Duration, repeat: Option<usize>) {
+        let name = name.unwrap_or_else(|| {
+            let id = Uuid::new_v4();
+            s!(uuid_to_pokemon(id))
+        });
         let timer = Timer::new(name.clone(), op, self.app_tx.clone(), interval, repeat);
         if let Some(old) = self.table.insert(name, timer) {
-            if old.live.load(Ordering::SeqCst) {
+            if old.is_live() {
                 old.tx.send(TimerOperation::Kill).unwrap();
             }
         }
@@ -58,13 +68,13 @@ impl TimerManager {
 
 
 impl Timer {
-    pub fn new(name: String, op: Vec<String>, app_tx: Sender<Operation>, interval: Duration, repeat: Option<usize>) -> Timer {
+    pub fn new(name: String, operation: Vec<String>, app_tx: Sender<Operation>, interval: Duration, repeat: Option<usize>) -> Timer {
         let (tx, rx) = channel();
         let live = Arc::new(AtomicBool::new(true));
 
         sleep_and_fire(interval, &tx);
 
-        spawn(clone_army!([live, tx] move || {
+        spawn(clone_army!([live, tx, operation] move || {
             use self::TimerOperation::*;
 
             let mut repeat = repeat;
@@ -74,7 +84,7 @@ impl Timer {
                     Kill => break,
                     Fire => {
                         puts_event!("timer/fire", "name" => name);
-                        match Operation::parse_from_vec(&op) {
+                        match Operation::parse_from_vec(&operation) {
                             Ok(op) => app_tx.send(op).unwrap(),
                             Err(err) => puts_error!(err, "at" => "timer/fire"),
                         }
@@ -93,7 +103,11 @@ impl Timer {
             live.store(false, Ordering::SeqCst);
         }));
 
-        Timer { tx: tx, live: live }
+        Timer { tx, live, operation, interval, repeat }
+    }
+
+    pub fn is_live(&self) -> bool {
+        self.live.load(Ordering::SeqCst)
     }
 }
 

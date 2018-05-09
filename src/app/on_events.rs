@@ -1327,7 +1327,7 @@ pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f6
     Ok(())
 }
 
-pub fn on_timer(app: &mut App, name: String, op: Vec<String>, interval: Duration, repeat: Option<usize>) -> EventResult {
+pub fn on_timer(app: &mut App, name: Option<String>, op: Vec<String>, interval: Duration, repeat: Option<usize>) -> EventResult {
     app.timers.register(name, op, interval, repeat);
     Ok(())
 }

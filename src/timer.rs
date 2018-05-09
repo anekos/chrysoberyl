@@ -6,6 +6,9 @@ use std::sync::mpsc::{Sender, channel};
 use std::thread::{spawn, sleep};
 use std::time::Duration;
 
+use uuid::Uuid;
+use uuid_to_pokemon::uuid_to_pokemon;
+
 use operation::Operation;
 
 
@@ -35,7 +38,11 @@ impl TimerManager {
         }
     }
 
-    pub fn register(&mut self, name: String, op: Vec<String>, interval: Duration, repeat: Option<usize>) {
+    pub fn register(&mut self, name: Option<String>, op: Vec<String>, interval: Duration, repeat: Option<usize>) {
+        let name = name.unwrap_or_else(|| {
+            let id = Uuid::new_v4();
+            s!(uuid_to_pokemon(id))
+        });
         let timer = Timer::new(name.clone(), op, self.app_tx.clone(), interval, repeat);
         if let Some(old) = self.table.insert(name, timer) {
             if old.live.load(Ordering::SeqCst) {

@@ -115,7 +115,7 @@ pub enum Operation {
     Sort(bool, SortKey, bool), /* fix_current, key, reverse */
     Sorter(bool, Vec<Expandable>, bool), /* fix_current, command, reverse */
     TellRegion(f64, f64, f64, f64, Key), /* lef,t top, right, bottom, mousesbutton */
-    Timer(String, Vec<String>, Duration, Option<usize>),
+    Timer(Option<String>, Vec<String>, Duration, Option<usize>),
     Unclip,
     Undo(Option<usize>),
     Unmap(MappingTarget),

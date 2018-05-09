@@ -4,6 +4,7 @@ use std::fmt;
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
+use std::time::Duration;
 
 use cairo;
 use gtk;
@@ -29,6 +30,7 @@ pub struct States {
     pub drawing: DrawingState,
     pub go: Option<SearchKey>,
     pub history_file: Option<PathBuf>,
+    pub idle_time: Duration,
     pub initial_position: Position,
     pub last_direction: Direction,
     pub last_filter: Filters,
@@ -108,6 +110,7 @@ impl Default for States {
             empty_status_format: EmptyStatusFormat::default(),
             go: None,
             history_file: Some(history_file),
+            idle_time: Duration::from_millis(250),
             initial_position: Position::default(),
             last_direction: Direction::Forward,
             last_filter: Filters::default(),

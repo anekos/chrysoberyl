@@ -15,9 +15,6 @@ use operation::Operation;
 
 
 
-const IDLE_DELAY: usize = 20;
-
-
 pub fn main() {
     use self::Operation::UpdateUI;
 
@@ -27,7 +24,8 @@ pub fn main() {
 
     let (mut app, primary_rx, secondary_rx) = parse_arguments();
 
-    let mut idles: usize = 0;
+    let mut idle = None;
+    let mut idle_fired = false;
 
     'outer: loop {
         while gtk::events_pending() {
@@ -35,7 +33,7 @@ pub fn main() {
         }
 
         for op in primary_rx.try_iter() {
-            idles = 0;
+            idle = None;
             match op {
                 UpdateUI => continue 'outer,
                 op => app.operate(op, None),
@@ -45,19 +43,25 @@ pub fn main() {
         let t = Instant::now();
 
         for op in secondary_rx.try_iter() {
-            idles = 0;
+            idle = None;
             match op {
                 UpdateUI => continue 'outer,
                 op => app.operate(op, None),
             }
-            if t.elapsed() > Duration::from_millis(10) {
+            if Duration::from_millis(10) < t.elapsed() {
                 continue 'outer;
             }
         }
 
-        idles = idles.saturating_add(1);
-        if idles == IDLE_DELAY {
-            app.operate(Operation::AppEvent(EventName::Idle, HashMap::new()), None);
+        if let Some(idle) = idle {
+            let now = Instant::now();
+            if !idle_fired && app.states.idle_time < now.duration_since(idle) {
+                app.operate(Operation::AppEvent(EventName::Idle, HashMap::new()), None);
+                idle_fired = true;
+            }
+        } else {
+            idle = Some(Instant::now());
+            idle_fired = false;
         }
 
         sleep(Duration::from_millis(10));

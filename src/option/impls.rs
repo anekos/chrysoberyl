@@ -1,6 +1,7 @@
 
-use std::str::FromStr;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
+use std::time::Duration;
 
 use cairo;
 use num::Integer;
@@ -55,6 +56,14 @@ impl OptionValue for Option<PathBuf> {
     fn unset(&mut self) -> Result<(), ChryError> {
         *self = None;
         Ok(())
+    }
+}
+
+impl OptionValue for Duration {
+    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+        value.parse().map(|value: f64| {
+            *self = Duration::from_millis((value * 1000.0) as u64);
+        }).map_err(|it| ChryError::Standard(format!("Invalid value: {} ({})", value, it)))
     }
 }
 

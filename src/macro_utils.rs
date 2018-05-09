@@ -111,8 +111,7 @@ macro_rules! time {
 
             let t = Instant::now();
             let result = $body;
-            let e = t.elapsed();
-            info!("{}/time: {}", $name, duration_to_string(e));
+            info!("{}/time: {}", $name, duration_to_string(&t.elapsed()));
             result
         }
     }

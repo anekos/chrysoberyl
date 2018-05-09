@@ -4,6 +4,7 @@ use std::env;
 use std::fmt;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use app::App;
 use color::Color;
@@ -21,6 +22,7 @@ use state::{self, States, Filters};
 use timer::TimerManager;
 use util::path::path_to_str;
 use util::shell::{escape, escape_pathbuf};
+use util::time::duration_to_seconds;
 
 
 
@@ -115,6 +117,10 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         (gen_name(name, context), Some(s!(value)))
     }
 
+    fn gend(name: &str, value: &Duration, context: WriteContext) -> (String, Option<String>) {
+        (gen_name(name, context), Some(s!(duration_to_seconds(value))))
+    }
+
     fn geno<T: fmt::Display + Sized>(name: &str, value: &Option<T>, context: WriteContext) -> (String, Option<String>) {
         (gen_name(name, context), value.as_ref().map(|it| s!(it)))
     }
@@ -143,6 +149,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         FitTo => gen("fit-to", &st.drawing.fit_to, context),
         HistoryFile => genp("history-file", &st.history_file, context),
         HorizontalViews => gen("horizontal-views", &st.view.cols, context),
+        IdleTime => gend("idle-time", &st.idle_time, context),
         InitialPosition => gen("initial-position", &st.initial_position, context),
         LogFile => gen("log-file", &st.log_file, context),
         MaskOperator => gen("mask-operator", &st.drawing.mask_operator, context),
@@ -438,7 +445,7 @@ pub fn write_timers(timers: &TimerManager, out: &mut String) {
             continue;
         }
 
-        let interval = timer.interval.as_secs() as f64 + timer.interval.subsec_nanos() as f64 * 1e-9;
+        let interval = duration_to_seconds(&timer.interval);
         sprint!(out, "@timer --name {} --interval {}", escape(name), interval);
         if let Some(repeat) = timer.repeat {
             sprint!(out, " --repeat {}", repeat);

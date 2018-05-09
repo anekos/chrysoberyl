@@ -1402,6 +1402,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 FitTo => &mut app.states.drawing.fit_to,
                 HistoryFile => &mut app.states.history_file,
                 HorizontalViews => &mut app.states.view.cols,
+                IdleTime => &mut app.states.idle_time,
                 InitialPosition => &mut app.states.initial_position,
                 LogFile => &mut app.states.log_file,
                 MaskOperator => &mut app.states.drawing.mask_operator,

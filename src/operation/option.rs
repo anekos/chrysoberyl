@@ -41,6 +41,7 @@ iterable_enum!(PreDefinedOptionName =>
     FitTo,
     HistoryFile,
     HorizontalViews,
+    IdleTime,
     InitialPosition,
     LogFile,
     MaskOperator,
@@ -85,6 +86,7 @@ impl FromStr for PreDefinedOptionName {
             "fit-to" | "fit"                       => FitTo,
             "history-file"                         => HistoryFile,
             "horizontal-views"                     => HorizontalViews,
+            "idle-time"                            => IdleTime,
             "initial-position"                     => InitialPosition,
             "log-file" | "log"                     => LogFile,
             "mask-operator"                        => MaskOperator,
@@ -125,7 +127,7 @@ impl PreDefinedOptionName {
         match *self {
             AbbrevLength | Animation | AutoReload | AutoPaging |
                 ColorError | ColorErrorBackground | ColorLink | ColorStatusBar | ColorStatusBarBackground | ColorWindowBackground |
-                FitTo | HorizontalViews | InitialPosition | LogFile | MaskOperator |
+                FitTo | HorizontalViews | IdleTime | InitialPosition | LogFile | MaskOperator |
                 OperationBox | PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
                 Reverse | Rotation | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusFormat | EmptyStatusFormat |
                 StdOut | UpdateCacheAccessTime | TitleFormat | VerticalViews | WatchFiles | HistoryFile => false,

@@ -671,6 +671,11 @@ fit-to
 :   values: width, height, original, original-or-cell, cell, xxx%
 :   default: cell
 
+idle-time
+:   type: floating number
+:   default: 0.25
+:   Delay time for `idle` event.
+
 history-file
 :   type: path
 :   default: none

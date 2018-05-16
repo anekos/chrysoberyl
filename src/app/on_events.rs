@@ -652,9 +652,9 @@ pub fn on_message(app: &mut App, updated: &mut Updated, message: Option<String>,
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 pub fn on_move_again(app: &mut App, updated: &mut Updated, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) -> EventResult {
     if app.states.last_direction == state::Direction::Forward {
-        on_next(app, updated, count, ignore_views, move_by, wrap)
+        on_next(app, updated, count, ignore_views, move_by, wrap, false)
     } else {
-        on_previous(app, updated, to_end, count, ignore_views, move_by, wrap)
+        on_previous(app, updated, to_end, count, ignore_views, move_by, wrap, false)
     }
 }
 
@@ -674,8 +674,10 @@ pub fn on_multi(app: &mut App, mut operations: VecDeque<Operation>, async: bool,
     Ok(())
 }
 
-pub fn on_next(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) -> EventResult {
-    app.states.last_direction = state::Direction::Forward;
+pub fn on_next(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool, remember: bool) -> EventResult {
+    if remember {
+        app.states.last_direction = state::Direction::Forward;
+    }
     match move_by {
         MoveBy::Page => {
             let paging = app.paging_with_count(wrap, ignore_views, count);
@@ -775,8 +777,10 @@ pub fn on_pre_fetch(app: &mut App, serial: u64) -> EventResult {
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
-pub fn on_previous(app: &mut App, updated: &mut Updated, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) -> EventResult {
-    app.states.last_direction = state::Direction::Backward;
+pub fn on_previous(app: &mut App, updated: &mut Updated, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool, remember: bool) -> EventResult {
+    if remember {
+        app.states.last_direction = state::Direction::Backward;
+    }
     match move_by {
         MoveBy::Page => {
             let paging = app.paging_with_count(wrap, ignore_views, count);

@@ -266,8 +266,8 @@ impl App {
                     on_move_again(self, &mut updated, &mut to_end, count, ignore_views, move_by, wrap),
                 Multi(ops, async) =>
                     on_multi(self, ops, async, context),
-                Next(count, ignore_views, move_by, wrap) =>
-                    on_next(self, &mut updated, count, ignore_views, move_by, wrap),
+                Next(count, ignore_views, move_by, wrap, remember) =>
+                    on_next(self, &mut updated, count, ignore_views, move_by, wrap, remember),
                 Nop =>
                     Ok(()),
                 OperateFile(ref file_operation) =>
@@ -280,8 +280,8 @@ impl App {
                     on_pdf_index(self, async, read_operations, search_path, command_line, fmt, separator.as_ref().map(String::as_str)),
                 PreFetch(pre_fetch_serial) =>
                     on_pre_fetch(self, pre_fetch_serial),
-                Previous(count, ignore_views, move_by, wrap) =>
-                    on_previous(self, &mut updated, &mut to_end, count, ignore_views, move_by, wrap),
+                Previous(count, ignore_views, move_by, wrap, remember) =>
+                    on_previous(self, &mut updated, &mut to_end, count, ignore_views, move_by, wrap, remember),
                 Pull =>
                     on_pull(self, &mut updated),
                 Push(path, meta, force) =>
@@ -390,7 +390,7 @@ impl App {
                     self.operate(Operation::Last(None, false, MoveBy::Page, false), None);
                     return
                 } else if self.states.auto_paging == AutoPaging::Smart && gui_len <= len && len - gui_len == index {
-                    self.operate(Operation::Next(None, false, MoveBy::Page, false), None);
+                    self.operate(Operation::Next(None, false, MoveBy::Page, false, false), None);
                     return
                 }
             }

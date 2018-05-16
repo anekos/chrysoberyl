@@ -79,14 +79,14 @@ pub enum Operation {
     Message(Option<String>, bool),
     MoveAgain(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     Multi(VecDeque<Operation>, bool), /* operations, async */
-    Next(Option<usize>, bool, MoveBy, bool),
+    Next(Option<usize>, bool, MoveBy, bool, bool), /* count, ignore_views, move_by, wrap, forget */
     Nop,
     OperateFile(filer::FileOperation),
     OperationEntry(OperationEntryAction),
     Page(usize),
     PdfIndex(bool, bool, bool, Vec<Expandable>, poppler::index::Format, Option<String>), /* async, read_operations, search_path, ... */
     PreFetch(u64),
-    Previous(Option<usize>, bool, MoveBy, bool),
+    Previous(Option<usize>, bool, MoveBy, bool, bool), /* count, ignore_views, move_by, wrap, forget */
     Pull,
     Push(Expandable, Option<Meta>, bool), /* path, meta, force */
     PushArchive(Expandable, Option<Meta>, bool), /* path, meta, force */
@@ -288,12 +288,12 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@message"                      => parse_message(whole),
             "@move-again"                   => parse_move(whole, MoveAgain),
             "@multi"                        => parse_multi(whole),
-            "@next" | "@n"                  => parse_move(whole, Next),
+            "@next" | "@n"                  => parse_move5(whole, Next),
             "@nop"                          => Ok(Nop),
             "@page"                         => parse_page(whole),
             "@pdf-index"                    => parse_pdf_index(whole),
             "@link-action" | "@link"        => Ok(Operation::LinkAction(whole[1..].to_vec())),
-            "@prev" | "@p" | "@previous"    => parse_move(whole, Previous),
+            "@prev" | "@p" | "@previous"    => parse_move5(whole, Previous),
             "@push"                         => parse_push(whole, |it, meta, force| Push(Expandable::new(it), meta, force)),
             "@push-archive"                 => parse_push(whole, |it, meta, force| PushArchive(Expandable::new(it), meta, force)),
             "@push-clipboard"               => parse_push_clipboard(whole),
@@ -481,14 +481,14 @@ impl fmt::Debug for Operation {
             Message(_, _) => "Message",
             MoveAgain(_, _, _, _) => "MoveAgain",
             Multi(_, _) => "Multi",
-            Next(_, _, _, _) => "Next",
+            Next(_, _, _, _, _) => "Next",
             Nop => "Nop ",
             OperateFile(_) => "OperateFile",
             OperationEntry(_) => "OperationEntry",
             Page(_) => "Page",
             PdfIndex(_, _, _, _, _, _) => "PdfIndex",
             PreFetch(_) => "PreFetch",
-            Previous(_, _, _, _) => "Previous",
+            Previous(_, _, _, _, _) => "Previous",
             Pull => "Pull ",
             Push(_, _, _) => "Push",
             PushArchive(_, _, _) => "PushArchive",

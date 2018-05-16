@@ -365,7 +365,7 @@ Same as `@multi`.
 ```
 
 
-## (@next|@n) [--wrap|-w] [--archive|-a] [--ignore-views|-i] [<COUNT>]
+## (@next|@n) [--wrap|-w] [--archive|-a] [--ignore-views|-i] [--forget|-f] [<COUNT>]
 
 Show `COUNT`th next entry.
 
@@ -395,7 +395,7 @@ e.g)
 @map input button-1 @link-action @next
 ```
 
-## (@prev|@p| @previous) [--wrap|-w] [--archive|-a] [--ignore-views|-i] [<COUNT>]
+## (@prev|@p| @previous) [--wrap|-w] [--archive|-a] [--ignore-views|-i] [--forget|-f] [<COUNT>]
 
 Show `COUNT`th previous entry.
 

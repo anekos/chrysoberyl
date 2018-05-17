@@ -650,8 +650,8 @@ pub fn on_message(app: &mut App, updated: &mut Updated, message: Option<String>,
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
-pub fn on_move_again(app: &mut App, updated: &mut Updated, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool) -> EventResult {
-    if app.states.last_direction == state::Direction::Forward {
+pub fn on_move_again(app: &mut App, updated: &mut Updated, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool, reverse: bool) -> EventResult {
+    if (app.states.last_direction == state::Direction::Forward) ^ reverse {
         on_next(app, updated, count, ignore_views, move_by, wrap, false)
     } else {
         on_previous(app, updated, to_end, count, ignore_views, move_by, wrap, false)

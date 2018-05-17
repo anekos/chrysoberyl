@@ -77,7 +77,7 @@ pub enum Operation {
     Mark(String, Option<(String, usize, Option<EntryType>)>),
     Meow,
     Message(Option<String>, bool),
-    MoveAgain(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
+    MoveAgain(Option<usize>, bool, MoveBy, bool, bool), /* count, ignore-views, archive/page, wrap, reverse */
     Multi(VecDeque<Operation>, bool), /* operations, async */
     Next(Option<usize>, bool, MoveBy, bool, bool), /* count, ignore_views, move_by, wrap, forget */
     Nop,
@@ -286,7 +286,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@mark"                         => parse_mark(whole),
             "@meow"                         => Ok(Meow),
             "@message"                      => parse_message(whole),
-            "@move-again"                   => parse_move(whole, MoveAgain),
+            "@move-again"                   => parse_move_again(whole),
             "@multi"                        => parse_multi(whole),
             "@next" | "@n"                  => parse_move5(whole, Next),
             "@nop"                          => Ok(Nop),
@@ -479,7 +479,7 @@ impl fmt::Debug for Operation {
             Mark(_, _) => "Mark",
             Meow => "Meow",
             Message(_, _) => "Message",
-            MoveAgain(_, _, _, _) => "MoveAgain",
+            MoveAgain(_, _, _, _, _) => "MoveAgain",
             Multi(_, _) => "Multi",
             Next(_, _, _, _, _) => "Next",
             Nop => "Nop ",

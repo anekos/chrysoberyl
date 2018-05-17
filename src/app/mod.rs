@@ -262,8 +262,8 @@ impl App {
                     on_meow(self, &mut updated),
                 Message(message, keep) =>
                     on_message(self, &mut updated, message, keep),
-                MoveAgain(count, ignore_views, move_by, wrap) =>
-                    on_move_again(self, &mut updated, &mut to_end, count, ignore_views, move_by, wrap),
+                MoveAgain(count, ignore_views, move_by, wrap, reverse) =>
+                    on_move_again(self, &mut updated, &mut to_end, count, ignore_views, move_by, wrap, reverse),
                 Multi(ops, async) =>
                     on_multi(self, ops, async, context),
                 Next(count, ignore_views, move_by, wrap, remember) =>

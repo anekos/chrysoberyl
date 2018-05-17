@@ -47,6 +47,13 @@ where T: FnOnce(U) -> Operation, U: FromStr {
     }
 }
 
+pub fn parse_common_move<'a, 'b>(ap: &'a mut ArgumentParser<'b>, count: &'b mut Option<usize>, ignore_views: &'b mut bool, move_by: &'b mut MoveBy, wrap: &'b mut bool) {
+    ap.refer(ignore_views).add_option(&["--ignore-views", "-i"], StoreTrue, "Ignore the number of views");
+    ap.refer(wrap).add_option(&["--wrap", "-w"], StoreTrue, "First/Last page to Last/First page");
+    ap.refer(move_by).add_option(&["--archive", "-a"], StoreConst(MoveBy::Archive), "Set move unit to `archive`");
+    ap.refer(count).add_argument("count", StoreOption, "Count");
+}
+
 pub fn parse_move<T>(args: &[String], op: T) -> Result<Operation, ParsingError>
 where T: FnOnce(Option<usize>, bool, MoveBy, bool) -> Operation {
     let mut ignore_views = false;
@@ -56,10 +63,7 @@ where T: FnOnce(Option<usize>, bool, MoveBy, bool) -> Operation {
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut ignore_views).add_option(&["--ignore-views", "-i"], StoreTrue, "Ignore the number of views");
-        ap.refer(&mut wrap).add_option(&["--wrap", "-w"], StoreTrue, "First/Last page to Last/First page");
-        ap.refer(&mut move_by).add_option(&["--archive", "-a"], StoreConst(MoveBy::Archive), "Set move unit to `archive`");
-        ap.refer(&mut count).add_argument("count", StoreOption, "Count");
+        parse_common_move(&mut ap, &mut count, &mut ignore_views, &mut move_by, &mut wrap);
         parse_args(&mut ap, args)
     } .map(|_| {
         op(count, ignore_views, move_by, wrap)
@@ -76,14 +80,28 @@ where T: FnOnce(Option<usize>, bool, MoveBy, bool, bool) -> Operation {
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut ignore_views).add_option(&["--ignore-views", "-i"], StoreTrue, "Ignore the number of views");
-        ap.refer(&mut wrap).add_option(&["--wrap", "-w"], StoreTrue, "First/Last page to Last/First page");
-        ap.refer(&mut move_by).add_option(&["--archive", "-a"], StoreConst(MoveBy::Archive), "Set move unit to `archive`");
+        parse_common_move(&mut ap, &mut count, &mut ignore_views, &mut move_by, &mut wrap);
         ap.refer(&mut remember).add_option(&["--forget", "-f"], StoreFalse, "Don't remember the direction for `@move-again`");
-        ap.refer(&mut count).add_argument("count", StoreOption, "Count");
         parse_args(&mut ap, args)
     } .map(|_| {
         op(count, ignore_views, move_by, wrap, remember)
+    })
+}
+
+pub fn parse_move_again(args: &[String]) -> Result<Operation, ParsingError> {
+    let mut ignore_views = false;
+    let mut count = None;
+    let mut move_by = MoveBy::Page;
+    let mut wrap = false;
+    let mut reverse = false;
+
+    {
+        let mut ap = ArgumentParser::new();
+        parse_common_move(&mut ap, &mut count, &mut ignore_views, &mut move_by, &mut wrap);
+        ap.refer(&mut reverse).add_option(&["--reverse", "-r"], StoreTrue, "Reverse direction");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::MoveAgain(count, ignore_views, move_by, wrap, reverse)
     })
 }
 

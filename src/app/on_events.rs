@@ -4,6 +4,7 @@ use std::env;
 use std::error::Error;
 use std::fs::File;
 use std::io::{Write, Read};
+use std::mem::swap;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::Arc;
@@ -44,6 +45,7 @@ use shellexpand_wrapper as sh;
 use state;
 use util::num::range_contains;
 use util::path::{path_to_str, path_to_string};
+use util::string::prefixed_lines;
 
 use app::*;
 
@@ -194,7 +196,7 @@ pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) -> Even
     Ok(())
 }
 
-pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Expandable], sessions: &[Session]) -> EventResult {
+pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Expandable], sessions: &[Session], comment_out: bool) -> EventResult {
     let tx = app.tx.clone();
     let source = with_ouput_string!(out, {
         for file in files {
@@ -202,6 +204,10 @@ pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Exp
             file.read_to_string(out)?;
         }
         write_sessions(app, sessions, out);
+        if comment_out {
+            let mut co = prefixed_lines("# ", out);
+            swap(&mut co, out);
+        }
     });
     spawn(move || editor::start_edit(&tx, editor_command.map(|it| it.to_string()), &source));
     Ok(())

@@ -51,7 +51,7 @@ pub enum Operation {
     DefineUserSwitch(String, Vec<Vec<String>>),
     Delete(Box<entry::filter::expression::Expr>),
     Draw,
-    Editor(Option<Expandable>, Vec<Expandable>, Vec<Session>),
+    Editor(Option<Expandable>, Vec<Expandable>, Vec<Session>, bool), /* editor_command, options, session, comment_out */
     Error(String),
     Eval(Vec<String>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
@@ -455,7 +455,7 @@ impl fmt::Debug for Operation {
             DefineUserSwitch(_, _) => "DefineUserSwitch",
             Delete(_) => "delete",
             Draw => "Draw ",
-            Editor(_, _, _) => "Editor",
+            Editor(_, _, _, _) => "Editor",
             Error(ref error) => return write!(f, "Error({:?})", error),
             Eval(_) => "Eval",
             Expand(_, _) => "Expand",

@@ -11,3 +11,14 @@ pub fn join(xs: &[String], sep: char) -> String {
     result.pop();
     result
 }
+
+
+pub fn prefixed_lines(prefix: &str, source: &str) -> String {
+    let mut result = o!("");
+    for line in source.lines() {
+        result.push_str(prefix);
+        result.push_str(line);
+        result.push_str("\n");
+    }
+    result
+}

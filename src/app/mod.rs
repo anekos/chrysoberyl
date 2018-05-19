@@ -210,8 +210,8 @@ impl App {
                     on_delete(self, &mut updated, *expr),
                 Draw =>
                     ok!(updated.image = true),
-                Editor(ref editor_command, ref files, ref sessions) =>
-                   on_editor(self, editor_command.clone(), files, sessions),
+                Editor(ref editor_command, ref files, ref sessions, comment_out) =>
+                   on_editor(self, editor_command.clone(), files, sessions, comment_out),
                 Error(error) =>
                     on_error(self, &mut updated, error),
                 Eval(ref op) =>

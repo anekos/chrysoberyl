@@ -188,7 +188,7 @@ Disable `OPTION_NAME`.
 Redraw image.
 
 
-## @editor [(--file|-f) <PATH>] [(--session|-s) <SESSION>] [<COMMAND_LINE>]
+## @editor [(--file|-f) <PATH>] [(--session|-s) <SESSION>] [--comment-out|-c] [<COMMAND_LINE>]
 
 ### SESSION
 
@@ -256,6 +256,12 @@ Filter entries.
 
 
 
+## @fire <MAPPED_TYPE> <NAME>
+
+Fire mapped input/event.
+`@fire` does not support `region` mapping.
+
+
 ## (@first|@f) [--wrap|-w] [--archive|-a] [--ignore-views|-i] [<COUNT>]
 
 Show `COUNT`th entry.
@@ -296,7 +302,7 @@ This operation does not add any entry.
 Increment the value of `OPTION_NAME`.
 
 
-## @input
+## @input <INPUT1> [<INPUT2>...]
 
 Feed input event.
 

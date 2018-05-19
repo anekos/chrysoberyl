@@ -337,16 +337,18 @@ pub fn parse_delete(args: &[String]) -> Result<Operation, ParsingError> {
 pub fn parse_editor(args: &[String]) -> Result<Operation, ParsingError> {
     let mut sessions: Vec<Session> = vec![];
     let mut files: Vec<Expandable> = vec![];
+    let mut comment_out = false;
     let mut command_line: Option<Expandable> = None;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut files).add_option(&["--file", "-f"], Collect, "Insert the given file");
         ap.refer(&mut sessions).add_option(&["--session", "-S"], Collect, "Sessions");
+        ap.refer(&mut comment_out).add_option(&["--comment-out", "-c"], StoreTrue, "Comment out");
         ap.refer(&mut command_line).add_argument("command-line", StoreOption, "Command line to open editor");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Editor(command_line, files, sessions)
+        Operation::Editor(command_line, files, sessions, false)
     })
 }
 

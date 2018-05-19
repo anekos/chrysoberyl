@@ -283,7 +283,7 @@ fn try_next(app_tx: &Sender<Operation>, thread_id: TID, state: &mut State) {
     }
 
     if state.idles.len() == state.threads.len() {
-        app_tx.send(Operation::Input(mapping::Input::Event(EventName::DownloadAll))).unwrap();
+        app_tx.send(Operation::Fire(mapping::Mapped::Event(EventName::DownloadAll))).unwrap();
     }
 }
 

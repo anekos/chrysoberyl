@@ -13,7 +13,7 @@ use entry::filter::expression::Expr as FilterExpr;
 use entry::filter::writer::write as write_expr;
 use entry::{Entry, EntryContainer, EntryType, Key, Meta};
 use gui::Gui;
-use mapping::{Mapping, unified_mapping as umap, region_mapping as rmap, event_mapping as emap};
+use mapping::{Mapping, input_mapping as imap, region_mapping as rmap, event_mapping as emap};
 use operation::option::PreDefinedOptionName;
 use option::common::{bool_to_str as b2s};
 use paginator::Paginator;
@@ -331,28 +331,28 @@ pub fn write_paginator(entry: Option<Arc<Entry>>, paginator: &Paginator, out: &m
 }
 
 pub fn write_mappings(mappings: &Mapping, out: &mut String) {
-    write_unified_mappings(None, &mappings.unified_mapping, out);
+    write_input_mappings(None, &mappings.input_mapping, out);
     write_region_mappings(&mappings.region_mapping, out);
     write_event_mappings(&mappings.event_mapping, out);
 }
 
-fn write_unified_mappings(base: Option<&str>, mappings: &umap::UnifiedMapping, out: &mut String) {
+fn write_input_mappings(base: Option<&str>, mappings: &imap::InputMapping, out: &mut String) {
     for (name, entry) in &mappings.table {
         let name = if let Some(base) = base {
             format!("{},{}", base, name)
         } else {
             format!("{}", name)
         };
-        write_unified_mapping_entry(&name, entry, out);
+        write_input_mapping_entry(&name, entry, out);
     }
 }
 
-fn write_unified_mapping_entry(name: &str, entry: &umap::Node, out: &mut String) {
-    use self::umap::Node::*;
+fn write_input_mapping_entry(name: &str, entry: &imap::Node, out: &mut String) {
+    use self::imap::Node::*;
 
     match *entry {
         Sub(ref sub) =>
-            write_unified_mappings(Some(name), &*sub, out),
+            write_input_mappings(Some(name), &*sub, out),
         Leaf(ref leaf_node) => {
             for entry in &leaf_node.entries {
                 sprint!(out, "@map input");

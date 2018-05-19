@@ -58,12 +58,13 @@ pub enum Operation {
     FileChanged(PathBuf),
     Fill(Shape, Option<Region>, Color, bool, usize), /* region, mask, cell index */
     Filter(bool, Box<Option<entry::filter::expression::Expr>>), /* dynamic, filter expression */
+    Fire(mapping::Mapped),
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     FlushBuffer,
     FlyLeaves(usize),
     Forward,
     Go(entry::SearchKey),
-    Input(mapping::Input),
+    Input(Vec<mapping::Mapped>),
     InitialProcess(Vec<command_line::Entry>, bool, bool), /* command_lin::entries, shuffle, stdin_as_binary */
     Jump(String, bool), /* marker name, load */
     KillTimer(String),
@@ -143,13 +144,13 @@ pub struct CherenkovParameter {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct OperationContext {
-    pub input: mapping::Input,
+    pub mapped: mapping::Mapped,
     pub cell_index: Option<usize>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum MappingTarget {
-    Unified(KeySequence, Option<Region>),
+    Input(KeySequence, Option<Region>),
     Event(Option<EventName>, Option<String>),
     Region(Key),
 }
@@ -271,6 +272,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@fill"                         => parse_fill(whole),
             "@filter"                       => parse_filter(whole),
             "@first" | "@f"                 => parse_move(whole, First),
+            "@fire"                         => parse_fire(whole),
             "@flush-buffer"                 => Ok(FlushBuffer),
             "@fly-leaves"                   => parse_fly_leaves(whole),
             "@forward" | "@fwd"             => Ok(Forward),
@@ -457,6 +459,7 @@ impl fmt::Debug for Operation {
             Error(ref error) => return write!(f, "Error({:?})", error),
             Eval(_) => "Eval",
             Expand(_, _) => "Expand",
+            Fire(_) => "Fire",
             First(_, _, _, _) => "First",
             FileChanged(_) => "FileChanged",
             Fill(_, _, _, _, _) => "Fill",

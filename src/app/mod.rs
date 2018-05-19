@@ -24,7 +24,7 @@ use history::History;
 use image_cache::ImageCache;
 use image_fetcher::ImageFetcher;
 use logger;
-use mapping::{Mapping, Input};
+use mapping::{Mapping, Mapped};
 use operation::option::PreDefinedOptionName;
 use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy, Updated};
 use option::user_switch::UserSwitchManager;
@@ -224,6 +224,8 @@ impl App {
                     on_fill(self, &mut updated, shape, region, color, mask, cell_index, context),
                 Filter(dynamic, expr) =>
                     on_filter(self, &mut updated, dynamic, *expr),
+                Fire(ref mapped) =>
+                    on_fire(self, mapped, context),
                 First(count, ignore_views, move_by, _) =>
                     on_first(self, &mut updated, count, ignore_views, move_by),
                 FlushBuffer =>
@@ -236,8 +238,8 @@ impl App {
                     on_go(self, &mut updated, key),
                 InitialProcess(entries, shuffle, stdin_as_binary) =>
                     on_initial_process(self, entries, shuffle, stdin_as_binary),
-                Input(ref input) =>
-                    on_input(self, input, context),
+                Input(ref mapped) =>
+                    on_input(self, mapped, context),
                 Jump(ref name, load) =>
                     on_jump(self, &mut updated, name, load),
                 KillTimer(ref name) =>

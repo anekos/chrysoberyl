@@ -68,7 +68,7 @@ pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName
         _ => ()
     }
 
-    let op = Operation::Input(Input::Event(event_name.clone()));
+    let op = Operation::Fire(Mapped::Event(event_name.clone()));
     if async {
         app.tx.send(op).unwrap();
     } else {
@@ -95,7 +95,7 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
     use cherenkov::{Che, Modifier};
     use cherenkov::nova::Nova;
 
-    let context_coord = context.map(|it| it.input).and_then(|it| if let Input::Unified(coord, _) = it { Some(coord) } else { None });
+    let context_coord = context.map(|it| it.mapped).and_then(|it| if let Mapped::Input(coord, _) = it { Some(coord) } else { None });
 
     let cell_size = app.gui.get_cell_size(&app.states.view);
 
@@ -325,6 +325,39 @@ pub fn on_filter(app: &mut App, updated: &mut Updated, dynamic: bool, expr: Opti
     Ok(())
 }
 
+pub fn on_fire(app: &mut App, mapped: &Mapped, context: Option<OperationContext>) -> EventResult {
+    if let Mapped::Input(_, ref key) = *mapped {
+        if let Some(query_operation) = app.query_operation.take() {
+            env::set_var(constant::env_name("query"), s!(key));
+            let op = Operation::parse_from_vec(&query_operation)?;
+            app.operate(op, context);
+            return Ok(())
+        }
+    }
+
+    let (width, height) = app.gui.window.get_size();
+
+    if_let_some!((operations, inputs) = app.mapping.matched(mapped, width, height, true), {
+        if let Mapped::Event(_) = *mapped {
+        } else {
+            puts_event!("mapped", "type" => mapped.type_name(), "name" => s!(mapped));
+        }
+        Ok(())
+    });
+
+    for op in operations {
+        let op = Operation::parse_from_vec(&op)?;
+        let context = context.clone().unwrap_or_else(|| OperationContext { mapped: mapped.clone(), cell_index: None });
+        app.operate(op, Some(context));
+    }
+
+    if let Mapped::Input(coord, _) = *mapped {
+        let context = convert_args!(hashmap!("mapped" => inputs, "x" => s!(coord.x), "y" => s!(coord.y)));
+        app.fire_event_with_context(&EventName::MappedInput, context);
+    }
+    Ok(())
+}
+
 pub fn on_first(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy) -> EventResult {
     match move_by {
         MoveBy::Page => {
@@ -452,35 +485,12 @@ pub fn on_initialized(app: &mut App) -> EventResult {
     Ok(())
 }
 
-pub fn on_input(app: &mut App, input: &Input, context: Option<OperationContext>) -> EventResult {
-    if let Input::Unified(_, ref key) = *input {
-        if let Some(query_operation) = app.query_operation.take() {
-            env::set_var(constant::env_name("query"), s!(key));
-            let op = Operation::parse_from_vec(&query_operation)?;
-            app.operate(op, context);
-            return Ok(())
+pub fn on_input(app: &mut App, mapped: &[Mapped], context: Option<OperationContext>) -> EventResult {
+    for mapped in mapped {
+        match on_fire(app, mapped, context.clone()) {
+            Ok(_) => (),
+            Err(err) => return Err(err),
         }
-    }
-
-    let (width, height) = app.gui.window.get_size();
-
-    if_let_some!((operations, inputs) = app.mapping.matched(input, width, height, true), {
-        if let Input::Event(_) = *input {
-        } else {
-            puts_event!("input", "type" => input.type_name(), "name" => s!(input));
-        }
-        Ok(())
-    });
-
-    for op in operations {
-        let op = Operation::parse_from_vec(&op)?;
-        let context = context.clone().unwrap_or_else(|| OperationContext { input: input.clone(), cell_index: None });
-        app.operate(op, Some(context));
-    }
-
-    if let Input::Unified(coord, _) = *input {
-        let context = convert_args!(hashmap!("input" => inputs, "x" => s!(coord.x), "y" => s!(coord.y)));
-        app.fire_event_with_context(&EventName::MappedInput, context);
     }
     Ok(())
 }
@@ -557,7 +567,7 @@ pub fn on_link_action(app: &mut App, updated: &mut Updated, operation: &[String]
     use entry::EntryContent::*;
 
     let mut clicked = None;
-    if let Some(&Input::Unified(ref coord, _)) = context.as_ref().map(|it| &it.input) {
+    if let Some(&Mapped::Input(ref coord, _)) = context.as_ref().map(|it| &it.mapped) {
         for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
             if let Some((entry, _)) = app.current_with(index) {
                 if let Some(coord) = cell.get_position_on_image(coord, &app.states.drawing) {
@@ -608,8 +618,8 @@ pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, opera
 
     // puts_event!("map", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
     match target {
-        Unified(ref key_sequence, region) =>
-            app.mapping.register_unified(key_sequence, region, operation),
+        Input(ref key_sequence, region) =>
+            app.mapping.register_input(key_sequence, region, operation),
         Event(Some(event_name), group) =>
             app.mapping.register_event(event_name, group, remain, operation),
         Event(None, _) =>
@@ -1323,7 +1333,7 @@ pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f6
                     f64!(my - y1) / h,
                     (right - f64!(x1)) / w,
                     (bottom - f64!(y1)) / h);
-                let op = Operation::Input(Input::Region(region, button.clone(), index));
+                let op = Operation::Fire(Mapped::Region(region, button.clone(), index));
                 app.tx.send(op).unwrap();
             }
         }
@@ -1359,8 +1369,8 @@ pub fn on_unmap(app: &mut App, target: &MappingTarget) -> EventResult {
 
     // puts_event!("unmap", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
     match *target {
-        Unified(ref key_sequence, ref region) =>
-            app.mapping.unregister_unified(key_sequence, region),
+        Input(ref key_sequence, ref region) =>
+            app.mapping.unregister_input(key_sequence, region),
         Event(ref event_name, ref group) =>
             app.mapping.unregister_event(event_name, group),
         Region(ref button) =>
@@ -1582,8 +1592,8 @@ pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) -> EventRe
 
 
 fn extract_region_from_context(context: Option<OperationContext>) -> Option<(Region, usize)> {
-    if let Some(input) = context.map(|it| it.input) {
-        if let Input::Region(ref region, _, cell_index) = input {
+    if let Some(mapped) = context.map(|it| it.mapped) {
+        if let Mapped::Region(ref region, _, cell_index) = mapped {
             return Some((*region, cell_index));
         }
     }

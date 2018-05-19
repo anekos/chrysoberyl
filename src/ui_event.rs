@@ -25,7 +25,7 @@ use expandable::Expandable;
 use gui::{Gui, DropItemType};
 use key::Key;
 use lazy_sender::LazySender;
-use mapping::Input;
+use mapping::Mapped;
 use operation::Operation;
 use size::CoordPx;
 use util::num::feq;
@@ -168,7 +168,7 @@ fn on_key_press(tx: &Sender<Operation>, key: Key, keyval: u32) {
     if key::_0 <= keyval && keyval <= key::_9 {
         tx.send(Operation::CountDigit((keyval - key::_0) as u8)).unwrap();
     } else if !is_modifier_key(keyval) {
-        tx.send(Operation::Input(Input::Unified(CoordPx::default(), key))).unwrap();
+        tx.send(Operation::Fire(Mapped::Input(CoordPx::default(), key))).unwrap();
     }
 }
 
@@ -177,8 +177,8 @@ fn on_button_release(tx: &Sender<Operation>, key: Key, x: f64, y: f64, pressed_a
 
     if feq(x, px, 10.0) && feq(y, py, 10.0) {
         tx.send(
-            Operation::Input(
-                Input::Unified(CoordPx { x: x as i32, y: y as i32, width: conf.width, height: conf.height }, key))).unwrap();
+            Operation::Fire(
+                Mapped::Input(CoordPx { x: x as i32, y: y as i32, width: conf.width, height: conf.height }, key))).unwrap();
     } else {
         tx.send(Operation::TellRegion(px, py, x, y, key)).unwrap();
     }
@@ -221,7 +221,7 @@ fn on_drag_data_received(tx: &Sender<Operation>, selection: &SelectionData, drop
 
 fn on_scroll(app_tx: &Sender<Operation>, key: Key, direction: &ScrollDirection) {
     if *direction != ScrollDirection::Smooth {
-        app_tx.send(Operation::Input(Input::Unified(CoordPx::default(), key))).unwrap();
+        app_tx.send(Operation::Fire(Mapped::Input(CoordPx::default(), key))).unwrap();
     }
 }
 

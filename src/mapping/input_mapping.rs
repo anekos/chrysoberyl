@@ -9,14 +9,14 @@ use size::{CoordPx, Region};
 type OperationCode = Vec<String>;
 
 
-pub struct UnifiedMapping {
+pub struct InputMapping {
     pub depth: usize,
     pub table: HashMap<Key, Node>
 }
 
 pub enum Node {
     Leaf(LeafNode),
-    Sub(Box<UnifiedMapping>),
+    Sub(Box<InputMapping>),
 }
 
 pub struct LeafNode {
@@ -33,9 +33,9 @@ pub struct InputHistory {
 }
 
 
-impl UnifiedMapping {
+impl InputMapping {
     pub fn new() -> Self {
-        UnifiedMapping { depth: 1, table: HashMap::new() }
+        InputMapping { depth: 1, table: HashMap::new() }
     }
 
     pub fn register(&mut self, keys: &[Key], region: Option<Region>, operation: OperationCode) {
@@ -152,7 +152,7 @@ impl InputHistory {
 
 fn new_mapping_entry(keys: &[Key], region: Option<Region>, operation: OperationCode) -> Node {
     if !keys.is_empty() {
-        let mut result = UnifiedMapping { depth: 1, table: HashMap::new() };
+        let mut result = InputMapping { depth: 1, table: HashMap::new() };
         result.register(keys, region, operation);
         Node::Sub(Box::new(result))
     } else {

@@ -12,7 +12,7 @@ use entry::filter::expression::Expr as FilterExpr;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
 use expandable::Expandable;
 use key::{Key, new_key_sequence};
-use mapping::{Input, InputType};
+use mapping::{Mapped, MappedType};
 use shellexpand_wrapper as sh;
 use size::CoordPx;
 use util::string::join;
@@ -171,6 +171,37 @@ pub fn parse_file(args: &[String]) -> Result<Operation, ParsingError> {
         _ => return Err(ParsingError::InvalidArgument(format!("Invalid file operation: {}", op)))
     };
     parse(args, op)
+}
+
+pub fn parse_fire(args: &[String]) -> Result<Operation, ParsingError> {
+    impl MappedType {
+        pub fn input_from_text(&self, text: &str) -> Result<Mapped, ParsingError> {
+            match *self {
+                MappedType::Input =>
+                    Ok(Mapped::Input(CoordPx::default(), Key(o!(text)))),
+                MappedType::Event => {
+                    match text.parse() {
+                        Ok(event) => Ok(Mapped::Event(event)),
+                        Err(err) => Err(ParsingError::InvalidArgument(o!(err))),
+                    }
+                }
+            }
+        }
+    }
+
+    let mut mapped_type = MappedType::Input;
+    let mut mapped = "".to_owned();
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut mapped_type).add_argument("MappedType", Store, "Mapped type").required();
+        ap.refer(&mut mapped).add_argument("Mapped", Store, "Mapped").required();
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        mapped_type.input_from_text(&mapped).map(|mapped| {
+            Operation::Fire(mapped)
+        })
+    })
 }
 
 pub fn parse_clip(args: &[String]) -> Result<Operation, ParsingError> {
@@ -421,37 +452,16 @@ pub fn parse_go(args: &[String]) -> Result<Operation, ParsingError> {
     })
 }
 
-
 pub fn parse_input(args: &[String]) -> Result<Operation, ParsingError> {
-    impl InputType {
-        pub fn input_from_text(&self, text: &str) -> Result<Input, ParsingError> {
-            match *self {
-                InputType::Unified =>
-                    Ok(Input::Unified(CoordPx::default(), Key(o!(text)))),
-                InputType::Event => {
-                    match text.parse() {
-                        Ok(event) => Ok(Input::Event(event)),
-                        Err(err) => Err(ParsingError::InvalidArgument(o!(err))),
-                    }
-                }
-            }
+    let mut mapped: Vec<Mapped> = vec![];
+
+    for arg in args.iter().skip(1) {
+        for it in arg.split(',') {
+            mapped.push(Mapped::Input(CoordPx::default(), Key(o!(it))));
         }
     }
 
-    let mut input_type = InputType::Unified;
-    let mut input = "".to_owned();
-
-    {
-        let mut ap = ArgumentParser::new();
-        ap.refer(&mut input_type)
-            .add_option(&["--event", "-e"], StoreConst(InputType::Event), "Event");
-        ap.refer(&mut input).add_argument("input", Store, "Input").required();
-        parse_args(&mut ap, args)
-    } .and_then(|_| {
-        input_type.input_from_text(&input).map(|input| {
-            Operation::Input(input)
-        })
-    })
+    Ok(Operation::Input(mapped))
 }
 
 pub fn parse_jump(args: &[String]) -> Result<Operation, ParsingError> {
@@ -495,7 +505,7 @@ pub fn parse_load(args: &[String]) -> Result<Operation, ParsingError> {
 }
 
 pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingError> {
-    fn parse_map_unified(args: &[String], register: bool) -> Result<Operation, ParsingError> {
+    fn parse_map_input(args: &[String], register: bool) -> Result<Operation, ParsingError> {
         let mut from = "".to_owned();
         let mut to: Vec<String> = vec![];
         let mut region: Option<Region> = None;
@@ -509,7 +519,7 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingEr
             }
             parse_args(&mut ap, args)
         } .map(|_| {
-            let target = MappingTarget::Unified(new_key_sequence(&from), region);
+            let target = MappingTarget::Input(new_key_sequence(&from), region);
             if register {
                 Operation::Map(target, None, to)
             } else {
@@ -574,7 +584,7 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingEr
     if let Some(target) = args.get(1) {
         let args = &args[1..];
         match &**target {
-            "i" | "input" => parse_map_unified(args, register),
+            "i" | "input" => parse_map_input(args, register),
             "e" | "event" => parse_map_event(args, register),
             "r" | "region" => parse_map_region(args, register),
             _ => Err(ParsingError::InvalidArgument(format!("Invalid mapping target: {}", target)))

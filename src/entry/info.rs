@@ -58,10 +58,10 @@ impl EntryInfo {
 
         EntryInfo {
             strict: StrictEntryInfo {
-                entry_type: entry_type,
-                extension: extension,
+                entry_type,
+                extension,
                 path: o!(path),
-                name: name,
+                name,
                 archive_page: archive_page as i64,
             },
             lazy_info: Lazy::new()

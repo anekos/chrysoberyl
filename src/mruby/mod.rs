@@ -66,7 +66,7 @@ impl MRubyEnv {
 
         // TODO EntryInfo
 
-        MRubyEnv { mruby: mruby }
+        MRubyEnv { mruby }
     }
 
 

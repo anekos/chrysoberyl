@@ -23,7 +23,7 @@ impl EventMapping {
     }
 
     pub fn register(&mut self, event_name: EventName, group: Option<String>, remain: Option<usize>, operation: Vec<String>) {
-        let entry = EventMappingEntry { group: group, operation: operation, remain: remain };
+        let entry = EventMappingEntry { group, operation, remain };
 
         if let Some(entries) = self.table.get_mut(&event_name) {
             return entries.push(entry);
@@ -56,7 +56,9 @@ impl EventMapping {
         if decrease_remain{
             entries.retain(|it| it.remain.map(|it| 1 < it).unwrap_or(true));
             for it in entries.iter_mut() {
-                it.remain.as_mut().map(|it| *it -= 1);
+                if let Some(it) = it.remain.as_mut() {
+                    *it += 1;
+                }
             }
         }
 

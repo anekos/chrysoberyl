@@ -31,7 +31,7 @@ pub struct UserSwitchManager {
 impl UserSwitchManager {
     pub fn new(app_tx: Sender<Operation>) -> Self {
         UserSwitchManager {
-            app_tx: app_tx,
+            app_tx,
             table: HashMap::new()
         }
     }
@@ -71,7 +71,7 @@ impl OptionValue for UserSwitch {
 impl UserSwitch {
     pub fn new(app_tx: Sender<Operation>, values: Vec<Vec<String>>) -> Self {
         UserSwitch {
-            app_tx: app_tx,
+            app_tx,
             values: VecDeque::from(values)
         }
     }

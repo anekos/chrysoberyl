@@ -131,13 +131,13 @@ impl App {
             marker: HashMap::new(),
             paginator: Paginator::new(),
             pre_fetch_serial: 0,
-            primary_tx: primary_tx,
+            primary_tx,
             query_operation: None,
             remote_cache: RemoteCache::new(initial.curl_threads, tx.clone(), sorting_buffer.clone()),
             rng: rand::thread_rng(),
             search_text: None,
-            sorting_buffer: sorting_buffer,
-            states: states,
+            sorting_buffer,
+            states,
             timers: TimerManager::new(tx.clone()),
             tx: tx.clone(),
             user_switches: UserSwitchManager::new(tx.clone()),
@@ -239,7 +239,7 @@ impl App {
                 InitialProcess(entries, shuffle, stdin_as_binary) =>
                     on_initial_process(self, entries, shuffle, stdin_as_binary),
                 Input(ref mapped) =>
-                    on_input(self, mapped, context),
+                    on_input(self, mapped, &context),
                 Jump(ref name, load) =>
                     on_jump(self, &mut updated, name, load),
                 KillTimer(ref name) =>
@@ -493,16 +493,16 @@ impl App {
     pub fn paging(&mut self, wrap: bool, ignore_sight: bool) -> Paging {
         Paging {
             count: self.counter.pop(),
-            wrap: wrap,
-            ignore_sight: ignore_sight,
+            wrap,
+            ignore_sight,
         }
     }
 
     pub fn paging_with_count(&mut self, wrap: bool, ignore_sight: bool, count: Option<usize>) -> Paging {
         Paging {
             count: self.counter.overwrite(count).pop(),
-            wrap: wrap,
-            ignore_sight: ignore_sight,
+            wrap,
+            ignore_sight,
         }
     }
 

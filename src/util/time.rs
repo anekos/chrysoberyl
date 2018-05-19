@@ -14,5 +14,5 @@ pub fn duration_to_string(t: &Duration) -> String {
 }
 
 pub fn duration_to_seconds(t: &Duration) -> f64 {
-    t.as_secs() as f64 + t.subsec_nanos() as f64 * 1e-9
+    t.as_secs() as f64 + f64!(t.subsec_nanos()) * 1e-9
 }

@@ -37,7 +37,7 @@ impl TimerManager {
     pub fn new(app_tx: Sender<Operation>) -> TimerManager {
         TimerManager {
             table: HashMap::new(),
-            app_tx: app_tx,
+            app_tx,
         }
     }
 

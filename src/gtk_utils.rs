@@ -42,7 +42,7 @@ macro_rules! g_list_for {
         {
             let mut current = $list;
             while !current.is_null() {
-                let $val = &*transmute::<*mut c_void, $type>((*current).data);
+                let $val = &*((*current).data as $type);
                 $body;
                 current = (*current).next;
             }

@@ -92,11 +92,11 @@ impl Entry {
         let info = EntryInfo::new(&content, &key.1, key.2 + 1);
 
         Entry {
-            serial: serial,
-            key: key,
-            content: content,
-            meta: meta,
-            info: info,
+            serial,
+            key,
+            content,
+            meta,
+            info,
             url: url.map(Arc::new),
         }
     }
@@ -580,7 +580,7 @@ pub fn compare_key(a: &Key, b: &Key) -> Ordering {
 
 impl MetaEntry {
     pub fn new_without_value(key: String) -> MetaEntry {
-        MetaEntry { key: key, value: o!("true") }
+        MetaEntry { key, value: o!("true") }
     }
 }
 

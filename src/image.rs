@@ -64,7 +64,7 @@ impl ImageBuffer {
 impl StaticImageBuffer {
     pub fn new_from_pixbuf(pixbuf: &Pixbuf, original_size: Option<Size>) -> StaticImageBuffer {
         StaticImageBuffer {
-            original_size: original_size,
+            original_size,
             pixels: unsafe { pixbuf.get_pixels().to_vec() },
             colorspace: pixbuf.get_colorspace(),
             bits_per_sample: pixbuf.get_bits_per_sample(),

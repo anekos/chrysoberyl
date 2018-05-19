@@ -144,7 +144,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                     let mut state = state.lock().unwrap();
                     let ticket = buffer.reserve();
 
-                    let request = Request { ticket: ticket, url: url.clone(), cache_filepath: cache_filepath, meta: meta, force: force, entry_type: entry_type, options: state.curl_options.clone() };
+                    let request = Request { ticket, url: url.clone(), cache_filepath, meta, force, entry_type, options: state.curl_options.clone() };
 
                     if let Some(worker) = state.idles.pop() {
                         state.processing.insert(request.clone());

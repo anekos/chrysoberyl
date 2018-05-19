@@ -9,7 +9,7 @@ use std::path::{PathBuf, Path};
 pub fn write_line(line: &str, file: &Option<PathBuf>) -> Result<(), Box<Error>> {
     if_let_some!(file = file.as_ref(), Ok(()));
     let mut file = OpenOptions::new().read(false).write(true).append(true).create(true).open(file)?;
-    write!(file, "{}\n", line)?;
+    writeln!(file, "{}", line)?;
     Ok(())
 }
 

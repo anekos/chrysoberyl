@@ -13,7 +13,7 @@ use cairo::{Context, ImageSurface, Format};
 use cairo;
 use gdk_pixbuf::Pixbuf;
 use glib::translate::ToGlibPtr;
-use libc::{c_int, c_double, c_void};
+use libc::{c_int, c_double};
 use self::glib_sys::g_list_free;
 use self::gio_sys::{g_file_new_for_path, GFile};
 use self::gobject_sys::{GObject, g_object_unref};
@@ -94,6 +94,7 @@ impl Drop for PopplerDocument {
 }
 
 impl PopplerPage {
+    #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
     pub fn render(&self, context: &cairo::Context, link_color: Option<&Color>) {
         #[cfg(feature = "poppler_lock")]
         let mut count = (*LOCK).lock().unwrap();

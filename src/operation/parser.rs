@@ -123,15 +123,7 @@ pub fn parse_cherenkov(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut color).add_option(&["-c", "--color"], Store, "CSS Color");
         parse_args(&mut ap, args)
     } .map(|_| {
-        let op = Operation::Cherenkov(
-            CherenkovParameter {
-                radius: radius,
-                random_hue: random_hue,
-                n_spokes: n_spokes,
-                x: x,
-                y: y,
-                color: color
-            });
+        let op = Operation::Cherenkov(CherenkovParameter { radius, random_hue, n_spokes, x, y, color });
         Operation::WithMessage(Some(o!("Cherenkoving")), Box::new(op))
     })
 }
@@ -348,7 +340,7 @@ pub fn parse_editor(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut command_line).add_argument("command-line", StoreOption, "Command line to open editor");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Editor(command_line, files, sessions, false)
+        Operation::Editor(command_line, files, sessions, comment_out)
     })
 }
 

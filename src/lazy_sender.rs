@@ -18,7 +18,7 @@ pub struct LazySender {
 
 impl LazySender {
     pub fn new(tx: Sender<Operation>, delay: Duration) -> LazySender {
-        LazySender { current: Arc::new(Mutex::new(None)), tx: tx, delay: delay }
+        LazySender { current: Arc::new(Mutex::new(None)), tx, delay }
     }
 
     pub fn request(&mut self, op: Operation)  {

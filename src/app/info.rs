@@ -12,6 +12,6 @@ pub struct AppInfo {
 
 impl AppInfo {
     pub fn is_empty(&self) -> bool {
-        !self.current_page.is_some()
+        self.current_page.is_none()
     }
 }

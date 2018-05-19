@@ -83,7 +83,7 @@ impl Default for PathList {
         if let Ok(entry) = get_app_root(AppDataType::UserCache, &APP_INFO) {
             entries.push(entry);
         }
-        PathList { entries: entries }
+        PathList { entries }
     }
 }
 

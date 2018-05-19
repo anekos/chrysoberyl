@@ -42,9 +42,9 @@ impl ImageFetcher {
         self.main_tx.send(
             FetcherOperation::Refresh(
                 FetchTarget {
-                    cell_size: cell_size,
-                    drawing: drawing,
-                    entries: entries
+                    cell_size,
+                    drawing,
+                    entries,
                 })).unwrap();
     }
 }

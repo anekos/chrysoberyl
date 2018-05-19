@@ -218,7 +218,7 @@ impl Gui {
     }
 
     pub fn cells(&self, reverse: bool) -> CellIterator {
-        CellIterator { gui: self, index: 0, reverse: reverse }
+        CellIterator { gui: self, index: 0, reverse }
     }
 
     pub fn cols(&self) -> usize {
@@ -818,7 +818,7 @@ fn scroll_window(window: &ScrolledWindow, direction: &Direction, scroll_size_rat
 
         adj.set_value(value + scroll_size);
 
-        if feq(adj.get_value(), value, 0.0000001) {
+        if feq(adj.get_value(), value, 0.000_000_1) {
             if reset_at_end {
                 reset_scroll(window, direction);
             }

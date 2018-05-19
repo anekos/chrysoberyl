@@ -52,7 +52,7 @@ pub enum FitTo {
 }
 
 
-const FERROR: f64 = 0.000001;
+const FERROR: f64 = 0.000_001;
 const MINIMUM_SCALE: usize = 10;
 const MAXIMUM_SCALE: usize = 1000;
 
@@ -97,7 +97,7 @@ impl fmt::Display for CoordPx {
 
 impl Size {
     pub fn new(width: i32, height: i32) -> Size {
-        Size { width: width, height: height }
+        Size { width, height }
     }
 
     pub fn from_pixbuf(pixbuf: &Pixbuf) -> Size {
@@ -263,6 +263,7 @@ impl Region {
         (self.left - self.width() / 2.0, self.top - self.height() / 2.0)
     }
 
+    #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
     pub fn contains(&self, x: i32, y: i32, width: i32, height: i32) -> bool {
         let (l, r, t, b) = self.absolute(width, height);
         (l <= x && x <= r && t <= y && y <= b)

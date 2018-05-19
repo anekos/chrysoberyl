@@ -491,7 +491,7 @@ pub fn on_initialized(app: &mut App) -> EventResult {
     Ok(())
 }
 
-pub fn on_input(app: &mut App, mapped: &[Mapped], context: Option<OperationContext>) -> EventResult {
+pub fn on_input(app: &mut App, mapped: &[Mapped], context: &Option<OperationContext>) -> EventResult {
     for mapped in mapped {
         match on_fire(app, mapped, context.clone()) {
             Ok(_) => (),

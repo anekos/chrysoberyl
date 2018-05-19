@@ -163,12 +163,12 @@ fn new_mapping_entry(keys: &[Key], region: Option<Region>, operation: OperationC
 
 impl LeafNode {
     fn new(operation: OperationCode, region: Option<Region>) -> Self {
-        let entry = WithRegion { operation: operation, region: region };
+        let entry = WithRegion { operation, region };
         LeafNode { entries: vec![entry] }
     }
 
     pub fn register(&mut self, region: Option<Region>, operation: OperationCode) {
-        let entry = WithRegion { operation: operation, region: region };
+        let entry = WithRegion { operation, region };
         self.entries.retain(|it| it.region != region);
         self.entries.push(entry);
     }

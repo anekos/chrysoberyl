@@ -236,7 +236,7 @@ fn uri_to_path(uri: &str) -> Result<String, Box<Error>> {
 
         let ptr = transmute::<*const GFile, *mut GObject>(g_file);
         g_object_unref(ptr);
-        let ptr = transmute::<*mut i8, *mut c_void>(c_path);
+        let ptr = c_path as *mut c_void;
         g_free(ptr);
 
         Ok(path)

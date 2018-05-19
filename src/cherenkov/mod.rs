@@ -105,7 +105,7 @@ impl Cherenkoved {
                 image: Some(image_buffer),
                 cell_size: *cell_size,
                 drawing: drawing.clone(),
-                modifiers: modifiers,
+                modifiers,
                 expired: false,
             });
     }

@@ -95,7 +95,7 @@ pub fn fetch_entries(path: &PathBuf, meta: Option<Meta>, encodings: &[EncodingRe
                 let name = get_filename(entry, index, encodings);
                 match entry.filetype() {
                     FileType::RegularFile if is_valid_image_filename(&name) => {
-                        result.push(IndexWithName { index: index, name: name });
+                        result.push(IndexWithName { index, name });
                     }
                     _ => ()
                 }

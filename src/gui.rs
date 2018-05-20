@@ -11,7 +11,7 @@ use std::sync::mpsc::Sender;
 
 use cairo::{Context, ImageSurface, Format};
 use gdk::EventMask;
-use gdk_pixbuf::{Pixbuf, PixbufAnimationExt};
+use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimationExt};
 use glib::Type;
 use gtk::prelude::*;
 use gtk::{Adjustment, Align, Entry, EntryCompletion, Grid, Image, Label, Layout, ListStore, Overlay, ScrolledWindow, self, Value, Window};
@@ -122,7 +122,6 @@ impl Gui {
         window.set_role(window_role);
         window.set_border_width(0);
         window.set_position(gtk::WindowPosition::Center);
-        window.set_wmclass(constant::WINDOW_CLASS, constant::WINDOW_CLASS);
         window.add_events(EventMask::SCROLL_MASK.bits() as i32);
 
         let grid = tap!(it = gtk::Grid::new(), {
@@ -375,7 +374,7 @@ impl Gui {
                 scrolled.connect_button_press_event(|_, _| Inhibit(true));
                 scrolled.connect_button_release_event(|_, _| Inhibit(true));
                 scrolled.connect_scroll_event(|_, _| Inhibit(true));
-                scrolled.add_with_viewport(&image);
+                scrolled.add(&image);
                 scrolled.show();
                 image.show();
                 self.grid.attach(&scrolled, col as i32, row as i32, 1, 1);

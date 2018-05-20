@@ -6,7 +6,7 @@ use std::path::Path;
 
 use cairo::{Context, ImageSurface, Format};
 use gdk::prelude::ContextExt;
-use gdk_pixbuf::PixbufLoader;
+use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
 
@@ -74,7 +74,7 @@ fn is_animation(entry: &Entry) -> bool {
 
 fn make_scaled(buffer: &[u8], cell: &Size, drawing: &DrawingState) -> Result<StaticImageBuffer, Box<error::Error>> {
     let loader = PixbufLoader::new();
-    loader.loader_write(buffer)?;
+    loader.write(buffer)?;
 
     if loader.close().is_err() {
         return Err(Box::new(ChryError::Fixed("Invalid image data")))

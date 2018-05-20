@@ -5,7 +5,6 @@ pub static VARIABLE_PREFIX: &'static str = "CHRY_";
 pub static OPTION_VARIABLE_PREFIX: &'static str = "CHRY_OPT_";
 pub static USER_VARIABLE_PREFIX: &'static str = "CHRY_X_";
 pub static WINDOW_ROLE: &'static str = env!("CARGO_PKG_NAME");
-pub static WINDOW_CLASS: &'static str = env!("CARGO_PKG_NAME");
 
 
 pub fn env_name(name: &str) -> String {

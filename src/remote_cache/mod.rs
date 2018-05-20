@@ -317,7 +317,7 @@ fn update_atime<T: AsRef<Path>>(path: &T) -> Result<(), ChryError> {
     let meta = try!(fs::metadata(path));
     let ts = time::now().to_timespec();
     let mtime = FileTime::from_last_modification_time(&meta);
-    let atime = FileTime::from_seconds_since_1970(ts.sec as u64, ts.nsec as u32);
+    let atime = FileTime::from_unix_time(ts.sec, ts.nsec as u32);
     set_file_times(path, atime, mtime).map_err(|it| ChryError::Standard(s!(it)))
 }
 

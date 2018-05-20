@@ -13,7 +13,7 @@ use std::time::Duration;
 
 use gtk::prelude::*;
 use natord;
-use rand::distributions::{IndependentSample, Range as RandRange};
+use rand::distributions::{Distribution, Uniform};
 
 use archive;
 use cherenkov::fill::Shape;
@@ -952,7 +952,7 @@ pub fn on_quit() -> EventResult {
 
 pub fn on_random(app: &mut App, updated: &mut Updated, len: usize) -> EventResult {
     if len > 0 {
-        let index = RandRange::new(0, len).ind_sample(&mut app.rng);
+        let index = Uniform::new(0, len).sample(&mut app.rng);
         let paging = app.paging_with_index(false, false, index);
         app.paginator.show(&paging);
         updated.image = true;

@@ -19,7 +19,7 @@ poppler_lock = []
 app_dirs = "*"
 argparse = "*"
 atty = "*"
-cairo-sys-rs = "0.5.0"
+cairo-sys-rs = "0.6.0"
 closet = "*"
 cmdline-parser = "*"
 css-color-parser = "*"
@@ -63,13 +63,13 @@ shellexpand = "*"
 time = "*"
 tldextract = "*"
 url = "*"
-uuid = "*"
+uuid = { version = "0.5", features = ["v4"] }
 uuid_to_pokemon = "*"
 
 # https://github.com/gtk-rs/gtk/blob/master/Cargo.toml
 [dependencies.gtk]
-version = "0.3"
-features = ["v3_22"]
+version = "^0.4"
+features = ["v3_22_26"]
 
 [dependencies.cairo-rs]
 version = "*"

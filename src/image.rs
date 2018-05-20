@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{Error as IoError, Read};
 use std::path::Path;
 
-use gdk_pixbuf::{Pixbuf, PixbufAnimation, Colorspace, PixbufLoader};
+use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimation, Colorspace, PixbufLoader, PixbufLoaderExt};
 use glib;
 use immeta;
 
@@ -101,7 +101,7 @@ impl AnimationBuffer {
 
     pub fn get_pixbuf_animation(&self) -> Result<PixbufAnimation, glib::Error> {
         let loader = PixbufLoader::new();
-        loader.loader_write(&*self.source.as_slice()).map(|_| {
+        loader.write(&*self.source.as_slice()).map(|_| {
             loader.close().unwrap();
             loader.get_animation().unwrap()
         })

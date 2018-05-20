@@ -4,7 +4,7 @@ use std::fmt;
 use std::ops::Add;
 use std::str::FromStr;
 
-use gdk_pixbuf::Pixbuf;
+use gdk_pixbuf::{Pixbuf, PixbufExt};
 
 use resolution;
 use state::DrawingState;

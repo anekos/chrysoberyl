@@ -18,7 +18,7 @@ use operation::Operation;
 pub fn main() {
     use self::Operation::UpdateUI;
 
-    env_logger::init().unwrap();
+    env_logger::init();
 
     put_features();
 

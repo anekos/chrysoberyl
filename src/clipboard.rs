@@ -4,7 +4,7 @@ use std::error::Error;
 use cairo::{Context, ImageSurface, Format};
 use gdk::Atom;
 use gdk::prelude::ContextExt;
-use gdk_pixbuf::Pixbuf;
+use gdk_pixbuf::{Pixbuf, PixbufExt};
 use gtk::{Clipboard, ClipboardExt};
 
 use entry::Meta;

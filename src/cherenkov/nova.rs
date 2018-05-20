@@ -23,7 +23,8 @@
 
 use std::f64::consts::PI;
 
-use rand::distributions::{IndependentSample, Range};
+use gdk_pixbuf::PixbufExt;
+use rand::distributions::{Distribution, Uniform};
 use rand::{self, Rng, ThreadRng};
 
 use color::Color;
@@ -164,14 +165,15 @@ fn gauss(rng: &mut ThreadRng) -> f64 {
   let mut sum = 0.0;
 
   for _ in 0..6 {
-    sum += rng.next_f64();
+      let r: f64 = rng.gen();
+      sum += r;
   }
 
   sum / 6.0
 }
 
 fn range_rand (rng: &mut ThreadRng, from: f64, to: f64) -> f64 {
-    Range::new(from, to).ind_sample(rng)
+    Uniform::new(from, to).sample(rng)
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]

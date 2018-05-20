@@ -4,7 +4,7 @@ use std::error::Error;
 
 use cairo::{Context, ImageSurface, Format, SurfacePattern, Operator};
 use gdk::prelude::ContextExt;
-use gdk_pixbuf::Pixbuf;
+use gdk_pixbuf::{Pixbuf, PixbufExt};
 
 use color::Color;
 use entry::{Entry, Key, self};

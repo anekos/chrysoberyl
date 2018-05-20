@@ -1,0 +1,15 @@
+@define-color bg #004040;
+
+window {
+  background-color: @bg;
+}
+
+#status-bar, #status-label {
+  background-color: #004040;
+  color: white;
+}
+
+#command-line-box, #command-line-entry, #content, #grid, #status-bar-layout, #overlay, #cell, #image {
+}
+
+/* https://developer.gnome.org/gtk3/stable/chap-css-overview.html */

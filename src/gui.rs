@@ -10,11 +10,11 @@ use std::str::FromStr;
 use std::sync::mpsc::Sender;
 
 use cairo::{Context, ImageSurface, Format};
-use gdk::EventMask;
+use gdk::{DisplayExt, EventMask};
 use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimationExt};
-use glib::Type;
+use glib::{self, Type};
 use gtk::prelude::*;
-use gtk::{Adjustment, Align, Entry, EntryCompletion, Grid, Image, Label, Layout, ListStore, Overlay, ScrolledWindow, self, Value, Window};
+use gtk::{Adjustment, Align, CssProvider, CssProviderExt, Entry, EntryCompletion, Grid, Image, Label, Layout, ListStore, Overlay, ScrolledWindow, self, StyleContext, Value, WidgetExt, Window};
 
 use app_path;
 use color::Color;
@@ -47,6 +47,7 @@ pub struct Gui {
     pub vbox: gtk::Box,
     pub window: Window,
     cells: Vec<Cell>,
+    css_provider: CssProvider,
     entry_history: ListStore,
     grid: Grid,
     grid_size: Size,
@@ -78,9 +79,6 @@ pub struct CellIterator<'a> {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Colors {
-    pub window_background: Color,
-    pub status_bar: Color,
-    pub status_bar_background: Color,
     pub error: Color,
     pub error_background: Color,
 }
@@ -125,6 +123,7 @@ impl Gui {
         window.add_events(EventMask::SCROLL_MASK.bits() as i32);
 
         let grid = tap!(it = gtk::Grid::new(), {
+            WidgetExt::set_name(&it, "grid");
             it.set_halign(Align::Center);
             it.set_valign(Align::Center);
             it.set_row_spacing(0);
@@ -133,6 +132,7 @@ impl Gui {
         let cells = vec![];
 
         let label = tap!(it = Label::new(None), {
+            WidgetExt::set_name(&it, "status-label");
             it.set_halign(Align::Center);
         });
 
@@ -148,11 +148,13 @@ impl Gui {
         });
 
         let status_bar_inner = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
+            WidgetExt::set_name(&it, "status-bar");
             it.pack_end(&label, true, true, 0);
             it.set_margin_top(2); // FIXME Magical number to remove bottom blank space.
         });
 
         let status_bar = tap!(it = Layout::new(None, None), {
+            WidgetExt::set_name(&it, "status-bar-layout");
             it.add(&status_bar_inner);
         });
 
@@ -161,6 +163,7 @@ impl Gui {
         });
 
         let operation_entry = tap!(it = Entry::new(), {
+            WidgetExt::set_name(&it, "command-line-entry");
             it.set_text("");
             it.set_completion(&tap!(it = EntryCompletion::new(), {
                 it.set_model(&entry_history);
@@ -179,15 +182,18 @@ impl Gui {
         });
 
         let operation_box = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
+            WidgetExt::set_name(&it, "command-line-box");
             it.pack_end(&operation_entry, false, false, 0);
         });
 
         let vbox = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
+            WidgetExt::set_name(&it, "content");
             it.pack_end(&status_bar, false, false, 0);
             it.pack_end(&grid, true, true, 0);
         });
 
         let overlay = tap!(it = Overlay::new(), {
+            WidgetExt::set_name(&it, "overlay");
             setup_drag(&it);
             it.add_overlay(&vbox);
             it.add_overlay(&hidden_bar);
@@ -197,8 +203,17 @@ impl Gui {
 
         window.add(&overlay);
 
+        let css_provider = {
+            let display = window.get_display().unwrap();
+            let screen = display.get_default_screen();
+            let provider = CssProvider::new();
+            StyleContext::add_provider_for_screen(&screen, &provider, gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
+            provider
+        };
+
         Gui {
             cells,
+            css_provider,
             colors: Colors::default(),
             entry_history,
             grid,
@@ -346,16 +361,8 @@ impl Gui {
         self.window.show();
     }
 
-    pub fn update_colors(&self) {
-        self.window.override_background_color(
-            self.window.get_state_flags(),
-            &self.colors.window_background.gdk_rgba());
-        self.label.override_color(
-            self.label.get_state_flags(),
-            &self.colors.status_bar.gdk_rgba());
-        self.status_bar_inner.override_background_color(
-            self.status_bar_inner.get_state_flags(),
-            &self.colors.status_bar_background.gdk_rgba());
+    pub fn update_style(&self, style: &str) -> Result<(), glib::Error> {
+        self.css_provider.load_from_data(style.as_bytes())
     }
 
     fn create_images(&mut self, state: &Views) {
@@ -370,7 +377,9 @@ impl Gui {
         for row in 0..state.rows {
             for col in 0..state.cols {
                 let scrolled = ScrolledWindow::new(None, None);
+                WidgetExt::set_name(&scrolled, "cell");
                 let image = Image::new_from_pixbuf(None);
+                WidgetExt::set_name(&image, "image");
                 scrolled.connect_button_press_event(|_, _| Inhibit(true));
                 scrolled.connect_button_release_event(|_, _| Inhibit(true));
                 scrolled.connect_scroll_event(|_, _| Inhibit(true));
@@ -615,9 +624,6 @@ impl Default for Colors {
         Colors {
             error: "white".parse().unwrap(),
             error_background: "red".parse().unwrap(),
-            status_bar: "white".parse().unwrap(),
-            status_bar_background: "#004040".parse().unwrap(),
-            window_background: "#004040".parse().unwrap(),
         }
     }
 }

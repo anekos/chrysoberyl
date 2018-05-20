@@ -48,6 +48,7 @@ pub struct States {
     pub status_bar_height: Option<usize>,
     pub status_format: StatusFormat,
     pub stdout: logger::stdout::StdOut,
+    pub style: Style,
     pub title_format: TitleFormat,
     pub update_cache_atime: bool,
     pub view: Views,
@@ -127,6 +128,7 @@ impl Default for States {
             status_bar_height: None,
             status_format: StatusFormat::default(),
             stdout: logger::stdout::StdOut::new(),
+            style: Style::default(),
             title_format: TitleFormat::default(),
             update_cache_atime: false,
             view: Views::default(),
@@ -196,30 +198,13 @@ impl Default for AutoPaging {
     }
 }
 
-macro_rules! gen_format {
+macro_rules! gen_includable {
     ($t:tt, $default:expr) => {
 
         #[derive(Clone, Debug, PartialEq)]
         pub enum $t {
             Literal(String),
             Script(String, String), /* filepath, source cache */
-        }
-
-        impl $t {
-            pub fn generate(&self) -> String {
-                use mruby::MRubyEnv;
-                use shellexpand_wrapper as sh;
-
-                match *self {
-                    $t::Script(_, ref script) => {
-                        MRubyEnv::generate_string(script).unwrap_or_else(|err| {
-                            puts_error!(err, "at" => "generate/mruby_script");
-                            o!("mruby script error")
-                        })
-                    },
-                    $t::Literal(ref s) => sh::expand(s),
-                }
-            }
         }
 
         impl OptionValue for $t {
@@ -265,6 +250,29 @@ macro_rules! gen_format {
     }
 }
 
+macro_rules! gen_format {
+    ($t:tt, $default:expr) => {
+        gen_includable!($t, $default);
+
+        impl $t {
+            pub fn generate(&self) -> String {
+                use mruby::MRubyEnv;
+                use shellexpand_wrapper as sh;
+
+                match *self {
+                    $t::Script(_, ref script) => {
+                        MRubyEnv::generate_string(script).unwrap_or_else(|err| {
+                            puts_error!(err, "at" => "generate/mruby_script");
+                            o!("mruby script error")
+                        })
+                    },
+                    $t::Literal(ref s) => sh::expand(s),
+                }
+            }
+        }
+    }
+}
+
 gen_format!(
     StatusFormat,
     "<span background=\"red\">$CHRY_MESSAGE</span><span background=\"#005050\"> $CHRY_PAGING/$CHRY_PAGES </span> $CHRY_ABBREV_PATH <span foreground=\"grey\">$CHRY_FLAGS</span> <span foreground=\"rosybrown\">${CHRY_REMOTE_QUEUE}q${CHRY_REMOTE_BUFFER}b${CHRY_REMOTE_THREAD}t</span>");
@@ -274,3 +282,6 @@ gen_format!(
 gen_format!(
     TitleFormat,
     "[$CHRY_PAGING/$CHRY_PAGES] $CHRY_PATH");
+gen_includable!(
+    Style,
+    include_str!("static/default.css"));

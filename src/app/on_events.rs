@@ -483,7 +483,7 @@ pub fn on_initialized(app: &mut App) -> EventResult {
     app.tx.send(Operation::UpdateUI).unwrap();
 
     app.gui.register_ui_events(app.states.skip_resize_window, &app.primary_tx);
-    app.gui.update_colors();
+    app.update_style();
     app.update_label(true, true);
     app.gui.show();
     app.update_status_bar_height(); // XXX Must Do after `gui.show`
@@ -1440,6 +1440,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 StatusBarHeight => &mut app.states.status_bar_height,
                 StatusFormat => &mut app.states.status_format,
                 StdOut => &mut app.states.stdout,
+                Style => &mut app.states.style,
                 TitleFormat => &mut app.states.title_format,
                 UpdateCacheAccessTime => &mut app.states.update_cache_atime,
                 VerticalViews => &mut app.states.view.rows,
@@ -1447,9 +1448,6 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 ColorError => &mut app.gui.colors.error,
                 ColorErrorBackground => &mut app.gui.colors.error_background,
                 ColorLink => &mut app.states.drawing.link_color,
-                ColorStatusBar => &mut app.gui.colors.status_bar,
-                ColorStatusBarBackground => &mut app.gui.colors.status_bar_background,
-                ColorWindowBackground => &mut app.gui.colors.window_background,
             },
             UserDefined(ref option_name) => {
                 if let Some(switch) = app.user_switches.get(option_name) {
@@ -1516,8 +1514,8 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 updated.image_options = true,
             PreFetchLimit =>
                 app.cache.update_limit(app.states.pre_fetch.limit_of_items),
-            ColorWindowBackground | ColorStatusBar | ColorStatusBarBackground =>
-                app.gui.update_colors(),
+            Style =>
+                app.update_style(),
             Animation | ColorLink => {
                 app.cache.clear();
                 updated.image = true;

@@ -64,6 +64,13 @@ impl Expandable {
         let base = self.expand();
         app_path::search_path(&base, path_list)
     }
+
+    pub fn as_raw(&self) -> &str {
+        match *self {
+            Expandable::Expanded(ref path) => path,
+            Expandable::Unexpanded(ref path) => path,
+        }
+    }
 }
 
 

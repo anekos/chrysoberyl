@@ -14,6 +14,7 @@ use color::Color;
 use entry::SearchKey;
 use entry::filter::expression::Expr as FilterExpr;
 use errors::ChryError;
+use expandable::Expandable;
 use gui::{Views, Position};
 use logger;
 use option::OptionValue;
@@ -205,20 +206,18 @@ macro_rules! gen_includable {
         #[derive(Clone, Debug, PartialEq)]
         pub enum $t {
             Literal(String),
-            Script(String, String), /* filepath, source cache */
+            Script(Expandable, String), /* filepath, source cache */
         }
 
         impl OptionValue for $t {
             fn set(&mut self, value: &str) -> Result<(), ChryError> {
-                use shellexpand_wrapper as sh;
-
                 if value.starts_with('@') {
                     let raw_path = &value[1..];
-                    let path = sh::expand(raw_path);
-                    let mut file = File::open(&path)?;
+                    let path = Expandable::new(o!(raw_path));
+                    let mut file = File::open(&path.to_string())?;
                     let mut script = o!("");
                     file.read_to_string(&mut script)?;
-                    *self = $t::Script(o!(raw_path), script);
+                    *self = $t::Script(path, script);
                 } else {
                     *self = $t::Literal(remove_linebreaks(value));
                 }
@@ -242,11 +241,10 @@ macro_rules! gen_includable {
         impl fmt::Display for $t {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 use self::$t::*;
-                use util::shell::escape;
 
                 match *self {
-                    Script(ref filepath, _) => write!(f, "{}", escape(&format!("@{}", filepath))),
-                    Literal(ref s) => write!(f, "{}", escape(s)),
+                    Script(ref filepath, _) => write!(f, "{}", format!("@{}", filepath.as_raw())),
+                    Literal(ref s) => write!(f, "{}", s),
                 }
             }
         }

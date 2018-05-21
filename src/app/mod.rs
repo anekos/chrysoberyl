@@ -34,7 +34,7 @@ use remote_cache::RemoteCache;
 use script;
 use size::{Size, FitTo, Region};
 use sorting_buffer::SortingBuffer;
-use state::{AutoPaging, States, Style, PreFetchState};
+use state::{AutoPaging, States, PreFetchState};
 use termination;
 use timer::TimerManager;
 use util::path::path_to_str;
@@ -789,12 +789,7 @@ impl App {
     }
 
     fn update_style(&self) {
-        let source = match self.states.style {
-            Style::Literal(ref source) => source,
-            Style::Script(_, ref source) => source,
-        };
-
-        if let Err(err) = self.gui.update_style(source) {
+        if let Err(err) = self.gui.update_style(&self.states.style) {
             puts_error!(err, "at" => "gui/update_style");
         }
     }

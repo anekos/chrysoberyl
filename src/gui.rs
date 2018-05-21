@@ -24,7 +24,7 @@ use gtk_utils::new_pixbuf_from_surface;
 use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use operation::Operation;
 use size::{Coord, CoordPx, FitTo, Region, Size};
-use state::DrawingState;
+use state::{DrawingState, Style};
 use ui_event::UIEvent;
 use util::num::feq;
 use util;
@@ -360,8 +360,13 @@ impl Gui {
         self.window.show();
     }
 
-    pub fn update_style(&self, style: &str) -> Result<(), glib::Error> {
-        self.css_provider.load_from_data(style.as_bytes())
+    pub fn update_style(&self, style: &Style) -> Result<(), glib::Error> {
+        match style {
+            Style::Literal(ref source) =>
+                self.css_provider.load_from_data(source.as_bytes()),
+            Style::Script(ref path, _) =>
+                self.css_provider.load_from_path(&path.to_string()),
+        }
     }
 
     fn create_images(&mut self, state: &Views) {

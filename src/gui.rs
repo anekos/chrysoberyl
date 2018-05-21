@@ -150,7 +150,6 @@ impl Gui {
         let status_bar_inner = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
             WidgetExt::set_name(&it, "status-bar");
             it.pack_end(&label, true, true, 0);
-            it.set_margin_top(2); // FIXME Magical number to remove bottom blank space.
         });
 
         let status_bar = tap!(it = Layout::new(None, None), {
@@ -339,7 +338,7 @@ impl Gui {
         let height = if let Some(height) = height {
             height as i32
         } else {
-            self.hidden_label.get_allocated_height() * 110 / 100
+            self.hidden_label.get_allocated_height() * 100 / 100
         };
         self.status_bar.set_property_height_request(height);
     }

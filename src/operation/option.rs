@@ -29,9 +29,6 @@ iterable_enum!(PreDefinedOptionName =>
     ColorError,
     ColorErrorBackground,
     ColorLink,
-    ColorStatusBar,
-    ColorStatusBarBackground,
-    ColorWindowBackground,
     CurlConnectTimeout,
     CurlFollowLocation,
     CurlLowSpeedLimit,
@@ -59,6 +56,7 @@ iterable_enum!(PreDefinedOptionName =>
     StatusBarHeight,
     StatusFormat,
     StdOut,
+    Style,
     TitleFormat,
     UpdateCacheAccessTime,
     VerticalViews,
@@ -102,15 +100,13 @@ impl FromStr for PreDefinedOptionName {
             "status-bar-align" | "status-align"    => StatusBarAlign,
             "status-bar-height" | "status-height"  => StatusBarHeight,
             "status-format"                        => StatusFormat,
+            "style"                                => Style,
             "stdout"                               => StdOut,
             "title-format"                         => TitleFormat,
             "update-cache-atime"                   => UpdateCacheAccessTime,
             "vertical-views"                       => VerticalViews,
             "watch-files"                          => WatchFiles,
-            "window-background-color"              => ColorWindowBackground,
             "skip-resize-window"                   => SkipResizeWindow,
-            "status-bar-color"                     => ColorStatusBar,
-            "status-bar-background-color"          => ColorStatusBarBackground,
             "error-color"                          => ColorError,
             "error-background-color"               => ColorErrorBackground,
             "link-color"                           => ColorLink,
@@ -126,10 +122,10 @@ impl PreDefinedOptionName {
 
         match *self {
             AbbrevLength | Animation | AutoReload | AutoPaging |
-                ColorError | ColorErrorBackground | ColorLink | ColorStatusBar | ColorStatusBarBackground | ColorWindowBackground |
+                ColorError | ColorErrorBackground | ColorLink |
                 FitTo | HorizontalViews | IdleTime | InitialPosition | LogFile | MaskOperator |
                 OperationBox | PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
-                Reverse | Rotation | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusFormat | EmptyStatusFormat |
+                Reverse | Rotation | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusFormat | EmptyStatusFormat | Style |
                 StdOut | UpdateCacheAccessTime | TitleFormat | VerticalViews | WatchFiles | HistoryFile => false,
             CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => true,
         }

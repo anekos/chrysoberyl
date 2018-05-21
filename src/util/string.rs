@@ -22,3 +22,7 @@ pub fn prefixed_lines(prefix: &str, source: &str) -> String {
     }
     result
 }
+
+pub fn remove_linebreaks(src: &str) -> String {
+    src.replace('\n', "").replace('\r', "")
+}

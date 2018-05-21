@@ -19,6 +19,7 @@ use logger;
 use option::OptionValue;
 use remote_cache::curl_options::CurlOptions;
 use size::{FitTo, Region};
+use util::string::remove_linebreaks;
 
 
 
@@ -219,7 +220,7 @@ macro_rules! gen_includable {
                     file.read_to_string(&mut script)?;
                     *self = $t::Script(o!(raw_path), script);
                 } else {
-                    *self = $t::Literal(o!(value));
+                    *self = $t::Literal(remove_linebreaks(value));
                 }
                 Ok(())
             }
@@ -232,7 +233,9 @@ macro_rules! gen_includable {
 
         impl Default for $t {
             fn default() -> Self {
-                $t::Literal(o!($default))
+                let mut result = $t::Literal(o!(""));
+                let _ = result.set($default);
+                result
             }
         }
 

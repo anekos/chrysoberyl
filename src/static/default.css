@@ -15,3 +15,8 @@ window {
   background-color: #004040;
   color: white;
 }
+
+#error-text {
+  background-image: radial-gradient(ellipse at center, red 0%, @bg 55%);
+  color: white;
+}

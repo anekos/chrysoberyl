@@ -477,7 +477,7 @@ impl App {
         use session::{generate_option_value, WriteContext};
         use constant::OPTION_VARIABLE_PREFIX;
 
-        let (name, value) = generate_option_value(option_name, &self.states, &self.gui, WriteContext::ENV);
+        let (name, value) = generate_option_value(option_name, &self.states, WriteContext::ENV);
         env::set_var(format!("{}{}", OPTION_VARIABLE_PREFIX, name), value.unwrap_or_else(||  o!("")));
     }
 
@@ -585,10 +585,9 @@ impl App {
         for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
             if let Some((entry, _)) = self.current_with(index) {
                 let image_buffer = self.cache.get_image_buffer(&entry, &cell_size, &self.states.drawing);
-                let (fg, bg) = (self.gui.colors.error, self.gui.colors.error_background);
                 match image_buffer {
                     Ok(image_buffer) => {
-                        let scale = cell.draw(&image_buffer, &cell_size, &self.states.drawing.fit_to, &fg, &bg);
+                        let scale = cell.draw(&image_buffer, &cell_size, &self.states.drawing.fit_to);
                         if base_scale.is_none() {
                             base_scale = scale;
                         }
@@ -599,7 +598,7 @@ impl App {
                         }
                     }
                     Err(error) =>
-                        cell.draw_text(&error, &cell_size, &fg, &bg)
+                        cell.show_error(&error, &cell_size)
                 }
                 showed = true;
             } else {

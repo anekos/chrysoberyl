@@ -759,24 +759,9 @@ update-cache-atime
 watch-files
 :   Fire `file-changed` event when currently viewing images are updated.
 
-window-background-color
-:   type: CSS color text
-
 skip-resize-window
 :   type: unsigned integer
 :   TODO
-
-status-bar-color
-:   type: CSS color text
-
-status-bar-background-color
-:   type: CSS color text
-
-error-color
-:   type: CSS color text
-
-error-background-color
-:   type: CSS color text
 
 You can use `@editor` to see current option values.
 

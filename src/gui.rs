@@ -17,10 +17,8 @@ use gtk::prelude::*;
 use gtk::{Adjustment, Align, CssProvider, CssProviderExt, Entry, EntryCompletion, Grid, Image, Label, Layout, ListStore, Overlay, ScrolledWindow, self, StyleContext, Value, WidgetExt, Window};
 
 use app_path;
-use color::Color;
 use constant;
 use errors::*;
-use gtk_utils::new_pixbuf_from_surface;
 use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use operation::Operation;
 use size::{Coord, CoordPx, FitTo, Region, Size};
@@ -41,7 +39,6 @@ enum_from_primitive! {
 
 
 pub struct Gui {
-    pub colors: Colors,
     pub operation_entry: Entry,
     pub overlay: Overlay,
     pub vbox: gtk::Box,
@@ -67,6 +64,7 @@ struct CellInner {
 
 #[derive(Clone)]
 pub struct Cell {
+    pub error_text: Label,
     pub image: Image,
     pub window: ScrolledWindow,
 }
@@ -75,12 +73,6 @@ pub struct CellIterator<'a> {
     gui: &'a Gui,
     index: usize,
     reverse: bool
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Colors {
-    pub error: Color,
-    pub error_background: Color,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -103,9 +95,6 @@ pub enum Position {
     BottomLeft,
     BottomRight,
 }
-
-const FONT_SIZE: f64 = 12.0;
-const PADDING: f64 = 5.0;
 
 
 impl Gui {
@@ -132,7 +121,7 @@ impl Gui {
         let cells = vec![];
 
         let label = tap!(it = Label::new(None), {
-            WidgetExt::set_name(&it, "status-label");
+            WidgetExt::set_name(&it, "status-text");
             it.set_halign(Align::Center);
         });
 
@@ -213,7 +202,6 @@ impl Gui {
         Gui {
             cells,
             css_provider,
-            colors: Colors::default(),
             entry_history,
             grid,
             grid_size: Size::new(1, 1),
@@ -380,18 +368,33 @@ impl Gui {
 
         for row in 0..state.rows {
             for col in 0..state.cols {
-                let scrolled = ScrolledWindow::new(None, None);
-                WidgetExt::set_name(&scrolled, "cell");
-                let image = Image::new_from_pixbuf(None);
-                WidgetExt::set_name(&image, "image");
-                scrolled.connect_button_press_event(|_, _| Inhibit(true));
-                scrolled.connect_button_release_event(|_, _| Inhibit(true));
-                scrolled.connect_scroll_event(|_, _| Inhibit(true));
-                scrolled.add(&image);
-                scrolled.show();
-                image.show();
+                let scrolled = tap!(it = ScrolledWindow::new(None, None), {
+                    WidgetExt::set_name(&it, "cell");
+                    it.connect_button_press_event(|_, _| Inhibit(true));
+                    it.connect_button_release_event(|_, _| Inhibit(true));
+                    it.connect_scroll_event(|_, _| Inhibit(true));
+                    it.show();
+                });
+
+                let image = tap!(it = Image::new_from_pixbuf(None), {
+                    WidgetExt::set_name(&it, "image");
+                    it.show();
+                });
+
+                let error_text = tap!(it = Label::new(None), {
+                    WidgetExt::set_name(&it, "error-text");
+                    it.set_text("ERROR LABEL");
+                });
+
+                tap!(it = Overlay::new(), {
+                    it.add_overlay(&image);
+                    it.add_overlay(&error_text);
+                    it.show();
+                    scrolled.add(&it);
+                });
+
                 self.grid.attach(&scrolled, col as i32, row as i32, 1, 1);
-                self.cells.push(Cell { image, window: scrolled });
+                self.cells.push(Cell { image, window: scrolled, error_text });
             }
         }
 
@@ -419,46 +422,25 @@ impl Cell {
     /**
      * @return Scale
      */
-    pub fn draw(&self, image_buffer: &ImageBuffer, cell_size: &Size, fit_to: &FitTo, fg: &Color, bg: &Color) -> Option<f64> {
+    pub fn draw(&self, image_buffer: &ImageBuffer, cell_size: &Size, fit_to: &FitTo) -> Option<f64> {
+        self.error_text.hide();
+        self.image.show();
+
         match *image_buffer {
             ImageBuffer::Static(ref buf) =>
                 self.draw_static(buf, cell_size, fit_to),
             ImageBuffer::Animation(ref buf) => {
-                self.draw_animation(buf, cell_size, fg, bg);
+                self.draw_animation(buf, cell_size);
                 None
             }
         }
     }
 
-    pub fn draw_text(&self, text: &str, cell_size: &Size, fg: &Color, bg: &Color) {
-        let surface = ImageSurface::create(Format::ARgb32, cell_size.width, cell_size.height).unwrap();
-
-        let (width, height) = cell_size.floated();
-
-        let context = Context::new(&surface);
-
-        context.set_font_size(FONT_SIZE);
-        let extents = context.text_extents(text);
-
-        let (x, y) = (width / 2.0 - extents.width / 2.0, height / 2.0 - extents.height / 2.0);
-
-        let bg = bg.gdk_rgba();
-        context.set_source_rgba(bg.red, bg.green, bg.blue, bg.alpha);
-        context.rectangle(
-            x - PADDING,
-            y - extents.height - PADDING,
-            extents.width + PADDING * 2.0,
-            extents.height + PADDING * 2.0);
-        context.fill();
-
-        context.move_to(x, y);
-        let fg = fg.gdk_rgba();
-        context.set_source_rgba(fg.red, fg.green, fg.blue, fg.alpha);
-        context.show_text(text);
-
-        // puts_error!("at" => "show_image", "reason" => text);
-
-        self.draw_pixbuf(&new_pixbuf_from_surface(&surface), cell_size, &FitTo::Original);
+    pub fn show_error(&self, text: &str, cell_size: &Size) {
+        self.window.set_size_request(cell_size.width, cell_size.height);
+        self.error_text.set_text(text);
+        self.error_text.show();
+        self.image.hide();
     }
 
     pub fn get_image_size(&self) -> Option<(i32, i32)> {
@@ -544,7 +526,7 @@ impl Cell {
         }
     }
 
-    fn draw_animation(&self, image_buffer: &AnimationBuffer, cell_size: &Size, fg: &Color, bg: &Color) {
+    fn draw_animation(&self, image_buffer: &AnimationBuffer, cell_size: &Size) {
         match image_buffer.get_pixbuf_animation() {
             Ok(buf) => {
                 self.image.set_from_animation(&buf);
@@ -552,7 +534,7 @@ impl Cell {
                 self.window.set_size_request(ci_width, ci_height);
             }
             Err(ref error) =>
-                self.draw_text(&s!(error), cell_size, fg, bg)
+                self.show_error(&s!(error), &cell_size)
         }
     }
 
@@ -619,16 +601,6 @@ impl<'a> Iterator for CellIterator<'a> {
         tap!(it = self.gui.cells.get(index), {
             self.index += 1;
         })
-    }
-}
-
-
-impl Default for Colors {
-    fn default() -> Colors {
-        Colors {
-            error: "white".parse().unwrap(),
-            error_background: "red".parse().unwrap(),
-        }
     }
 }
 

@@ -26,8 +26,6 @@ iterable_enum!(PreDefinedOptionName =>
     Animation,
     AutoPaging,
     AutoReload,
-    ColorError,
-    ColorErrorBackground,
     ColorLink,
     CurlConnectTimeout,
     CurlFollowLocation,
@@ -107,8 +105,6 @@ impl FromStr for PreDefinedOptionName {
             "vertical-views"                       => VerticalViews,
             "watch-files"                          => WatchFiles,
             "skip-resize-window"                   => SkipResizeWindow,
-            "error-color"                          => ColorError,
-            "error-background-color"               => ColorErrorBackground,
             "link-color"                           => ColorLink,
             _                                      => return Err(format!("Invalid option name: {}", src))
         };
@@ -122,7 +118,7 @@ impl PreDefinedOptionName {
 
         match *self {
             AbbrevLength | Animation | AutoReload | AutoPaging |
-                ColorError | ColorErrorBackground | ColorLink |
+                ColorLink |
                 FitTo | HorizontalViews | IdleTime | InitialPosition | LogFile | MaskOperator |
                 OperationBox | PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
                 Reverse | Rotation | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusFormat | EmptyStatusFormat | Style |

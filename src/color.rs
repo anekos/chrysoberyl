@@ -4,7 +4,6 @@ use std::str::FromStr;
 
 use css_color_parser::Color as CssColor;
 use errors::ChryError;
-use gdk::RGBA;
 use rand::{thread_rng, Rng};
 
 
@@ -46,15 +45,6 @@ impl Color {
 
     pub fn tupled4(&self) -> (f64, f64, f64, f64) {
         (to_f(self.r), to_f(self.g), to_f(self.b), to_f(self.a))
-    }
-
-    pub fn gdk_rgba(&self) -> RGBA {
-        RGBA {
-            red: to_f(self.r),
-            green: to_f(self.g),
-            blue: to_f(self.b),
-            alpha: f64!(self.a),
-        }
     }
 
     pub fn option(&self) -> Option<&Color> {

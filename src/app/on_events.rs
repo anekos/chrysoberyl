@@ -1445,8 +1445,6 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 UpdateCacheAccessTime => &mut app.states.update_cache_atime,
                 VerticalViews => &mut app.states.view.rows,
                 WatchFiles => &mut app.states.watch_files,
-                ColorError => &mut app.gui.colors.error,
-                ColorErrorBackground => &mut app.gui.colors.error_background,
                 ColorLink => &mut app.states.drawing.link_color,
             },
             UserDefined(ref option_name) => {

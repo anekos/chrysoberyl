@@ -92,7 +92,7 @@ pub fn write_session(app: &App, session: &Session, out: &mut String) {
     }
 }
 
-pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui, context: WriteContext) -> (String, Option<String>) {
+pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, context: WriteContext) -> (String, Option<String>) {
     use self::PreDefinedOptionName::*;
 
     let esc = |s: &str| {
@@ -135,8 +135,6 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, gui: &Gui
         Animation => gen("animation", &b2s(st.drawing.animation), context),
         AutoReload => gen("auto-reload", &b2s(st.auto_reload), context),
         AutoPaging => gen("auto-paging", &st.auto_paging, context),
-        ColorError => gen("error-color", &c2s(&gui.colors.error), context),
-        ColorErrorBackground => gen("error-background-color", &c2s(&gui.colors.error_background), context),
         ColorLink => gen("link-color", &c2s(&st.drawing.link_color), context),
         CurlConnectTimeout => geno("curl-connect-timeout", &st.curl_options.connect_timeout, context),
         CurlFollowLocation => gen("curl-follow-location", &b2s(st.curl_options.follow_location), context),
@@ -177,7 +175,7 @@ pub fn write_options(st: &States, gui: &Gui, reading: bool, out: &mut String) {
     use self::PreDefinedOptionName::*;
 
     let write = |out: &mut String, name: &PreDefinedOptionName| {
-        let (name, value) = generate_option_value(name, st, gui, WriteContext::Session);
+        let (name, value) = generate_option_value(name, st, WriteContext::Session);
         if let Some(value) = value {
             sprintln!(out, "@set {} {}", name, value);
         } else {

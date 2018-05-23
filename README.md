@@ -642,10 +642,6 @@ auto-paging
 :   type: enum
 :   values: no, always, smart
 
-centering
-:   type: boolean
-:   Center image cells
-
 curl-connect-timeout
 :   type: unsigned integer (seconds)
 :   default: 10

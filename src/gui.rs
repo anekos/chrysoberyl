@@ -14,7 +14,7 @@ use gdk::{DisplayExt, EventMask};
 use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimationExt};
 use glib::{self, Type};
 use gtk::prelude::*;
-use gtk::{Adjustment, Align, CssProvider, CssProviderExt, Entry, EntryCompletion, Grid, Image, Label, Layout, ListStore, Overlay, ScrolledWindow, self, Stack, StyleContext, Value, WidgetExt, Window};
+use gtk::{Adjustment, Align, CssProvider, CssProviderExt, Entry, EntryCompletion, EventBox, Grid, Image, Label, Layout, ListStore, Overlay, ScrolledWindow, self, Stack, StyleContext, Value, WidgetExt, Window};
 
 use app_path;
 use constant;
@@ -39,6 +39,7 @@ enum_from_primitive! {
 
 
 pub struct Gui {
+    pub event_box: EventBox,
     pub operation_entry: Entry,
     pub overlay: Overlay,
     pub vbox: gtk::Box,
@@ -104,13 +105,14 @@ impl Gui {
 
         gtk::init().unwrap();
 
-        let window = gtk::Window::new(gtk::WindowType::Toplevel);
-
-        window.set_title(constant::DEFAULT_TITLE);
-        window.set_role(window_role);
-        window.set_border_width(0);
-        window.set_position(gtk::WindowPosition::Center);
-        window.add_events(EventMask::SCROLL_MASK.bits() as i32);
+        let window = tap!(it = gtk::Window::new(gtk::WindowType::Toplevel), {
+            WidgetExt::set_name(&it, "application");
+            it.set_title(constant::DEFAULT_TITLE);
+            it.set_role(window_role);
+            it.set_border_width(0);
+            it.set_position(gtk::WindowPosition::Center);
+            it.add_events(EventMask::SCROLL_MASK.bits() as i32);
+        });
 
         let grid = tap!(it = gtk::Grid::new(), {
             WidgetExt::set_name(&it, "grid");
@@ -190,7 +192,12 @@ impl Gui {
             it.show_all();
         });
 
-        window.add(&overlay);
+        let event_box = tap!(it = EventBox::new(), {
+            it.add(&overlay);
+            it.show();
+        });
+
+        window.add(&event_box);
 
         let css_provider = {
             let display = window.get_display().unwrap();
@@ -204,6 +211,7 @@ impl Gui {
             cells,
             css_provider,
             entry_history,
+            event_box,
             grid,
             grid_size: Size::new(1, 1),
             hidden_label,

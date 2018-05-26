@@ -1,13 +1,13 @@
 
 /* https://developer.gnome.org/gtk3/stable/chap-css-overview.html */
 
-#command-line-box, #command-line-entry, #content, #grid, #status-bar-layout, #overlay, #cell, #image {
+#application, #cell, #command-line-box, #command-line-entry, #content, #grid, #image, #overlay, #status-bar-layout {
 }
 
 
 @define-color bg #004040;
 
-window {
+#content {
   background-color: @bg;
 }
 

@@ -83,12 +83,12 @@ fn register(gui: &Gui, skip: usize, app_tx: &Sender<Operation>) -> Sender<Event>
         Inhibit(true)
     }));
 
-    gui.window.connect_button_press_event(clone_army!([tx] move |_, button| {
+    gui.event_box.connect_button_press_event(clone_army!([tx] move |_, button| {
         tx.send(ButtonPress(button.get_position())).unwrap();
         Inhibit(true)
     }));
 
-    gui.window.connect_button_release_event(clone_army!([tx] move |_, button| {
+    gui.event_box.connect_button_release_event(clone_army!([tx] move |_, button| {
         tx.send(ButtonRelease(Key::from(button), button.get_position())).unwrap();
         Inhibit(true)
     }));

@@ -154,6 +154,8 @@ impl Gui {
         });
 
         let operation_entry = tap!(it = Entry::new(), {
+            use ::gdk::enums::key::*;
+
             WidgetExt::set_name(&it, "command-line-entry");
             it.set_text("");
             it.set_completion(&tap!(it = EntryCompletion::new(), {
@@ -165,10 +167,10 @@ impl Gui {
                 it.set_popup_completion(true);
                 it.set_minimum_key_length(1);
             }));
-            it.connect_key_press_event(|_, key| {
-                use ::gdk::enums::key::*;
+            let ignore_keys = hashset!{Tab, ISO_Left_Tab, Down, Up};
+            it.connect_key_press_event(move |_, key| {
                 let key = key.as_ref().keyval;
-                Inhibit(key == Tab || key == ISO_Left_Tab)
+                Inhibit(ignore_keys.contains(&key))
             });
         });
 

@@ -14,7 +14,7 @@ use gdk::{DisplayExt, EventMask};
 use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimationExt};
 use glib::{self, Type};
 use gtk::prelude::*;
-use gtk::{Adjustment, Align, CssProvider, CssProviderExt, Entry, EntryCompletion, Grid, Image, Label, Layout, ListStore, Overlay, ScrolledWindow, self, StyleContext, Value, WidgetExt, Window};
+use gtk::{Adjustment, Align, CssProvider, CssProviderExt, Entry, EntryCompletion, Grid, Image, Label, Layout, ListStore, Overlay, ScrolledWindow, self, Stack, StyleContext, Value, WidgetExt, Window};
 
 use app_path;
 use constant;
@@ -67,6 +67,7 @@ pub struct Cell {
     pub error_text: Label,
     pub image: Image,
     pub window: ScrolledWindow,
+    pub stack: Stack,
 }
 
 pub struct CellIterator<'a> {
@@ -384,17 +385,18 @@ impl Gui {
                 let error_text = tap!(it = Label::new(None), {
                     WidgetExt::set_name(&it, "error-text");
                     it.set_text("ERROR LABEL");
+                    // it.show();
                 });
 
-                tap!(it = Overlay::new(), {
-                    it.add_overlay(&image);
-                    it.add_overlay(&error_text);
+                let stack = tap!(it = Stack::new(), {
+                    it.add_named(&image, "image");
+                    it.add_named(&error_text, "error-text");
                     it.show();
                     scrolled.add(&it);
                 });
 
                 self.grid.attach(&scrolled, col as i32, row as i32, 1, 1);
-                self.cells.push(Cell { image, window: scrolled, error_text });
+                self.cells.push(Cell { image, window: scrolled, error_text, stack });
             }
         }
 
@@ -423,8 +425,10 @@ impl Cell {
      * @return Scale
      */
     pub fn draw(&self, image_buffer: &ImageBuffer, cell_size: &Size, fit_to: &FitTo) -> Option<f64> {
+        self.window.set_size_request(cell_size.width, cell_size.height);
         self.error_text.hide();
         self.image.show();
+        self.stack.set_visible_child_name("image");
 
         match *image_buffer {
             ImageBuffer::Static(ref buf) =>
@@ -438,9 +442,10 @@ impl Cell {
 
     pub fn show_error(&self, text: &str, cell_size: &Size) {
         self.window.set_size_request(cell_size.width, cell_size.height);
+        self.image.hide();
         self.error_text.set_text(text);
         self.error_text.show();
-        self.image.hide();
+        self.stack.set_visible_child_name("error-text");
     }
 
     pub fn get_image_size(&self) -> Option<(i32, i32)> {

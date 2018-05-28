@@ -99,7 +99,7 @@ You can use below commands on STDIN of chrysoberyl.
 
 Backword history
 
-## @cd <PATH>
+## @cd <DIRECTORY>
 
 Change working directory.
 
@@ -119,16 +119,16 @@ Clear image entries.
 Clip by mouse selected rectangle.
 
 
-## @controller file <PATH>
+## @controller file <FILE>
 
 Open `<PATH>` file to control chrysoberyl.
 
 
-## @controller fifo <PATH>
+## @controller fifo <FILE>
 
 Create unix FIFO file to control chrysoberyl.
 
-## @controller socket [--as-binary|-b] <PATH>
+## @controller socket [--as-binary|-b] <FILE>
 
 Create unix socket file to control chrysoberyl.
 
@@ -147,7 +147,7 @@ Set `count` explicitly.
 Cycle the value of `OPTION_NAME`.
 
 
-## (@dec|@decrement| @decrease|@--) <OPTION_NAME>
+## (@dec|@decrement|@decrease|@--) <OPTION_NAME>
 
 Decrement the value of `OPTION_NAME`.
 
@@ -227,7 +227,7 @@ e.g)
 Add directory entries (image) on `PATH`.
 
 
-## @file (move|copy) [--fail|-f] [--overwrite|-o] [--new|--new-file-name|-n] [(--size|-s) <SIZE>] <DIRECTORY_PATH> [<FILE_NAME>]
+## @file (move|copy) [--fail|-f] [--overwrite|-o] [--new|--new-file-name|-n] [(--size|-s) <SIZE>] <DIRECTORY> [<FILE>]
 
 Move or copy the current image file to `DIRECTORY_PATH`.
 
@@ -401,7 +401,7 @@ e.g)
 @map input button-1 @link-action @next
 ```
 
-## (@prev|@p| @previous) [--wrap|-w] [--archive|-a] [--ignore-views|-i] [--forget|-f] [<COUNT>]
+## (@prev|@p|@previous) [--wrap|-w] [--archive|-a] [--ignore-views|-i] [--forget|-f] [<COUNT>]
 
 Show `COUNT`th previous entry.
 

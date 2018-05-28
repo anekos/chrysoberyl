@@ -7,6 +7,7 @@ use pom::{Parser, TextInput};
 
 use entry::filter::expression::*;
 use entry::filter::resolution;
+use util::pom::from_vec_char;
 
 
 
@@ -28,10 +29,6 @@ impl FromStr for Expr {
     }
 }
 
-
-fn from_vec_char(src: Vec<char>) -> String {
-   src.into_iter().collect()
-}
 
 fn spaces() -> Parser<char, ()> {
     one_of(" \t\r\n").repeat(0..).discard()

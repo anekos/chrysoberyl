@@ -227,6 +227,7 @@ fn expr() -> Parser<char, Expr> {
 #[cfg(test)]#[test]
 fn test_parser() {
     use session::write_filter;
+    use util::shell::escape;
 
     fn assert_parse(src: &str) {
         assert_eq!(
@@ -235,7 +236,7 @@ fn test_parser() {
                 write_filter(&Some(it), "", &mut parsed);
                 parsed
             }),
-            Ok(format!("@filter {}\n", src)))
+            Ok(format!("@filter {}\n", escape(src))))
     }
 
     fn assert_parse2(src: &str, expect: &str) {
@@ -245,7 +246,7 @@ fn test_parser() {
                 write_filter(&Some(it), "", &mut parsed);
                 parsed
             }),
-            Ok(format!("@filter {}\n", expect)))
+            Ok(format!("@filter {}\n", escape(expect))))
     }
 
     assert_parse("1 < 2");

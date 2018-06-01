@@ -759,6 +759,8 @@ skip-resize-window
 :   type: unsigned integer
 :   TODO
 
+## Note
+
 You can use `@editor` to see current option values.
 
 ```

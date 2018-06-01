@@ -96,25 +96,29 @@ fn get_part(whole: &str, position: usize) -> State {
     let mut left = init_spaces;
     let mut right = left;
     let mut after_space = true;
+    let mut after_position = false;
     let mut debug = "last";
 
     for (i, c) in whole.chars().enumerate().skip(init_spaces) {
         if c == ' ' {
+            if after_position {
+                break;
+            }
             if operation.is_none() {
                 operation = Some(&whole[init_spaces .. i])
             }
             left = i;
             right = left;
         } else {
-            if after_space {
+            if after_space && !after_position {
                 left = i;
             }
             right = i + 1;
         }
 
         if position == i + 1 {
+            after_position = true;
             debug = "pos";
-            break;
         }
 
         after_space = c == ' ';
@@ -170,9 +174,10 @@ fn select_next(tree_view: &TreeView, model: &ListStore, entry: &Entry, entry_buf
 fn test_get_part() {
     assert_eq!(get_part("", 0), State { left: 0,  right: 0, num: 0, operation: None, text: "", debug: "last" });
     assert_eq!(get_part("@", 1), State { left: 0,  right: 1, num: 0, operation: None, text: "@", debug: "pos" });
-    // assert_eq!(get_part("@p", 1), State { left: 0,  right: 2, num: 0, operation: None, text: "@p", debug: "pos" });
     assert_eq!(get_part("@p", 2), State { left: 0,  right: 2, num: 0, operation: None, text: "@p", debug: "pos" });
     assert_eq!(get_part("@prev", 5), State { left: 0,  right: 5, num: 0, operation: None, text: "@prev", debug: "pos" });
     assert_eq!(get_part("@prev ", 6), State { left: 5,  right: 5, num: 0, operation: Some("@prev"), text: "", debug: "pos" });
     assert_eq!(get_part("@prev arg", 9), State { left: 6,  right: 9, num: 0, operation: Some("@prev"), text: "arg", debug: "pos" });
+
+    assert_eq!(get_part("@p", 1), State { left: 0,  right: 2, num: 0, operation: None, text: "@p", debug: "pos" });
 }

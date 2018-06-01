@@ -120,14 +120,17 @@ fn get_part(whole: &str, position: usize) -> State {
 
 
 fn set_if_match(store: &ListStore, part: &str, candidate: &str) {
-    if candidate.starts_with(part) {
+    if candidate.contains(part) {
         let iter = store.append();
         let value = Value::from(candidate);
         store.set_value(&iter, 0, &value);
     }
 }
 
-fn set_candidates(part: &str, store: &ListStore, candidates: &[String]) {
+fn set_candidates(mut part: &str, store: &ListStore, candidates: &[String]) {
+    if part.starts_with('@') {
+        part = &part[1..];
+    }
     store.clear();
     for candidate in candidates {
         set_if_match(store, part, candidate);

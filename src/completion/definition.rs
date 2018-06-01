@@ -15,6 +15,7 @@ pub enum Value {
     Any,
     File,
     Directory,
+    OptionName,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -25,18 +26,27 @@ pub enum Argument {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Definition {
-    pub operations: Vec<String>,
     pub arguments: HashMap<String, Rc<Vec<Argument>>>,
+    pub operations: Vec<String>,
+    pub options: Vec<String>,
 }
 
 
 impl Definition {
     pub fn new() -> Self {
         let mut operations = vec![];
+        let mut options = vec![];
         let mut arguments = HashMap::new();
+        let mut in_options = false;
 
         for line in README.lines() {
-            if line.starts_with("## (@") || line.starts_with("## @") {
+            if in_options {
+                if line.starts_with('#') {
+                    in_options = false;
+                } else if !line.is_empty() && !line.starts_with(':') && !line.starts_with('`') {
+                    options.push(o!(line));
+                }
+            } else if line.starts_with("## (@") || line.starts_with("## @") {
                 let src = &line[3..];
                 match parse(src, definition) {
                     Err(e) => panic!(format!("Err: {:?} for {:?}", e, line)),
@@ -55,10 +65,12 @@ impl Definition {
                         }
                     }
                 }
+            } else if line == "# Options" {
+                in_options = true;
             }
         }
 
-        Definition { operations, arguments }
+        Definition { arguments, operations, options }
     }
 }
 
@@ -115,6 +127,7 @@ fn value() -> Parser<char, Value> {
         match &*it {
             "FILE" => Value::File,
             "DIRECTORY" => Value::Directory,
+            "OPTION" => Value::OptionName,
             _ => Value::Any,
         }
     })

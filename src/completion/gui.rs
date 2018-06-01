@@ -3,7 +3,7 @@ use gtk::prelude::*;
 use glib::Type;
 use gtk::{CellRendererText, Entry, EntryBuffer, ListStore, ScrolledWindow, TreeIter, TreeSelection, TreeView, TreeViewColumn, Value, EditableExt};
 
-use completion::definition::{Definition, Argument};
+use completion::definition::{Definition, Argument, Value as Val};
 
 
 
@@ -63,8 +63,13 @@ impl CompleterUI {
                 if let Some(args) = definition.arguments.get(&operation[1..]) {
                     let mut cs = vec![];
                     for arg in args.iter() {
-                        if let Argument::Flag(names, _) = arg {
-                            cs.push(format!("--{}", names[0]));
+                        match arg {
+                            Argument::Flag(names, _) => cs.push(format!("--{}", names[0])),
+                            Argument::Arg(Val::OptionName) => {
+                                cs.extend_from_slice(&*definition.options);
+                            }
+
+                            _ => (),
                         }
                     }
                     set_candidates(state.text, &candidates, &cs);

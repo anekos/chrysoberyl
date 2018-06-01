@@ -142,14 +142,14 @@ Copy currently viewing image to clipboard.
 Set `count` explicitly.
 
 
-## @cycle <OPTION_NAME>
+## @cycle <OPTION>
 
-Cycle the value of `OPTION_NAME`.
+Cycle the value of `OPTION`.
 
 
-## (@dec|@decrement|@decrease|@--) <OPTION_NAME>
+## (@dec|@decrement|@decrease|@--) <OPTION>
 
-Decrement the value of `OPTION_NAME`.
+Decrement the value of `OPTION`.
 
 
 ## @default
@@ -176,9 +176,9 @@ then you can `@cycle my-option` to execute `; @views 1 ; @disable reverse` or `;
 Delete the selected entries by `FILTER_EXPRESSION`.
 
 
-## @disable <OPTION_NAME>
+## @disable <OPTION>
 
-Disable `OPTION_NAME`.
+Disable `OPTION`.
 
 `@disable reverse` equals `@set reverse false`.
 
@@ -203,9 +203,9 @@ Redraw image.
 - all
 
 
-## @enable <OPTION_NAME>
+## @enable <OPTION>
 
-Enable `OPTION_NAME`.
+Enable `OPTION`.
 
 `@enable reverse` equals `@set reverse true`.
 
@@ -297,9 +297,9 @@ Show the entry.
 This operation does not add any entry.
 
 
-## (@inc|@increment|@increase|@++) <OPTION_NAME>
+## (@inc|@increment|@increase|@++) <OPTION>
 
-Increment the value of `OPTION_NAME`.
+Increment the value of `OPTION`.
 
 
 ## @input <INPUT1> [<INPUT2>...]
@@ -507,7 +507,7 @@ If no `SIZE` is given, scroll size is `1.0`.
 Search text with `TEXT`, and highlights them.
 
 
-## @set <OPTION_NAME> <VALUE>
+## @set <OPTION> <VALUE>
 
 Set option value.
 
@@ -519,9 +519,9 @@ Set ENV.
 `--system-prefix` adds `CHRY_` to `NAME`.
 
 
-## (@set-by-count|@set-count) <OPTION_NAME>
+## (@set-by-count|@set-count) <OPTION>
 
-Set `COUNT` as value to `OPTION_NAME`.
+Set `COUNT` as value to `OPTION`.
 
 
 ## @shell [--async|-a] [--sync|-s] [(--session|-S) <SESSION>]... [--operation|-o] [--no-operation|-O] [--search-path|-p] <COMMAND> <COMMAND_ARG1>...
@@ -561,7 +561,7 @@ Execute `OPERATION` repeatedly.
 You can use `@kill-timer` to stop this task.
 
 
-## @toggle <OPTION_NAME>
+## @toggle <OPTION>
 
 Toggle between option values (true/false).
 
@@ -586,7 +586,7 @@ If the result of `FILTER_EXPRESSION` evaluation is false, execute the operation.
 Unmap the `@map`ped.
 
 
-## @unset <OPTION_NAME>
+## @unset <OPTION>
 
 Set default value.
 

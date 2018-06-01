@@ -741,6 +741,9 @@ status-format
 stdout
 :   TODO
 
+style
+:   Define application colors and fonts with CSS
+
 title-format
 :   TODO
 

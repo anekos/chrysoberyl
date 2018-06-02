@@ -670,7 +670,7 @@ empty-status-format
 
 fit-to
 :   type: enum
-:   values: width, height, original, original-or-cell, cell, xxx%
+:   values: width, height, original, original-or-cell, cell, XXX%, WIDTHxHEIGHT
 :   default: cell
 
 idle-time

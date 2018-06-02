@@ -35,6 +35,7 @@ pub struct Definition {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum OptionValue {
+    Boolean,
     Enum(Vec<String>),
 }
 
@@ -50,6 +51,8 @@ impl Definition {
             if in_options {
                 if line.starts_with('#') {
                     in_options = false;
+                } else if line.starts_with(":   type: boolean") {
+                    option_values.insert(o!(options.last().unwrap()), OptionValue::Boolean);
                 } else if line.starts_with(":   values: ") {
                     let values = line[12..].split(", ").map(|it| o!(it)).collect();
                     option_values.insert(o!(options.last().unwrap()), OptionValue::Enum(values));

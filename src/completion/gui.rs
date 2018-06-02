@@ -67,8 +67,11 @@ impl CompleterUI {
                             Argument::Flag(names, _) => cs.push(format!("--{}", names[0])),
                             Argument::Arg(Val::OptionValue) if state.nth == 2 => {
                                 if let Some(option_name) = state.args.get(1) {
-                                    if let Some(OptionValue::Enum(values)) = definition.option_values.get(*option_name) {
-                                        cs.extend_from_slice(&*values);
+                                    if let Some(value) = definition.option_values.get(*option_name) {
+                                        match value {
+                                            OptionValue::Enum(values) => cs.extend_from_slice(&*values),
+                                            OptionValue::Boolean => cs.extend_from_slice(&[o!("true"), o!("false")]),
+                                        }
                                     }
                                 }
                                 break;

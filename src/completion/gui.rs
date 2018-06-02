@@ -3,7 +3,7 @@ use gtk::prelude::*;
 use glib::Type;
 use gtk::{CellRendererText, Entry, EntryBuffer, ListStore, ScrolledWindow, TreeIter, TreeSelection, TreeView, TreeViewColumn, Value, EditableExt};
 
-use completion::definition::{Definition, Argument, Value as Val};
+use completion::definition::{Definition, Argument, Value as Val, OptionValue};
 
 
 
@@ -14,10 +14,10 @@ pub struct CompleterUI {
 
 #[derive(Debug, PartialEq)]
 struct State<'a> {
+    args: Vec<&'a str>,
     left: usize,
     right: usize,
-    num: usize,
-    operation: Option<&'a str>,
+    nth: usize,
     text: &'a str,
     debug: &'static str,
 }
@@ -59,16 +59,22 @@ impl CompleterUI {
                 return Inhibit(true);
             }
 
-            if let Some(operation) = state.operation {
+            if let Some(operation) = state.operation() {
                 if let Some(args) = definition.arguments.get(&operation[1..]) {
                     let mut cs = vec![];
                     for arg in args.iter() {
                         match arg {
                             Argument::Flag(names, _) => cs.push(format!("--{}", names[0])),
-                            Argument::Arg(Val::OptionName) => {
-                                cs.extend_from_slice(&*definition.options);
+                            Argument::Arg(Val::OptionValue) if state.nth == 2 => {
+                                if let Some(option_name) = state.args.get(1) {
+                                    if let Some(OptionValue::Enum(values)) = definition.option_values.get(*option_name) {
+                                        cs.extend_from_slice(&*values);
+                                    }
+                                }
+                                break;
                             }
-
+                            Argument::Arg(Val::OptionName) if state.nth == 1 =>
+                                cs.extend_from_slice(&*definition.options),
                             _ => (),
                         }
                     }
@@ -88,24 +94,33 @@ impl CompleterUI {
 }
 
 
+impl<'a> State<'a> {
+    pub fn operation(&self) -> Option<&&str> {
+        self.args.first()
+    }
+}
+
+
 fn get_part(whole: &str, position: usize) -> State {
     let position = min!(position, whole.len());
     let init_spaces = whole.chars().take_while(|it| *it == ' ').count();
 
-    let mut operation = None;
     let mut left = init_spaces;
     let mut right = left;
     let mut after_space = true;
     let mut after_position = false;
     let mut debug = "last";
+    let mut nth = 0;
+    let mut args = vec![];
 
     for (i, c) in whole.chars().enumerate().skip(init_spaces) {
         if c == ' ' {
             if after_position {
                 break;
             }
-            if operation.is_none() {
-                operation = Some(&whole[init_spaces .. i])
+            if !after_space {
+                nth += 1;
+                args.push(&whole[left .. i]);
             }
             left = i;
             right = left;
@@ -124,7 +139,7 @@ fn get_part(whole: &str, position: usize) -> State {
         after_space = c == ' ';
     }
 
-    State { left, right, num: 0, operation, text: &whole[left .. right], debug }
+    State { args, left, right, nth, text: &whole[left .. right], debug }
 }
 
 
@@ -172,12 +187,86 @@ fn select_next(tree_view: &TreeView, model: &ListStore, entry: &Entry, entry_buf
 
 #[cfg(test)]#[test]
 fn test_get_part() {
-    assert_eq!(get_part("", 0), State { left: 0,  right: 0, num: 0, operation: None, text: "", debug: "last" });
-    assert_eq!(get_part("@", 1), State { left: 0,  right: 1, num: 0, operation: None, text: "@", debug: "pos" });
-    assert_eq!(get_part("@p", 2), State { left: 0,  right: 2, num: 0, operation: None, text: "@p", debug: "pos" });
-    assert_eq!(get_part("@prev", 5), State { left: 0,  right: 5, num: 0, operation: None, text: "@prev", debug: "pos" });
-    assert_eq!(get_part("@prev ", 6), State { left: 5,  right: 5, num: 0, operation: Some("@prev"), text: "", debug: "pos" });
-    assert_eq!(get_part("@prev arg", 9), State { left: 6,  right: 9, num: 0, operation: Some("@prev"), text: "arg", debug: "pos" });
+    assert_eq!(
+        get_part("", 0),
+        State {
+            args: vec![],
+            left: 0,
+            right: 0,
+            nth: 0,
+            text: "",
+            debug: "last"
+        });
+    assert_eq!(
+        get_part("@", 1),
+        State {
+            args: vec![],
+            left: 0,
+            right: 1,
+            nth: 0,
+            text: "@",
+            debug: "pos"
+        });
+    assert_eq!(
+        get_part("@p", 2),
+        State {
+            args: vec![],
+            left: 0,
+            right: 2,
+            nth: 0,
+            text: "@p",
+            debug: "pos"
+        });
+    assert_eq!(
+        get_part("@prev", 5),
+        State {
+            args: vec![],
+            left: 0,
+            right: 5,
+            nth: 0,
+            text: "@prev",
+            debug: "pos"
+        });
+    assert_eq!(
+        get_part("@prev ", 6),
+        State {
+            args: vec!["@prev"],
+            left: 5,
+            right: 5,
+            nth: 1,
+            text: "",
+            debug: "pos"
+        });
+    assert_eq!(
+        get_part("@prev arg", 9),
+        State {
+            args: vec!["@prev"],
+            left: 6,
+            right: 9,
+            nth: 1,
+            text: "arg",
+            debug: "pos"
+        });
 
-    assert_eq!(get_part("@p", 1), State { left: 0,  right: 2, num: 0, operation: None, text: "@p", debug: "pos" });
+    assert_eq!(
+        get_part("@p", 1),
+        State {
+            args: vec![],
+            left: 0,
+            right: 2,
+            nth: 0,
+            text: "@p",
+            debug: "pos"
+        });
+
+    assert_eq!(
+        get_part("@foo -i -v", 10),
+        State {
+            args: vec!["@foo", "-i"],
+            left: 8,
+            right: 10,
+            nth: 2,
+            text: "-v",
+            debug: "pos"
+        });
 }

@@ -16,6 +16,7 @@ pub enum Value {
     File,
     Directory,
     OptionName,
+    OptionValue,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -29,13 +30,19 @@ pub struct Definition {
     pub arguments: HashMap<String, Rc<Vec<Argument>>>,
     pub operations: Vec<String>,
     pub options: Vec<String>,
+    pub option_values: HashMap<String, OptionValue>,
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum OptionValue {
+    Enum(Vec<String>),
+}
 
 impl Definition {
     pub fn new() -> Self {
         let mut operations = vec![];
-        let mut options = vec![];
+        let mut options: Vec<String> = vec![];
+        let mut option_values = HashMap::<String, OptionValue>::new();
         let mut arguments = HashMap::new();
         let mut in_options = false;
 
@@ -43,6 +50,9 @@ impl Definition {
             if in_options {
                 if line.starts_with('#') {
                     in_options = false;
+                } else if line.starts_with(":   values: ") {
+                    let values = line[12..].split(", ").map(|it| o!(it)).collect();
+                    option_values.insert(o!(options.last().unwrap()), OptionValue::Enum(values));
                 } else if !line.is_empty() && !line.starts_with(':') && !line.starts_with('`') {
                     options.push(o!(line));
                 }
@@ -55,7 +65,7 @@ impl Definition {
                         let args = Rc::new(args);
                         for op in ops {
                             if arguments.contains_key(&op) {
-                                println!("Duplicated: {:?}", op);
+                                panic!("Duplicated: {:?}", op);
                             } else {
                                 operations.push(format!("@{}", op.clone()));
                                 if !args.is_empty() {
@@ -70,7 +80,7 @@ impl Definition {
             }
         }
 
-        Definition { arguments, operations, options }
+        Definition { arguments, operations, options, option_values }
     }
 }
 
@@ -128,6 +138,7 @@ fn value() -> Parser<char, Value> {
             "FILE" => Value::File,
             "DIRECTORY" => Value::Directory,
             "OPTION" => Value::OptionName,
+            "VALUE" => Value::OptionValue,
             _ => Value::Any,
         }
     })
@@ -147,7 +158,7 @@ fn test_parser() {
 
     assert_eq!(parse("[--cat]", flag), Ok(Flag(vec![o!("cat")], None)));
     assert_eq!(parse("[--cat|-c]", flag), Ok(Flag(vec![o!("cat"), o!("c")], None)));
-    assert_eq!(parse("[--neko <VALUE>]", flag), Ok(Flag(vec![o!("neko")], Some(Any))));
+    assert_eq!(parse("[--neko <MEOW>]", flag), Ok(Flag(vec![o!("neko")], Some(Any))));
     assert_eq!(parse("[--cat|-c <DIRECTORY>]", flag), Ok(Flag(vec![o!("cat"), o!("c")], Some(Directory))));
     assert_eq!(parse("[(--second|-S) <DIRECTORY>]", flag), Ok(Flag(vec![o!("second"), o!("S")], Some(Directory))));
 

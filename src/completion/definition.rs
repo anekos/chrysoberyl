@@ -79,11 +79,10 @@ impl Definition {
                         for op in ops {
                             if arguments.contains_key(&op) {
                                 panic!("Duplicated: {:?}", op);
-                            } else {
-                                operations.push(format!("@{}", op.clone()));
-                                if !args.is_empty() {
-                                    arguments.insert(op, args.clone());
-                                }
+                            }
+                            operations.push(format!("@{}", op.clone()));
+                            if !args.is_empty() {
+                                arguments.insert(op, args.clone());
                             }
                         }
                     }

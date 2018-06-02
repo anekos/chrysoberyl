@@ -151,13 +151,13 @@ fn test_color_converter() {
     assert_color(0.4, 0.2, 0.3);
 
     let mut rng = rand::thread_rng();
-    let range = Range::new(0.0, 1.0);
+    let range = Uniform::new(0.0, 1.0);
 
     for _ in 0..100 {
         assert_color(
-            range.ind_sample(&mut rng),
-            range.ind_sample(&mut rng),
-            range.ind_sample(&mut rng));
+            range.sample(&mut rng),
+            range.sample(&mut rng),
+            range.sample(&mut rng));
     }
 }
 

@@ -7,7 +7,7 @@ use encoding::label::encoding_from_whatwg_label;
 use encoding::types::EncodingRef;
 
 use app_path;
-use constant;
+use constant::{README, WINDOW_ROLE};
 use controller;
 use expandable::Expandable;
 
@@ -36,9 +36,6 @@ pub enum Entry {
 }
 
 
-pub const README: &str = include_str!("../README.md");
-
-
 impl Default for Initial {
     fn default() -> Self {
         Initial {
@@ -51,7 +48,7 @@ impl Default for Initial {
             shuffle: false,
             silent: false,
             stdin_as_binary: false,
-            window_role: constant::WINDOW_ROLE.to_string(),
+            window_role: WINDOW_ROLE.to_string(),
         }
     }
 }

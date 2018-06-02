@@ -99,7 +99,7 @@ You can use below commands on STDIN of chrysoberyl.
 
 Backword history
 
-## @cd <PATH>
+## @cd <DIRECTORY>
 
 Change working directory.
 
@@ -119,16 +119,16 @@ Clear image entries.
 Clip by mouse selected rectangle.
 
 
-## @controller file <PATH>
+## @controller file <FILE>
 
 Open `<PATH>` file to control chrysoberyl.
 
 
-## @controller fifo <PATH>
+## @controller fifo <FILE>
 
 Create unix FIFO file to control chrysoberyl.
 
-## @controller socket [--as-binary|-b] <PATH>
+## @controller socket [--as-binary|-b] <FILE>
 
 Create unix socket file to control chrysoberyl.
 
@@ -142,14 +142,14 @@ Copy currently viewing image to clipboard.
 Set `count` explicitly.
 
 
-## @cycle <OPTION_NAME>
+## @cycle <OPTION>
 
-Cycle the value of `OPTION_NAME`.
+Cycle the value of `OPTION`.
 
 
-## (@dec|@decrement| @decrease|@--) <OPTION_NAME>
+## (@dec|@decrement|@decrease|@--) <OPTION>
 
-Decrement the value of `OPTION_NAME`.
+Decrement the value of `OPTION`.
 
 
 ## @default
@@ -176,9 +176,9 @@ then you can `@cycle my-option` to execute `; @views 1 ; @disable reverse` or `;
 Delete the selected entries by `FILTER_EXPRESSION`.
 
 
-## @disable <OPTION_NAME>
+## @disable <OPTION>
 
-Disable `OPTION_NAME`.
+Disable `OPTION`.
 
 `@disable reverse` equals `@set reverse false`.
 
@@ -203,9 +203,9 @@ Redraw image.
 - all
 
 
-## @enable <OPTION_NAME>
+## @enable <OPTION>
 
-Enable `OPTION_NAME`.
+Enable `OPTION`.
 
 `@enable reverse` equals `@set reverse true`.
 
@@ -227,7 +227,7 @@ e.g)
 Add directory entries (image) on `PATH`.
 
 
-## @file (move|copy) [--fail|-f] [--overwrite|-o] [--new|--new-file-name|-n] [(--size|-s) <SIZE>] <DIRECTORY_PATH> [<FILE_NAME>]
+## @file (move|copy) [--fail|-f] [--overwrite|-o] [--new|--new-file-name|-n] [(--size|-s) <SIZE>] <DIRECTORY> [<FILE>]
 
 Move or copy the current image file to `DIRECTORY_PATH`.
 
@@ -297,9 +297,9 @@ Show the entry.
 This operation does not add any entry.
 
 
-## (@inc|@increment|@increase|@++) <OPTION_NAME>
+## (@inc|@increment|@increase|@++) <OPTION>
 
-Increment the value of `OPTION_NAME`.
+Increment the value of `OPTION`.
 
 
 ## @input <INPUT1> [<INPUT2>...]
@@ -401,7 +401,7 @@ e.g)
 @map input button-1 @link-action @next
 ```
 
-## (@prev|@p| @previous) [--wrap|-w] [--archive|-a] [--ignore-views|-i] [--forget|-f] [<COUNT>]
+## (@prev|@p|@previous) [--wrap|-w] [--archive|-a] [--ignore-views|-i] [--forget|-f] [<COUNT>]
 
 Show `COUNT`th previous entry.
 
@@ -507,7 +507,7 @@ If no `SIZE` is given, scroll size is `1.0`.
 Search text with `TEXT`, and highlights them.
 
 
-## @set <OPTION_NAME> <VALUE>
+## @set <OPTION> <VALUE>
 
 Set option value.
 
@@ -519,9 +519,9 @@ Set ENV.
 `--system-prefix` adds `CHRY_` to `NAME`.
 
 
-## (@set-by-count|@set-count) <OPTION_NAME>
+## (@set-by-count|@set-count) <OPTION>
 
-Set `COUNT` as value to `OPTION_NAME`.
+Set `COUNT` as value to `OPTION`.
 
 
 ## @shell [--async|-a] [--sync|-s] [(--session|-S) <SESSION>]... [--operation|-o] [--no-operation|-O] [--search-path|-p] <COMMAND> <COMMAND_ARG1>...
@@ -561,7 +561,7 @@ Execute `OPERATION` repeatedly.
 You can use `@kill-timer` to stop this task.
 
 
-## @toggle <OPTION_NAME>
+## @toggle <OPTION>
 
 Toggle between option values (true/false).
 
@@ -586,7 +586,7 @@ If the result of `FILTER_EXPRESSION` evaluation is false, execute the operation.
 Unmap the `@map`ped.
 
 
-## @unset <OPTION_NAME>
+## @unset <OPTION>
 
 Set default value.
 
@@ -670,7 +670,7 @@ empty-status-format
 
 fit-to
 :   type: enum
-:   values: width, height, original, original-or-cell, cell, xxx%
+:   values: width, height, original, original-or-cell, cell, XXX%, WIDTHxHEIGHT
 :   default: cell
 
 idle-time
@@ -741,6 +741,9 @@ status-format
 stdout
 :   TODO
 
+style
+:   Define application colors and fonts with CSS
+
 title-format
 :   TODO
 
@@ -758,6 +761,8 @@ watch-files
 skip-resize-window
 :   type: unsigned integer
 :   TODO
+
+## Note
 
 You can use `@editor` to see current option values.
 

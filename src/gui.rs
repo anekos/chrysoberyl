@@ -14,9 +14,10 @@ use gdk::{DisplayExt, EventMask};
 use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimationExt};
 use glib::{self, Type};
 use gtk::prelude::*;
-use gtk::{Adjustment, Align, CssProvider, CssProviderExt, Entry, EntryCompletion, EventBox, Grid, Image, Label, Layout, ListStore, Overlay, ScrolledWindow, self, Stack, StyleContext, Value, WidgetExt, Window};
+use gtk::{Adjustment, Align, CssProvider, CssProviderExt, Entry, EventBox, Grid, Image, Label, Layout, ListStore, Overlay, ScrolledWindow, self, Stack, StyleContext, Value, WidgetExt, Window};
 
 use app_path;
+use completion::gui::CompleterUI;
 use constant;
 use errors::*;
 use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
@@ -158,15 +159,6 @@ impl Gui {
 
             WidgetExt::set_name(&it, "command-line-entry");
             it.set_text("");
-            it.set_completion(&tap!(it = EntryCompletion::new(), {
-                it.set_model(&entry_history);
-                it.set_text_column(0);
-                it.set_inline_completion(true);
-                it.set_inline_selection(true);
-                it.set_popup_single_match(false);
-                it.set_popup_completion(true);
-                it.set_minimum_key_length(1);
-            }));
             let ignore_keys = hashset!{Tab, ISO_Left_Tab, Down, Up};
             it.connect_key_press_event(move |_, key| {
                 let key = key.as_ref().keyval;
@@ -176,7 +168,9 @@ impl Gui {
 
         let operation_box = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
             WidgetExt::set_name(&it, "command-line-box");
-            it.pack_end(&operation_entry, false, false, 0);
+            let completer = CompleterUI::new(&operation_entry);
+            it.pack_end(&operation_entry, false, true, 0);
+            it.pack_end(&completer.window, true, true, 0);
         });
 
         let vbox = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {

@@ -13,8 +13,9 @@ use util::pom::from_vec_char;
 #[derive(Debug, PartialEq, Eq)]
 pub enum Value {
     Any,
-    File,
     Directory,
+    File,
+    Literals(Vec<String>),
     OptionName,
     OptionValue,
 }
@@ -28,9 +29,10 @@ pub enum Argument {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Definition {
     pub arguments: HashMap<String, Rc<Vec<Argument>>>,
+    pub event_names: Vec<String>,
     pub operations: Vec<String>,
-    pub options: Vec<String>,
     pub option_values: HashMap<String, OptionValue>,
+    pub options: Vec<String>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -45,10 +47,18 @@ impl Definition {
         let mut options: Vec<String> = vec![];
         let mut option_values = HashMap::<String, OptionValue>::new();
         let mut arguments = HashMap::new();
+        let mut event_names = vec![];
         let mut in_options = false;
+        let mut in_events = false;
 
         for line in README.lines() {
-            if in_options {
+            if in_events {
+                if line.starts_with('#') {
+                    in_events = false;
+                } else if line.starts_with("- ") {
+                    event_names.push(o!(line[2..]));
+                }
+            } else if in_options {
                 if line.starts_with('#') {
                     in_options = false;
                 } else if line.starts_with(":   type: boolean") {
@@ -80,10 +90,12 @@ impl Definition {
                 }
             } else if line == "# Options" {
                 in_options = true;
+            } else if line == "# Events" {
+                in_events = true;
             }
         }
 
-        Definition { arguments, operations, options, option_values }
+        Definition { arguments, event_names, operations, options, option_values }
     }
 }
 
@@ -94,7 +106,7 @@ const SP: &str = " \t()[]<>|";
 
 fn definition() -> Parser<char, (Vec<String>, Vec<Argument>)> {
     let p1 = operations();
-    let p2 = flag() | value().map(Argument::Arg);
+    let p2 = flag() | value().map(Argument::Arg) | literals();
 
     p1 + (spaces1() * list(p2, spaces1())).opt().map(|it| it.unwrap_or_else(|| vec![]))
 }
@@ -110,6 +122,11 @@ fn operation() -> Parser<char, String> {
 fn operations() -> Parser<char, Vec<String>> {
     let p1 = || list(operation(), sym('|'));
     maybe_grouped(p1)
+}
+
+fn literals() -> Parser<char, Argument> {
+    let ls = || list(none_of(SP).repeat(1..).map(from_vec_char), sym('|'));
+    maybe_grouped(ls).map(|it| Argument::Arg(Value::Literals(it)))
 }
 
 fn maybe_grouped<T: 'static, P>(p: P) -> Parser<char, T> where P: Fn() -> Parser<char, T> {

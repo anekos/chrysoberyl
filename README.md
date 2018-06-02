@@ -119,18 +119,12 @@ Clear image entries.
 Clip by mouse selected rectangle.
 
 
-## @controller file <FILE>
+## @controller (file|fifo|socket) <FILE>
 
 Open `<PATH>` file to control chrysoberyl.
 
+If `socket` is given, you can give `--as-binary|-b` to read the file as binary.
 
-## @controller fifo <FILE>
-
-Create unix FIFO file to control chrysoberyl.
-
-## @controller socket [--as-binary|-b] <FILE>
-
-Create unix socket file to control chrysoberyl.
 
 ## @copy-to-clipboard [--meta <NAME>"="<VALUE>]... [--primary|-1|--secondary|-2|--clipboard]
 
@@ -323,18 +317,22 @@ Load operation script file.
 If `--search-path` is given, load from `search-path`.
 
 
-## @map input [(--region|-r) <REGION>] <INPUT> <OPERATION>
+## @map (input|event|region) ...
+
+### @map input [(--region|-r) <REGION>] <INPUT> <OPERATION>
 
 Key/Mouse mapping.
 See STDOUT of chrysoberyl for `INPUT`.
 
 
-## @map event [--once|o] [(--repeat|-r) <TIMES>] <EVENT_NAME> <OPERATION>
+### @map event [--once|o] [(--repeat|-r) <TIMES>] <EVENT_NAME> <OPERATION>
 
 When `EVENT_NAME` is fired, execute `OPERATION`
 
 
-## @map region <MOUSE_BUTTON> <OPERATION>
+### @map region <MOUSE_BUTTON> <OPERATION>
+
+For `@clip` and `@fill`.
 
 
 ## @message [--keep|-k] [<MESSAGE>]

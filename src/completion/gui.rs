@@ -59,35 +59,8 @@ impl CompleterUI {
                 return Inhibit(true);
             }
 
-            if let Some(operation) = state.operation() {
-                if let Some(args) = definition.arguments.get(&operation[1..]) {
-                    let mut cs = vec![];
-                    for arg in args.iter() {
-                        match arg {
-                            Argument::Flag(names, _) => cs.push(format!("--{}", names[0])),
-                            Argument::Arg(Val::OptionValue) if state.nth == 2 => {
-                                if let Some(option_name) = state.args.get(1) {
-                                    if let Some(value) = definition.option_values.get(*option_name) {
-                                        match value {
-                                            OptionValue::Enum(values) => cs.extend_from_slice(&*values),
-                                            OptionValue::Boolean => cs.extend_from_slice(&[o!("true"), o!("false")]),
-                                        }
-                                    }
-                                }
-                                break;
-                            }
-                            Argument::Arg(Val::OptionName) if state.nth == 1 =>
-                                cs.extend_from_slice(&*definition.options),
-                            _ => (),
-                        }
-                    }
-                    set_candidates(state.text, &candidates, &cs);
-                } else {
-                    candidates.clear();
-                }
-            } else {
-                set_candidates(state.text, &candidates, &definition.operations);
-            }
+            let result = state.arg_nth(&definition);
+            set_candidates(state.text, &candidates, &result);
 
             Inhibit(false)
         });
@@ -100,6 +73,93 @@ impl CompleterUI {
 impl<'a> State<'a> {
     pub fn operation(&self) -> Option<&&str> {
         self.args.first()
+    }
+
+    pub fn arg_nth(&self, definition: &Definition) -> Vec<String> {
+        fn get_flag_name(s: &str) -> Option<&str> {
+            if s.starts_with("--") {
+                Some(&s[2..])
+            } else if s.starts_with('-') {
+                Some(&s[1..])
+            } else {
+                None
+            }
+        }
+
+        fn set_value_candidates(value: &Val, option_name: Option<&&str>, definition: &Definition, result: &mut Vec<String>) {
+            match *value {
+                Val::OptionName =>
+                    result.extend_from_slice(&*definition.options),
+                Val::Literals(ref values) =>
+                    result.extend_from_slice(&*values),
+                Val::OptionValue => {
+                    if_let_some!(option_name = option_name, ());
+                    if let Some(value) = definition.option_values.get(*option_name) {
+                        match value {
+                            OptionValue::Enum(values) => result.extend_from_slice(&*values),
+                            OptionValue::Boolean => result.extend_from_slice(&[o!("true"), o!("false")]),
+                        }
+                    }
+                }
+                _ =>
+                    (),
+            }
+        }
+
+        if_let_some!(operation = self.operation(), definition.operations.clone());
+        let mut result = vec![];
+        if_let_some!(def_args = definition.arguments.get(&operation[1..]), result);
+
+        let mut skip = false;
+        let mut arg_nth = 0;
+
+        for (i, arg) in self.args.iter().skip(1).enumerate() {
+            if skip {
+                skip = false;
+                continue;
+            }
+
+            if let Some(flag_name) = get_flag_name(arg) {
+                if let Some(Argument::Flag(_, flag_value)) = def_args.iter().find(|it| {
+                    if let Argument::Flag(names, _) = it {
+                        names.contains(&o!(flag_name))
+                    } else {
+                        false
+                    }
+                }) {
+                    if let Some(flag_value) = flag_value {
+                        if i == self.args.len() - 1 { // at last
+                            set_value_candidates(&flag_value, None, definition, &mut result);
+                            return result;
+                        } else {
+                            skip = true;
+                        }
+                    }
+                };
+            } else {
+                arg_nth += 1;
+            }
+        }
+
+        {
+            let arg_nth = arg_nth;
+            let mut n = 0;
+            for arg in def_args.iter() {
+                match arg {
+                    Argument::Arg(ref value) => {
+                        if arg_nth == n {
+                            set_value_candidates(value, self.args.get(1), definition, &mut result);
+                        }
+                        n += 1;
+                    }
+                    Argument::Flag(names, _) if arg_nth == 0 =>
+                        result.push(format!("--{}", names[0])),
+                    _ => (),
+                }
+            }
+        }
+
+        result
     }
 }
 

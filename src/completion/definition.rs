@@ -104,7 +104,7 @@ const SP: &str = " \t()[]<>|";
 
 
 fn definition() -> Parser<char, (Vec<String>, Vec<Argument>)> {
-    let value = maybe_optional(|| value());
+    let value = maybe_optional(value);
     let p1 = operations();
     let p2 = flag() | value.map(Argument::Arg) | literals();
 

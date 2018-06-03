@@ -73,7 +73,7 @@ impl Definition {
                 let src = &line[3..];
                 match parse(src, definition) {
                     Err(e) => panic!(format!("Err: {:?} for {:?}", e, line)),
-                    Ok((ref ops, _)) if ops.is_empty() => panic!(format!("Empty: {:?}", line)),
+                    Ok((ref ops, ref args)) if ops.is_empty() => panic!(format!("Empty: line={:?}, ops={:?}, args={:?}", line, ops, args)),
                     Ok((ops, args)) => {
                         let args = Rc::new(args);
                         for op in ops {
@@ -104,8 +104,9 @@ const SP: &str = " \t()[]<>|";
 
 
 fn definition() -> Parser<char, (Vec<String>, Vec<Argument>)> {
+    let value = maybe_optional(|| value());
     let p1 = operations();
-    let p2 = flag() | value().map(Argument::Arg) | literals();
+    let p2 = flag() | value.map(Argument::Arg) | literals();
 
     p1 + (spaces1() * list(p2, spaces1())).opt().map(|it| it.unwrap_or_else(|| vec![]))
 }
@@ -133,6 +134,11 @@ fn maybe_grouped<T: 'static, P>(p: P) -> Parser<char, T> where P: Fn() -> Parser
     pp | p()
 }
 
+fn maybe_optional<T: 'static, P>(p: P) -> Parser<char, T> where P: Fn() -> Parser<char, T> {
+    let pp = sym('[') * p() - sym(']');
+    pp | p()
+}
+
 fn flag() -> Parser<char, Argument> {
     let names = || {
         let long = seq("--") * id();
@@ -152,7 +158,7 @@ fn spaces1() -> Parser<char, ()> {
 }
 
 fn value() -> Parser<char, Value> {
-    (sym('<') * id() - sym('>')).map(|it| {
+    (sym('<') * id() - sym('>') - sym('.').repeat(0..)).map(|it| {
         match &*it {
             "FILE" => Value::File,
             "DIRECTORY" => Value::Directory,

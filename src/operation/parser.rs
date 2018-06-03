@@ -11,10 +11,11 @@ use color::Color;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
 use expandable::Expandable;
+use filer::{IfExist, FileOperation};
 use key::{Key, new_key_sequence};
 use mapping::{Mapped, MappedType};
 use shellexpand_wrapper as sh;
-use size::CoordPx;
+use size::{CoordPx, Size};
 use util::string::join;
 
 use operation::*;
@@ -128,41 +129,28 @@ pub fn parse_cherenkov(args: &[String]) -> Result<Operation, ParsingError> {
     })
 }
 
-pub fn parse_file(args: &[String]) -> Result<Operation, ParsingError> {
-    use filer::{IfExist, FileOperation};
-    use size::Size;
+pub fn parse_file<F>(args: &[String], op: F) -> Result<Operation, ParsingError>
+where F: FnOnce(PathBuf, Option<String>, IfExist, Option<Size>) -> FileOperation {
+    let mut destination = "".to_owned();
+    let mut filename: Option<String> = None;
+    let mut if_exist = IfExist::NewFileName;
+    let mut size = None;
 
-    fn parse<T>(args: &[String], op: T) -> Result<Operation, ParsingError> where T: FnOnce(PathBuf, Option<String>, IfExist, Option<Size>) -> FileOperation {
-        let mut destination = "".to_owned();
-        let mut filename: Option<String> = None;
-        let mut if_exist = IfExist::NewFileName;
-        let mut size = None;
-
-        {
-            let mut ap = ArgumentParser::new();
-            ap.refer(&mut if_exist)
-                .add_option(&["--fail", "-f"], StoreConst(IfExist::Fail), "Fail if file exists")
-                .add_option(&["--overwrite", "-o"], StoreConst(IfExist::Overwrite), "Overwrite the file if file exists")
-                .add_option(&["--new", "--new-file-name", "-n"], StoreConst(IfExist::NewFileName), "Generate new file name if file exists (default)");
-            ap.refer(&mut size)
-                .add_option(&["--size", "-s"], StoreOption, "Fit to this size (only for PDF)");
-            ap.refer(&mut destination).add_argument("destination", Store, "Destination directory").required();
-            ap.refer(&mut filename).add_argument("filename", StoreOption, "Filename");
-            parse_args(&mut ap, args)
-        } .map(|_| {
-            Operation::OperateFile(
-                op(sh::expand_to_pathbuf(&destination), filename, if_exist, size))
-        })
-    }
-
-    if_let_some!(op = args.get(1), Err(ParsingError::TooFewArguments));
-    let args = &args[1..];
-    let op = match &**op {
-        "copy" => FileOperation::new_copy,
-        "move" => FileOperation::new_move,
-        _ => return Err(ParsingError::InvalidArgument(format!("Invalid file operation: {}", op)))
-    };
-    parse(args, op)
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut if_exist)
+            .add_option(&["--fail", "-f"], StoreConst(IfExist::Fail), "Fail if file exists")
+            .add_option(&["--overwrite", "-o"], StoreConst(IfExist::Overwrite), "Overwrite the file if file exists")
+            .add_option(&["--new", "--new-file-name", "-n"], StoreConst(IfExist::NewFileName), "Generate new file name if file exists (default)");
+        ap.refer(&mut size)
+            .add_option(&["--size", "-s"], StoreOption, "Fit to this size (only for PDF)");
+        ap.refer(&mut destination).add_argument("destination", Store, "Destination directory").required();
+        ap.refer(&mut filename).add_argument("filename", StoreOption, "Filename");
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::OperateFile(
+            op(sh::expand_to_pathbuf(&destination), filename, if_exist, size))
+    })
 }
 
 pub fn parse_fire(args: &[String]) -> Result<Operation, ParsingError> {
@@ -212,47 +200,33 @@ pub fn parse_clip(args: &[String]) -> Result<Operation, ParsingError> {
     })
 }
 
-pub fn parse_controller(args: &[String]) -> Result<Operation, ParsingError> {
+pub fn parse_controller<F>(args: &[String], f: F) -> Result<Operation, ParsingError>
+where F: FnOnce(Expandable) -> controller::Source {
+    let mut path = o!("");
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut path).add_argument("path", Store, "History file").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Controller(f(Expandable::new(path)))
+    })
+}
+
+pub fn parse_controller_socket(args: &[String]) -> Result<Operation, ParsingError> {
     use controller::Source;
 
-    fn parse_1<T>(args: &[String], f: T) -> Result<Source, ParsingError> where T: FnOnce(Expandable) -> Source {
-        let mut path = o!("");
+    let mut path = o!("");
+    let mut as_binary = false;
 
-        {
-            let mut ap = ArgumentParser::new();
-            ap.refer(&mut path).add_argument("path", Store, "History file").required();
-            parse_args(&mut ap, args)
-        } .map(|_| {
-            f(Expandable::new(path))
-        })
-    }
-
-    fn parse_2<T>(args: &[String], f: T) -> Result<Source, ParsingError> where T: FnOnce(Expandable, bool) -> Source {
-        let mut path = o!("");
-        let mut as_binary = false;
-
-        {
-            let mut ap = ArgumentParser::new();
-            ap.refer(&mut as_binary).add_option(&["--as-binary", "--as-bin", "-b"], StoreTrue, "As image file");
-            ap.refer(&mut path).add_argument("path", Store, "Path").required();
-            parse_args(&mut ap, args)
-        } .map(|_| {
-            f(Expandable::new(path), as_binary)
-        })
-    }
-
-    if let Some(target) = args.get(1) {
-        let args = &args[1..];
-        let source = match &**target {
-            "fifo" => parse_1(args, Source::Fifo),
-            "file" => parse_1(args, Source::File),
-            "socket" | "unix-socket" | "sock" => parse_2(args, Source::UnixSocket),
-            _ => return Err(ParsingError::InvalidArgument(format!("Invalid controller source: {}", target)))
-        };
-        source.map(Operation::Controller)
-    } else {
-        Err(ParsingError::TooFewArguments)
-    }
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut as_binary).add_option(&["--as-binary", "--as-bin", "-b"], StoreTrue, "As image file");
+        ap.refer(&mut path).add_argument("path", Store, "Path").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Controller(Source::UnixSocket(Expandable::new(path), as_binary))
+    })
 }
 
 pub fn parse_copy_to_clipboard(args: &[String]) -> Result<Operation, ParsingError> {
@@ -944,7 +918,7 @@ pub fn parse_set_env(args: &[String]) -> Result<Operation, ParsingError> {
 }
 
 pub fn parse_scroll(args: &[String]) -> Result<Operation, ParsingError> {
-    let mut direction = Direction::Up;
+    let mut direction = Direction::Down;
     let mut operation = vec![];
     let mut scroll_size = 1.0;
     let mut crush = false;
@@ -952,10 +926,10 @@ pub fn parse_scroll(args: &[String]) -> Result<Operation, ParsingError> {
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut direction).add_argument("direction", Store, "left|up|right|down").required();
         ap.refer(&mut scroll_size).add_option(&["-s", "--size"], Store, "Scroll size (default 1.0) ");
         ap.refer(&mut crush).add_option(&["-c", "--crush"], StoreTrue, "Crush a little space");
         ap.refer(&mut reset_at_end).add_option(&["-r", "--reset"], StoreTrue, "Reset at end");
+        ap.refer(&mut direction).add_argument("direction", Store, "left|up|right|down").required();
         ap.refer(&mut operation).add_argument("operation", List, "Operation");
         parse_args(&mut ap, args)
     } .map(|_| {

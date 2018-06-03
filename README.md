@@ -119,11 +119,17 @@ Clear image entries.
 Clip by mouse selected rectangle.
 
 
-## @controller (file|fifo|socket) <FILE>
+## @controller-file <FILE>
 
 Open `<PATH>` file to control chrysoberyl.
 
-If `socket` is given, you can give `--as-binary|-b` to read the file as binary.
+## @controller-fifo <FILE>
+
+Open `<PATH>` fifo file to control chrysoberyl.
+
+## @controller-socket) [--as-binary|-b] <FILE>
+
+Open `<PATH>` socket to control chrysoberyl.
 
 
 ## @copy-to-clipboard [--meta <KEY_VALUE>] [--primary|-1|--secondary|-2|--clipboard]
@@ -221,15 +227,21 @@ e.g)
 Add directory entries (image) on `PATH`.
 
 
-## @file (move|copy) [--fail|-f] [--overwrite|-o] [--new|--new-file-name|-n] [(--size|-s) <SIZE>] <DIRECTORY> [<FILE>]
+## @file-move [--fail|-f] [--overwrite|-o] [--new|--new-file-name|-n] [(--size|-s) <SIZE>] <DIRECTORY> [<FILE>]
 
-Move or copy the current image file to `DIRECTORY_PATH`.
+Move the current image file to `DIRECTORY_PATH`.
 
 ### If destination file exists...
 
 if `--fail` is given, then file operation fails.
 if `--new` is given, then file operation succeeds with generated new file name.
 if `--overwrite` is given, then overwrites destination file.
+
+
+## @file-copy [--fail|-f] [--overwrite|-o] [--new|--new-file-name|-n] [(--size|-s) <SIZE>] <DIRECTORY> [<FILE>]
+
+Copy the current image file to `DIRECTORY_PATH`.
+See `@file-move` to get more information.
 
 
 ## @fill [(--shape|-s) <SHAPE>] [(--cell-index|-i) <CELL_INDEX>] [(--region|-r) <REGION>] [(--color|-c) <CSS_COLOR>] [--mask|-m]
@@ -487,13 +499,13 @@ Write the session data to `PATH`.
 You can `@load` `PATH` file to restore current session.
 
 
-## @scroll (up|down|left|right) [(-s|--size) <SIZE>] [--crush|-c] [--reset|-r] [<OPERATION>...]
+## @scroll [(--size|-s) <SIZE>] [--crush|-c] [--reset|-r] (up|down|left|right) [<OPERATION>...]
 
 Scroll image.
 If no `SIZE` is given, scroll size is `1.0`.
 
 
-## @search [-b|--backward] [(-c|--color) <CSS_COLOR>] <TEXT>
+## @search [--backward|-b] [(-c|--color) <CSS_COLOR>] <TEXT>
 
 Search text with `TEXT`, and highlights them.
 

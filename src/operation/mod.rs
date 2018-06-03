@@ -251,7 +251,12 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@cherenkov"                    => parse_cherenkov(whole),
             "@clear"                        => Ok(Clear),
             "@clip"                         => parse_clip(whole),
-            "@controller" | "@control"      => parse_controller(whole),
+            "@controller-fifo" | "@control-fifo"
+                                            => parse_controller(whole, controller::Source::Fifo),
+            "@controller-file" | "@control-file"
+                                            => parse_controller(whole, controller::Source::File),
+            "@controller-socket" | "@control-socket"
+                                            => parse_controller_socket(whole),
             "@copy-to-clipboard" | "@clipboard"
                                             => parse_copy_to_clipboard(whole),
             "@count"                        => parse_count(whole),
@@ -268,7 +273,8 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@entry"                        => parse_operation_entry(whole),
             "@eval"                         => Ok(Operation::Eval(whole[1..].to_vec())),
             "@expand"                       => parse_expand(whole),
-            "@file"                         => parse_file(whole),
+            "@file-copy"                    => parse_file(whole, filer::FileOperation::new_copy),
+            "@file-move"                    => parse_file(whole, filer::FileOperation::new_move),
             "@fill"                         => parse_fill(whole),
             "@filter"                       => parse_filter(whole),
             "@first" | "@f"                 => parse_move(whole, First),

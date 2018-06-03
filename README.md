@@ -39,8 +39,8 @@ Original -> Cherenkoved
 # Command line
 
 ```
-chrysoberyl <OPTIONS>.. (<FILE>|<DIRECTORY>)
-chrysoberyl <OPTIONS>.. <OPERATION_COMMAND>.. ["@@" (<FILE>|<DIRECTORY>)...]
+chrysoberyl <OPTIONS>... (<FILE>|<DIRECTORY>)
+chrysoberyl <OPTIONS>... <OPERATION_COMMAND>... ["@@" (<FILE>|<DIRECTORY>)...]
 chrysoberyl (--print-path|-v)
 chrysoberyl (--version|-v)
 chrysoberyl (--help|-h)
@@ -126,7 +126,7 @@ Open `<PATH>` file to control chrysoberyl.
 If `socket` is given, you can give `--as-binary|-b` to read the file as binary.
 
 
-## @copy-to-clipboard [--meta <NAME>"="<VALUE>]... [--primary|-1|--secondary|-2|--clipboard]
+## @copy-to-clipboard [--meta <KEY_VALUE>] [--primary|-1|--secondary|-2|--clipboard]
 
 Copy currently viewing image to clipboard.
 
@@ -404,27 +404,27 @@ e.g)
 Show `COUNT`th previous entry.
 
 
-## @push [--meta <NAME>"="<VALUE>]... [--force|-f] <PATH_OR_URL>
+## @push [--meta <KEY_VALUE>]... [--force|-f] <PATH_OR_URL>
 
 Add a entry.
 
 
-## @push-archive [--meta <NAME>"="<VALUE>]... [--force|-f] <PATH>
+## @push-archive [--meta <KEY_VALUE>]... [--force|-f] <PATH>
 
 Add a archive file.
 
 
-## @push-clipboard [--meta <NAME>"="<VALUE>]... [--operation|-o] [--primary|-1|--secondary|-2|--clipboard]
+## @push-clipboard [--meta <KEY_VALUE>]... [--operation|-o] [--primary|-1|--secondary|-2|--clipboard]
 
 Add a clipboard image.
 
 
-## (@push-directory|@push-dir) [--meta <NAME>"="<VALUE>]... [--force|-f] <DIRECTORY>
+## (@push-directory|@push-dir) [--meta <KEY_VALUE>]... [--force|-f] <DIRECTORY>
 
 Add the images that the `DIRECTORY` contains.
 
 
-## @push-image [--meta <NAME>"="<VALUE>]... [--force|-f] [--expand|-e] [--expand-recursive|-E] <PATH>
+## @push-image [--meta <KEY_VALUE>]... [--force|-f] [--expand|-e] [--expand-recursive|-E] <PATH>
 
 Add a image.
 If `--expand` (or `--expand-recursive`) is given, add the images that the directory of `PATH` contains.
@@ -444,7 +444,7 @@ Add a PDF file.
 
 Add a previous file.
 
-## @push-url [--meta <NAME>"="<VALUE>]... [--force|-f] [(--type|-t|--as) <TYPE>] <URL>
+## @push-url [--meta <KEY_VALUE>]... [--force|-f] [(--type|-t|--as) <TYPE>] <URL>
 
 Add a URL to image/PDF/archive.
 
@@ -487,17 +487,10 @@ Write the session data to `PATH`.
 You can `@load` `PATH` file to restore current session.
 
 
-## @scroll <DIRECTION> [(-s|--size) <SIZE>] [--crush|-c] [--reset|-r] [<OPERATION>...]
+## @scroll (up|down|left|right) [(-s|--size) <SIZE>] [--crush|-c] [--reset|-r] [<OPERATION>...]
 
 Scroll image.
 If no `SIZE` is given, scroll size is `1.0`.
-
-### DIRECTION
-
-- left
-- up
-- right
-- down
 
 
 ## @search [-b|--backward] [(-c|--color) <CSS_COLOR>] <TEXT>
@@ -610,8 +603,6 @@ If you want to read a manga, maybe you should...
 @views 2
 ```
 
-
-
 ## @when <FILTER_EXPRESSION> <OPERATION>...
 
 If the result of `FILTER_EXPRESSION` evaluation is true, execute the operation.
@@ -620,6 +611,15 @@ If the result of `FILTER_EXPRESSION` evaluation is true, execute the operation.
 ## @write [--index <CELL_INDEX>] <PATH>
 
 Write current entry image to `PATH`.
+
+
+## <KEY_VALUE> format
+
+> <KEY>=<VALUE>
+
+e.g.
+
+> key=value
 
 
 # Options

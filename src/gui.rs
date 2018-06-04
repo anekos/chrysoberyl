@@ -156,7 +156,6 @@ impl Gui {
         });
 
         let operation_entry = tap!(it = Entry::new(), {
-
             WidgetExt::set_name(&it, "command-line-entry");
             it.set_text("");
         });

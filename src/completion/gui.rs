@@ -97,7 +97,7 @@ impl CompleterUI {
 
     pub fn clear(&self) {
         self.candidates.clear();
-        self.entry.set_text("@push");
+        self.entry.set_text("");
     }
 }
 

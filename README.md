@@ -416,12 +416,13 @@ e.g)
 Show `COUNT`th previous entry.
 
 
-## @push [--meta <KEY_VALUE>]... [--force|-f] <PATH_OR_URL>
+## @push [--meta <KEY_VALUE>]... [--force|-f] <PATH>
 
 Add a entry.
+`PATH` is URL, file or directory.
 
 
-## @push-archive [--meta <KEY_VALUE>]... [--force|-f] <PATH>
+## @push-archive [--meta <KEY_VALUE>]... [--force|-f] <FILE>
 
 Add a archive file.
 
@@ -436,7 +437,7 @@ Add a clipboard image.
 Add the images that the `DIRECTORY` contains.
 
 
-## @push-image [--meta <KEY_VALUE>]... [--force|-f] [--expand|-e] [--expand-recursive|-E] <PATH>
+## @push-image [--meta <KEY_VALUE>]... [--force|-f] [--expand|-e] [--expand-recursive|-E] <FILE>
 
 Add a image.
 If `--expand` (or `--expand-recursive`) is given, add the images that the directory of `PATH` contains.

@@ -4,6 +4,7 @@ use glib::Type;
 use gtk::{CellRendererText, Entry, EntryBuffer, ListStore, ScrolledWindow, TreeIter, TreeSelection, TreeView, TreeViewColumn, Value, EditableExt};
 
 use completion::definition::{Definition, Argument, Value as Val, OptionValue};
+use completion::path::get_candidates;
 
 
 
@@ -129,25 +130,28 @@ fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
         }
     }
 
-    fn make(value: &Val, option_name: Option<&&str>, definition: &Definition, result: &mut Vec<String>) {
+    let make = |value: &Val, option_name: Option<&&str>, result: &mut Vec<String>| {
         match *value {
             Val::OptionName =>
                 result.extend_from_slice(&*definition.options),
-                Val::Literals(ref values) =>
-                    result.extend_from_slice(&*values),
-                Val::OptionValue => {
-                    if_let_some!(option_name = option_name, ());
-                    if let Some(value) = definition.option_values.get(*option_name) {
-                        match value {
-                            OptionValue::Enum(values) => result.extend_from_slice(&*values),
-                            OptionValue::Boolean => result.extend_from_slice(&[o!("true"), o!("false")]),
-                        }
+            Val::Literals(ref values) =>
+                result.extend_from_slice(&*values),
+            Val::Directory =>
+                get_candidates(&state.text, true, result),
+            Val::File | Val::Path =>
+                get_candidates(&state.text, false, result),
+            Val::OptionValue => {
+                if_let_some!(option_name = option_name, ());
+                if let Some(value) = definition.option_values.get(*option_name) {
+                    match value {
+                        OptionValue::Enum(values) => result.extend_from_slice(&*values),
+                        OptionValue::Boolean => result.extend_from_slice(&[o!("true"), o!("false")]),
                     }
                 }
-            _ =>
-                (),
+            }
+            _ => (),
         }
-    }
+    };
 
     if_let_some!(operation = state.operation(), definition.operations.clone());
     let mut result = vec![];
@@ -172,7 +176,7 @@ fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
             }) {
                 if let Some(flag_value) = flag_value {
                     if i == state.args.len() - 1 { // at last
-                        make(&flag_value, None, definition, &mut result);
+                        make(&flag_value, None, &mut result);
                         return result;
                     } else {
                         skip = true;
@@ -191,7 +195,7 @@ fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
             match arg {
                 Argument::Arg(ref value) => {
                     if arg_nth == n {
-                        make(value, state.args.get(1), definition, &mut result);
+                        make(value, state.args.get(1), &mut result);
                     }
                     n += 1;
                 }

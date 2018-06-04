@@ -18,6 +18,7 @@ pub enum Value {
     Literals(Vec<String>),
     OptionName,
     OptionValue,
+    Path,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -102,6 +103,9 @@ impl Definition {
 
 const SP: &str = " \t()[]<>|";
 
+fn any() -> Parser<char, ()> {
+    sym('.').repeat(0..).map(|_| ())
+}
 
 fn definition() -> Parser<char, (Vec<String>, Vec<Argument>)> {
     let value = maybe_optional(value);
@@ -136,7 +140,7 @@ fn maybe_grouped<T: 'static, P>(p: P) -> Parser<char, T> where P: Fn() -> Parser
 
 fn maybe_optional<T: 'static, P>(p: P) -> Parser<char, T> where P: Fn() -> Parser<char, T> {
     let pp = sym('[') * p() - sym(']');
-    pp | p()
+    (pp | p()) - any()
 }
 
 fn flag() -> Parser<char, Argument> {
@@ -145,7 +149,8 @@ fn flag() -> Parser<char, Argument> {
         let short = (sym('-') * none_of(SP)).map(|it| format!("{}", it));
         list(long | short, sym('|'))
     };
-    (sym('[') * maybe_grouped(names) + (spaces1() * value()).opt() - sym(']')).map(|(n, v)| Argument::Flag(n, v))
+    let p = maybe_grouped(names) + (spaces1() * value()).opt();
+    (sym('[') * p - sym(']') - any()).map(|(n, v)| Argument::Flag(n, v))
 }
 
 fn parse<P, T>(input: &str, p: P) -> Result<T, String> where P: Fn() -> Parser<char, T> {
@@ -158,11 +163,12 @@ fn spaces1() -> Parser<char, ()> {
 }
 
 fn value() -> Parser<char, Value> {
-    (sym('<') * id() - sym('>') - sym('.').repeat(0..)).map(|it| {
+    (sym('<') * id() - sym('>') - any()).map(|it| {
         match &*it {
-            "FILE" => Value::File,
             "DIRECTORY" => Value::Directory,
+            "FILE" => Value::File,
             "OPTION" => Value::OptionName,
+            "PATH" => Value::Path,
             "VALUE" => Value::OptionValue,
             _ => Value::Any,
         }
@@ -186,6 +192,13 @@ fn test_parser() {
     assert_eq!(parse("[--neko <MEOW>]", flag), Ok(Flag(vec![o!("neko")], Some(Any))));
     assert_eq!(parse("[--cat|-c <DIRECTORY>]", flag), Ok(Flag(vec![o!("cat"), o!("c")], Some(Directory))));
     assert_eq!(parse("[(--second|-S) <DIRECTORY>]", flag), Ok(Flag(vec![o!("second"), o!("S")], Some(Directory))));
+
+    assert_eq!(
+        parse("@cat <FILE>", definition),
+        Ok((vec![o!("cat")], vec![Arg(File)])));
+    assert_eq!(
+        parse("@cat [--meta <KEY_VALUE>] [--force|-f] <PATH>", definition),
+        Ok((vec![o!("cat")], vec![Flag(vec![o!("meta")], Some(Any)), Flag(vec![o!("force"), o!("f")], None), Arg(Path)])));
 
     assert_eq!(
         parse("@cat|@neko", definition),

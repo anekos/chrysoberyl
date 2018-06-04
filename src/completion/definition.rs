@@ -77,11 +77,13 @@ impl Definition {
                     Ok((ref ops, ref args)) if ops.is_empty() => panic!(format!("Empty: line={:?}, ops={:?}, args={:?}", line, ops, args)),
                     Ok((ops, args)) => {
                         let args = Rc::new(args);
-                        for op in ops {
+                        for (i, op) in ops.into_iter().enumerate() {
                             if arguments.contains_key(&op) {
                                 panic!("Duplicated: {:?}", op);
                             }
-                            operations.push(format!("@{}", op.clone()));
+                            if i == 0 {
+                                operations.push(format!("@{}", op.clone()));
+                            }
                             if !args.is_empty() {
                                 arguments.insert(op, args.clone());
                             }

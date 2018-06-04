@@ -156,15 +156,9 @@ impl Gui {
         });
 
         let operation_entry = tap!(it = Entry::new(), {
-            use ::gdk::enums::key::*;
 
             WidgetExt::set_name(&it, "command-line-entry");
             it.set_text("");
-            let ignore_keys = hashset!{Tab, ISO_Left_Tab, Down, Up};
-            it.connect_key_press_event(move |_, key| {
-                let key = key.as_ref().keyval;
-                Inhibit(ignore_keys.contains(&key))
-            });
         });
 
         let completer = CompleterUI::new(&operation_entry);

@@ -1,7 +1,9 @@
 
+use std::collections::HashSet;
+
 use gtk::prelude::*;
 use glib::Type;
-use gtk::{CellRendererText, Entry, EntryBuffer, ListStore, ScrolledWindow, TreeIter, TreeSelection, TreeView, TreeViewColumn, Value, EditableExt};
+use gtk::{CellRendererText, EditableExt, Entry, EntryBuffer, ListStore, ScrolledWindow, TreeIter, TreePath, TreeSelection, TreeView, TreeViewColumn, Value};
 
 use completion::definition::{Definition, Argument, Value as Val, OptionValue};
 use completion::path::get_candidates;
@@ -28,8 +30,12 @@ struct State<'a> {
 
 impl CompleterUI {
     pub fn new(entry: &Entry) -> Self {
-        let definition = Definition::new();
+        use ::gdk::enums::key::*;
 
+        let previous_keys = hashset!{ISO_Left_Tab, Up};
+        let ignore_keys: HashSet<u32> = hashset!{Tab, Down}.union(&previous_keys).map(|it| *it).collect();
+
+        let definition = Definition::new();
         let candidates = ListStore::new(&[Type::String]);
 
         let tree_view = tap!(it = TreeView::new_with_model(&candidates), {
@@ -40,6 +46,13 @@ impl CompleterUI {
             column.set_title("Completion");
             it.append_column(&column);
             it.show();
+
+            it.get_selection().connect_changed(|selection| {
+                if_let_some!((model, iter) = selection.get_selected(), ());
+                if_let_some!(tree_view = selection.get_tree_view(), ());
+                let path: Option<TreePath> = model.get_path(&iter);
+                tree_view.scroll_to_cell(path.as_ref(), None, false, 0.0, 0.0);
+            })
         });
 
         let window = tap!(it = ScrolledWindow::new(None, None), {
@@ -49,16 +62,27 @@ impl CompleterUI {
         let entry_buffer = EntryBuffer::new(None);
         entry.set_buffer(&entry_buffer);
 
-        entry.connect_key_release_event(clone_army!([candidates] move |ref entry, key| {
-            use ::gdk::enums::key::*;
-
+        entry.connect_key_press_event(clone_army!([candidates, ignore_keys, previous_keys] move |ref entry, key| {
             let position = entry.get_property_cursor_position();
             let text = entry.get_text().unwrap();
             let state = get_part(&text, position as usize);
             let key = key.as_ref().keyval;
 
-            if key == Tab {
-                select_next(&tree_view, &candidates, &entry, &entry_buffer, state.left, state.right);
+            if ignore_keys.contains(&key) {
+                select_next(&tree_view, &candidates, &entry, &entry_buffer, state.left, state.right, previous_keys.contains(&key));
+                return Inhibit(true);
+            }
+
+            Inhibit(false)
+        }));
+
+        entry.connect_key_release_event(clone_army!([candidates] move |ref entry, key| {
+            let position = entry.get_property_cursor_position();
+            let text = entry.get_text().unwrap();
+            let state = get_part(&text, position as usize);
+            let key = key.as_ref().keyval;
+
+            if ignore_keys.contains(&key) {
                 return Inhibit(true);
             }
 
@@ -216,19 +240,30 @@ fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
     result
 }
 
-fn next_iter(model: &ListStore, selection: &TreeSelection) -> Option<TreeIter> {
-    if let Some((_, iter)) = selection.get_selected() {
-        if model.iter_next(&iter) {
-            return Some(iter)
+fn next_iter(model: &ListStore, selection: &TreeSelection, reverse: bool) -> Option<TreeIter> {
+    if reverse {
+        if let Some((_, iter)) = selection.get_selected() {
+            if model.iter_previous(&iter) {
+                return Some(iter)
+            }
         }
+        let n = model.iter_n_children(None);
+        let path = TreePath::new_from_indicesv(&[n - 1, -1]);
+        model.get_iter(&path)
+    } else {
+        if let Some((_, iter)) = selection.get_selected() {
+            if model.iter_next(&iter) {
+                return Some(iter)
+            }
+        }
+        model.get_iter_first()
     }
-    model.get_iter_first()
 }
 
-fn select_next(tree_view: &TreeView, model: &ListStore, entry: &Entry, entry_buffer: &EntryBuffer, left: usize, right: usize) {
+fn select_next(tree_view: &TreeView, model: &ListStore, entry: &Entry, entry_buffer: &EntryBuffer, left: usize, right: usize, reverse: bool) {
     let len = right - left;
     let selection = tree_view.get_selection();
-    if_let_some!(iter = next_iter(model, &selection), ());
+    if_let_some!(iter = next_iter(model, &selection, reverse), ());
     selection.select_iter(&iter);
 
     if_let_some!(value = model.get_value(&iter, 0).get::<String>(), ());

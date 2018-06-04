@@ -10,6 +10,8 @@ use completion::path::get_candidates;
 
 pub struct CompleterUI {
     pub window: ScrolledWindow,
+    candidates: ListStore,
+    entry: Entry,
 }
 
 
@@ -47,7 +49,7 @@ impl CompleterUI {
         let entry_buffer = EntryBuffer::new(None);
         entry.set_buffer(&entry_buffer);
 
-        entry.connect_key_release_event(move |ref entry, key| {
+        entry.connect_key_release_event(clone_army!([candidates] move |ref entry, key| {
             use ::gdk::enums::key::*;
 
             let position = entry.get_property_cursor_position();
@@ -64,9 +66,14 @@ impl CompleterUI {
             set_candidates(state.text, &candidates, &result);
 
             Inhibit(false)
-        });
+        }));
 
-        CompleterUI { window }
+        CompleterUI { window, candidates, entry: entry.clone() }
+    }
+
+    pub fn clear(&self) {
+        self.candidates.clear();
+        self.entry.set_text("@push");
     }
 }
 

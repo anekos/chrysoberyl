@@ -46,6 +46,7 @@ pub struct Gui {
     pub vbox: gtk::Box,
     pub window: Window,
     cells: Vec<Cell>,
+    completer: CompleterUI,
     css_provider: CssProvider,
     entry_history: ListStore,
     grid: Grid,
@@ -166,9 +167,10 @@ impl Gui {
             });
         });
 
+        let completer = CompleterUI::new(&operation_entry);
+
         let operation_box = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
             WidgetExt::set_name(&it, "command-line-box");
-            let completer = CompleterUI::new(&operation_entry);
             it.pack_end(&operation_entry, false, true, 0);
             it.pack_end(&completer.window, true, true, 0);
         });
@@ -205,6 +207,7 @@ impl Gui {
 
         Gui {
             cells,
+            completer,
             css_provider,
             entry_history,
             event_box,
@@ -314,6 +317,7 @@ impl Gui {
             }
 
             if visibility {
+                self.completer.clear();
                 self.operation_entry.grab_focus();
                 self.operation_box.show();
             } else {

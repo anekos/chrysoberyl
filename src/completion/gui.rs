@@ -33,7 +33,7 @@ impl CompleterUI {
         use ::gdk::enums::key::*;
 
         let previous_keys = hashset!{ISO_Left_Tab, Up};
-        let ignore_keys: HashSet<u32> = hashset!{Tab, Down}.union(&previous_keys).map(|it| *it).collect();
+        let ignore_keys: HashSet<u32> = hashset!{Tab, Down}.union(&previous_keys).cloned().collect();
 
         let definition = Definition::new();
         let candidates = ListStore::new(&[Type::String]);

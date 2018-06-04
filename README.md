@@ -114,7 +114,7 @@ Cherenkoves current image.
 Clear image entries.
 
 
-## @clip
+## @clip [<X> [<Y> [<WIDTH> [<HEIGHT>]]]]
 
 Clip by mouse selected rectangle.
 

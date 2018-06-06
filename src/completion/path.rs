@@ -1,16 +1,18 @@
 
 use std::env::{current_dir, home_dir};
-use std::path::Path;
+
+use shellexpand_wrapper as sh;
 
 
 
-pub fn get_candidates<T: AsRef<Path>>(path: T, directory_only: bool, result: &mut Vec<String>) {
-    let entries = if path.as_ref().iter().count() == 0 {
+pub fn get_candidates(path: &str, directory_only: bool, result: &mut Vec<String>) {
+    let path = sh::expand_to_pathbuf(path);
+    let entries = if path.iter().count() == 0 {
         if_let_ok!(dir = current_dir(), |_| ());
         dir.read_dir()
-    } else if path.as_ref().is_dir() {
-        path.as_ref().read_dir()
-    } else if let Some(dir) = path.as_ref().parent() {
+    } else if path.is_dir() {
+        path.read_dir()
+    } else if let Some(dir) = path.parent() {
         if dir.is_dir() {
             dir.read_dir()
         } else {

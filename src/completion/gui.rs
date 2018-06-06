@@ -39,11 +39,17 @@ impl CompleterUI {
         let candidates = ListStore::new(&[Type::String]);
 
         let tree_view = tap!(it = TreeView::new_with_model(&candidates), {
+            WidgetExt::set_name(&it, "command-line-candidates");
+
             let cell = CellRendererText::new();
-            let column = TreeViewColumn::new();
-            column.pack_end(&cell, true);
-            column.add_attribute(&cell, "text", 0);
-            column.set_title("Completion");
+
+            let column = tap!(it = TreeViewColumn::new(), {
+                it.pack_end(&cell, true);
+                it.add_attribute(&cell, "text", 0);
+                it.set_title("Completion");
+            });
+
+            it.set_headers_visible(false);
             it.append_column(&column);
             it.show();
 
@@ -56,6 +62,7 @@ impl CompleterUI {
         });
 
         let window = tap!(it = ScrolledWindow::new(None, None), {
+            WidgetExt::set_name(&it, "command-line-completer");
             it.add(&tree_view);
         });
 

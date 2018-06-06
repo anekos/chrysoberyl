@@ -1,7 +1,18 @@
 
 /* https://developer.gnome.org/gtk3/stable/chap-css-overview.html */
+/* https://developer.gnome.org/gtk3/stable/chap-css-properties.html */
 
-#application, #cell, #command-line-box, #command-line-entry, #content, #grid, #image, #overlay, #status-bar-layout {
+#application,
+#cell,
+#command-line-box,
+#command-line-entry,
+#command-line-completer,
+#command-line-candidates,
+#content,
+#grid,
+#image,
+#overlay,
+#status-bar-layout {
 }
 
 

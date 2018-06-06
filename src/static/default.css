@@ -17,17 +17,18 @@
 
 
 @define-color bg #004040;
+@define-color fg white;
 
 #content {
   background-color: @bg;
 }
 
 #status-bar, #status-label {
-  background-color: #004040;
-  color: white;
+  background-color: @bg;
+  color: @fg;
 }
 
 #error-text {
   background-image: radial-gradient(ellipse at center, red 0%, @bg 55%);
-  color: white;
+  color: @fg;
 }

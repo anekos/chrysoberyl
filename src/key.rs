@@ -12,6 +12,9 @@ use errors::ChryError;
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct Key(pub String);
 
+//  SHIFT | CONTROL | HYPER | META |  ALT | SUPER
+pub const STD_MODS: u32 = 0b1_1100_0000_0000_0000_0000_0000_1101;
+
 pub type KeySequence = Vec<Key>;
 
 
@@ -60,6 +63,7 @@ impl<'a> From<&'a EventScroll> for Key {
     }
 }
 
+
 fn get_modifiers_text(state: ModifierType, ignore_shift: bool) -> String {
     let mut result = o!("");
     if state.contains(ModifierType::CONTROL_MASK) { result.push_str("C-"); }
@@ -101,4 +105,8 @@ pub fn key_sequence_to_string(seq: &[Key]) -> String {
         }
     }
     result
+}
+
+pub fn cleanup_modifier_type(state: &ModifierType) -> ModifierType {
+    ModifierType::from_bits_truncate(state.bits() & STD_MODS)
 }

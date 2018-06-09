@@ -677,7 +677,9 @@ curl-timeout
 :   cURL option.
 
 empty-status-format
+:   type: string-or-file
 :   Status bar format for empty
+:   Give a string or a mruby script file path (e.g. `@~/.config/chrysoberyl/status.rb`)
 
 fit-to
 :   type: enum
@@ -747,16 +749,19 @@ status-bar-height
 :   default: none
 
 status-format
-:   TODO
+:   type: string-or-file
+:   Give a string or a mruby script file path (e.g. `@~/.config/chrysoberyl/status.rb`)
 
 stdout
 :   TODO
 
 style
-:   Define application colors and fonts with CSS
+:   type: string-or-file
+:   Give a CSS string or a CSS file path (e.g. `@~/.config/chrysoberyl/style.css`)
 
 title-format
-:   TODO
+:   type: string-or-file
+:   Give a string or a mruby script file path (e.g. `@~/.config/chrysoberyl/status.rb`)
 
 vertical-views
 :   type: unsigned integer (>= 1)

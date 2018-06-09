@@ -5,7 +5,8 @@ use shellexpand_wrapper as sh;
 
 
 
-pub fn get_candidates(path: &str, directory_only: bool, result: &mut Vec<String>) {
+pub fn get_candidates(path: &str, directory_only: bool, prefix: &str, result: &mut Vec<String>) {
+    let path = &path[min!(prefix.len(), path.len())..];
     let path = sh::expand_to_pathbuf(path);
     let entries = if path.iter().count() == 0 {
         if_let_ok!(dir = current_dir(), |_| ());
@@ -39,9 +40,9 @@ pub fn get_candidates(path: &str, directory_only: bool, result: &mut Vec<String>
             }
             if let Some(path) = entry.path().to_str() {
                 if path.starts_with(home) {
-                    result.push(format!("~{}", &path[home.len()..]));
+                    result.push(format!("{}~{}", prefix, &path[home.len()..]));
                 } else {
-                    result.push(o!(path));
+                    result.push(format!("{}{}", prefix, path));
                 }
             }
         }

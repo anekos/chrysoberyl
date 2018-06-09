@@ -40,6 +40,7 @@ pub struct Definition {
 pub enum OptionValue {
     Boolean,
     Enum(Vec<String>),
+    StringOrFile,
 }
 
 impl Definition {
@@ -62,6 +63,8 @@ impl Definition {
             } else if in_options {
                 if line.starts_with('#') {
                     in_options = false;
+                } else if line.starts_with(":   type: string-or-file") {
+                    option_values.insert(o!(options.last().unwrap()), OptionValue::StringOrFile);
                 } else if line.starts_with(":   type: boolean") {
                     option_values.insert(o!(options.last().unwrap()), OptionValue::Boolean);
                 } else if line.starts_with(":   values: ") {

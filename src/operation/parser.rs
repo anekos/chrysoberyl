@@ -644,18 +644,6 @@ pub fn parse_multi_args(xs: &[String], separator: &str, async: bool) -> Result<O
     Ok(Operation::Multi(result, async))
 }
 
-pub fn parse_operation_entry(args: &[String]) -> Result<Operation, ParsingError> {
-    let mut action = OperationEntryAction::Open;
-
-    {
-        let mut ap = ArgumentParser::new();
-        ap.refer(&mut action).add_argument("action", Store, "Action");
-        parse_args(&mut ap, args)
-    } .map(|_| {
-        Operation::OperationEntry(action)
-    })
-}
-
 pub fn parse_option_cycle(args: &[String]) -> Result<Operation, ParsingError> {
     let mut option_name = OptionName::default();
     let mut reverse = false;
@@ -1201,25 +1189,5 @@ impl FromStr for MetaEntry {
                 MetaEntry::new_without_value(o!(src))
             }
         })
-    }
-}
-
-
-impl FromStr for OperationEntryAction {
-    type Err = String;
-
-    fn from_str(src: &str) -> Result<Self, String> {
-        use self::OperationEntryAction::*;
-
-        match src {
-            "open" | "o" =>
-                Ok(Open),
-            "close" | "c" =>
-                Ok(Close),
-            "send" | "s" =>
-                Ok(SendOperation),
-            _ =>
-                Err(format!("Invalid action: {}", src))
-        }
     }
 }

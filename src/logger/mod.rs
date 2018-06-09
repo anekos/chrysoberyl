@@ -7,8 +7,8 @@ use std::sync::{Arc, Mutex};
 use shell_escape::escape;
 
 pub mod file;
+pub mod memory;
 pub mod stdout;
-#[macro_use] pub mod error;
 #[macro_use] pub mod macros;
 
 

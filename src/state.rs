@@ -15,7 +15,7 @@ use entry::SearchKey;
 use entry::filter::expression::Expr as FilterExpr;
 use errors::ChryError;
 use expandable::Expandable;
-use gui::{Views, Position};
+use gui::{Position, Screen, Views};
 use logger;
 use option::OptionValue;
 use remote_cache::curl_options::CurlOptions;
@@ -30,6 +30,7 @@ pub struct States {
     pub auto_reload: bool,
     pub curl_options: CurlOptions,
     pub drawing: DrawingState,
+    pub empty_status_format: EmptyStatusFormat,
     pub go: Option<SearchKey>,
     pub history_file: Option<PathBuf>,
     pub idle_time: Duration,
@@ -37,11 +38,10 @@ pub struct States {
     pub last_direction: Direction,
     pub last_filter: Filters,
     pub log_file: logger::file::File,
-    pub operation_box: bool,
     pub path_list: PathList,
     pub pre_fetch: PreFetchState,
-    pub empty_status_format: EmptyStatusFormat,
     pub reverse: bool,
+    pub screen: Screen,
     pub skip_resize_window: usize,
     pub spawned: bool,
     pub stable_push: bool,
@@ -118,10 +118,10 @@ impl Default for States {
             last_direction: Direction::Forward,
             last_filter: Filters::default(),
             log_file: logger::file::File::new(),
-            operation_box: false,
             path_list: PathList::default(),
             pre_fetch: PreFetchState::default(),
             reverse: false,
+            screen: Screen::Main,
             skip_resize_window: 0,
             spawned: false,
             stable_push: true,

@@ -49,6 +49,7 @@ extern crate uuid_to_pokemon;
 #[macro_use] mod macro_utils;
 #[macro_use] mod logger;
 #[macro_use] mod errors;
+#[macro_use] mod error_channel;
 #[macro_use] mod from_macro;
 #[macro_use] mod gtk_utils;
 

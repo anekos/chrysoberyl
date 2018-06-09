@@ -18,8 +18,9 @@ use config;
 use constant;
 use counter::Counter;
 use entry::{Entry, EntryContainer, EntryContent, Serial, Key};
+use error_channel;
 use events::EventName;
-use gui::Gui;
+use gui::{Gui, Screen};
 use history::History;
 use image_cache::ImageCache;
 use image_fetcher::ImageFetcher;
@@ -54,6 +55,7 @@ pub struct App {
     pub entries: EntryContainer,
     pub gui: Gui,
     pub history: History,
+    pub log: logger::memory::Memory,
     pub mapping: Mapping,
     pub marker: HashMap<String, Key>,
     pub paginator: Paginator,
@@ -127,6 +129,7 @@ impl App {
             gui: Gui::new(&initial.window_role),
             history: History::default(),
             last_message: None,
+            log: logger::memory::Memory::new(),
             mapping: Mapping::new(),
             marker: HashMap::new(),
             paginator: Paginator::new(),
@@ -148,7 +151,7 @@ impl App {
             script::load(&app.tx, &config::get_config_source(initial.config_file.as_ref()), &app.states.path_list);
         }
         app.tx.send(Operation::InitialProcess(initial.entries, initial.shuffle, initial.stdin_as_binary)).unwrap();
-        logger::error::register(app.tx.clone());
+        error_channel::register(app.tx.clone());
 
         (app, primary_rx, rx)
     }
@@ -819,7 +822,11 @@ impl App {
 
     fn update_ui_visibility(&self) {
         self.gui.set_status_bar_visibility(self.states.status_bar);
-        self.gui.set_operation_box_visibility(self.states.operation_box);
+        if self.gui.change_screen(self.states.screen) && self.states.screen == Screen::LogView {
+            let mut buffer = self.log.buffer.lock().unwrap();
+            self.gui.append_logs(&buffer);
+            buffer.clear();
+        }
     }
 
     fn update_status_bar_height(&self) {

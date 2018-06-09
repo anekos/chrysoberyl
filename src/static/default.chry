@@ -87,7 +87,7 @@
 @map input c            @unclip
 @map input C            @reset-image
 @map input u            @undo
-@map input colon        @entry open
+@map input colon        @set screen command-line
 
 # Mouse
 @map input button-1     @record   @link-action   @scroll --size 0.8 down   @next

@@ -51,7 +51,7 @@ pub enum Event {
     ButtonRelease(Key, (f64, f64)),
     Configure((u32, u32)),
     Delete,
-    EntryKeyPress(Key),
+    UIKeyPress(Key),
     Scroll(Key, ScrollDirection),
     UpdateEntry(bool), /* visibility */
     WindowKeyPress(Key, u32),
@@ -74,7 +74,12 @@ fn register(gui: &Gui, skip: usize, app_tx: &Sender<Operation>) -> Sender<Event>
     let (tx, rx) = channel();
 
     gui.operation_entry.connect_key_press_event(clone_army!([tx] move |_, key| {
-        tx.send(EntryKeyPress(Key::from(key))).unwrap();
+        tx.send(UIKeyPress(Key::from(key))).unwrap();
+        Inhibit(false)
+    }));
+
+    gui.log_view.connect_key_press_event(clone_army!([tx] move |_, key| {
+        tx.send(UIKeyPress(Key::from(key))).unwrap();
         Inhibit(false)
     }));
 
@@ -129,8 +134,8 @@ fn main(app_tx: &Sender<Operation>, rx: &Receiver<Event>, skip: usize) {
 
     while let Ok(event) = rx.recv() {
         match event {
-            EntryKeyPress(ref key) =>
-                entry_on_key_press(app_tx, key),
+            UIKeyPress(ref key) =>
+                entry_on_ui(app_tx, key),
             WindowKeyPress(key, keyval) =>
                 if !visible { on_key_press(app_tx, key, keyval) },
             ButtonPress((x, y)) if !visible =>
@@ -144,14 +149,16 @@ fn main(app_tx: &Sender<Operation>, rx: &Receiver<Event>, skip: usize) {
             UpdateEntry(visibility) =>
                 visible = visibility,
             Scroll(key, direction) =>
-                on_scroll(app_tx, key, &direction),
+                if !visible {
+                    on_scroll(app_tx, key, &direction);
+                },
             _ => (),
         }
     }
 }
 
-fn entry_on_key_press(tx: &Sender<Operation>, key: &Key) {
-    use operation::OperationEntryAction::*;
+fn entry_on_ui(tx: &Sender<Operation>, key: &Key) {
+    use operation::UIAction::*;
 
     let action = match key.0.as_str() {
         "Return" => SendOperation,

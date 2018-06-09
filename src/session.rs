@@ -12,7 +12,7 @@ use constant;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::filter::writer::write as write_expr;
 use entry::{Entry, EntryContainer, EntryType, Key, Meta};
-use gui::Gui;
+use gui::{self, Gui};
 use mapping::{Mapping, input_mapping as imap, region_mapping as rmap, event_mapping as emap};
 use operation::option::PreDefinedOptionName;
 use option::common::{bool_to_str as b2s};
@@ -148,13 +148,13 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, context: 
         InitialPosition => gen("initial-position", &st.initial_position, context),
         LogFile => gen("log-file", &st.log_file, context),
         MaskOperator => gen("mask-operator", &st.drawing.mask_operator, context),
-        OperationBox => gen("operation-box", &b2s(st.operation_box), context),
         PathList => gen("path", &st.path_list, context),
         PreFetchEnabled => gen("pre-render", &b2s(st.pre_fetch.enabled), context),
         PreFetchLimit => gen("pre-render-limit", &st.pre_fetch.limit_of_items, context),
         PreFetchPageSize => gen("pre-render-pages", &st.pre_fetch.page_size, context),
         Reverse => gen("reverse", &b2s(st.reverse), context),
         Rotation => gen("rotation", &st.drawing.rotation, context),
+        Screen => gen("screen", &st.screen, context),
         SkipResizeWindow => gen("skip-resize-window", &st.skip_resize_window, context),
         StablePush => gen("stable-push", &b2s(st.stable_push), context),
         StatusBar => gen("status-bar", &b2s(st.status_bar), context),
@@ -532,3 +532,20 @@ impl fmt::Display for state::Alignment {
         write!(f, "{}", result)
     }
 }
+
+impl fmt::Display for gui::Screen {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use gui::Screen::*;
+
+        let result =
+            match *self {
+                Main => "main",
+                LogView => "log-view",
+                CommandLine => "command-line",
+            };
+
+        write!(f, "{}", result)
+    }
+}
+
+

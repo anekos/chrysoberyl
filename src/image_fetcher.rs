@@ -11,7 +11,7 @@ use entry::{Entry, Key, self};
 use image::ImageBuffer;
 use image_cache::ImageCache;
 use size::Size;
-use state::DrawingState;
+use state::Drawing;
 
 
 
@@ -21,7 +21,7 @@ pub struct ImageFetcher {
 
 pub struct FetchTarget {
     cell_size: Size,
-    drawing: DrawingState,
+    drawing: Drawing,
     entries: VecDeque<Arc<Entry>>,
 }
 
@@ -38,7 +38,7 @@ impl ImageFetcher {
         }
     }
 
-    pub fn new_target(&self, entries: VecDeque<Arc<Entry>>, cell_size: Size, drawing: DrawingState) {
+    pub fn new_target(&self, entries: VecDeque<Arc<Entry>>, cell_size: Size, drawing: Drawing) {
         self.main_tx.send(
             FetcherOperation::Refresh(
                 FetchTarget {
@@ -54,7 +54,7 @@ impl Default for FetchTarget {
     fn default() -> FetchTarget {
         FetchTarget {
             cell_size: Size::new(0, 0),
-            drawing: DrawingState::default(),
+            drawing: Drawing::default(),
             entries: VecDeque::new()
         }
     }
@@ -91,7 +91,7 @@ fn main(mut cache: ImageCache) -> Sender<FetcherOperation> {
 }
 
 
-pub fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mut VecDeque<Arc<Entry>>, idles: &mut usize, cell_size: Size, drawing: &DrawingState) {
+pub fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mut VecDeque<Arc<Entry>>, idles: &mut usize, cell_size: Size, drawing: &Drawing) {
     while 0 < *idles {
         if let Some(entry) = entries.pop_front() {
             if cache.mark_fetching(entry.key.clone()) {
@@ -105,7 +105,7 @@ pub fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mu
 }
 
 
-pub fn fetch(tx: Sender<FetcherOperation>, entry: Arc<Entry>, cell_size: Size, drawing: DrawingState) {
+pub fn fetch(tx: Sender<FetcherOperation>, entry: Arc<Entry>, cell_size: Size, drawing: Drawing) {
     spawn(move || {
         let image = entry::image::get_image_buffer(&entry, &cell_size, &drawing).map_err(|it| s!(it));
         tx.send(FetcherOperation::Done(entry.key.clone(), image)).unwrap();

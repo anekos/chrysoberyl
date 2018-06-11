@@ -29,7 +29,7 @@ pub struct States {
     pub auto_paging: AutoPaging,
     pub auto_reload: bool,
     pub curl_options: CurlOptions,
-    pub drawing: DrawingState,
+    pub drawing: Drawing,
     pub empty_status_format: EmptyStatusFormat,
     pub go: Option<SearchKey>,
     pub history_file: Option<PathBuf>,
@@ -58,7 +58,7 @@ pub struct States {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct DrawingState {
+pub struct Drawing {
     pub animation: bool,
     pub clipping: Option<Region>,
     pub fit_to: FitTo,
@@ -109,7 +109,7 @@ impl Default for States {
             auto_paging: AutoPaging::default(),
             auto_reload: false,
             curl_options: CurlOptions::default(),
-            drawing: DrawingState::default(),
+            drawing: Drawing::default(),
             empty_status_format: EmptyStatusFormat::default(),
             go: None,
             history_file: Some(history_file),
@@ -141,9 +141,9 @@ impl Default for States {
 }
 
 
-impl Default for DrawingState {
+impl Default for Drawing {
     fn default() -> Self {
-        DrawingState {
+        Drawing {
             animation: true,
             clipping: None,
             fit_to: FitTo::Cell,

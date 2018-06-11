@@ -16,12 +16,12 @@ use gtk_utils::{new_pixbuf_from_surface, context_rotate};
 use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use poppler::PopplerDocument;
 use size::Size;
-use state::DrawingState;
+use state::Drawing;
 use util::path::path_to_str;
 
 
 
-pub fn get_image_buffer(entry: &Entry, cell: &Size, drawing: &DrawingState) -> Result<ImageBuffer, Box<error::Error>> {
+pub fn get_image_buffer(entry: &Entry, cell: &Size, drawing: &Drawing) -> Result<ImageBuffer, Box<error::Error>> {
     if drawing.animation && is_animation(entry) {
         Ok(get_animation_buffer(entry).map(ImageBuffer::Animation)?)
     } else {
@@ -30,7 +30,7 @@ pub fn get_image_buffer(entry: &Entry, cell: &Size, drawing: &DrawingState) -> R
 }
 
 
-pub fn get_static_image_buffer(entry: &Entry, cell: &Size, drawing: &DrawingState) -> Result<StaticImageBuffer, Box<error::Error>> {
+pub fn get_static_image_buffer(entry: &Entry, cell: &Size, drawing: &Drawing) -> Result<StaticImageBuffer, Box<error::Error>> {
     use self::EntryContent::*;
 
     match (*entry).content {
@@ -72,7 +72,7 @@ fn is_animation(entry: &Entry) -> bool {
     false
 }
 
-fn make_scaled(buffer: &[u8], cell: &Size, drawing: &DrawingState) -> Result<StaticImageBuffer, Box<error::Error>> {
+fn make_scaled(buffer: &[u8], cell: &Size, drawing: &Drawing) -> Result<StaticImageBuffer, Box<error::Error>> {
     let loader = PixbufLoader::new();
     loader.write(buffer)?;
 
@@ -102,14 +102,14 @@ fn make_scaled(buffer: &[u8], cell: &Size, drawing: &DrawingState) -> Result<Sta
     Ok(StaticImageBuffer::new_from_pixbuf(&result, Some(original)))
 }
 
-fn make_scaled_from_file(path: &str, cell: &Size, drawing: &DrawingState) -> Result<StaticImageBuffer, Box<error::Error>> {
+fn make_scaled_from_file(path: &str, cell: &Size, drawing: &Drawing) -> Result<StaticImageBuffer, Box<error::Error>> {
     let mut file = File::open(path)?;
     let mut buffer: Vec<u8> = vec![];
     let _ = file.read_to_end(&mut buffer)?;
     make_scaled(buffer.as_slice(), cell, drawing)
 }
 
-fn make_scaled_from_pdf<T: AsRef<Path>>(pdf_path: &T, index: usize, cell: &Size, drawing: &DrawingState) -> StaticImageBuffer {
+fn make_scaled_from_pdf<T: AsRef<Path>>(pdf_path: &T, index: usize, cell: &Size, drawing: &Drawing) -> StaticImageBuffer {
     let document = PopplerDocument::new_from_file(pdf_path);
     let page = document.nth_page(index);
     let pixbuf = page.get_pixbuf(cell, drawing);

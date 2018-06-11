@@ -21,7 +21,7 @@ use self::gobject_sys::{GObject, g_object_unref};
 use color::Color;
 use gtk_utils::{new_pixbuf_from_surface, context_rotate};
 use size::{Size, Region};
-use state::DrawingState;
+use state::Drawing;
 
 mod sys;
 mod util;
@@ -146,7 +146,7 @@ impl PopplerPage {
         Size::new(width as i32, height as i32)
     }
 
-    pub fn get_pixbuf(&self, cell: &Size, drawing: &DrawingState) -> Pixbuf {
+    pub fn get_pixbuf(&self, cell: &Size, drawing: &Drawing) -> Pixbuf {
         let page = self.get_size();
 
         let (scale, fitted, clipped_region) = page.rotate(drawing.rotation).fit_with_clipping(cell, drawing);

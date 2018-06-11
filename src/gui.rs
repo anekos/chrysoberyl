@@ -24,7 +24,7 @@ use errors::*;
 use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use operation::Operation;
 use size::{Coord, CoordPx, FitTo, Region, Size};
-use state::{DrawingState, Style};
+use state::{Drawing, Style};
 use ui_event::UIEvent;
 use util::num::feq;
 use util;
@@ -549,7 +549,7 @@ impl Cell {
          sh as i32)
     }
 
-    pub fn get_position_on_image(&self, coord: &CoordPx, drawing: &DrawingState) -> Option<(Coord)> {
+    pub fn get_position_on_image(&self, coord: &CoordPx, drawing: &Drawing) -> Option<(Coord)> {
         fn extract(adj: &Adjustment) -> (f64, f64) {
             (adj.get_value(), adj.get_upper())
         }

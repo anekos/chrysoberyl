@@ -12,7 +12,7 @@ use errors::ChryError;
 use gtk_utils::new_pixbuf_from_surface;
 use image::{ImageBuffer, StaticImageBuffer};
 use size::{Size, Region};
-use state::DrawingState;
+use state::Drawing;
 
 pub mod fill;
 pub mod nova;
@@ -44,7 +44,7 @@ pub struct Cherenkoved {
 pub struct CacheEntry {
     image: Option<StaticImageBuffer>,
     cell_size: Size,
-    drawing: DrawingState,
+    drawing: Drawing,
     modifiers: Vec<Modifier>,
     expired: bool,
 }
@@ -56,7 +56,7 @@ impl Cherenkoved {
         Cherenkoved { cache: HashMap::new() }
     }
 
-    pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: &Size, drawing: &DrawingState) -> Option<Result<ImageBuffer, Box<Error>>> {
+    pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: &Size, drawing: &Drawing) -> Option<Result<ImageBuffer, Box<Error>>> {
         if_let_some!(cache_entry = self.cache.get_mut(&entry.key), None);
         Some(get_image_buffer(cache_entry, entry, cell_size, drawing))
     }
@@ -88,11 +88,11 @@ impl Cherenkoved {
         }
     }
 
-    pub fn cherenkov1(&mut self, entry: &Entry, cell_size: &Size, modifier: Modifier, drawing: &DrawingState) {
+    pub fn cherenkov1(&mut self, entry: &Entry, cell_size: &Size, modifier: Modifier, drawing: &Drawing) {
         self.cherenkov(entry, cell_size, &[modifier], drawing)
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, new_modifiers: &[Modifier], drawing: &DrawingState) {
+    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, new_modifiers: &[Modifier], drawing: &Drawing) {
         let mut modifiers = self.cache.get(&entry.key).map(|it| it.modifiers.clone()).unwrap_or_else(|| vec![]);
 
         modifiers.extend_from_slice(new_modifiers);
@@ -113,7 +113,7 @@ impl Cherenkoved {
 
 
 impl CacheEntry {
-    pub fn get(&self, cell_size: &Size, drawing: &DrawingState) -> Option<StaticImageBuffer> {
+    pub fn get(&self, cell_size: &Size, drawing: &Drawing) -> Option<StaticImageBuffer> {
         if !self.expired && self.cell_size == *cell_size && self.drawing.fit_to == drawing.fit_to && self.drawing.clipping == drawing.clipping && self.drawing.mask_operator == drawing.mask_operator {
             if let Some(ref image) = self.image {
                 return Some(image.clone());
@@ -133,7 +133,7 @@ impl CacheEntry {
 
 
 impl Modifier {
-    fn fix(&self, original_size: &Option<Size>, drawing: &DrawingState) -> Self {
+    fn fix(&self, original_size: &Option<Size>, drawing: &Drawing) -> Self {
         let che = self.che.fix(original_size, drawing);
         Modifier { che, search_highlight: self.search_highlight }
     }
@@ -141,7 +141,7 @@ impl Modifier {
 
 
 impl Che {
-    fn fix(&self, original_size: &Option<Size>, drawing: &DrawingState) -> Self {
+    fn fix(&self, original_size: &Option<Size>, drawing: &Drawing) -> Self {
         if let Che::Nova(ref che) = *self {
             let mut che = che.clone();
             if let Some(clipping) = drawing.clipping {
@@ -163,7 +163,7 @@ impl Che {
 }
 
 
-fn get_image_buffer(cache_entry: &mut CacheEntry, entry: &Entry, cell_size: &Size, drawing: &DrawingState) -> Result<ImageBuffer, Box<Error>> {
+fn get_image_buffer(cache_entry: &mut CacheEntry, entry: &Entry, cell_size: &Size, drawing: &Drawing) -> Result<ImageBuffer, Box<Error>> {
     if let Some(image) = cache_entry.get(cell_size, drawing) {
         return Ok(ImageBuffer::Static(image))
     }
@@ -178,7 +178,7 @@ fn get_image_buffer(cache_entry: &mut CacheEntry, entry: &Entry, cell_size: &Siz
     Ok(ImageBuffer::Static(image))
 }
 
-fn re_cherenkov(entry: &Entry, cell_size: &Size, drawing: &DrawingState, modifiers: &[Modifier]) -> Result<StaticImageBuffer, Box<Error>> {
+fn re_cherenkov(entry: &Entry, cell_size: &Size, drawing: &Drawing, modifiers: &[Modifier]) -> Result<StaticImageBuffer, Box<Error>> {
     let image_buffer = entry::image::get_image_buffer(entry, cell_size, drawing)?;
     if let ImageBuffer::Static(buf) = image_buffer {
         let mut mask = None;

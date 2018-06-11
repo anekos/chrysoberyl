@@ -143,6 +143,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, context: 
         CurlTimeout => geno("curl-timeout", &st.curl_options.connect_timeout, context),
         FitTo => gen("fit-to", &st.drawing.fit_to, context),
         HistoryFile => genp("history-file", &st.history_file, context),
+        HorizontalFlip => gen("horizontal-flip", &st.drawing.horizontal_flip, context),
         HorizontalViews => gen("horizontal-views", &st.view.cols, context),
         IdleTime => gend("idle-time", &st.idle_time, context),
         InitialPosition => gen("initial-position", &st.initial_position, context),
@@ -166,6 +167,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, context: 
         EmptyStatusFormat => gen("empty-status-format", &st.empty_status_format, context),
         TitleFormat => gen("title-format", &st.title_format, context),
         UpdateCacheAccessTime => gen("update-cache-atime", &b2s(st.update_cache_atime), context),
+        VerticalFlip => gen("vertical-flip", &st.drawing.vertical_flip, context),
         VerticalViews => gen("vertical-views", &st.view.rows, context),
         WatchFiles => gen("watch-files", &b2s(st.watch_files), context),
     }

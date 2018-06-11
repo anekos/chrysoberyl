@@ -3,7 +3,7 @@ extern crate gdk_sys;
 
 use std::f64::consts::PI;
 
-use cairo::{ImageSurface, Context};
+use cairo::{ImageSurface, Context, Matrix, MatrixTrait};
 use gdk_pixbuf::Pixbuf;
 use glib::translate::*;
 use glib::translate::ToGlibPtr;
@@ -19,6 +19,22 @@ pub fn new_pixbuf_from_surface(surface: &ImageSurface) -> Pixbuf {
         let surface = surface.as_ref().to_glib_none().0;
         from_glib_full(gdk_sys::gdk_pixbuf_get_from_surface(surface, 0, 0, width, height))
     }
+}
+
+pub fn context_flip(context: &Context, size: &Size, horizontal: bool, vertical: bool) {
+    if !(horizontal || vertical) {
+        return;
+    }
+    let (mut xx, yx, xy, mut yy, mut x0, mut y0)  = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
+    if horizontal {
+        xx = -1.0;
+        x0 = size.width as f64;
+    }
+    if vertical {
+        yy = -1.0;
+        y0 = size.height as f64;
+    }
+    context.transform(Matrix::new(xx, yx, xy, yy, x0, y0));
 }
 
 pub fn context_rotate(context: &Context, page: &Size, rotation: u8) {

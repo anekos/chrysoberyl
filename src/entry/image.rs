@@ -12,7 +12,7 @@ use immeta::{self, GenericMetadata};
 
 use entry::{Entry, EntryContent};
 use errors::ChryError;
-use gtk_utils::{new_pixbuf_from_surface, context_rotate};
+use gtk_utils::{new_pixbuf_from_surface, context_flip, context_rotate};
 use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use poppler::PopplerDocument;
 use size::Size;
@@ -94,6 +94,7 @@ fn make_scaled(buffer: &[u8], cell: &Size, drawing: &Drawing) -> Result<StaticIm
             context.clip();
         }
         context_rotate(&context, &original, drawing.rotation);
+        context_flip(&context, &original, drawing.horizontal_flip, drawing.vertical_flip);
         context.set_source_pixbuf(&source, 0.0, 0.0);
         context.paint();
         new_pixbuf_from_surface(&surface)

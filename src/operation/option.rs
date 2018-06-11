@@ -35,6 +35,7 @@ iterable_enum!(PreDefinedOptionName =>
     EmptyStatusFormat,
     FitTo,
     HistoryFile,
+    HorizontalFlip,
     HorizontalViews,
     IdleTime,
     InitialPosition,
@@ -57,6 +58,7 @@ iterable_enum!(PreDefinedOptionName =>
     Style,
     TitleFormat,
     UpdateCacheAccessTime,
+    VerticalFlip,
     VerticalViews,
     WatchFiles,
 );
@@ -81,6 +83,7 @@ impl FromStr for PreDefinedOptionName {
             "empty-status-format"                  => EmptyStatusFormat,
             "fit-to" | "fit"                       => FitTo,
             "history-file"                         => HistoryFile,
+            "horizontal-flip"                      => HorizontalFlip,
             "horizontal-views"                     => HorizontalViews,
             "idle-time"                            => IdleTime,
             "initial-position"                     => InitialPosition,
@@ -102,6 +105,7 @@ impl FromStr for PreDefinedOptionName {
             "stdout"                               => StdOut,
             "title-format"                         => TitleFormat,
             "update-cache-atime"                   => UpdateCacheAccessTime,
+            "vertical-flip"                        => VerticalFlip,
             "vertical-views"                       => VerticalViews,
             "watch-files"                          => WatchFiles,
             "skip-resize-window"                   => SkipResizeWindow,
@@ -119,10 +123,10 @@ impl PreDefinedOptionName {
         match *self {
             AbbrevLength | Animation | AutoReload | AutoPaging |
                 ColorLink |
-                FitTo | HorizontalViews | IdleTime | InitialPosition | LogFile | MaskOperator |
+                FitTo | HorizontalFlip | HorizontalViews | IdleTime | InitialPosition | LogFile | MaskOperator |
                 PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
                 Reverse | Rotation | Screen | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusFormat | EmptyStatusFormat | Style |
-                StdOut | UpdateCacheAccessTime | TitleFormat | VerticalViews | WatchFiles | HistoryFile => false,
+                StdOut | UpdateCacheAccessTime | TitleFormat | VerticalFlip | VerticalViews | WatchFiles | HistoryFile => false,
             CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => true,
         }
     }

@@ -696,6 +696,10 @@ history-file
 :   default: none
 :   STDIN input history
 
+horizontal-flip
+:   type: boolean
+:   Flip images horizontally
+
 horizontal-views
 :   type: unsigned integer (>= 1)
 :   Number of horizontal cells.
@@ -766,6 +770,10 @@ style
 title-format
 :   type: string-or-file
 :   Give a string or a mruby script file path (e.g. `@~/.config/chrysoberyl/status.rb`)
+
+vertical-flip
+:   type: boolean
+:   Flip images vertically
 
 vertical-views
 :   type: unsigned integer (>= 1)

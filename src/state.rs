@@ -62,9 +62,11 @@ pub struct Drawing {
     pub animation: bool,
     pub clipping: Option<Region>,
     pub fit_to: FitTo,
+    pub horizontal_flip: bool,
     pub link_color: Color,
     pub mask_operator: MaskOperator,
     pub rotation: u8,
+    pub vertical_flip: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -147,9 +149,11 @@ impl Default for Drawing {
             animation: true,
             clipping: None,
             fit_to: FitTo::Cell,
+            horizontal_flip: false,
             link_color: Color::new4(0, 0, 255, 32),
             mask_operator: MaskOperator(cairo::Operator::DestIn),
             rotation: 0,
+            vertical_flip: false,
         }
     }
 }

@@ -1423,6 +1423,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 EmptyStatusFormat => &mut app.states.empty_status_format,
                 FitTo => &mut app.states.drawing.fit_to,
                 HistoryFile => &mut app.states.history_file,
+                HorizontalFlip => &mut app.states.drawing.horizontal_flip,
                 HorizontalViews => &mut app.states.view.cols,
                 IdleTime => &mut app.states.idle_time,
                 InitialPosition => &mut app.states.initial_position,
@@ -1445,6 +1446,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 Style => &mut app.states.style,
                 TitleFormat => &mut app.states.title_format,
                 UpdateCacheAccessTime => &mut app.states.update_cache_atime,
+                VerticalFlip => &mut app.states.drawing.vertical_flip,
                 VerticalViews => &mut app.states.view.rows,
                 WatchFiles => &mut app.states.watch_files,
                 ColorLink => &mut app.states.drawing.link_color,
@@ -1511,7 +1513,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 app.update_status_bar_height();
                 updated.image_options = true;
             }
-            FitTo | Rotation =>
+            FitTo | Rotation | HorizontalFlip | VerticalFlip =>
                 updated.image_options = true,
             PreFetchLimit =>
                 app.cache.update_limit(app.states.pre_fetch.limit_of_items),

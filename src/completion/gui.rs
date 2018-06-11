@@ -1,12 +1,11 @@
 
 use std::collections::HashSet;
 
-use gdk::ModifierType;
 use glib::Type;
 use gtk::prelude::*;
 use gtk::{CellRendererText, EditableExt, Entry, EntryBuffer, ListStore, ScrolledWindow, TreeIter, TreePath, TreeSelection, TreeView, TreeViewColumn, Value};
 
-use key::cleanup_modifier_type;
+use key::Key;
 use completion::definition::{Definition, Argument, Value as Val, OptionValue};
 use completion::path::get_candidates;
 
@@ -32,10 +31,8 @@ struct State<'a> {
 
 impl CompleterUI {
     pub fn new(entry: &Entry) -> Self {
-        use ::gdk::enums::{key as K};
-
-        let previous_keys = hashset!{K::ISO_Left_Tab, K::Up};
-        let ignore_keys: HashSet<u32> = hashset!{K::Tab, K::Down}.union(&previous_keys).cloned().collect();
+        let previous_keys = hashset!{"ISO_Left_Tab", "Up", "C-p"};
+        let ignore_keys: HashSet<&'static str> = hashset!{"Tab", "Down", "C-n"}.union(&previous_keys).cloned().collect();
 
         let definition = Definition::new();
         let candidates = ListStore::new(&[Type::String]);
@@ -75,15 +72,14 @@ impl CompleterUI {
             let position = entry.get_property_cursor_position();
             let text = entry.get_text().unwrap();
             let state = get_part(&text, position as usize);
-            let key_state = cleanup_modifier_type(&key.get_state());
-            let keyval = key.as_ref().keyval;
+            let key = Key::from(key);
 
-            if make_humanism(&key_state, keyval, entry) {
+            if make_humanism(&key, entry) {
                 return Inhibit(true);
             }
 
-            if ignore_keys.contains(&keyval) {
-                select_next(&tree_view, &candidates, &entry, &entry_buffer, state.left, state.right, previous_keys.contains(&keyval));
+            if ignore_keys.contains(key.as_str()) {
+                select_next(&tree_view, &candidates, &entry, &entry_buffer, state.left, state.right, previous_keys.contains(key.as_str()));
                 return Inhibit(true);
             }
 
@@ -94,9 +90,9 @@ impl CompleterUI {
             let position = entry.get_property_cursor_position();
             let text = entry.get_text().unwrap();
             let state = get_part(&text, position as usize);
-            let key = key.as_ref().keyval;
+            let key = Key::from(key);
 
-            if ignore_keys.contains(&key) {
+            if ignore_keys.contains(key.as_str()) {
                 return Inhibit(true);
             }
 
@@ -255,30 +251,26 @@ fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
     result
 }
 
-fn make_humanism(state: &ModifierType, keyval: u32, entry: &Entry) -> bool {
+fn make_humanism(key: &Key, entry: &Entry) -> bool {
     use gtk::{DeleteType, MovementStep};
-    use ::gdk::enums::{key as K};
 
-    if *state == ModifierType::CONTROL_MASK | ModifierType::SHIFT_MASK && keyval == K::A {
-        entry.emit_move_cursor(MovementStep::BufferEnds, 1, false);
-        entry.emit_move_cursor(MovementStep::BufferEnds, -1, true);
-        return true;
-    } else if *state == ModifierType::CONTROL_MASK {
-        match keyval {
-            K::h => entry.emit_delete_from_cursor(DeleteType::Chars, -1),
-            K::k => entry.emit_delete_from_cursor(DeleteType::DisplayLineEnds, 1),
-            K::u => entry.emit_delete_from_cursor(DeleteType::DisplayLines, -1),
-            K::w => entry.emit_delete_from_cursor(DeleteType::WordEnds, -1),
-            K::e => entry.emit_move_cursor(MovementStep::BufferEnds, 1, false),
-            K::a => entry.emit_move_cursor(MovementStep::BufferEnds, -1, false),
-            K::f => entry.emit_move_cursor(MovementStep::LogicalPositions, 1, false),
-            K::b => entry.emit_move_cursor(MovementStep::LogicalPositions, -1, false),
-            _ => return false,
-        }
-        return true;
+    match key.as_str() {
+        "C-A"=> {
+            entry.emit_move_cursor(MovementStep::BufferEnds, 1, false);
+            entry.emit_move_cursor(MovementStep::BufferEnds, -1, true);
+        },
+        "C-h" => entry.emit_delete_from_cursor(DeleteType::Chars, -1),
+        "C-k" => entry.emit_delete_from_cursor(DeleteType::DisplayLineEnds, 1),
+        "C-u" => entry.emit_delete_from_cursor(DeleteType::DisplayLines, -1),
+        "C-w" => entry.emit_delete_from_cursor(DeleteType::WordEnds, -1),
+        "C-e" => entry.emit_move_cursor(MovementStep::BufferEnds, 1, false),
+        "C-a" => entry.emit_move_cursor(MovementStep::BufferEnds, -1, false),
+        "C-f" => entry.emit_move_cursor(MovementStep::LogicalPositions, 1, false),
+        "C-b" => entry.emit_move_cursor(MovementStep::LogicalPositions, -1, false),
+        _ => return false,
     }
 
-    false
+    true
 }
 
 fn next_iter(model: &ListStore, selection: &TreeSelection, reverse: bool) -> Option<TreeIter> {

@@ -10,13 +10,20 @@ use errors::ChryError;
 
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
-pub struct Key(pub String);
-
-//  SHIFT | CONTROL | HYPER | META |  ALT | SUPER
-pub const STD_MODS: u32 = 0b1_1100_0000_0000_0000_0000_0000_1101;
+pub struct Key(String);
 
 pub type KeySequence = Vec<Key>;
 
+
+impl Key {
+    pub fn new(key: String) -> Self {
+        Key(key)
+    }
+
+    pub fn as_str(&self) -> &str {
+        &*self.0
+    }
+}
 
 impl Default for Key {
     fn default() -> Key {
@@ -35,6 +42,12 @@ impl FromStr for Key {
 
     fn from_str(src: &str) -> Result<Self, ChryError> {
         Ok(Key(o!(src)))
+    }
+}
+
+impl<'a> From<&'a str> for Key {
+    fn from(key: &'a str) -> Self {
+        Key(o!(key))
     }
 }
 
@@ -105,8 +118,4 @@ pub fn key_sequence_to_string(seq: &[Key]) -> String {
         }
     }
     result
-}
-
-pub fn cleanup_modifier_type(state: &ModifierType) -> ModifierType {
-    ModifierType::from_bits_truncate(state.bits() & STD_MODS)
 }

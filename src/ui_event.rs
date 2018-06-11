@@ -160,7 +160,7 @@ fn main(app_tx: &Sender<Operation>, rx: &Receiver<Event>, skip: usize) {
 fn entry_on_ui(tx: &Sender<Operation>, key: &Key) {
     use operation::UIActionType::*;
 
-    let action_type = match key.0.as_str() {
+    let action_type = match key.as_str() {
         "Return" => SendOperation,
         "Escape" => Close,
         _ => return,

@@ -158,7 +158,7 @@ pub fn parse_fire(args: &[String]) -> Result<Operation, ParsingError> {
         pub fn input_from_text(&self, text: &str) -> Result<Mapped, ParsingError> {
             match *self {
                 MappedType::Input =>
-                    Ok(Mapped::Input(CoordPx::default(), Key(o!(text)))),
+                    Ok(Mapped::Input(CoordPx::default(), Key::from(text))),
                 MappedType::Event => {
                     match text.parse() {
                         Ok(event) => Ok(Mapped::Event(event)),
@@ -425,7 +425,7 @@ pub fn parse_input(args: &[String]) -> Result<Operation, ParsingError> {
 
     for arg in args.iter().skip(1) {
         for it in arg.split(',') {
-            mapped.push(Mapped::Input(CoordPx::default(), Key(o!(it))));
+            mapped.push(Mapped::Input(CoordPx::default(), Key::from(it)));
         }
     }
 
@@ -540,7 +540,7 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingEr
             }
             parse_args(&mut ap, args)
         } .map(|_| {
-            let target = MappingTarget::Region(Key(from));
+            let target = MappingTarget::Region(Key::new(from));
             if register {
                 Operation::Map(target, None, to)
             } else {

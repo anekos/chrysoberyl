@@ -83,7 +83,7 @@ pub enum Operation {
     Next(Option<usize>, bool, MoveBy, bool, bool), /* count, ignore_views, move_by, wrap, forget */
     Nop,
     OperateFile(filer::FileOperation),
-    OperationEntry(UIAction),
+    UIAction(UIActionType),
     Page(usize),
     PdfIndex(bool, bool, bool, Vec<Expandable>, poppler::index::Format, Option<String>), /* async, read_operations, search_path, ... */
     PreFetch(u64),
@@ -204,7 +204,7 @@ pub enum SortKey {
 }
 
 #[derive(Clone, Copy)]
-pub enum UIAction {
+pub enum UIActionType {
     SendOperation,
     Close,
 }
@@ -491,7 +491,6 @@ impl fmt::Debug for Operation {
             Next(_, _, _, _, _) => "Next",
             Nop => "Nop ",
             OperateFile(_) => "OperateFile",
-            OperationEntry(_) => "OperationEntry",
             Page(_) => "Page",
             PdfIndex(_, _, _, _, _, _) => "PdfIndex",
             PreFetch(_) => "PreFetch",
@@ -525,6 +524,7 @@ impl fmt::Debug for Operation {
             Sorter(_, _, _) => "Sorter",
             TellRegion(_, _, _, _, _) => "TellRegion",
             Timer(_, _, _, _) => "Timer",
+            UIAction(_) => "UIAction",
             Unclip => "Unclip ",
             Undo(_) => "Undo",
             Unmap(_) => "Unmap",

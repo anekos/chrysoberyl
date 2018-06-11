@@ -277,8 +277,6 @@ impl App {
                     Ok(()),
                 OperateFile(ref file_operation) =>
                     on_operate_file(self, file_operation),
-                OperationEntry(action) =>
-                    on_operation_entry(self, action),
                 Page(page) =>
                     on_page(self, &mut updated, page),
                 PdfIndex(async, read_operations, search_path, ref command_line, ref fmt, ref separator) =>
@@ -345,6 +343,8 @@ impl App {
                     on_tell_region(self, left, top, right, bottom, &button),
                 Timer(name, op, interval, repeat) =>
                     on_timer(self, name, op, interval, repeat),
+                UIAction(action_type) =>
+                    on_ui_action(self, action_type),
                 Unclip =>
                     on_unclip(self, &mut updated),
                 Undo(count) =>

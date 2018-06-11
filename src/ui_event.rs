@@ -158,15 +158,15 @@ fn main(app_tx: &Sender<Operation>, rx: &Receiver<Event>, skip: usize) {
 }
 
 fn entry_on_ui(tx: &Sender<Operation>, key: &Key) {
-    use operation::UIAction::*;
+    use operation::UIActionType::*;
 
-    let action = match key.0.as_str() {
+    let action_type = match key.0.as_str() {
         "Return" => SendOperation,
         "Escape" => Close,
         _ => return,
     };
 
-    tx.send(Operation::OperationEntry(action)).unwrap();
+    tx.send(Operation::UIAction(action_type)).unwrap();
 }
 
 fn on_key_press(tx: &Sender<Operation>, key: Key, keyval: u32) {

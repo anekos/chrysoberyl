@@ -34,7 +34,7 @@ use gui::Direction;
 use key::Key;
 use logger;
 use operation::option::{OptionName, OptionUpdater};
-use operation::{ClipboardSelection, MappingTarget, MoveBy, Operation, OperationContext, self, SortKey, UIAction};
+use operation::{ClipboardSelection, MappingTarget, MoveBy, Operation, OperationContext, self, SortKey, UIActionType};
 use option::user_switch::DummySwtich;
 use poppler::{PopplerDocument, self};
 use script;
@@ -738,30 +738,6 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) -> 
     Ok(())
 }
 
-pub fn on_operation_entry(app: &mut App, action: UIAction) -> EventResult {
-    use self::UIAction::*;
-    use gui::Screen::*;
-
-    let mut result = Ok(());
-
-    match action {
-        SendOperation => {
-            result = app.gui.pop_operation_entry().map(|op| {
-                if let Some(op) = op {
-                    app.tx.send(op).unwrap();
-                }
-            });
-            app.states.screen = Main;
-        },
-        Close => {
-            app.states.screen = Main;
-        }
-    }
-
-    app.update_ui_visibility();
-    result
-}
-
 pub fn on_page(app: &mut App, updated: &mut Updated, page: usize) -> EventResult {
     if_let_some!((_, index) = app.current(), Ok(()));
     if_let_some!(found = app.entries.find_page_in_archive(index, page), Ok(()));
@@ -1352,6 +1328,30 @@ pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f6
 pub fn on_timer(app: &mut App, name: Option<String>, op: Vec<String>, interval: Duration, repeat: Option<usize>) -> EventResult {
     app.timers.register(name, op, interval, repeat);
     Ok(())
+}
+
+pub fn on_ui_action(app: &mut App, action_type: UIActionType) -> EventResult {
+    use self::UIActionType::*;
+    use gui::Screen::*;
+
+    let mut result = Ok(());
+
+    match action_type {
+        SendOperation => {
+            result = app.gui.pop_operation_entry().map(|op| {
+                if let Some(op) = op {
+                    app.tx.send(op).unwrap();
+                }
+            });
+            app.states.screen = Main;
+        },
+        Close => {
+            app.states.screen = Main;
+        }
+    }
+
+    app.update_ui_visibility();
+    result
 }
 
 pub fn on_unclip(app: &mut App, updated: &mut Updated) -> EventResult {

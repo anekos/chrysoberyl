@@ -45,6 +45,7 @@
 
 # toggle a option
 @map input t,R          @cycle rotation
+@map input t,S          @cycle screen
 @map input t,a          @toggle animation
 @map input t,c          @toggle center
 @map input t,h          @toggle horizontal-flip

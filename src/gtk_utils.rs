@@ -28,11 +28,11 @@ pub fn context_flip(context: &Context, size: &Size, horizontal: bool, vertical: 
     let (mut xx, yx, xy, mut yy, mut x0, mut y0)  = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
     if horizontal {
         xx = -1.0;
-        x0 = size.width as f64;
+        x0 = f64!(size.width);
     }
     if vertical {
         yy = -1.0;
-        y0 = size.height as f64;
+        y0 = f64!(size.height);
     }
     context.transform(Matrix::new(xx, yx, xy, yy, x0, y0));
 }

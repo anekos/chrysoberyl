@@ -7,7 +7,7 @@ use cairo;
 use num::Integer;
 
 use color::Color;
-use gui::Position;
+use gui::{Position, Screen};
 use option::*;
 use resolution;
 use size::FitTo;
@@ -455,5 +455,35 @@ impl OptionValue for Alignment {
             *self = value;
             ()
         })
+    }
+}
+
+
+impl OptionValue for Screen {
+    fn cycle(&mut self, reverse: bool, n: usize) -> Result<(), ChryError> {
+        use self::Screen::*;
+        *self = cycled(*self, &[Main, CommandLine, LogView], reverse, n);
+        Ok(())
+    }
+
+    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+        value.parse().map(|value| {
+            *self = value;
+            ()
+        })
+    }
+}
+
+impl FromStr for Screen {
+    type Err = ChryError;
+
+    fn from_str(src: &str) -> Result<Self, ChryError> {
+        let screen = match src {
+            "main" => Screen::Main,
+            "log-view" => Screen::LogView,
+            "command-line" => Screen::CommandLine,
+            _ => return Err(ChryError::InvalidValue(o!(src))),
+        };
+        Ok(screen)
     }
 }

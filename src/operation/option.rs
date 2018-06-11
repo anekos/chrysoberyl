@@ -40,13 +40,13 @@ iterable_enum!(PreDefinedOptionName =>
     InitialPosition,
     LogFile,
     MaskOperator,
-    OperationBox,
     PathList,
     PreFetchEnabled,
     PreFetchLimit,
     PreFetchPageSize,
     Reverse,
     Rotation,
+    Screen,
     SkipResizeWindow,
     StablePush,
     StatusBar,
@@ -86,13 +86,13 @@ impl FromStr for PreDefinedOptionName {
             "initial-position"                     => InitialPosition,
             "log-file" | "log"                     => LogFile,
             "mask-operator"                        => MaskOperator,
-            "operation-box" | "operation"          => OperationBox,
             "path"                                 => PathList,
             "pre-render"                           => PreFetchEnabled,
             "pre-render-limit"                     => PreFetchLimit,
             "pre-render-pages"                     => PreFetchPageSize,
             "reverse" | "rev"                      => Reverse,
             "rotation"                             => Rotation,
+            "screen"                               => Screen,
             "stable-push"                          => StablePush,
             "status-bar" | "status"                => StatusBar,
             "status-bar-align" | "status-align"    => StatusBarAlign,
@@ -120,8 +120,8 @@ impl PreDefinedOptionName {
             AbbrevLength | Animation | AutoReload | AutoPaging |
                 ColorLink |
                 FitTo | HorizontalViews | IdleTime | InitialPosition | LogFile | MaskOperator |
-                OperationBox | PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
-                Reverse | Rotation | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusFormat | EmptyStatusFormat | Style |
+                PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
+                Reverse | Rotation | Screen | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusFormat | EmptyStatusFormat | Style |
                 StdOut | UpdateCacheAccessTime | TitleFormat | VerticalViews | WatchFiles | HistoryFile => false,
             CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => true,
         }

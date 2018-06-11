@@ -34,7 +34,7 @@ use gui::Direction;
 use key::Key;
 use logger;
 use operation::option::{OptionName, OptionUpdater};
-use operation::{ClipboardSelection, MappingTarget, MoveBy, Operation, OperationContext, OperationEntryAction, self, SortKey};
+use operation::{ClipboardSelection, MappingTarget, MoveBy, Operation, OperationContext, self, SortKey, UIAction};
 use option::user_switch::DummySwtich;
 use poppler::{PopplerDocument, self};
 use script;
@@ -738,8 +738,9 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) -> 
     Ok(())
 }
 
-pub fn on_operation_entry(app: &mut App, action: OperationEntryAction) -> EventResult {
-    use self::OperationEntryAction::*;
+pub fn on_operation_entry(app: &mut App, action: UIAction) -> EventResult {
+    use self::UIAction::*;
+    use gui::Screen::*;
 
     let mut result = Ok(());
 
@@ -750,10 +751,11 @@ pub fn on_operation_entry(app: &mut App, action: OperationEntryAction) -> EventR
                     app.tx.send(op).unwrap();
                 }
             });
-            app.states.operation_box = false;
+            app.states.screen = Main;
         },
-        Open => app.states.operation_box = true,
-        Close => app.states.operation_box = false,
+        Close => {
+            app.states.screen = Main;
+        }
     }
 
     app.update_ui_visibility();
@@ -1426,13 +1428,13 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 InitialPosition => &mut app.states.initial_position,
                 LogFile => &mut app.states.log_file,
                 MaskOperator => &mut app.states.drawing.mask_operator,
-                OperationBox => &mut app.states.operation_box,
                 PathList => &mut app.states.path_list,
                 PreFetchEnabled => &mut app.states.pre_fetch.enabled,
                 PreFetchLimit => &mut app.states.pre_fetch.limit_of_items,
                 PreFetchPageSize => &mut app.states.pre_fetch.page_size,
                 Reverse => &mut app.states.reverse,
                 Rotation => &mut app.states.drawing.rotation,
+                Screen => &mut app.states.screen,
                 SkipResizeWindow => &mut app.states.skip_resize_window,
                 StablePush => &mut app.states.stable_push,
                 StatusBar => &mut app.states.status_bar,
@@ -1497,13 +1499,14 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 updated.label = true,
             StablePush =>
                 app.sorting_buffer.set_stability(app.states.stable_push),
-            StatusBar | OperationBox => {
+            StatusBar => {
                 app.update_ui_visibility();
                 updated.image_options = true;
-            }
-            StatusBarAlign => {
-                app.gui.set_status_bar_align(app.states.status_bar_align.0);
-            }
+            },
+            Screen =>
+                app.update_ui_visibility(),
+            StatusBarAlign =>
+                app.gui.set_status_bar_align(app.states.status_bar_align.0),
             StatusBarHeight => {
                 app.update_status_bar_height();
                 updated.image_options = true;

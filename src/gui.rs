@@ -1,4 +1,5 @@
 
+use std::collections::VecDeque;
 use std::convert::Into;
 use std::default::Default;
 use std::error::Error;
@@ -14,7 +15,7 @@ use gdk::{DisplayExt, EventMask};
 use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimationExt};
 use glib::{self, Type};
 use gtk::prelude::*;
-use gtk::{Adjustment, Align, CssProvider, CssProviderExt, Entry, EventBox, Grid, Image, Label, Layout, ListStore, Overlay, ScrolledWindow, self, Stack, StyleContext, Value, WidgetExt, Window};
+use gtk::{Adjustment, Align, CssProvider, CssProviderExt, Entry, EventBox, Grid, Image, Label, Layout, ListStore, Overlay, ScrolledWindow, self, Stack, StyleContext, TextBuffer, TextView, Value, WidgetExt, Window};
 
 use app_path;
 use completion::gui::CompleterUI;
@@ -41,6 +42,7 @@ enum_from_primitive! {
 
 pub struct Gui {
     pub event_box: EventBox,
+    pub log_view: TextView,
     pub operation_entry: Entry,
     pub overlay: Overlay,
     pub vbox: gtk::Box,
@@ -53,6 +55,8 @@ pub struct Gui {
     grid_size: Size,
     hidden_label: Label,
     label: Label,
+    log_box: ScrolledWindow,
+    log_buffer: TextBuffer,
     operation_box: gtk::Box,
     status_bar: Layout,
     status_bar_inner: gtk::Box,
@@ -98,6 +102,13 @@ pub enum Position {
     TopRight,
     BottomLeft,
     BottomRight,
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum Screen {
+    Main,
+    LogView,
+    CommandLine,
 }
 
 
@@ -168,6 +179,18 @@ impl Gui {
             it.pack_end(&completer.window, true, true, 0);
         });
 
+        let log_buffer = TextBuffer::new(None);
+
+        let log_view = tap!(it = TextView::new_with_buffer(&log_buffer), {
+            WidgetExt::set_name(&it, "log-view");
+            it.show();
+        });
+
+        let log_box = tap!(it = ScrolledWindow::new(None, None), {
+            WidgetExt::set_name(&it, "log-box");
+            it.add(&log_view);
+        });
+
         let vbox = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
             WidgetExt::set_name(&it, "content");
             it.pack_end(&status_bar, false, false, 0);
@@ -181,6 +204,7 @@ impl Gui {
             it.add_overlay(&hidden_bar);
             it.add_overlay(&operation_box);
             it.show_all();
+            it.add_overlay(&log_box);
         });
 
         let event_box = tap!(it = EventBox::new(), {
@@ -208,6 +232,9 @@ impl Gui {
             grid_size: Size::new(1, 1),
             hidden_label,
             label,
+            log_box,
+            log_buffer,
+            log_view,
             operation_box,
             operation_entry,
             overlay,
@@ -216,6 +243,14 @@ impl Gui {
             ui_event: None,
             vbox,
             window,
+        }
+    }
+
+    pub fn append_logs(&self, logs: &VecDeque<String>) {
+        for log in logs {
+            let mut end_iter = self.log_buffer.get_end_iter();
+            self.log_buffer.insert(&mut end_iter, log);
+            self.log_buffer.insert(&mut end_iter, "\n");
         }
     }
 
@@ -302,21 +337,61 @@ impl Gui {
         scrolled
     }
 
-    pub fn set_operation_box_visibility(&self, visibility: bool) {
-        let current = self.operation_box.get_visible();
-        if visibility ^ current {
-            if let Some(ref ui_event) = self.ui_event {
-                ui_event.update_entry(visibility);
-            }
+    pub fn get_screen(&self) -> Screen {
+        if self.operation_box.get_visible() {
+            Screen::CommandLine
+        } else if self.log_box.get_visible() {
+            Screen::LogView
+        } else {
+            Screen::Main
+        }
+    }
 
-            if visibility {
-                self.completer.clear();
-                self.operation_entry.grab_focus();
-                self.operation_box.show();
-            } else {
-                self.operation_box.hide();
+    pub fn change_screen(&self, screen: Screen) -> bool {
+        let current = self.get_screen();
+        if current == screen {
+            return false;
+        }
+
+        match screen {
+            Screen::Main => {
+                self.set_operation_box_visibility(false);
+                self.set_log_box_visibility(false);
                 self.reset_focus();
+            },
+            Screen::CommandLine => {
+                self.set_operation_box_visibility(true);
+                self.set_log_box_visibility(false);
+            },
+            Screen::LogView => {
+                self.set_operation_box_visibility(false);
+                self.set_log_box_visibility(true);
             }
+        }
+
+        if let Some(ref ui_event) = self.ui_event {
+            ui_event.update_entry(screen != Screen::Main);
+        }
+
+        true
+    }
+
+    pub fn set_operation_box_visibility(&self, visibility: bool) {
+        if visibility {
+            self.completer.clear();
+            self.operation_entry.grab_focus();
+            self.operation_box.show();
+        } else {
+            self.operation_box.hide();
+        }
+    }
+
+    pub fn set_log_box_visibility(&self, visibility: bool) {
+        if visibility {
+            self.log_view.grab_focus();
+            self.log_box.show();
+        } else {
+            self.log_box.hide();
         }
     }
 
@@ -410,13 +485,14 @@ impl Gui {
             return;
         }
 
-        if self.operation_box.get_visible() {
-            self.window.set_focus(Some(&self.operation_entry));
-            return
-        }
-
-        if let Some(cell) = self.cells.first() {
-            self.window.set_focus(Some(&cell.window));
+        match self.get_screen() {
+            Screen::CommandLine =>
+                self.window.set_focus(Some(&self.operation_entry)),
+            Screen::LogView =>
+                self.window.set_focus(Some(&self.log_view)),
+            _ => if let Some(cell) = self.cells.first() {
+                self.window.set_focus(Some(&cell.window));
+            },
         }
     }
 }

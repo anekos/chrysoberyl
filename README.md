@@ -736,6 +736,10 @@ rotation
 :   type: enum
 :   values: 0, 1, 2, 3
 
+screen
+:   type: enum
+:   values: main, command-line, log-view
+
 status-bar
 :   type: boolean
 :   default: true

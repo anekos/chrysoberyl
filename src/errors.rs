@@ -27,12 +27,13 @@ macro_rules! chry_error {
 
 #[derive(Debug, Clone)]
 pub enum ChryError {
-    Standard(String),
-    Parse(String),
     File(&'static str, String),
     Fixed(&'static str),
-    NotSupported(&'static str),
     InvalidValue(String),
+    NotSupported(&'static str),
+    Parse(String),
+    Standard(String),
+    UndefinedOperation(String),
 }
 
 
@@ -41,12 +42,13 @@ impl fmt::Display for ChryError {
         use self::ChryError::*;
 
         match *self {
-            Standard(ref e) => write!(f, "{}", e),
             File(e, ref file) => write!(f, "{}: {}", e, file),
             Fixed(e) => write!(f, "{}", e),
+            InvalidValue(ref e) => write!(f, "Invalid value: {}", e),
             NotSupported(e) => write!(f, "Not supported: {}", e),
             Parse(ref e) => write!(f, "Parsing error: {}", e),
-            InvalidValue(ref e) => write!(f, "Invalid value: {}", e),
+            Standard(ref e) => write!(f, "{}", e),
+            UndefinedOperation(ref name) => write!(f, "Undefined operation: @{}", name),
         }
     }
 }
@@ -57,12 +59,13 @@ impl error::Error for ChryError {
         use self::ChryError::*;
 
         match *self {
-            Standard(_) => "error",
             File(_, _) => "File error",
             Fixed(e) => e,
+            InvalidValue(_) => "Invalid value",
             NotSupported(_) => "Not supported",
             Parse(_) => "Parsing error",
-            InvalidValue(_) => "Invalid value",
+            Standard(_) => "error",
+            UndefinedOperation(_) => "Undefined operation",
         }
     }
 

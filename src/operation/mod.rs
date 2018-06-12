@@ -150,6 +150,7 @@ pub struct OperationContext {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum MappingTarget {
+    Operation(String),
     Input(KeySequence, Option<Region>),
     Event(Option<EventName>, Option<String>),
     Region(Key),
@@ -340,7 +341,11 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@views" | "@v"                 => parse_views(whole),
             "@when"                         => parse_when(whole, false),
             "@write"                        => parse_write(whole),
-            _ => Err(ParsingError::NotOperation(o!(name)))
+            name => if name.starts_with('@') {
+                Ok(Operation::Fire(mapping::Mapped::Operation(o!(&name[1..]), whole[1..].to_vec())))
+            } else {
+                Err(ParsingError::NotOperation(o!(name)))
+            }
         }
     } else {
         Ok(Nop)

@@ -198,7 +198,7 @@ fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
 
     if_let_some!(operation = state.operation(), definition.operations.clone());
     let mut result = vec![];
-    if_let_some!(def_args = definition.arguments.get(substr(operation, 1, operation.len() - 1)), result);
+    if_let_some!(def_args = definition.arguments.get(substr(operation, 1, operation.len())), result);
 
     let mut skip = false;
     let mut arg_nth = 0;

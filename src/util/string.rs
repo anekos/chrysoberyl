@@ -33,6 +33,20 @@ pub fn substr(src: &str, begin: usize, end: usize) -> &str {
 
     let mut ci = src.char_indices();
     let left = ci.nth(begin).map(|it| it.0).unwrap_or(0);
-    let right = ci.nth(end - begin).map(|it| it.0).unwrap_or_else(|| src.len());
+    let right = ci.nth(end - begin - 1).map(|it| it.0).unwrap_or_else(|| src.len());
     &src[left..right]
+}
+
+
+#[cfg(test)]#[test]
+fn test_substr() {
+    assert_eq!(substr("", 1, 2), "");
+    assert_eq!(substr("あいうえお", 0, 1), "あ");
+    assert_eq!(substr("あいうえお", 1, 1), "");
+    assert_eq!(substr("あいうえお", 1, 2), "い");
+    assert_eq!(substr("あいうえお", 2, 3), "う");
+    assert_eq!(substr("あいうえお", 2, 4), "うえ");
+    assert_eq!(substr("あいうえお", 2, 5), "うえお");
+    assert_eq!(substr("aiueo", 2, 5), "ueo");
+    assert_eq!(substr("@prev ", 0, 5), "@prev");
 }

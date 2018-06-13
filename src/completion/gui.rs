@@ -5,9 +5,10 @@ use glib::Type;
 use gtk::prelude::*;
 use gtk::{CellRendererText, EditableExt, Entry, EntryBuffer, ListStore, ScrolledWindow, TreeIter, TreePath, TreeSelection, TreeView, TreeViewColumn, Value};
 
-use key::Key;
 use completion::definition::{Definition, Argument, Value as Val, OptionValue};
 use completion::path::get_candidates;
+use key::Key;
+use util::string::substr;
 
 
 
@@ -138,7 +139,7 @@ fn get_part(whole: &str, position: usize) -> State {
             }
             if !after_space {
                 nth += 1;
-                args.push(&whole[left .. i]);
+                args.push(substr(&whole, left, i));
             }
             left = i;
             right = left;
@@ -157,7 +158,7 @@ fn get_part(whole: &str, position: usize) -> State {
         after_space = c == ' ';
     }
 
-    State { args, left, right, nth, text: &whole[left .. right], debug }
+    State { args, left, right, nth, text: substr(&whole, left, right), debug }
 }
 
 fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
@@ -197,7 +198,7 @@ fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
 
     if_let_some!(operation = state.operation(), definition.operations.clone());
     let mut result = vec![];
-    if_let_some!(def_args = definition.arguments.get(&operation[1..]), result);
+    if_let_some!(def_args = definition.arguments.get(substr(operation, 1, operation.len() - 1)), result);
 
     let mut skip = false;
     let mut arg_nth = 0;

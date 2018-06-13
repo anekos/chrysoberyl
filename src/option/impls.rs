@@ -385,36 +385,36 @@ impl OptionValue for MaskOperator {
     fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> Result<(), ChryError> {
         use self::cairo::Operator::*;
 
-        self.0 = cycled(self.0, &[
-            Clear,
-            Source,
-            Over,
-            In,
-            Out,
-            Atop,
-            Dest,
-            DestOver,
-            DestIn,
-            DestOut,
-            DestAtop,
-            Xor,
-            Add,
-            Saturate,
-            Multiply,
-            Screen,
-            Overlay,
-            Darken,
-            Lighten,
-            ColorDodge,
-            ColorBurn,
-            HardLight,
-            SoftLight,
-            Difference,
-            Exclusion,
-            HslHue,
-            HslSaturation,
-            HslColor,
-            HslLuminosity,
+        *self = cycled(*self, &[
+            MaskOperator(Clear),
+            MaskOperator(Source),
+            MaskOperator(Over),
+            MaskOperator(In),
+            MaskOperator(Out),
+            MaskOperator(Atop),
+            MaskOperator(Dest),
+            MaskOperator(DestOver),
+            MaskOperator(DestIn),
+            MaskOperator(DestOut),
+            MaskOperator(DestAtop),
+            MaskOperator(Xor),
+            MaskOperator(Add),
+            MaskOperator(Saturate),
+            MaskOperator(Multiply),
+            MaskOperator(Screen),
+            MaskOperator(Overlay),
+            MaskOperator(Darken),
+            MaskOperator(Lighten),
+            MaskOperator(ColorDodge),
+            MaskOperator(ColorBurn),
+            MaskOperator(HardLight),
+            MaskOperator(SoftLight),
+            MaskOperator(Difference),
+            MaskOperator(Exclusion),
+            MaskOperator(HslHue),
+            MaskOperator(HslSaturation),
+            MaskOperator(HslColor),
+            MaskOperator(HslLuminosity),
         ], reverse, n, candidates);
 
         Ok(())
@@ -423,6 +423,31 @@ impl OptionValue for MaskOperator {
 
 
 pub fn cycled<T>(current: T, order: &[T], reverse: bool, n: usize, candidates: &[String]) -> T
+where T: PartialEq + Copy + FromStr {
+    if candidates.is_empty() {
+        return cycled_i(current, order, reverse, n);
+    }
+
+    let mut cs = vec![];
+    let mut return_first = true;
+    for candidate in candidates {
+        // FIXME
+        if let Ok(candidate) = candidate.parse() {
+            if candidate == current {
+                return_first = false;
+            }
+            cs.push(candidate);
+        }
+    }
+
+    if return_first {
+        return cs[0];
+    }
+
+    cycled_i(current, &cs, reverse, n)
+}
+
+fn cycled_i<T>(current: T, order: &[T], reverse: bool, n: usize) -> T
 where T: PartialEq + Copy {
     let len = order.len();
     let n = n % len;

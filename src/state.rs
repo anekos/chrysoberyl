@@ -76,7 +76,7 @@ pub struct PreFetchState {
     pub page_size: usize,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Copy)]
 pub struct MaskOperator(pub cairo::Operator);
 
 #[derive(Clone, Copy, Debug, PartialEq)]

@@ -32,7 +32,7 @@ impl OptionValue for bool {
         Ok(())
     }
 
-    fn cycle(&mut self, _: bool, n: usize) -> Result<(), ChryError> {
+    fn cycle(&mut self, _: bool, n: usize, _: &[String]) -> Result<(), ChryError> {
         if n.is_odd() {
             self.toggle()
         } else {
@@ -68,22 +68,49 @@ impl OptionValue for Duration {
 }
 
 
+macro_rules! def_uint_cycle {
+    ($type:ty, $target:ident, $candidates:expr, $reverse:expr, $n:expr) => {
+        if !$candidates.is_empty() {
+            let mut cs = vec![];
+            let mut set_first_value = true;
+            for candidate in $candidates {
+                if let Ok(v) = candidate.parse() {
+                    if v == *$target {
+                        set_first_value = false;
+                    }
+                    cs.push(v);
+                } else {
+                    return Err(ChryError::InvalidValue(o!(candidate)));
+                }
+            }
+            if set_first_value {
+                *$target = cs[0];
+                return Ok(())
+            } else {
+                return set_cycled($target, cs.as_slice(), $reverse, $n, &[])
+            }
+        }
+
+        for _ in 0 .. $n {
+            if $reverse {
+                if *$target != 0 {
+                    *$target -= 1;
+                }
+            } else if *$target < <$type>::max_value() {
+                *$target += 1;
+            } else {
+                *$target = 0
+            }
+        }
+
+    }
+}
+
 macro_rules! def_uint {
     ($type:ty) => {
         impl OptionValue for $type {
-            fn cycle(&mut self, reverse: bool, n: usize) -> Result<(), ChryError> {
-                for _ in 0 .. n {
-                    if reverse {
-                        if *self != 0 {
-                            *self -= 1;
-                        }
-                    } else if *self < <$type>::max_value() {
-                        *self += 1;
-                    } else {
-                        *self = 0
-                    }
-                }
-
+            fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> Result<(), ChryError> {
+                def_uint_cycle!($type, self, candidates, reverse, n);
                 Ok(())
             }
 
@@ -116,19 +143,9 @@ macro_rules! def_uint {
 macro_rules! def_opt_uint {
     ($type:ty) => {
         impl OptionValue for Option<$type> {
-            fn cycle(&mut self, reverse: bool, n: usize) -> Result<(), ChryError> {
+            fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> Result<(), ChryError> {
                 if_let_some!(v = self.as_mut(), Ok(()));
-
-                for _ in 0 .. n {
-                    if reverse {
-                        if *v != 0 {
-                            *v -= 1;
-                        }
-                    } else {
-                        *v += 1;
-                    }
-                }
-
+                def_uint_cycle!($type, v, candidates, reverse, n);
                 Ok(())
             }
 
@@ -201,10 +218,9 @@ impl OptionValue for AutoPaging {
         Ok(())
     }
 
-    fn cycle(&mut self, reverse: bool, n: usize) -> Result<(), ChryError> {
+    fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> Result<(), ChryError> {
         use self::AutoPaging::*;
-        *self = cycled(*self, &[DoNot, Always, Smart], reverse, n);
-        Ok(())
+        set_cycled(self, &[DoNot, Always, Smart], reverse, n, candidates)
     }
 
     fn set(&mut self, value: &str) -> Result<(), ChryError> {
@@ -277,10 +293,9 @@ impl OptionValue for FitTo {
         Ok(())
     }
 
-    fn cycle(&mut self, reverse: bool, n: usize) -> Result<(), ChryError> {
+    fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> Result<(), ChryError> {
         use self::FitTo::*;
-        *self = cycled(*self, &[Cell, OriginalOrCell, Original, Width, Height], reverse, n);
-        Ok(())
+        set_cycled(self, &[Cell, OriginalOrCell, Original, Width, Height], reverse, n, candidates)
     }
 
     fn increment(&mut self, delta: usize) -> Result<(), ChryError> {
@@ -365,47 +380,74 @@ impl OptionValue for MaskOperator {
         })
     }
 
-    fn cycle(&mut self, reverse: bool, n: usize) -> Result<(), ChryError> {
+    fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> Result<(), ChryError> {
         use self::cairo::Operator::*;
 
-        self.0 = cycled(self.0, &[
-            Clear,
-            Source,
-            Over,
-            In,
-            Out,
-            Atop,
-            Dest,
-            DestOver,
-            DestIn,
-            DestOut,
-            DestAtop,
-            Xor,
-            Add,
-            Saturate,
-            Multiply,
-            Screen,
-            Overlay,
-            Darken,
-            Lighten,
-            ColorDodge,
-            ColorBurn,
-            HardLight,
-            SoftLight,
-            Difference,
-            Exclusion,
-            HslHue,
-            HslSaturation,
-            HslColor,
-            HslLuminosity,
-        ], reverse, n);
-
-        Ok(())
+        set_cycled(self, &[
+            MaskOperator(Clear),
+            MaskOperator(Source),
+            MaskOperator(Over),
+            MaskOperator(In),
+            MaskOperator(Out),
+            MaskOperator(Atop),
+            MaskOperator(Dest),
+            MaskOperator(DestOver),
+            MaskOperator(DestIn),
+            MaskOperator(DestOut),
+            MaskOperator(DestAtop),
+            MaskOperator(Xor),
+            MaskOperator(Add),
+            MaskOperator(Saturate),
+            MaskOperator(Multiply),
+            MaskOperator(Screen),
+            MaskOperator(Overlay),
+            MaskOperator(Darken),
+            MaskOperator(Lighten),
+            MaskOperator(ColorDodge),
+            MaskOperator(ColorBurn),
+            MaskOperator(HardLight),
+            MaskOperator(SoftLight),
+            MaskOperator(Difference),
+            MaskOperator(Exclusion),
+            MaskOperator(HslHue),
+            MaskOperator(HslSaturation),
+            MaskOperator(HslColor),
+            MaskOperator(HslLuminosity),
+        ], reverse, n, candidates)
     }
 }
 
 
-pub fn cycled<T>(current: T, order: &[T], reverse: bool, n: usize) -> T
+pub fn set_cycled<T>(current: &mut T, order: &[T], reverse: bool, n: usize, candidates: &[String]) -> Result<(), ChryError>
+where T: PartialEq + Copy + FromStr {
+    if candidates.is_empty() {
+        *current = cycled(*current, order, reverse, n);
+        return Ok(());
+    }
+
+    let mut cs = vec![];
+    let mut return_first = true;
+    for candidate in candidates {
+        if let Ok(candidate) = candidate.parse() {
+            if candidate == *current {
+                return_first = false;
+            }
+            cs.push(candidate);
+        } else {
+            return Err(ChryError::InvalidValue(o!(candidate)));
+        }
+    }
+
+    if return_first {
+        *current = cs[0];
+        return Ok(());
+    }
+
+    *current = cycled(*current, &cs, reverse, n);
+    Ok(())
+}
+
+fn cycled<T>(current: T, order: &[T], reverse: bool, n: usize) -> T
 where T: PartialEq + Copy {
     let len = order.len();
     let n = n % len;
@@ -444,10 +486,9 @@ impl FromStr for Alignment {
 }
 
 impl OptionValue for Alignment {
-    fn cycle(&mut self, reverse: bool, n: usize) -> Result<(), ChryError> {
+    fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> Result<(), ChryError> {
         use gtk::Align::*;
-        *self = cycled(*self, &[Alignment(Start), Alignment(Center), Alignment(End)], reverse, n);
-        Ok(())
+        set_cycled(self, &[Alignment(Start), Alignment(Center), Alignment(End)], reverse, n, candidates)
     }
 
     fn set(&mut self, value: &str) -> Result<(), ChryError> {
@@ -460,10 +501,9 @@ impl OptionValue for Alignment {
 
 
 impl OptionValue for Screen {
-    fn cycle(&mut self, reverse: bool, n: usize) -> Result<(), ChryError> {
+    fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> Result<(), ChryError> {
         use self::Screen::*;
-        *self = cycled(*self, &[Main, CommandLine, LogView], reverse, n);
-        Ok(())
+        set_cycled(self, &[Main, CommandLine, LogView], reverse, n, candidates)
     }
 
     fn set(&mut self, value: &str) -> Result<(), ChryError> {

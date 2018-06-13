@@ -49,6 +49,7 @@
 @map input t,a          @toggle animation
 @map input t,c          @toggle center
 @map input t,h          @toggle horizontal-flip
+@map input t,i          @toggle log-view
 @map input t,o          @toggle command-line
 @map input t,p          @toggle auto-paging
 @map input t,r          @toggle reverse
@@ -91,6 +92,7 @@
 @map input C            @reset-image
 @map input u            @undo
 @map input colon        @set screen command-line
+@map input i            @set screen log-view
 
 # Mouse
 @map input button-1     @record   @link-action   @scroll --size 0.8 down   @next

@@ -37,7 +37,7 @@ pub trait OptionValue {
         Err(ChryError::NotSupported("unset"))
     }
 
-    fn cycle(&mut self, _: bool, _: usize) -> Result<(), ChryError> {
+    fn cycle(&mut self, _: bool, _: usize, _: &[String]) -> Result<(), ChryError> {
         Err(ChryError::NotSupported("cycle"))
     }
 

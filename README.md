@@ -142,7 +142,7 @@ Copy currently viewing image to clipboard.
 Set `count` explicitly.
 
 
-## @cycle <OPTION>
+## @cycle <OPTION> [<CANDIDATES>...]
 
 Cycle the value of `OPTION`.
 

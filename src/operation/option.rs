@@ -12,7 +12,7 @@ pub enum OptionUpdater {
     SetByCount,
     Increment(usize),
     Decrement(usize),
-    Cycle(bool), /* reverse */
+    Cycle(bool, Vec<String>), /* reverse, candidates */
 }
 
 #[derive(Clone, Debug, PartialEq)]

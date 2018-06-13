@@ -49,6 +49,7 @@
 @map input t,a          @toggle animation
 @map input t,c          @toggle center
 @map input t,h          @toggle horizontal-flip
+@map input t,i          @toggle log-view
 @map input t,o          @toggle command-line
 @map input t,p          @toggle auto-paging
 @map input t,r          @toggle reverse

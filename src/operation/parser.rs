@@ -647,14 +647,16 @@ pub fn parse_multi_args(xs: &[String], separator: &str, async: bool) -> Result<O
 pub fn parse_option_cycle(args: &[String]) -> Result<Operation, ParsingError> {
     let mut option_name = OptionName::default();
     let mut reverse = false;
+    let mut candidates = vec![];
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut reverse).add_option(&["--reverse", "-r"], StoreTrue, "Reversed cycle");
         ap.refer(&mut option_name).add_argument("option_name", Store, "Option name").required();
+        ap.refer(&mut candidates).add_argument("candidates", Collect, "Candidates").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::UpdateOption(option_name, OptionUpdater::Cycle(reverse))
+        Operation::UpdateOption(option_name, OptionUpdater::Cycle(reverse, candidates))
     })
 }
 

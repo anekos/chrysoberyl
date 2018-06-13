@@ -51,10 +51,10 @@ impl UserSwitchManager {
 
 impl OptionValue for UserSwitch {
     fn toggle(&mut self) -> Result<(), ChryError> {
-        self.cycle(false, 1).and_then(|_| self.send())
+        self.cycle(false, 1, &[]).and_then(|_| self.send())
     }
 
-    fn cycle(&mut self, reverse: bool, n: usize) -> Result<(), ChryError> {
+    fn cycle(&mut self, reverse: bool, n: usize, _: &[String]) -> Result<(), ChryError> {
         for _ in 0 .. n {
             if reverse {
                 let back = self.values.pop_back().expect(NO_VALUE_ERROR);
@@ -107,7 +107,7 @@ impl OptionValue for DummySwtich {
         Err(ChryError::InvalidValue(o!(self.name)))
     }
 
-    fn cycle(&mut self, _: bool, n: usize) -> Result<(), ChryError> {
+    fn cycle(&mut self, _: bool, n: usize, _: &[String]) -> Result<(), ChryError> {
         if n.is_odd() {
             self.toggle()
         } else {

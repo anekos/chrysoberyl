@@ -57,7 +57,7 @@ impl OptionValue for StdOut {
         Ok(())
     }
 
-    fn cycle(&mut self, _: bool, n: usize) -> Result<(), ChryError> {
+    fn cycle(&mut self, _: bool, n: usize, _: &[String]) -> Result<(), ChryError> {
         if n.is_odd() {
             self.toggle()
         } else {

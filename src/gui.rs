@@ -13,11 +13,10 @@ use std::sync::mpsc::Sender;
 use cairo::{Context, ImageSurface, Format};
 use gdk::{DisplayExt, EventMask};
 use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimationExt};
-use glib::{self, Type};
+use glib;
 use gtk::prelude::*;
-use gtk::{Adjustment, Align, CssProvider, CssProviderExt, Entry, EventBox, Grid, Image, Label, Layout, ListStore, Overlay, ScrolledWindow, self, Stack, StyleContext, TextBuffer, TextView, Value, WidgetExt, Window};
+use gtk::{Adjustment, Align, CssProvider, CssProviderExt, Entry, EventBox, Grid, Image, Label, Layout, Overlay, ScrolledWindow, self, Stack, StyleContext, TextBuffer, TextView, WidgetExt, Window};
 
-use app_path;
 use completion::gui::CompleterUI;
 use constant;
 use errors::*;
@@ -27,7 +26,6 @@ use size::{Coord, CoordPx, FitTo, Region, Size};
 use state::{Drawing, Style};
 use ui_event::UIEvent;
 use util::num::feq;
-use util;
 
 
 
@@ -50,7 +48,6 @@ pub struct Gui {
     cells: Vec<Cell>,
     completer: CompleterUI,
     css_provider: CssProvider,
-    entry_history: ListStore,
     grid: Grid,
     grid_size: Size,
     hidden_label: Label,
@@ -162,10 +159,6 @@ impl Gui {
             it.add(&status_bar_inner);
         });
 
-        let entry_history = tap!(it = ListStore::new(&[Type::String]), {
-            let _ = load_initial_completion(&it);
-        });
-
         let operation_entry = tap!(it = Entry::new(), {
             WidgetExt::set_name(&it, "command-line-entry");
             it.set_text("");
@@ -226,7 +219,6 @@ impl Gui {
             cells,
             completer,
             css_provider,
-            entry_history,
             event_box,
             grid,
             grid_size: Size::new(1, 1),
@@ -285,7 +277,7 @@ impl Gui {
         }
     }
 
-    pub fn pop_operation_entry(&self) -> Result<Option<Operation>, Box<Error>> {
+    pub fn pop_operation_entry(&mut self) -> Result<Option<Operation>, Box<Error>> {
         if_let_some!(result = self.operation_entry.get_text(), Ok(None));
         if result.is_empty() {
             return Ok(None);
@@ -295,7 +287,7 @@ impl Gui {
 
         let op = Operation::parse_fuzziness(&result);
         if op.is_ok() {
-            append_completion_entry(&self.entry_history, &result, true);
+            self.completer.push_history(result);
         }
 
         Ok(Some(op?))
@@ -788,25 +780,6 @@ impl Views {
     }
 }
 
-
-fn append_completion_entry(store: &ListStore, entry: &str, historize: bool) {
-    if historize {
-        let _ = util::file::write_line(entry, &Some(app_path::entry_history()));
-    }
-
-    let iter = store.append();
-    let value = Value::from(entry);
-    store.set_value(&iter, 0, &value);
-}
-
-fn load_initial_completion(store: &ListStore) -> Result<(), Box<Error>> {
-    let path = app_path::entry_history();
-    let lines = util::file::read_lines(&path)?;
-    for line in &lines {
-        append_completion_entry(store, line, false);
-    }
-    Ok(())
-}
 
 fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), BoxedError> {
     use gdk::prelude::ContextExt;

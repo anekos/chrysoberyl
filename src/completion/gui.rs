@@ -1,4 +1,6 @@
 
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::collections::HashSet;
 
 use glib::Type;
@@ -10,12 +12,15 @@ use completion::path::get_candidates;
 use key::Key;
 use util::string::substr;
 
+use completion::history::History;
+
 
 
 pub struct CompleterUI {
     pub window: ScrolledWindow,
     candidates: ListStore,
     entry: Entry,
+    history: Rc<RefCell<History>>,
 }
 
 
@@ -37,6 +42,7 @@ impl CompleterUI {
 
         let definition = Definition::new();
         let candidates = ListStore::new(&[Type::String]);
+        let history = Rc::new(RefCell::new(History::new()));
 
         let tree_view = tap!(it = TreeView::new_with_model(&candidates), {
             WidgetExt::set_name(&it, "command-line-candidates");
@@ -69,13 +75,13 @@ impl CompleterUI {
         let entry_buffer = EntryBuffer::new(None);
         entry.set_buffer(&entry_buffer);
 
-        entry.connect_key_press_event(clone_army!([candidates, ignore_keys, previous_keys] move |ref entry, key| {
+        entry.connect_key_press_event(clone_army!([candidates, ignore_keys, previous_keys, history] move |ref entry, key| {
             let position = entry.get_property_cursor_position();
             let text = entry.get_text().unwrap();
             let state = get_part(&text, position as usize);
             let key = Key::from(key);
 
-            if make_humanism(&key, entry) {
+            if make_humanism(&key, entry) || pull_history(&key, &history, entry) {
                 return Inhibit(true);
             }
 
@@ -103,12 +109,19 @@ impl CompleterUI {
             Inhibit(false)
         }));
 
-        CompleterUI { window, candidates, entry: entry.clone() }
+        CompleterUI { window, candidates, entry: entry.clone(), history }
     }
 
     pub fn clear(&self) {
+        let mut history = self.history.borrow_mut();
+        history.reset();
         self.candidates.clear();
         self.entry.set_text("");
+    }
+
+    pub fn push_history(&mut self, line: String) {
+        let mut history = self.history.borrow_mut();
+        history.push(line);
     }
 }
 
@@ -261,7 +274,7 @@ fn make_humanism(key: &Key, entry: &Entry) -> bool {
             entry.emit_move_cursor(MovementStep::BufferEnds, -1, true);
         },
         "C-h" => entry.emit_delete_from_cursor(DeleteType::Chars, -1),
-        "C-k" => entry.emit_delete_from_cursor(DeleteType::DisplayLineEnds, 1),
+        // "C-k" => entry.emit_delete_from_cursor(DeleteType::DisplayLineEnds, 1),
         "C-u" => entry.emit_delete_from_cursor(DeleteType::DisplayLines, -1),
         "C-w" => entry.emit_delete_from_cursor(DeleteType::WordEnds, -1),
         "C-e" => entry.emit_move_cursor(MovementStep::BufferEnds, 1, false),
@@ -323,6 +336,29 @@ fn set_if_match(store: &ListStore, part: &str, candidate: &str) {
         let value = Value::from(candidate);
         store.set_value(&iter, 0, &value);
     }
+}
+
+fn pull_history(key: &Key, history: &Rc<RefCell<History>>, entry: &Entry) -> bool {
+    use gtk::MovementStep;
+
+    match key.as_str() {
+        "C-l" => {
+            let mut history = history.borrow_mut();
+            if let Some(line) = history.forward() {
+                entry.set_text(line);
+            }
+        },
+        "C-k" => {
+            let mut history = history.borrow_mut();
+            if let Some(line) = history.backward() {
+                entry.set_text(line);
+            }
+        }
+        _ => return false,
+    }
+
+    entry.emit_move_cursor(MovementStep::BufferEnds, 1, false);
+    true
 }
 
 

@@ -168,7 +168,7 @@ If you define as below...
 @define-switch my-option ; @views 1 ; @disable reverse @@ ; @views 2 ; @enable reverse
 ```
 
-then you can `@cycle my-option` to execute `; @views 1 ; @disable reverse` or `; @views 2 ; @enable reverse`.
+then you can use `@cycle my-option` to execute `; @views 1 ; @disable reverse` or `; @views 2 ; @enable reverse`.
 
 
 ## @delete <FILTER_EXPRESSION>

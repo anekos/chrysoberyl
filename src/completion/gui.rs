@@ -1,5 +1,7 @@
 
+use std::cell::RefCell;
 use std::collections::HashSet;
+use std::rc::Rc;
 
 use glib::Type;
 use gtk::prelude::*;
@@ -15,6 +17,7 @@ use util::string::substr;
 pub struct CompleterUI {
     pub window: ScrolledWindow,
     candidates: ListStore,
+    definition: Rc<RefCell<Definition>>,
     entry: Entry,
 }
 
@@ -35,7 +38,7 @@ impl CompleterUI {
         let previous_keys = hashset!{"ISO_Left_Tab", "Up", "C-p"};
         let ignore_keys: HashSet<&'static str> = hashset!{"Tab", "Down", "C-n"}.union(&previous_keys).cloned().collect();
 
-        let definition = Definition::new();
+        let definition = Rc::new(RefCell::new(Definition::new()));
         let candidates = ListStore::new(&[Type::String]);
 
         let tree_view = tap!(it = TreeView::new_with_model(&candidates), {
@@ -87,7 +90,7 @@ impl CompleterUI {
             Inhibit(false)
         }));
 
-        entry.connect_key_release_event(clone_army!([candidates] move |ref entry, key| {
+        entry.connect_key_release_event(clone_army!([candidates, definition] move |ref entry, key| {
             let position = entry.get_property_cursor_position();
             let text = entry.get_text().unwrap();
             let state = get_part(&text, position as usize);
@@ -97,18 +100,24 @@ impl CompleterUI {
                 return Inhibit(true);
             }
 
+            let definition = definition.borrow();
             let result = make_candidates(&state, &definition);
             set_candidates(state.text, &candidates, &result);
 
             Inhibit(false)
         }));
 
-        CompleterUI { window, candidates, entry: entry.clone() }
+        CompleterUI { window, candidates, definition, entry: entry.clone() }
     }
 
     pub fn clear(&self) {
         self.candidates.clear();
         self.entry.set_text("");
+    }
+
+    pub fn update_user_operations(&mut self, operations: Vec<String>) {
+        let mut definition = self.definition.borrow_mut();
+        definition.update_user_operations(operations);
     }
 }
 
@@ -196,7 +205,7 @@ fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
         }
     };
 
-    if_let_some!(operation = state.operation(), definition.operations.clone());
+    if_let_some!(operation = state.operation(), definition.operations());
     let mut result = vec![];
     if_let_some!(def_args = definition.arguments.get(substr(operation, 1, operation.len() - 1)), result);
 

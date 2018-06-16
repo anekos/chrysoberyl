@@ -31,9 +31,10 @@ pub enum Argument {
 pub struct Definition {
     pub arguments: HashMap<String, Rc<Vec<Argument>>>,
     pub event_names: Vec<String>,
-    pub operations: Vec<String>,
     pub option_values: HashMap<String, OptionValue>,
     pub options: Vec<String>,
+    operations: Vec<String>,
+    original_operations: Vec<String>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -45,7 +46,7 @@ pub enum OptionValue {
 
 impl Definition {
     pub fn new() -> Self {
-        let mut operations = vec![];
+        let mut original_operations = vec![];
         let mut options: Vec<String> = vec![];
         let mut option_values = HashMap::<String, OptionValue>::new();
         let mut arguments = HashMap::new();
@@ -85,7 +86,7 @@ impl Definition {
                                 panic!("Duplicated: {:?}", op);
                             }
                             if i == 0 {
-                                operations.push(format!("@{}", op.clone()));
+                                original_operations.push(format!("@{}", op.clone()));
                             }
                             if !args.is_empty() {
                                 arguments.insert(op, args.clone());
@@ -100,7 +101,18 @@ impl Definition {
             }
         }
 
-        Definition { arguments, event_names, operations, options, option_values }
+        Definition { arguments, event_names, operations: vec![], option_values, options, original_operations }
+    }
+
+    pub fn operations(&self) -> Vec<String> {
+        self.operations.clone()
+    }
+
+    pub fn update_user_operations(&mut self, user_operations: Vec<String>) {
+        self.operations.clear();
+        self.operations.extend_from_slice(&self.original_operations);
+        self.operations.extend_from_slice(&user_operations);
+        self.operations.sort();
     }
 }
 

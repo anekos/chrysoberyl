@@ -820,12 +820,23 @@ impl App {
         self.gui.set_status_bar_markup(&text);
     }
 
-    fn update_ui_visibility(&self) {
+    fn update_ui_visibility(&mut self) {
         self.gui.set_status_bar_visibility(self.states.status_bar);
-        if self.gui.change_screen(self.states.screen) && self.states.screen == Screen::LogView {
-            let mut buffer = self.log.buffer.lock().unwrap();
-            self.gui.append_logs(&buffer);
-            buffer.clear();
+        if !self.gui.change_screen(self.states.screen) {
+            return;
+        }
+
+        match self.states.screen {
+            Screen::LogView => {
+                let mut buffer = self.log.buffer.lock().unwrap();
+                self.gui.append_logs(&buffer);
+                buffer.clear();
+            },
+            Screen::CommandLine => {
+                let user_operations = self.mapping.operation_mapping.operations();
+                self.gui.update_user_operations(user_operations);
+            },
+            _ => (),
         }
     }
 

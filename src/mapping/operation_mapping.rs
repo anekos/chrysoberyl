@@ -26,4 +26,8 @@ impl OperationMapping {
     pub fn matched(&self, name: &str) -> Option<Vec<String>> {
         self.table.get(name).cloned()
     }
+
+    pub fn operations(&self) -> Vec<String> {
+        self.table.keys().map(|it| format!("@{}", it)).collect()
+    }
 }

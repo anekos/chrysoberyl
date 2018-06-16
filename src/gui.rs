@@ -347,7 +347,7 @@ impl Gui {
         }
     }
 
-    pub fn change_screen(&self, screen: Screen) -> bool {
+    pub fn change_screen(&mut self, screen: Screen) -> bool {
         let current = self.get_screen();
         if current == screen {
             return false;
@@ -432,6 +432,10 @@ impl Gui {
             Style::Script(ref path, _) =>
                 self.css_provider.load_from_path(&path.to_string()),
         }
+    }
+
+    pub fn update_user_operations(&mut self, operations: Vec<String>) {
+        self.completer.update_user_operations(operations);
     }
 
     fn create_images(&mut self, state: &Views) {

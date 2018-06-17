@@ -473,6 +473,27 @@ pub fn parse_load(args: &[String]) -> Result<Operation, ParsingError> {
 }
 
 pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingError> {
+    fn parse_map_operation(args: &[String], register: bool) -> Result<Operation, ParsingError> {
+        let mut name = "".to_owned();
+        let mut to: Vec<String> = vec![];
+
+        {
+            let mut ap = ArgumentParser::new();
+            ap.refer(&mut name).add_argument("from", Store, "Operation name").required();
+            if register {
+                ap.refer(&mut to).add_argument("to", List, "Operation").required();
+            }
+            parse_args(&mut ap, args)
+        } .map(|_| {
+            let target = MappingTarget::Operation(name);
+            if register {
+                Operation::Map(target, None, to)
+            } else {
+                Operation::Unmap(target)
+            }
+        })
+    }
+
     fn parse_map_input(args: &[String], register: bool) -> Result<Operation, ParsingError> {
         let mut from = "".to_owned();
         let mut to: Vec<String> = vec![];
@@ -554,6 +575,7 @@ pub fn parse_map(args: &[String], register: bool) -> Result<Operation, ParsingEr
         match &**target {
             "i" | "input" => parse_map_input(args, register),
             "e" | "event" => parse_map_event(args, register),
+            "o" | "operation" => parse_map_operation(args, register),
             "r" | "region" => parse_map_region(args, register),
             _ => Err(ParsingError::InvalidArgument(format!("Invalid mapping target: {}", target)))
         }

@@ -344,9 +344,10 @@ pub fn on_fire(app: &mut App, mapped: &Mapped, context: Option<OperationContext>
     let (width, height) = app.gui.window.get_size();
 
     if_let_some!((operations, inputs) = app.mapping.matched(mapped, width, height, true), {
-        if let Mapped::Event(_) = *mapped {
-        } else {
-            puts_event!("mapped", "type" => mapped.type_name(), "name" => s!(mapped));
+        match *mapped {
+            Mapped::Event(_) => (),
+            Mapped::Operation(ref name, _) => return Err(Box::new(ChryError::UndefinedOperation(o!(name)))),
+            _ => puts_event!("mapped", "type" => mapped.type_name(), "name" => s!(mapped)),
         }
         Ok(())
     });
@@ -630,6 +631,8 @@ pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, opera
             app.mapping.register_event(event_name, group, remain, operation),
         Event(None, _) =>
             panic!("WTF"),
+        Operation(name) =>
+            app.mapping.register_operation(name, operation),
         Region(button) =>
             app.mapping.register_region(button, operation),
     }
@@ -1381,6 +1384,8 @@ pub fn on_unmap(app: &mut App, target: &MappingTarget) -> EventResult {
             app.mapping.unregister_input(key_sequence, region),
         Event(ref event_name, ref group) =>
             app.mapping.unregister_event(event_name, group),
+        Operation(ref name) =>
+            app.mapping.unregister_operation(name),
         Region(ref button) =>
             app.mapping.unregister_region(button),
     }

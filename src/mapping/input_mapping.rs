@@ -8,7 +8,6 @@ use size::{CoordPx, Region};
 
 type OperationCode = Vec<String>;
 
-
 pub struct InputMapping {
     pub depth: usize,
     pub table: HashMap<Key, Node>

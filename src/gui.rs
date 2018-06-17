@@ -426,7 +426,7 @@ impl Gui {
         }
     }
 
-    pub fn update_user_operations(&mut self, operations: Vec<String>) {
+    pub fn update_user_operations(&mut self, operations: &[String]) {
         self.completer.update_user_operations(operations);
     }
 

@@ -126,7 +126,7 @@ impl CompleterUI {
         history.push(line);
     }
 
-    pub fn update_user_operations(&mut self, operations: Vec<String>) {
+    pub fn update_user_operations(&mut self, operations: &[String]) {
         let mut definition = self.definition.borrow_mut();
         definition.update_user_operations(operations);
     }

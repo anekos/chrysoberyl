@@ -834,7 +834,7 @@ impl App {
             },
             Screen::CommandLine => {
                 let user_operations = self.mapping.operation_mapping.operations();
-                self.gui.update_user_operations(user_operations);
+                self.gui.update_user_operations(&user_operations);
             },
             _ => (),
         }

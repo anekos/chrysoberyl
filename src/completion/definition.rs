@@ -108,7 +108,7 @@ impl Definition {
         self.operations.clone()
     }
 
-    pub fn update_user_operations(&mut self, user_operations: Vec<String>) {
+    pub fn update_user_operations(&mut self, user_operations: &[String]) {
         self.operations.clear();
         self.operations.extend_from_slice(&self.original_operations);
         self.operations.extend_from_slice(&user_operations);

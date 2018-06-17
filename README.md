@@ -329,7 +329,7 @@ Load operation script file.
 If `--search-path` is given, load from `search-path`.
 
 
-## @map (input|event|region) ...
+## @map (input|event|region|operation) ...
 
 ### @map input [(--region|-r) <REGION>] <INPUT> <OPERATION>
 
@@ -585,7 +585,7 @@ Undo some operations (fill/cherenkov).
 If the result of `FILTER_EXPRESSION` evaluation is false, execute the operation.
 
 
-## @unmap (input|region|event) <NAME>
+## @unmap (input|region|event|operation) <NAME>
 
 Unmap the `@map`ped.
 

@@ -351,6 +351,7 @@ pub fn parse_fill(args: &[String]) -> Result<Operation, ParsingError> {
     let mut cell_index = 1;
     let mut region = None;
     let mut color = Color::black();
+    let mut operator = None;
     let mut mask = false;
     let mut shape = Shape::Rectangle;
 
@@ -360,10 +361,11 @@ pub fn parse_fill(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut region).add_option(&["--region", "-r"], StoreOption, "Fill target region");
         ap.refer(&mut color).add_option(&["--color", "-c"], Store, "Fill color");
         ap.refer(&mut mask).add_option(&["--mask", "-m"], StoreTrue, "Mask");
+        ap.refer(&mut operator).add_option(&["--operator", "-o"], StoreOption, "Operator");
         ap.refer(&mut shape).add_option(&["--shape", "-s"], Store, "Shape (rectangle/circle/ellipse)");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Fill(shape, region, color, mask, max!(cell_index, 1) - 1)
+        Operation::Fill(shape, region, color, operator, mask, max!(cell_index, 1) - 1)
     })
 }
 

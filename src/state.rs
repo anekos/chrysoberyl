@@ -10,6 +10,7 @@ use cairo;
 use gtk;
 
 use app_path::{PathList, cache_dir};
+use cherenkov::Operator;
 use color::Color;
 use entry::SearchKey;
 use entry::filter::expression::Expr as FilterExpr;
@@ -64,7 +65,7 @@ pub struct Drawing {
     pub fit_to: FitTo,
     pub horizontal_flip: bool,
     pub link_color: Color,
-    pub mask_operator: MaskOperator,
+    pub mask_operator: Operator,
     pub rotation: u8,
     pub vertical_flip: bool,
 }
@@ -75,9 +76,6 @@ pub struct PreFetchState {
     pub limit_of_items: usize,
     pub page_size: usize,
 }
-
-#[derive(Clone, Debug, PartialEq, Copy)]
-pub struct MaskOperator(pub cairo::Operator);
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Alignment(pub gtk::Align);
@@ -151,7 +149,7 @@ impl Default for Drawing {
             fit_to: FitTo::Cell,
             horizontal_flip: false,
             link_color: Color::new4(0, 0, 255, 32),
-            mask_operator: MaskOperator(cairo::Operator::DestIn),
+            mask_operator: Operator(cairo::Operator::DestIn),
             rotation: 0,
             vertical_flip: false,
         }

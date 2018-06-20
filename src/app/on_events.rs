@@ -16,6 +16,7 @@ use natord;
 use rand::distributions::{Distribution, Uniform};
 
 use archive;
+use cherenkov::Operator;
 use cherenkov::fill::Shape;
 use clipboard;
 use color::Color;
@@ -278,7 +279,7 @@ pub fn on_file_changed(app: &mut App, updated: &mut Updated, path: &Path) -> Eve
 
 
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
-pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Option<Region>, color: Color, mask: bool, cell_index: usize, context: Option<OperationContext>) -> EventResult {
+pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Option<Region>, color: Color, operator: Option<Operator>, mask: bool, cell_index: usize, context: Option<OperationContext>) -> EventResult {
     use cherenkov::{Modifier, Che};
 
     let (region, cell_index) = extract_region_from_context(context)
@@ -292,7 +293,7 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Optio
             &cell_size,
             Modifier {
                 search_highlight: false,
-                che: Che::Fill(shape, region, color, mask),
+                che: Che::Fill(shape, region, color, operator, mask),
             },
             &app.states.drawing);
         updated.image = true;
@@ -1081,7 +1082,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
             let cell_size = app.gui.get_cell_size(&app.states.view);
 
             app.cache.clear_entry_search_highlights(&entry);
-            let modifiers: Vec<Modifier> = regions.iter().map(|region| Modifier { search_highlight: true, che: Che::Fill(Shape::Rectangle, *region, color, false) }).collect();
+            let modifiers: Vec<Modifier> = regions.iter().map(|region| Modifier { search_highlight: true, che: Che::Fill(Shape::Rectangle, *region, color, None, false) }).collect();
             app.cache.cherenkov(
                 &entry,
                 &cell_size,

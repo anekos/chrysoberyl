@@ -16,6 +16,7 @@ pub enum Value {
     Directory,
     File,
     Literals(Vec<String>),
+    Operator,
     OptionName,
     OptionValue,
     Path,
@@ -184,6 +185,7 @@ fn value() -> Parser<char, Value> {
         match &*it {
             "DIRECTORY" => Value::Directory,
             "FILE" => Value::File,
+            "OPERATOR" => Value::Operator,
             "OPTION" => Value::OptionName,
             "PATH" => Value::Path,
             "VALUE" => Value::OptionValue,
@@ -209,6 +211,7 @@ fn test_parser() {
     assert_eq!(parse("[--neko <MEOW>]", flag), Ok(Flag(vec![o!("neko")], Some(Any))));
     assert_eq!(parse("[--cat|-c <DIRECTORY>]", flag), Ok(Flag(vec![o!("cat"), o!("c")], Some(Directory))));
     assert_eq!(parse("[(--second|-S) <DIRECTORY>]", flag), Ok(Flag(vec![o!("second"), o!("S")], Some(Directory))));
+    assert_eq!(parse("[(--operator|-o) <OPERATOR>]", flag), Ok(Flag(vec![o!("operator"), o!("o")], Some(Operator))));
 
     assert_eq!(
         parse("@cat <FILE>", definition),

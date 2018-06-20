@@ -1,8 +1,10 @@
 
 use std::collections::HashMap;
 use std::error::Error;
+use std::fmt;
+use std::str::FromStr;
 
-use cairo::{Context, ImageSurface, Format, SurfacePattern, Operator};
+use cairo::{Context, Format, ImageSurface, self, SurfacePattern};
 use gdk::prelude::ContextExt;
 use gdk_pixbuf::{Pixbuf, PixbufExt};
 
@@ -15,8 +17,8 @@ use size::{Size, Region};
 use state::Drawing;
 
 pub mod fill;
-pub mod nova;
 pub mod modified;
+pub mod nova;
 
 use self::fill::Shape;
 use self::modified::Modified;
@@ -32,7 +34,7 @@ pub struct Modifier {
 #[derive(Debug, Clone)]
 pub enum Che {
     Nova(nova::Nova),
-    Fill(Shape, Region, Color, bool),
+    Fill(Shape, Region, Color, Option<Operator>, bool),
 }
 
 #[derive(Clone)]
@@ -48,6 +50,9 @@ pub struct CacheEntry {
     modifiers: Vec<Modifier>,
     expired: bool,
 }
+
+#[derive(Clone, Debug, PartialEq, Copy)]
+pub struct Operator(pub cairo::Operator);
 
 
 
@@ -162,6 +167,91 @@ impl Che {
     }
 }
 
+impl FromStr for Operator {
+    type Err = ChryError;
+
+    fn from_str(src: &str) -> Result<Self, ChryError> {
+        use self::cairo::Operator::*;
+
+        let result = match src {
+            "clear" => Clear,
+            "source" => Source,
+            "over" => Over,
+            "in" => In,
+            "out" => Out,
+            "atop" => Atop,
+            "dest" => Dest,
+            "dest-over" => DestOver,
+            "dest-in" => DestIn,
+            "dest-out" => DestOut,
+            "dest-atop" => DestAtop,
+            "xor" => Xor,
+            "add" => Add,
+            "saturate" => Saturate,
+            "multiply" => Multiply,
+            "screen" => Screen,
+            "overlay" => Overlay,
+            "darken" => Darken,
+            "lighten" => Lighten,
+            "color-dodge" => ColorDodge,
+            "color-burn" => ColorBurn,
+            "hard-light" => HardLight,
+            "soft-light" => SoftLight,
+            "difference" => Difference,
+            "exclusion" => Exclusion,
+            "hsl-hue" => HslHue,
+            "hsl-saturation" => HslSaturation,
+            "hsl-color" => HslColor,
+            "hsl-luminosity" => HslLuminosity,
+            _ => return Err(ChryError::InvalidValue(o!(src))),
+        };
+
+        Ok(Operator(result))
+    }
+}
+
+impl fmt::Display for Operator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use cairo::Operator::*;
+
+        let result =
+            match self.0 {
+                Clear => "clear",
+                Source => "source",
+                Over => "over",
+                In => "in",
+                Out => "out",
+                Atop => "atop",
+                Dest => "dest",
+                DestOver => "dest-over",
+                DestIn => "dest-in",
+                DestOut => "dest-out",
+                DestAtop => "dest-atop",
+                Xor => "xor",
+                Add => "add",
+                Saturate => "saturate",
+                Multiply => "multiply",
+                Screen => "screen",
+                Overlay => "overlay",
+                Darken => "darken",
+                Lighten => "lighten",
+                ColorDodge => "color-dodge",
+                ColorBurn => "color-burn",
+                HardLight => "hard-light",
+                SoftLight => "soft-light",
+                Difference => "difference",
+                Exclusion => "exclusion",
+                HslHue => "hsl-hue",
+                HslSaturation => "hsl-saturation",
+                HslColor => "hsl-color",
+                HslLuminosity => "hsl-luminosity",
+            };
+
+        write!(f, "{}", result)
+    }
+}
+
+
 
 fn get_image_buffer(cache_entry: &mut CacheEntry, entry: &Entry, cell_size: &Size, drawing: &Drawing) -> Result<ImageBuffer, Box<Error>> {
     if let Some(image) = cache_entry.get(cell_size, drawing) {
@@ -204,16 +294,16 @@ fn re_cherenkov(entry: &Entry, cell_size: &Size, drawing: &Drawing, modifiers: &
 fn cherenkov_pixbuf(modified: Modified, mask_surface: Option<ImageSurface>, che: &Che) -> (Modified, Option<ImageSurface>) {
     match *che {
         Che::Nova(ref che) => (nova::nova_(che, modified), mask_surface),
-        Che::Fill(shape, ref region, ref color, false) =>
-            (fill::fill(shape, region, color, modified), mask_surface),
-        Che::Fill(shape, ref region, ref color, true) => {
-            let mask_surface =  fill::mask(mask_surface, shape, region, color, &modified);
+        Che::Fill(shape, ref region, ref color, operator, false) =>
+            (fill::fill(shape, region, color, operator, modified), mask_surface),
+        Che::Fill(shape, ref region, ref color, operator, true) => {
+            let mask_surface =  fill::mask(mask_surface, shape, region, color, operator, &modified);
             (modified, Some(mask_surface))
         }
     }
 }
 
-fn apply_mask(pixbuf: &Pixbuf, mask: &ImageSurface, operator: Operator) -> Pixbuf {
+fn apply_mask(pixbuf: &Pixbuf, mask: &ImageSurface, operator: cairo::Operator) -> Pixbuf {
     let (w, h) = (pixbuf.get_width(), pixbuf.get_height());
     let surface = ImageSurface::create(Format::ARgb32, w, h).unwrap();
     let context = Context::new(&surface);

@@ -238,7 +238,7 @@ fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
                 }
             }) {
                 if let Some(flag_value) = flag_value {
-                    if i == state.args.len() - 1 { // at last
+                    if i == state.args.len() - 2 { // at last
                         make(&flag_value, None, &mut result);
                         return result;
                     } else {

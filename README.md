@@ -244,7 +244,7 @@ Copy the current image file to `DIRECTORY_PATH`.
 See `@file-move` to get more information.
 
 
-## @fill [(--shape|-s) <SHAPE>] [(--cell-index|-i) <CELL_INDEX>] [(--region|-r) <REGION>] [(--color|-c) <CSS_COLOR>] [--mask|-m]
+## @fill [(--shape|-s) <SHAPE>] [(--cell-index|-i) <CELL_INDEX>] [(--region|-r) <REGION>] [(--color|-c) <CSS_COLOR>] [(--operator|-o) <OPERATOR>] [--mask|-m]
 
 Fill the shape.
 
@@ -715,7 +715,8 @@ log-file
 :   Path for log.
 
 mask-operator
-:   TODO
+:   type: enum
+:   values: clear, source, over, in, out, atop, dest, dest-over, dest-in, dest-out, dest-atop, xor, add, saturate, multiply, screen, overlay, darken, lighten, color-dodge, color-burn, hard-light, soft-light, difference, exclusion, hsl-hue, hsl-saturation, hsl-color, hsl-luminosity
 
 path
 :   Script search path

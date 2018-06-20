@@ -223,8 +223,8 @@ impl App {
                     on_expand(self, &mut updated, recursive, base.clone()),
                 FileChanged(ref path) =>
                     on_file_changed(self, &mut updated, path),
-                Fill(shape, region, color, mask, cell_index) =>
-                    on_fill(self, &mut updated, shape, region, color, mask, cell_index, context),
+                Fill(shape, region, color, operator, mask, cell_index) =>
+                    on_fill(self, &mut updated, shape, region, color, operator, mask, cell_index, context),
                 Filter(dynamic, expr) =>
                     on_filter(self, &mut updated, dynamic, *expr),
                 Fire(ref mapped) =>

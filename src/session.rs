@@ -478,47 +478,6 @@ impl fmt::Display for FitTo {
 }
 
 
-impl fmt::Display for state::MaskOperator {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use cairo::Operator::*;
-
-        let result =
-            match self.0 {
-                Clear => "clear",
-                Source => "source",
-                Over => "over",
-                In => "in",
-                Out => "out",
-                Atop => "atop",
-                Dest => "dest",
-                DestOver => "dest-over",
-                DestIn => "dest-in",
-                DestOut => "dest-out",
-                DestAtop => "dest-atop",
-                Xor => "xor",
-                Add => "add",
-                Saturate => "saturate",
-                Multiply => "multiply",
-                Screen => "screen",
-                Overlay => "overlay",
-                Darken => "darken",
-                Lighten => "lighten",
-                ColorDodge => "color-dodge",
-                ColorBurn => "color-burn",
-                HardLight => "hard-light",
-                SoftLight => "soft-light",
-                Difference => "difference",
-                Exclusion => "exclusion",
-                HslHue => "hsl-hue",
-                HslSaturation => "hsl-saturation",
-                HslColor => "hsl-color",
-                HslLuminosity => "hsl-luminosity",
-            };
-
-        write!(f, "{}", result)
-    }
-}
-
 impl fmt::Display for state::Alignment {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use gtk::Align::*;

@@ -6,12 +6,13 @@ use std::time::Duration;
 use cairo;
 use num::Integer;
 
+use cherenkov::Operator;
 use color::Color;
 use gui::{Position, Screen};
 use option::*;
 use resolution;
 use size::FitTo;
-use state::{Alignment, AutoPaging, MaskOperator};
+use state::{Alignment, AutoPaging};
 
 use option::common;
 
@@ -329,50 +330,7 @@ impl OptionValue for Position {
 }
 
 
-impl FromStr for MaskOperator {
-    type Err = ChryError;
-
-    fn from_str(src: &str) -> Result<Self, ChryError> {
-        use self::cairo::Operator::*;
-
-        let result = match src {
-            "clear" => Clear,
-            "source" => Source,
-            "over" => Over,
-            "in" => In,
-            "out" => Out,
-            "atop" => Atop,
-            "dest" => Dest,
-            "dest-over" => DestOver,
-            "dest-in" => DestIn,
-            "dest-out" => DestOut,
-            "dest-atop" => DestAtop,
-            "xor" => Xor,
-            "add" => Add,
-            "saturate" => Saturate,
-            "multiply" => Multiply,
-            "screen" => Screen,
-            "overlay" => Overlay,
-            "darken" => Darken,
-            "lighten" => Lighten,
-            "color-dodge" => ColorDodge,
-            "color-burn" => ColorBurn,
-            "hard-light" => HardLight,
-            "soft-light" => SoftLight,
-            "difference" => Difference,
-            "exclusion" => Exclusion,
-            "hsl-hue" => HslHue,
-            "hsl-saturation" => HslSaturation,
-            "hsl-color" => HslColor,
-            "hsl-luminosity" => HslLuminosity,
-            _ => return Err(ChryError::InvalidValue(o!(src))),
-        };
-
-        Ok(MaskOperator(result))
-    }
-}
-
-impl OptionValue for MaskOperator {
+impl OptionValue for Operator {
     fn set(&mut self, value: &str) -> Result<(), ChryError> {
         value.parse().map(|value| {
             *self = value;
@@ -384,35 +342,35 @@ impl OptionValue for MaskOperator {
         use self::cairo::Operator::*;
 
         set_cycled(self, &[
-            MaskOperator(Clear),
-            MaskOperator(Source),
-            MaskOperator(Over),
-            MaskOperator(In),
-            MaskOperator(Out),
-            MaskOperator(Atop),
-            MaskOperator(Dest),
-            MaskOperator(DestOver),
-            MaskOperator(DestIn),
-            MaskOperator(DestOut),
-            MaskOperator(DestAtop),
-            MaskOperator(Xor),
-            MaskOperator(Add),
-            MaskOperator(Saturate),
-            MaskOperator(Multiply),
-            MaskOperator(Screen),
-            MaskOperator(Overlay),
-            MaskOperator(Darken),
-            MaskOperator(Lighten),
-            MaskOperator(ColorDodge),
-            MaskOperator(ColorBurn),
-            MaskOperator(HardLight),
-            MaskOperator(SoftLight),
-            MaskOperator(Difference),
-            MaskOperator(Exclusion),
-            MaskOperator(HslHue),
-            MaskOperator(HslSaturation),
-            MaskOperator(HslColor),
-            MaskOperator(HslLuminosity),
+            Operator(Clear),
+            Operator(Source),
+            Operator(Over),
+            Operator(In),
+            Operator(Out),
+            Operator(Atop),
+            Operator(Dest),
+            Operator(DestOver),
+            Operator(DestIn),
+            Operator(DestOut),
+            Operator(DestAtop),
+            Operator(Xor),
+            Operator(Add),
+            Operator(Saturate),
+            Operator(Multiply),
+            Operator(Screen),
+            Operator(Overlay),
+            Operator(Darken),
+            Operator(Lighten),
+            Operator(ColorDodge),
+            Operator(ColorBurn),
+            Operator(HardLight),
+            Operator(SoftLight),
+            Operator(Difference),
+            Operator(Exclusion),
+            Operator(HslHue),
+            Operator(HslSaturation),
+            Operator(HslColor),
+            Operator(HslLuminosity),
         ], reverse, n, candidates)
     }
 }

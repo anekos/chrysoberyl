@@ -9,6 +9,7 @@ use std::time::Duration;
 use cmdline_parser::Parser;
 
 use archive::ArchiveEntry;
+use cherenkov::Operator;
 use cherenkov::fill::Shape;
 use color::Color;
 use command_line;
@@ -56,7 +57,7 @@ pub enum Operation {
     Eval(Vec<String>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
     FileChanged(PathBuf),
-    Fill(Shape, Option<Region>, Color, bool, usize), /* region, mask, cell index */
+    Fill(Shape, Option<Region>, Color, Option<Operator>, bool, usize), /* shape, region, color, fill_operator, mask, cell index */
     Filter(bool, Box<Option<entry::filter::expression::Expr>>), /* dynamic, filter expression */
     Fire(mapping::Mapped),
     First(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
@@ -471,7 +472,7 @@ impl fmt::Debug for Operation {
             Fire(_) => "Fire",
             First(_, _, _, _) => "First",
             FileChanged(_) => "FileChanged",
-            Fill(_, _, _, _, _) => "Fill",
+            Fill(_, _, _, _, _, _) => "Fill",
             Filter(_, _) => "Filter",
             FlushBuffer => "FlushBuffer",
             FlyLeaves(_) => "FlyLeaves",

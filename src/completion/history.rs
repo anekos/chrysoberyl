@@ -56,6 +56,11 @@ impl History {
     }
 
     pub fn push(&mut self, line: String) {
+        if let Some(last) = self.items.last() {
+            if line == *last {
+                return;
+            }
+        }
         let _ = write_line(&line, &Some(app_path::entry_history()));
         self.items.push(line);
     }

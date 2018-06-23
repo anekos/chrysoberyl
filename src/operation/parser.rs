@@ -973,6 +973,7 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, ParsingError> {
     let mut async = true;
     let mut read_operations = false;
     let mut search_path = false;
+    let mut as_binary = false;
     let mut command_line: Vec<String> = vec![];
     let mut sessions: Vec<Session> = vec![];
 
@@ -985,12 +986,14 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut read_operations)
             .add_option(&["--operation", "-o"], StoreTrue, "Read operations from stdout")
             .add_option(&["--no-operation", "-O"], StoreTrue, "Dont read operations from stdout");
+        ap.refer(&mut as_binary)
+            .add_option(&["--as-binary", "--as-bin", "-b"], StoreTrue, "As image file");
         ap.refer(&mut search_path).add_option(&["--search-path", "-p"], StoreTrue, SEARCH_PATH_DESC);
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
     } .and_then(|_| {
         let command_line = command_line.into_iter().map(Expandable::new).collect();
-        Ok(Operation::Shell(async, read_operations, search_path, command_line, sessions))
+        Ok(Operation::Shell(async, read_operations, search_path, as_binary, command_line, sessions))
     })
 }
 

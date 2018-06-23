@@ -15,18 +15,18 @@ use util::string::join;
 
 type Envs = HashMap<String, String>;
 
-pub fn call(async: bool, command_line: &[String], stdin: Option<String>, tx: Option<Sender<Operation>>) {
+pub fn call(async: bool, command_line: &[String], stdin: Option<String>, as_binary: bool, tx: Option<Sender<Operation>>) {
     let envs = if async { Some(store_envs()) } else { None };
 
     if async {
         let command_line = command_line.to_vec();
-        spawn(move || run(tx, envs, &command_line, stdin));
+        spawn(move || run(tx, envs, &command_line, stdin, as_binary));
     } else {
-        run(tx, envs, command_line, stdin);
+        run(tx, envs, command_line, stdin, as_binary);
     }
 }
 
-fn run(tx: Option<Sender<Operation>>, envs: Option<Envs>, command_line: &[String], stdin: Option<String>) {
+fn run(tx: Option<Sender<Operation>>, envs: Option<Envs>, command_line: &[String], stdin: Option<String>, as_binary: bool) {
     let mut command = Command::new("setsid");
     command
         .args(command_line);
@@ -46,7 +46,7 @@ fn run(tx: Option<Sender<Operation>>, envs: Option<Envs>, command_line: &[String
     termination::register(terminator.clone());
 
     puts_event!("shell/open");
-    match process_stdout(tx, child, stdin) {
+    match process_stdout(tx, child, stdin, as_binary) {
         Ok(_) => puts_event!("shell/close"),
         Err(err) => puts_error!(err, "at" => "shell", "for" => join(command_line, ',')),
     }
@@ -54,7 +54,7 @@ fn run(tx: Option<Sender<Operation>>, envs: Option<Envs>, command_line: &[String
     termination::unregister(&terminator);
 }
 
-fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<String>) -> Result<(), ChryError> {
+fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<String>, as_binary: bool) -> Result<(), ChryError> {
     use std::io::Write;
 
     if let Some(stdin) = stdin {
@@ -64,13 +64,21 @@ fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<Str
     if let Some(tx) = tx {
         let stderr = child.stderr;
         spawn(move || pass("stderr", stderr));
-        if let Some(stdout) = child.stdout {
-            for line in BufReader::new(stdout).lines() {
-                let line = line.unwrap();
-                puts_event!("shell/stdout", "line" => line);
-                match Operation::parse_fuzziness(&line) {
-                    Ok(op) => tx.send(op).unwrap(),
-                    Err(err) => puts_error!(err, "at" => "shell_stdout", "for" => &line)
+        if let Some(mut stdout) = child.stdout {
+            if as_binary {
+                let mut buffer = vec![];
+                match stdout.read_to_end(&mut buffer) {
+                    Ok(_) => tx.send(Operation::PushMemory(buffer, None)).unwrap(),
+                    Err(err) => puts_error!(err, "at" => "shell_stdout/as_binary"),
+                }
+            } else {
+                for line in BufReader::new(stdout).lines() {
+                    let line = line.unwrap();
+                    puts_event!("shell/stdout", "line" => line);
+                    match Operation::parse_fuzziness(&line) {
+                        Ok(op) => tx.send(op).unwrap(),
+                        Err(err) => puts_error!(err, "at" => "shell_stdout", "for" => &line),
+                    }
                 }
             }
         } else {

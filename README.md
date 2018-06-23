@@ -528,7 +528,7 @@ Set ENV.
 Set `COUNT` as value to `OPTION`.
 
 
-## @shell [--async|-a] [--sync|-s] [(--session|-S) <SESSION>]... [--operation|-o] [--no-operation|-O] [--search-path|-p] <COMMAND> <COMMAND_ARG1>...
+## @shell [--async|-a] [--sync|-s] [(--session|-S) <SESSION>]... [--operation|-o] [--no-operation|-O] [--search-path|-p] [--as-binary|-b] <COMMAND> <COMMAND_ARG1>...
 
 Execute shell command.
 If `--operation` is given, chrysoberyl read the STDOUT of the command as operation commands.

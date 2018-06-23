@@ -754,7 +754,7 @@ pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, search_path: 
     if let EntryContent::Pdf(ref path, _) = entry.content {
         let mut stdin = o!("");
         PopplerDocument::new_from_file(&**path).index().write(fmt, separator, &mut stdin);
-        shell::call(async, &expand_all(command_line, search_path, &app.states.path_list), Some(stdin), option!(read_operations, app.tx.clone()));
+        shell::call(async, &expand_all(command_line, search_path, &app.states.path_list), Some(stdin), false, option!(read_operations, app.tx.clone()));
         Ok(())
     } else {
         Err(Box::new(ChryError::Fixed("current entry is not PDF")))
@@ -1118,7 +1118,7 @@ pub fn on_set_env(_: &mut App, name: &str, value: &Option<String>) -> EventResul
     Ok(())
 }
 
-pub fn on_shell(app: &mut App, async: bool, read_operations: bool, search_path: bool, command_line: &[Expandable], sessions: &[Session]) -> EventResult {
+pub fn on_shell(app: &mut App, async: bool, read_operations: bool, search_path: bool, as_binary: bool, command_line: &[Expandable], sessions: &[Session]) -> EventResult {
     let stdin = if !sessions.is_empty() {
         Some(with_ouput_string!(out, write_sessions(app, sessions, out)))
     } else {
@@ -1127,7 +1127,7 @@ pub fn on_shell(app: &mut App, async: bool, read_operations: bool, search_path: 
 
     app.update_counter_env(true);
     let tx = app.tx.clone();
-    shell::call(async, &expand_all(command_line, search_path, &app.states.path_list), stdin, option!(read_operations, tx));
+    shell::call(async, &expand_all(command_line, search_path, &app.states.path_list), stdin, as_binary, option!(read_operations || as_binary, tx));
     Ok(())
 }
 

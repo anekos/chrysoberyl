@@ -227,7 +227,7 @@ e.g)
 Add directory entries (image) on `PATH`.
 
 
-## @file-move [--fail|-f] [--overwrite|-o] [--new|--new-file-name|-n] [(--size|-s) <SIZE>] <DIRECTORY> [<FILE>]
+## @file-move [--fail|-f] [--overwrite|-o] [--new|--new-file-name|-n] [(--size|-s) <SIZE>] [--as-filepath|-F] <DIRECTORY> [<FILE>]
 
 Move the current image file to `DIRECTORY`.
 
@@ -238,7 +238,7 @@ if `--new` is given, then file operation succeeds with generated new file name.
 if `--overwrite` is given, then overwrites destination file.
 
 
-## @file-copy [--fail|-f] [--overwrite|-o] [--new|--new-file-name|-n] [(--size|-s) <SIZE>] <DIRECTORY> [<FILE>]
+## @file-copy [--fail|-f] [--overwrite|-o] [--new|--new-file-name|-n] [(--size|-s) <SIZE>] [--as-filepath|-F] <DIRECTORY> [<FILE>]
 
 Copy the current image file to `DIRECTORY`.
 See `@file-move` to get more information.

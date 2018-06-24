@@ -134,6 +134,7 @@ where F: FnOnce(PathBuf, Option<String>, IfExist, Option<Size>) -> FileOperation
     let mut destination = "".to_owned();
     let mut filename: Option<String> = None;
     let mut if_exist = IfExist::NewFileName;
+    let mut as_filepath = false;
     let mut size = None;
 
     {
@@ -144,12 +145,23 @@ where F: FnOnce(PathBuf, Option<String>, IfExist, Option<Size>) -> FileOperation
             .add_option(&["--new", "--new-file-name", "-n"], StoreConst(IfExist::NewFileName), "Generate new file name if file exists (default)");
         ap.refer(&mut size)
             .add_option(&["--size", "-s"], StoreOption, "Fit to this size (only for PDF)");
+        ap.refer(&mut as_filepath)
+            .add_option(&["--as-filepath", "-F"], StoreTrue, "Destination as filepath");
         ap.refer(&mut destination).add_argument("destination", Store, "Destination directory").required();
         ap.refer(&mut filename).add_argument("filename", StoreOption, "Filename");
         parse_args(&mut ap, args)
-    } .map(|_| {
-        Operation::OperateFile(
-            op(sh::expand_to_pathbuf(&destination), filename, if_exist, size))
+    } .and_then(|_| {
+        if as_filepath {
+            if let Some(filename) = filename {
+                return Err(ParsingError::InvalidArgument(format!("If `--as-filepath` is given, omit `{}`", filename)));
+            }
+            let destination = sh::expand_to_pathbuf(&destination);
+            if_let_some!(dir = destination.parent(), Err(ParsingError::InvalidArgument(format!("No directory part: {:?}", destination))));
+            if_let_some!(filename = destination.file_name(), Err(ParsingError::InvalidArgument(format!("No filename part: {:?}", destination))));
+            let filename = o!(filename.to_str().unwrap());
+            return Ok(Operation::OperateFile(op(dir.to_path_buf(), Some(filename), if_exist, size)));
+        }
+        Ok(Operation::OperateFile(op(sh::expand_to_pathbuf(&destination), filename, if_exist, size)))
     })
 }
 

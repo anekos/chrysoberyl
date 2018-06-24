@@ -229,7 +229,7 @@ Add directory entries (image) on `PATH`.
 
 ## @file-move [--fail|-f] [--overwrite|-o] [--new|--new-file-name|-n] [(--size|-s) <SIZE>] <DIRECTORY> [<FILE>]
 
-Move the current image file to `DIRECTORY_PATH`.
+Move the current image file to `DIRECTORY`.
 
 ### If destination file exists...
 
@@ -240,7 +240,7 @@ if `--overwrite` is given, then overwrites destination file.
 
 ## @file-copy [--fail|-f] [--overwrite|-o] [--new|--new-file-name|-n] [(--size|-s) <SIZE>] <DIRECTORY> [<FILE>]
 
-Copy the current image file to `DIRECTORY_PATH`.
+Copy the current image file to `DIRECTORY`.
 See `@file-move` to get more information.
 
 
@@ -624,6 +624,7 @@ If the result of `FILTER_EXPRESSION` evaluation is true, execute the operation.
 ## @write [--index <CELL_INDEX>] <PATH>
 
 Write current entry image to `PATH`.
+`@write` generate the image that is all effects applyed.
 
 
 ## <KEY_VALUE> format

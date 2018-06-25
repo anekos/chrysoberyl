@@ -126,10 +126,13 @@ pub fn parse_cherenkov(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut color).add_option(&["-c", "--color"], Store, "CSS Color");
         ap.refer(&mut seed).add_option(&["-S", "--seed"], StoreOption, "Seed for random number generator");
         parse_args(&mut ap, args)
-    } .map(|_| {
+    } .and_then(|_| {
+        if n_spokes == 0 {
+            return Err(ParsingError::InvalidArgument(format!("--spokes must be larger than 0")));
+        }
         let seed = Seed::new(&seed);
         let op = Operation::Cherenkov(CherenkovParameter { radius, color, n_spokes, random_hue, seed, x, y });
-        Operation::WithMessage(Some(o!("Cherenkoving")), Box::new(op))
+        Ok(Operation::WithMessage(Some(o!("Cherenkoving")), Box::new(op)))
     })
 }
 

@@ -11,6 +11,7 @@ use cmdline_parser::Parser;
 use archive::ArchiveEntry;
 use cherenkov::Operator;
 use cherenkov::fill::Shape;
+use cherenkov::nova::Seed;
 use color::Color;
 use command_line;
 use controller;
@@ -42,6 +43,7 @@ pub enum Operation {
     Backward,
     ChangeDirectory(String),
     Cherenkov(CherenkovParameter),
+    CherenkovReset,
     Clear,
     Clip(Region),
     Context(OperationContext, Box<Operation>),
@@ -135,12 +137,13 @@ pub enum Operation {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CherenkovParameter {
+    pub color: Color,
+    pub n_spokes: usize,
     pub radius: f64,
     pub random_hue: f64,
-    pub n_spokes: usize,
+    pub seed: Seed,
     pub x: Option<f64>,
     pub y: Option<f64>,
-    pub color: Color,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -250,6 +253,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@cd" | "@chdir" | "@change-directory"
                                             => parse_command1(whole, Operation::ChangeDirectory),
             "@cherenkov"                    => parse_cherenkov(whole),
+            "@cherenkov-reset"              => Ok(CherenkovReset),
             "@clear"                        => Ok(Clear),
             "@clip"                         => parse_clip(whole),
             "@controller-fifo" | "@control-fifo"
@@ -455,6 +459,7 @@ impl fmt::Debug for Operation {
             Backward => "Backward",
             ChangeDirectory(_) => "ChangeDirectory",
             Cherenkov(_) => "Cherenkov",
+            CherenkovReset => "CherenkovReset",
             Clear => "Clear ",
             Clip(_) => "Clip",
             Context(_, _) => "Context",

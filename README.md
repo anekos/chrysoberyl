@@ -104,10 +104,14 @@ Backword history
 Change working directory.
 
 
-## @cherenkov [(--radius|-r) <RADIUS>] [(--random-hue|--hue|-h) <HUE>] [(--spokes|-s) <SPOKES>] [-x <X>] [-y <Y>] [(-c|--color) <CSS_COLOR>]
+## @cherenkov [(--radius|-r) <RADIUS>] [(--random-hue|--hue|-h) <HUE>] [(--spokes|-s) <SPOKES>] [-x <X>] [-y <Y>] [(-c|--color) <CSS_COLOR>] [--seed|-S]
 
 Cherenkoves current image.
 
+
+## @cherenkov-reset
+
+Reset.
 
 ## @clear
 

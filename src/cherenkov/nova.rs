@@ -25,7 +25,7 @@ use std::f64::consts::PI;
 
 use gdk_pixbuf::PixbufExt;
 use rand::distributions::{Distribution, Uniform};
-use rand::{self, Rng, ThreadRng};
+use rand::{Rng, RngCore, SeedableRng, self, StdRng};
 
 use color::Color;
 use util::num::feq;
@@ -43,10 +43,40 @@ const FERROR: f64 = 0.000_001;
 #[derive(Debug, Clone)]
 pub struct Nova {
     pub center: (f64, f64),
-    pub n_spokes: usize,
-    pub random_hue: f64,
-    pub radius: f64,
     pub color: Color,
+    pub n_spokes: usize,
+    pub radius: f64,
+    pub random_hue: f64,
+    pub seed: Seed,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Seed {
+    fixed: bool,
+    value: [u8;32],
+}
+
+
+impl Seed {
+    pub fn new(text: &Option<String>) -> Self {
+        let mut value = [0;32];
+        if let Some(ref text) = text {
+            for (i, b) in text.as_bytes().iter().enumerate() {
+                value[i % 32] ^= b;
+            }
+        } else {
+            set_seed_randomly(&mut value)
+        }
+        Seed { fixed: text.is_some(), value }
+    }
+
+    pub fn reset(&mut self) {
+        set_seed_randomly(&mut self.value);
+    }
+
+    pub fn rng(&self) -> StdRng {
+        StdRng::from_seed(self.value)
+    }
 }
 
 
@@ -72,7 +102,7 @@ pub fn nova(nv: &Nova, pixels: &mut [u8], rowstride: i32, width: i32, height: i3
     let radius = clamp((f64!(width * width + height * height)).sqrt() * nv.radius, 0.000_000_01, 100.0);
 
     let (spokes, spoke_colors) = {
-        let mut rng = rand::thread_rng();
+        let mut rng = nv.seed.rng();
         let mut spokes = vec![];
         let mut spoke_colors: Vec<SliceColor> = vec![];
         let (mut h, s, v) = rgb_to_hsv(nv.color.tupled3());
@@ -161,7 +191,7 @@ fn test_color_converter() {
     }
 }
 
-fn gauss(rng: &mut ThreadRng) -> f64 {
+fn gauss(rng: &mut StdRng) -> f64 {
   let mut sum = 0.0;
 
   for _ in 0..6 {
@@ -172,7 +202,7 @@ fn gauss(rng: &mut ThreadRng) -> f64 {
   sum / 6.0
 }
 
-fn range_rand (rng: &mut ThreadRng, from: f64, to: f64) -> f64 {
+fn range_rand (rng: &mut StdRng, from: f64, to: f64) -> f64 {
     Uniform::new(from, to).sample(rng)
 }
 
@@ -241,4 +271,11 @@ fn clamp<T: PartialOrd>(v: T, from: T, to: T) -> T {
   } else {
       v
   }
+}
+
+fn set_seed_randomly(result: &mut [u8;32]) {
+    let mut rng = rand::thread_rng();
+    for i in 0..32 {
+        result[i] = rng.next_u32() as u8;
+    }
 }

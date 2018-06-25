@@ -44,11 +44,11 @@ pub struct Cherenkoved {
 
 #[derive(Clone)]
 pub struct CacheEntry {
-    image: Option<StaticImageBuffer>,
     cell_size: Size,
     drawing: Drawing,
-    modifiers: Vec<Modifier>,
     expired: bool,
+    image: Option<StaticImageBuffer>,
+    modifiers: Vec<Modifier>,
 }
 
 #[derive(Clone, Debug, PartialEq, Copy)]
@@ -97,6 +97,16 @@ impl Cherenkoved {
         self.cherenkov(entry, cell_size, &[modifier], drawing)
     }
 
+    pub fn reset(&mut self, entry: &Entry) {
+        if_let_some!(entry = self.cache.get_mut(&entry.key), ());
+        for it in entry.modifiers.iter_mut() {
+            if let Che::Nova(ref mut nv) = it.che {
+                nv.seed.reset();
+            }
+        }
+        entry.expired = true;
+    }
+
     pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, new_modifiers: &[Modifier], drawing: &Drawing) {
         let mut modifiers = self.cache.get(&entry.key).map(|it| it.modifiers.clone()).unwrap_or_else(|| vec![]);
 
@@ -107,11 +117,11 @@ impl Cherenkoved {
         self.cache.insert(
             entry.key.clone(),
             CacheEntry {
-                image: Some(image_buffer),
                 cell_size: *cell_size,
                 drawing: drawing.clone(),
-                modifiers,
                 expired: false,
+                image: Some(image_buffer),
+                modifiers,
             });
     }
 }
@@ -250,7 +260,6 @@ impl fmt::Display for Operator {
         write!(f, "{}", result)
     }
 }
-
 
 
 fn get_image_buffer(cache_entry: &mut CacheEntry, entry: &Entry, cell_size: &Size, drawing: &Drawing) -> Result<ImageBuffer, Box<Error>> {

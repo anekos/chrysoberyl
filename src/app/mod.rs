@@ -193,6 +193,8 @@ impl App {
                     on_change_directory(path),
                 Cherenkov(ref parameter) =>
                     on_cherenkov(self, &mut updated, parameter, context),
+                CherenkovReset =>
+                    on_cherenkov_reset(self, &mut updated),
                 Clear =>
                     on_clear(self, &mut updated),
                 Clip(region) =>

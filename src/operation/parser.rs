@@ -7,6 +7,7 @@ use std::time::Duration;
 use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse, StoreOption, List};
 
 use cherenkov::fill::Shape;
+use cherenkov::nova::Seed;
 use color::Color;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
@@ -113,6 +114,7 @@ pub fn parse_cherenkov(args: &[String]) -> Result<Operation, ParsingError> {
     let mut x = None;
     let mut y = None;
     let mut color: Color = "random".parse().unwrap();
+    let mut seed = None;
 
     {
         let mut ap = ArgumentParser::new();
@@ -122,9 +124,11 @@ pub fn parse_cherenkov(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut x).add_option(&["-x"], StoreOption, "X");
         ap.refer(&mut y).add_option(&["-y"], StoreOption, "Y");
         ap.refer(&mut color).add_option(&["-c", "--color"], Store, "CSS Color");
+        ap.refer(&mut seed).add_option(&["-S", "--seed"], StoreOption, "Seed for random number generator");
         parse_args(&mut ap, args)
     } .map(|_| {
-        let op = Operation::Cherenkov(CherenkovParameter { radius, random_hue, n_spokes, x, y, color });
+        let seed = Seed::new(&seed);
+        let op = Operation::Cherenkov(CherenkovParameter { radius, color, n_spokes, random_hue, seed, x, y });
         Operation::WithMessage(Some(o!("Cherenkoving")), Box::new(op))
     })
 }

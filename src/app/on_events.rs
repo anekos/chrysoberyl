@@ -118,10 +118,25 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
                         radius: parameter.radius,
                         random_hue: parameter.random_hue,
                         color: parameter.color,
+                        seed: parameter.seed.clone(),
                     })
                 },
                 &app.states.drawing);
             updated.image = true;
+        }
+    }
+
+    updated.message = true;
+    app.update_message(None, false);
+
+    Ok(())
+}
+
+pub fn on_cherenkov_reset(app: &mut App, updated: &mut Updated) -> EventResult {
+    for (index, _) in app.gui.cells(app.states.reverse).enumerate() {
+        if let Some((ref entry, _)) = app.current_with(index) {
+            app.cache.cherenkov_reset(entry);
+            updated.image_options = true;
         }
     }
 

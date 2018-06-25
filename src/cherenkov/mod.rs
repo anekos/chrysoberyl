@@ -44,11 +44,11 @@ pub struct Cherenkoved {
 
 #[derive(Clone)]
 pub struct CacheEntry {
-    image: Option<StaticImageBuffer>,
     cell_size: Size,
     drawing: Drawing,
-    modifiers: Vec<Modifier>,
     expired: bool,
+    image: Option<StaticImageBuffer>,
+    modifiers: Vec<Modifier>,
 }
 
 #[derive(Clone, Debug, PartialEq, Copy)]
@@ -107,11 +107,11 @@ impl Cherenkoved {
         self.cache.insert(
             entry.key.clone(),
             CacheEntry {
-                image: Some(image_buffer),
                 cell_size: *cell_size,
                 drawing: drawing.clone(),
-                modifiers,
                 expired: false,
+                image: Some(image_buffer),
+                modifiers,
             });
     }
 }

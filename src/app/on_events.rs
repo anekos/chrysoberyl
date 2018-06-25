@@ -118,6 +118,7 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
                         radius: parameter.radius,
                         random_hue: parameter.random_hue,
                         color: parameter.color,
+                        seed: parameter.seed_array(),
                     })
                 },
                 &app.states.drawing);

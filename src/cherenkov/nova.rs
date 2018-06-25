@@ -25,7 +25,7 @@ use std::f64::consts::PI;
 
 use gdk_pixbuf::PixbufExt;
 use rand::distributions::{Distribution, Uniform};
-use rand::{self, Rng, ThreadRng};
+use rand::{Rng, SeedableRng, StdRng};
 
 use color::Color;
 use util::num::feq;
@@ -43,10 +43,11 @@ const FERROR: f64 = 0.000_001;
 #[derive(Debug, Clone)]
 pub struct Nova {
     pub center: (f64, f64),
-    pub n_spokes: usize,
-    pub random_hue: f64,
-    pub radius: f64,
     pub color: Color,
+    pub n_spokes: usize,
+    pub radius: f64,
+    pub random_hue: f64,
+    pub seed: [u8;32],
 }
 
 
@@ -72,7 +73,7 @@ pub fn nova(nv: &Nova, pixels: &mut [u8], rowstride: i32, width: i32, height: i3
     let radius = clamp((f64!(width * width + height * height)).sqrt() * nv.radius, 0.000_000_01, 100.0);
 
     let (spokes, spoke_colors) = {
-        let mut rng = rand::thread_rng();
+        let mut rng = StdRng::from_seed(nv.seed);
         let mut spokes = vec![];
         let mut spoke_colors: Vec<SliceColor> = vec![];
         let (mut h, s, v) = rgb_to_hsv(nv.color.tupled3());
@@ -161,7 +162,7 @@ fn test_color_converter() {
     }
 }
 
-fn gauss(rng: &mut ThreadRng) -> f64 {
+fn gauss(rng: &mut StdRng) -> f64 {
   let mut sum = 0.0;
 
   for _ in 0..6 {
@@ -172,7 +173,7 @@ fn gauss(rng: &mut ThreadRng) -> f64 {
   sum / 6.0
 }
 
-fn range_rand (rng: &mut ThreadRng, from: f64, to: f64) -> f64 {
+fn range_rand (rng: &mut StdRng, from: f64, to: f64) -> f64 {
     Uniform::new(from, to).sample(rng)
 }
 

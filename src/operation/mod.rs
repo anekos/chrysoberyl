@@ -7,6 +7,7 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use cmdline_parser::Parser;
+use rand::{RngCore, self};
 
 use archive::ArchiveEntry;
 use cherenkov::Operator;
@@ -135,12 +136,13 @@ pub enum Operation {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CherenkovParameter {
+    pub color: Color,
+    pub n_spokes: usize,
     pub radius: f64,
     pub random_hue: f64,
-    pub n_spokes: usize,
+    pub seed: Option<String>,
     pub x: Option<f64>,
     pub y: Option<f64>,
-    pub color: Color,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -546,5 +548,23 @@ impl fmt::Debug for Operation {
             Write(_, _) => "Write",
         };
         write!(f, "{}", s)
+    }
+}
+
+
+impl CherenkovParameter {
+    pub fn seed_array(&self) -> [u8;32] {
+        let mut result = [0;32];
+        if let Some(ref seed) = self.seed {
+            for (i, b) in seed.as_bytes().iter().enumerate() {
+                result[i % 32] ^= b;
+            }
+        } else {
+            let mut rng = rand::thread_rng();
+            for i in 0..32 {
+                result[i] = rng.next_u32() as u8;
+            }
+        }
+        result
     }
 }

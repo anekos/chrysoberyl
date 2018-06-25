@@ -109,6 +109,10 @@ Change working directory.
 Cherenkoves current image.
 
 
+## @cherenkov-reset
+
+Reset.
+
 ## @clear
 
 Clear image entries.

@@ -7,6 +7,7 @@ use std::time::Duration;
 use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse, StoreOption, List};
 
 use cherenkov::fill::Shape;
+use cherenkov::nova::Seed;
 use color::Color;
 use entry::filter::expression::Expr as FilterExpr;
 use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
@@ -126,6 +127,7 @@ pub fn parse_cherenkov(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut seed).add_option(&["-S", "--seed"], StoreOption, "Seed for random number generator");
         parse_args(&mut ap, args)
     } .map(|_| {
+        let seed = Seed::new(&seed);
         let op = Operation::Cherenkov(CherenkovParameter { radius, color, n_spokes, random_hue, seed, x, y });
         Operation::WithMessage(Some(o!("Cherenkoving")), Box::new(op))
     })

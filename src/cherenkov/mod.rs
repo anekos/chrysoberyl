@@ -97,6 +97,16 @@ impl Cherenkoved {
         self.cherenkov(entry, cell_size, &[modifier], drawing)
     }
 
+    pub fn reset(&mut self, entry: &Entry) {
+        if_let_some!(entry = self.cache.get_mut(&entry.key), ());
+        for it in entry.modifiers.iter_mut() {
+            if let Che::Nova(ref mut nv) = it.che {
+                nv.seed.reset();
+            }
+        }
+        entry.expired = true;
+    }
+
     pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, new_modifiers: &[Modifier], drawing: &Drawing) {
         let mut modifiers = self.cache.get(&entry.key).map(|it| it.modifiers.clone()).unwrap_or_else(|| vec![]);
 
@@ -250,7 +260,6 @@ impl fmt::Display for Operator {
         write!(f, "{}", result)
     }
 }
-
 
 
 fn get_image_buffer(cache_entry: &mut CacheEntry, entry: &Entry, cell_size: &Size, drawing: &Drawing) -> Result<ImageBuffer, Box<Error>> {

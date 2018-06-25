@@ -94,6 +94,11 @@ impl ImageCache {
         cherenkoved.cherenkov(entry, cell_size, modifiers, drawing)
     }
 
+    pub fn cherenkov_reset(&mut self, entry: &Entry) {
+        let mut cherenkoved = self.cherenkoved.lock().unwrap();
+        cherenkoved.reset(entry);
+    }
+
     pub fn uncherenkov(&mut self, key: &Key) {
         let mut cherenkoved = self.cherenkoved.lock().unwrap();
         cherenkoved.remove(key)

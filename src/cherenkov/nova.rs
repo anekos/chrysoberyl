@@ -25,7 +25,7 @@ use std::f64::consts::PI;
 
 use gdk_pixbuf::PixbufExt;
 use rand::distributions::{Distribution, Uniform};
-use rand::{Rng, SeedableRng, StdRng};
+use rand::{Rng, RngCore, SeedableRng, self, StdRng};
 
 use color::Color;
 use util::num::feq;
@@ -47,7 +47,36 @@ pub struct Nova {
     pub n_spokes: usize,
     pub radius: f64,
     pub random_hue: f64,
-    pub seed: [u8;32],
+    pub seed: Seed,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Seed {
+    fixed: bool,
+    value: [u8;32],
+}
+
+
+impl Seed {
+    pub fn new(text: &Option<String>) -> Self {
+        let mut value = [0;32];
+        if let Some(ref text) = text {
+            for (i, b) in text.as_bytes().iter().enumerate() {
+                value[i % 32] ^= b;
+            }
+        } else {
+            set_seed_randomly(&mut value)
+        }
+        Seed { fixed: text.is_some(), value }
+    }
+
+    pub fn reset(&mut self) {
+        set_seed_randomly(&mut self.value);
+    }
+
+    pub fn rng(&self) -> StdRng {
+        StdRng::from_seed(self.value)
+    }
 }
 
 
@@ -73,7 +102,7 @@ pub fn nova(nv: &Nova, pixels: &mut [u8], rowstride: i32, width: i32, height: i3
     let radius = clamp((f64!(width * width + height * height)).sqrt() * nv.radius, 0.000_000_01, 100.0);
 
     let (spokes, spoke_colors) = {
-        let mut rng = StdRng::from_seed(nv.seed);
+        let mut rng = nv.seed.rng();
         let mut spokes = vec![];
         let mut spoke_colors: Vec<SliceColor> = vec![];
         let (mut h, s, v) = rgb_to_hsv(nv.color.tupled3());
@@ -242,4 +271,11 @@ fn clamp<T: PartialOrd>(v: T, from: T, to: T) -> T {
   } else {
       v
   }
+}
+
+fn set_seed_randomly(result: &mut [u8;32]) {
+    let mut rng = rand::thread_rng();
+    for i in 0..32 {
+        result[i] = rng.next_u32() as u8;
+    }
 }

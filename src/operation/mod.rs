@@ -7,11 +7,11 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use cmdline_parser::Parser;
-use rand::{RngCore, self};
 
 use archive::ArchiveEntry;
 use cherenkov::Operator;
 use cherenkov::fill::Shape;
+use cherenkov::nova::Seed;
 use color::Color;
 use command_line;
 use controller;
@@ -43,6 +43,7 @@ pub enum Operation {
     Backward,
     ChangeDirectory(String),
     Cherenkov(CherenkovParameter),
+    CherenkovReset,
     Clear,
     Clip(Region),
     Context(OperationContext, Box<Operation>),
@@ -140,7 +141,7 @@ pub struct CherenkovParameter {
     pub n_spokes: usize,
     pub radius: f64,
     pub random_hue: f64,
-    pub seed: Option<String>,
+    pub seed: Seed,
     pub x: Option<f64>,
     pub y: Option<f64>,
 }
@@ -252,6 +253,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@cd" | "@chdir" | "@change-directory"
                                             => parse_command1(whole, Operation::ChangeDirectory),
             "@cherenkov"                    => parse_cherenkov(whole),
+            "@cherenkov-reset"              => Ok(CherenkovReset),
             "@clear"                        => Ok(Clear),
             "@clip"                         => parse_clip(whole),
             "@controller-fifo" | "@control-fifo"
@@ -457,6 +459,7 @@ impl fmt::Debug for Operation {
             Backward => "Backward",
             ChangeDirectory(_) => "ChangeDirectory",
             Cherenkov(_) => "Cherenkov",
+            CherenkovReset => "CherenkovReset",
             Clear => "Clear ",
             Clip(_) => "Clip",
             Context(_, _) => "Context",
@@ -548,23 +551,5 @@ impl fmt::Debug for Operation {
             Write(_, _) => "Write",
         };
         write!(f, "{}", s)
-    }
-}
-
-
-impl CherenkovParameter {
-    pub fn seed_array(&self) -> [u8;32] {
-        let mut result = [0;32];
-        if let Some(ref seed) = self.seed {
-            for (i, b) in seed.as_bytes().iter().enumerate() {
-                result[i % 32] ^= b;
-            }
-        } else {
-            let mut rng = rand::thread_rng();
-            for i in 0..32 {
-                result[i] = rng.next_u32() as u8;
-            }
-        }
-        result
     }
 }

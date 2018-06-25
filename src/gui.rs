@@ -282,14 +282,9 @@ impl Gui {
         if result.is_empty() {
             return Ok(None);
         }
-
         self.operation_entry.set_text("");
-
         let op = Operation::parse_fuzziness(&result);
-        if op.is_ok() {
-            self.completer.push_history(result);
-        }
-
+        self.completer.push_history(result);
         Ok(Some(op?))
     }
 

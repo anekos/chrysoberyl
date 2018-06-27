@@ -1343,8 +1343,8 @@ pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f6
     Ok(())
 }
 
-pub fn on_timer(app: &mut App, name: Option<String>, op: Vec<String>, interval: Duration, repeat: Option<usize>) -> EventResult {
-    app.timers.register(name, op, interval, repeat)
+pub fn on_timer(app: &mut App, name: Option<String>, op: Vec<String>, interval: Duration, repeat: Option<usize>, async: bool) -> EventResult {
+    app.timers.register(name, op, interval, repeat, async)
 }
 
 pub fn on_ui_action(app: &mut App, action_type: UIActionType) -> EventResult {
@@ -1577,6 +1577,11 @@ pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool) -> 
         app.states.view.cols = count;
     };
     on_update_views(app, updated)
+}
+
+pub fn on_wakeup_timer(app: &mut App, name: &str) -> EventResult {
+    app.timers.wakeup(name);
+    Ok(())
 }
 
 pub fn on_when(app: &mut App, filter: FilterExpr, unless: bool, op: &[String], context: Option<OperationContext>) -> EventResult {

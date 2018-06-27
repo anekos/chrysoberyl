@@ -30,8 +30,9 @@ pub struct Timer {
 
 #[derive(Clone, Copy)]
 pub enum TimerOperation {
-    Kill,
     Fire,
+    Kill,
+    Wakeup,
 }
 
 
@@ -43,12 +44,9 @@ impl TimerManager {
         }
     }
 
-    pub fn register(&mut self, name: Option<String>, op: Vec<String>, interval: Duration, repeat: Option<usize>) -> Result<(), Box<Error>> {
-        let name = name.unwrap_or_else(|| {
-            let id = Uuid::new_v4();
-            s!(uuid_to_pokemon(id))
-        });
-        let timer = Timer::new(name.clone(), op, self.app_tx.clone(), interval, repeat)?;
+    pub fn register(&mut self, name: Option<String>, op: Vec<String>, interval: Duration, repeat: Option<usize>, async: bool) -> Result<(), Box<Error>> {
+        let name = name.unwrap_or_else(new_name);
+        let timer = Timer::new(name.clone(), op, self.app_tx.clone(), interval, repeat, async)?;
         if let Some(old) = self.table.insert(name, timer) {
             if old.is_live() {
                 old.tx.send(TimerOperation::Kill).unwrap();
@@ -68,11 +66,15 @@ impl TimerManager {
             }
         }
     }
+
+    pub fn wakeup(&self, name: &str) {
+        self.table.get(name).unwrap().wakeup();
+    }
 }
 
 
 impl Timer {
-    pub fn new(name: String, operation: Vec<String>, app_tx: Sender<Operation>, interval: Duration, repeat: Option<usize>) -> Result<Timer, Box<Error>> {
+    pub fn new(name: String, operation: Vec<String>, app_tx: Sender<Operation>, interval: Duration, repeat: Option<usize>, async: bool) -> Result<Timer, Box<Error>> {
         let (tx, rx) = channel();
         let live = Arc::new(AtomicBool::new(true));
 
@@ -96,10 +98,15 @@ impl Timer {
                         }
                         if repeat == Some(0) {
                             break;
-                        } else {
-                            sleep_and_fire(interval, &tx);
                         }
-                    }
+                        if async {
+                            sleep_and_fire(interval, &tx);
+                        } else {
+                            app_tx.send(Operation::WakeupTimer(name.clone())).unwrap();
+                        }
+                    },
+                    Wakeup =>
+                        sleep_and_fire(interval, &tx),
                 }
             }
 
@@ -112,6 +119,10 @@ impl Timer {
     pub fn is_live(&self) -> bool {
         self.live.load(Ordering::SeqCst)
     }
+
+    pub fn wakeup(&self) {
+        self.tx.send(TimerOperation::Wakeup).unwrap();
+    }
 }
 
 
@@ -120,4 +131,9 @@ fn sleep_and_fire(duration: Duration, tx: &Sender<TimerOperation>) {
         sleep(duration);
         let _ = tx.send(TimerOperation::Fire);
     }));
+}
+
+fn new_name() -> String {
+    let id = Uuid::new_v4();
+    s!(uuid_to_pokemon(id)).replace(' ', "-").to_lowercase()
 }

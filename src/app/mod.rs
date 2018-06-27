@@ -343,8 +343,8 @@ impl App {
                     on_sorter(self, &mut updated, fix_current, command, reverse),
                 TellRegion(left, top, right, bottom, button) =>
                     on_tell_region(self, left, top, right, bottom, &button),
-                Timer(name, op, interval, repeat) =>
-                    on_timer(self, name, op, interval, repeat),
+                Timer(name, op, interval, repeat, async) =>
+                    on_timer(self, name, op, interval, repeat, async),
                 UIAction(action_type) =>
                     on_ui_action(self, action_type),
                 Unclip =>
@@ -367,6 +367,8 @@ impl App {
                     on_views(self, &mut updated, cols, rows),
                 ViewsFellow(for_rows) =>
                     on_views_fellow(self, &mut updated, for_rows),
+                WakeupTimer(ref name) =>
+                    on_wakeup_timer(self, name),
                 When(filter, unless, op) =>
                     on_when(self, filter, unless, &op, context),
                 WithMessage(message, op) =>

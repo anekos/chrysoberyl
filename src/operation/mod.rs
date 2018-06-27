@@ -119,7 +119,7 @@ pub enum Operation {
     Sort(bool, SortKey, bool), /* fix_current, key, reverse */
     Sorter(bool, Vec<Expandable>, bool), /* fix_current, command, reverse */
     TellRegion(f64, f64, f64, f64, Key), /* lef,t top, right, bottom, mousesbutton */
-    Timer(Option<String>, Vec<String>, Duration, Option<usize>),
+    Timer(Option<String>, Vec<String>, Duration, Option<usize>, bool),
     Unclip,
     Undo(Option<usize>),
     Unmap(MappingTarget),
@@ -130,6 +130,7 @@ pub enum Operation {
     User(Vec<(String, String)>),
     Views(Option<usize>, Option<usize>),
     ViewsFellow(bool), /* for_rows */
+    WakeupTimer(String),
     When(FilterExpr, bool, Vec<String>), /* filter, reverse(unless), operation */
     WithMessage(Option<String>, Box<Operation>),
     Write(PathBuf, Option<usize>),
@@ -534,7 +535,7 @@ impl fmt::Debug for Operation {
             Sort(_, _, _) => "Sort",
             Sorter(_, _, _) => "Sorter",
             TellRegion(_, _, _, _, _) => "TellRegion",
-            Timer(_, _, _, _) => "Timer",
+            Timer(_, _, _, _, _) => "Timer",
             UIAction(_) => "UIAction",
             Unclip => "Unclip ",
             Undo(_) => "Undo",
@@ -546,6 +547,7 @@ impl fmt::Debug for Operation {
             User(_) => "User",
             Views(_, _) => "Views",
             ViewsFellow(_) => "ViewsFellow",
+            WakeupTimer(_) => "WakeupTimer",
             When(_, _, _) => "When",
             WithMessage(_, _) => "WithMessage",
             Write(_, _) => "Write",

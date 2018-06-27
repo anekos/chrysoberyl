@@ -1082,6 +1082,7 @@ pub fn parse_timer(args: &[String]) -> Result<Operation, ParsingError> {
     let mut name = None;
     let mut op = Vec::<String>::new();
     let mut repeat = Some(1);
+    let mut async = false;
 
     {
         let mut ap = ArgumentParser::new();
@@ -1090,11 +1091,14 @@ pub fn parse_timer(args: &[String]) -> Result<Operation, ParsingError> {
             .add_option(&["--infinity", "-i"], StoreConst(None), "Repeat infinitely");
         ap.refer(&mut name)
             .add_option(&["--name", "-n"], StoreOption, "Name");
+        ap.refer(&mut async)
+            .add_option(&["--async", "-a"], StoreTrue, "Async")
+            .add_option(&["--sync", "-s"], StoreFalse, "Sync");
         ap.refer(&mut interval_seconds).add_argument("interval", Store, "Interval").required();
         ap.refer(&mut op).add_argument("operation", Collect, "Operation").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Timer(name, op, Duration::from_millis((interval_seconds * 1000.0) as u64), repeat)
+        Operation::Timer(name, op, Duration::from_millis((interval_seconds * 1000.0) as u64), repeat, async)
     })
 }
 

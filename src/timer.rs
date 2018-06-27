@@ -1,5 +1,6 @@
 
 use std::collections::HashMap;
+use std::error::Error;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Sender, channel};
@@ -10,6 +11,7 @@ use uuid::Uuid;
 use uuid_to_pokemon::uuid_to_pokemon;
 
 use operation::Operation;
+use errors::ChryError;
 
 
 
@@ -41,26 +43,28 @@ impl TimerManager {
         }
     }
 
-    pub fn register(&mut self, name: Option<String>, op: Vec<String>, interval: Duration, repeat: Option<usize>) {
+    pub fn register(&mut self, name: Option<String>, op: Vec<String>, interval: Duration, repeat: Option<usize>) -> Result<(), Box<Error>> {
         let name = name.unwrap_or_else(|| {
             let id = Uuid::new_v4();
             s!(uuid_to_pokemon(id))
         });
-        let timer = Timer::new(name.clone(), op, self.app_tx.clone(), interval, repeat);
+        let timer = Timer::new(name.clone(), op, self.app_tx.clone(), interval, repeat)?;
         if let Some(old) = self.table.insert(name, timer) {
             if old.is_live() {
                 old.tx.send(TimerOperation::Kill).unwrap();
             }
         }
+        Ok(())
     }
 
-    pub fn unregister(&mut self, name: &str) {
+    pub fn unregister(&mut self, name: &str) -> Result<(), ChryError> {
         match self.table.remove(name) {
             Some(timer) => {
                 timer.tx.send(TimerOperation::Kill).unwrap();
+                Ok(())
             }
             None => {
-                puts_error!(chry_error!("timer `{}` is not found", name), "at" => "timer/kill");
+                Err(chry_error!("timer `{}` is not found", name))
             }
         }
     }
@@ -68,13 +72,15 @@ impl TimerManager {
 
 
 impl Timer {
-    pub fn new(name: String, operation: Vec<String>, app_tx: Sender<Operation>, interval: Duration, repeat: Option<usize>) -> Timer {
+    pub fn new(name: String, operation: Vec<String>, app_tx: Sender<Operation>, interval: Duration, repeat: Option<usize>) -> Result<Timer, Box<Error>> {
         let (tx, rx) = channel();
         let live = Arc::new(AtomicBool::new(true));
 
         sleep_and_fire(interval, &tx);
 
-        spawn(clone_army!([live, tx, operation] move || {
+        let op = Operation::parse_from_vec(&operation)?;
+
+        spawn(clone_army!([live, tx] move || {
             use self::TimerOperation::*;
 
             let mut repeat = repeat;
@@ -84,10 +90,7 @@ impl Timer {
                     Kill => break,
                     Fire => {
                         puts_event!("timer/fire", "name" => name);
-                        match Operation::parse_from_vec(&operation) {
-                            Ok(op) => app_tx.send(op).unwrap(),
-                            Err(err) => puts_error!(err, "at" => "timer/fire"),
-                        }
+                        app_tx.send(op.clone()).unwrap();
                         if let Some(repeat) = repeat.as_mut() {
                             *repeat -= 1;
                         }
@@ -103,7 +106,7 @@ impl Timer {
             live.store(false, Ordering::SeqCst);
         }));
 
-        Timer { tx, live, operation, interval, repeat }
+        Ok(Timer { tx, live, operation, interval, repeat })
     }
 
     pub fn is_live(&self) -> bool {

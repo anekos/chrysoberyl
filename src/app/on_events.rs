@@ -551,8 +551,7 @@ pub fn on_jump(app: &mut App, updated: &mut Updated, name: &str, load: bool) -> 
 }
 
 pub fn on_kill_timer(app: &mut App, name: &str) -> EventResult {
-    app.timers.unregister(name);
-    Ok(())
+    Ok(app.timers.unregister(name)?)
 }
 
 pub fn on_last(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy) -> EventResult {
@@ -1345,8 +1344,7 @@ pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f6
 }
 
 pub fn on_timer(app: &mut App, name: Option<String>, op: Vec<String>, interval: Duration, repeat: Option<usize>) -> EventResult {
-    app.timers.register(name, op, interval, repeat);
-    Ok(())
+    app.timers.register(name, op, interval, repeat)
 }
 
 pub fn on_ui_action(app: &mut App, action_type: UIActionType) -> EventResult {

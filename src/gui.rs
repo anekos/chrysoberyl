@@ -121,6 +121,8 @@ impl Gui {
             it.set_role(window_role);
             it.set_border_width(0);
             it.set_position(gtk::WindowPosition::Center);
+            #[allow(deprecated)]
+            it.set_wmclass(constant::APPLICATION_NAME, constant::APPLICATION_NAME);
             it.add_events(EventMask::SCROLL_MASK.bits() as i32);
         });
 

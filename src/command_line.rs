@@ -7,7 +7,7 @@ use encoding::label::encoding_from_whatwg_label;
 use encoding::types::EncodingRef;
 
 use app_path;
-use constant::{README, WINDOW_ROLE};
+use constant::{README, APPLICATION_NAME};
 use controller;
 use expandable::Expandable;
 
@@ -48,7 +48,7 @@ impl Default for Initial {
             shuffle: false,
             silent: false,
             stdin_as_binary: false,
-            window_role: WINDOW_ROLE.to_string(),
+            window_role: APPLICATION_NAME.to_string(),
         }
     }
 }

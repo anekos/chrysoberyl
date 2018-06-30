@@ -72,7 +72,7 @@ impl ImageCache {
         cond.notify_all();
     }
 
-    pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: &Size, drawing: &Drawing) -> Result<ImageBuffer, String> {
+    pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: Size, drawing: &Drawing) -> Result<ImageBuffer, String> {
         {
             let mut cherenkoved = self.cherenkoved.lock().unwrap();
             cherenkoved.get_image_buffer(entry, cell_size, drawing).map(|it| it.map_err(|it| s!(it)))
@@ -84,12 +84,12 @@ impl ImageCache {
         })
     }
 
-    pub fn cherenkov1(&mut self, entry: &Entry, cell_size: &Size, modifier: Modifier, drawing: &Drawing) {
+    pub fn cherenkov1(&mut self, entry: &Entry, cell_size: Size, modifier: Modifier, drawing: &Drawing) {
         let mut cherenkoved = self.cherenkoved.lock().unwrap();
         cherenkoved.cherenkov1(entry, cell_size, modifier, drawing)
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, modifiers: &[Modifier], drawing: &Drawing) {
+    pub fn cherenkov(&mut self, entry: &Entry, cell_size: Size, modifiers: &[Modifier], drawing: &Drawing) {
         let mut cherenkoved = self.cherenkoved.lock().unwrap();
         cherenkoved.cherenkov(entry, cell_size, modifiers, drawing)
     }

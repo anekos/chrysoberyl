@@ -150,7 +150,7 @@ fn main(app_tx: &Sender<Operation>, rx: &Receiver<Event>, skip: usize) {
                 visible = visibility,
             Scroll(key, direction) =>
                 if !visible {
-                    on_scroll(app_tx, key, &direction);
+                    on_scroll(app_tx, key, direction);
                 },
             _ => (),
         }
@@ -226,8 +226,8 @@ fn on_drag_data_received(tx: &Sender<Operation>, selection: &SelectionData, drop
     }
 }
 
-fn on_scroll(app_tx: &Sender<Operation>, key: Key, direction: &ScrollDirection) {
-    if *direction != ScrollDirection::Smooth {
+fn on_scroll(app_tx: &Sender<Operation>, key: Key, direction: ScrollDirection) {
+    if direction != ScrollDirection::Smooth {
         app_tx.send(Operation::Fire(Mapped::Input(CoordPx::default(), key))).unwrap();
     }
 }
@@ -241,6 +241,7 @@ fn uri_to_path(uri: &str) -> Result<String, Box<Error>> {
         let path = CStr::from_ptr(c_path);
         let path = path.to_str()?.to_string();
 
+        #[cfg_attr(feature = "cargo-clippy", allow(transmute_ptr_to_ptr))]
         let ptr = transmute::<*const GFile, *mut GObject>(g_file);
         g_object_unref(ptr);
         let ptr = c_path as *mut c_void;

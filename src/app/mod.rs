@@ -281,7 +281,7 @@ impl App {
                     on_operate_file(self, file_operation),
                 Page(page) =>
                     on_page(self, &mut updated, page),
-                PdfIndex(async, read_operations, search_path, ref command_line, ref fmt, ref separator) =>
+                PdfIndex(async, read_operations, search_path, ref command_line, fmt, ref separator) =>
                     on_pdf_index(self, async, read_operations, search_path, command_line, fmt, separator.as_ref().map(String::as_str)),
                 PreFetch(pre_fetch_serial) =>
                     on_pre_fetch(self, pre_fetch_serial),
@@ -591,10 +591,10 @@ impl App {
 
         for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
             if let Some((entry, _)) = self.current_with(index) {
-                let image_buffer = self.cache.get_image_buffer(&entry, &cell_size, &self.states.drawing);
+                let image_buffer = self.cache.get_image_buffer(&entry, cell_size, &self.states.drawing);
                 match image_buffer {
                     Ok(image_buffer) => {
-                        let scale = cell.draw(&image_buffer, &cell_size, &self.states.drawing.fit_to);
+                        let scale = cell.draw(&image_buffer, cell_size, &self.states.drawing.fit_to);
                         if base_scale.is_none() {
                             base_scale = scale;
                         }
@@ -605,7 +605,7 @@ impl App {
                         }
                     }
                     Err(error) =>
-                        cell.show_error(&error, &cell_size)
+                        cell.show_error(&error, cell_size)
                 }
                 showed = true;
             } else {

@@ -46,5 +46,5 @@ pub fn start_edit(tx: &Sender<Operation>, editor_command: Option<String>, defaul
         }
     }
 
-    remove_file(temp_file.path()).expect(&format!("Could not remove temporary file: {:?}", temp_file.path()));
+    remove_file(temp_file.path()).unwrap_or_else(|_| panic!("Could not remove temporary file: {:?}", temp_file.path()));
 }

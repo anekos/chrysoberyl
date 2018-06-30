@@ -52,12 +52,12 @@ impl FileOperation {
 
         match self.action {
             Copy => {
-                let dest = destination_path(source, &self.destination_directory, &self.destination_file, &self.if_exist)?;
+                let dest = destination_path(source, &self.destination_directory, &self.destination_file, self.if_exist)?;
                 fs::copy(source, dest).map(mangle)?;
                 Ok(())
             }
             Move => {
-                let dest = destination_path(source, &self.destination_directory, &self.destination_file, &self.if_exist)?;
+                let dest = destination_path(source, &self.destination_directory, &self.destination_file, self.if_exist)?;
                 fs::rename(source, dest).map(mangle)?;
                 Ok(())
             }
@@ -65,7 +65,7 @@ impl FileOperation {
     }
 
     pub fn execute_with_buffer(&self, source: &[u8], source_name: &PathBuf) -> Result<(), BoxedError> {
-        let dest = destination_path(source_name, &self.destination_directory, &self.destination_file, &self.if_exist)?;
+        let dest = destination_path(source_name, &self.destination_directory, &self.destination_file, self.if_exist)?;
         let mut file = File::create(dest)?;
         file.write_all(source)?;
         Ok(())
@@ -73,7 +73,7 @@ impl FileOperation {
 }
 
 
-fn destination_path(source: &PathBuf, destination_directory: &PathBuf, file_name: &Option<String>, if_exist: &IfExist) -> Result<PathBuf, BoxedError> {
+fn destination_path(source: &PathBuf, destination_directory: &PathBuf, file_name: &Option<String>, if_exist: IfExist) -> Result<PathBuf, BoxedError> {
     use self::IfExist::*;
 
     let file_name = file_name.as_ref().map(|it| it.as_ref()).unwrap_or_else(|| source.file_name().unwrap());
@@ -85,7 +85,7 @@ fn destination_path(source: &PathBuf, destination_directory: &PathBuf, file_name
 
     path.push(file_name);
 
-    match *if_exist {
+    match if_exist {
         Fail if path.exists() => Err(Box::new(chry_error!("File already exists: {:?}", path))),
         Fail | Overwrite  => Ok(path),
         NewFileName => {

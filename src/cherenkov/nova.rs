@@ -275,7 +275,7 @@ fn clamp<T: PartialOrd>(v: T, from: T, to: T) -> T {
 
 fn set_seed_randomly(result: &mut [u8;32]) {
     let mut rng = rand::thread_rng();
-    for i in 0..32 {
-        result[i] = rng.next_u32() as u8;
+    for it in result.iter_mut().take(32) {
+        *it = rng.next_u32() as u8;
     }
 }

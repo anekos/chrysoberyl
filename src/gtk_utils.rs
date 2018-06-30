@@ -21,7 +21,7 @@ pub fn new_pixbuf_from_surface(surface: &ImageSurface) -> Pixbuf {
     }
 }
 
-pub fn context_flip(context: &Context, size: &Size, horizontal: bool, vertical: bool) {
+pub fn context_flip(context: &Context, size: Size, horizontal: bool, vertical: bool) {
     if !(horizontal || vertical) {
         return;
     }
@@ -37,7 +37,7 @@ pub fn context_flip(context: &Context, size: &Size, horizontal: bool, vertical: 
     context.transform(Matrix::new(xx, yx, xy, yy, x0, y0));
 }
 
-pub fn context_rotate(context: &Context, page: &Size, rotation: u8) {
+pub fn context_rotate(context: &Context, page: Size, rotation: u8) {
     let rotation = rotation % 4;
 
     match rotation {

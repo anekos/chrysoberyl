@@ -114,26 +114,26 @@ impl Size {
     //     }
     // }
 
-    pub fn floated(&self) -> (f64, f64) {
+    pub fn floated(self) -> (f64, f64) {
         (f64!(self.width), f64!(self.height))
     }
 
-    pub fn rotate(&self, n: u8) -> Self {
+    pub fn rotate(self, n: u8) -> Self {
         if n % 2 == 1 {
             Size { width: self.height, height: self.width }
         } else {
-            *self
+            self
         }
     }
 
-    pub fn scaled(&self, scale: f64) -> Size {
+    pub fn scaled(self, scale: f64) -> Size {
         Size {
             width: (f64!(self.width) * scale) as i32,
             height: (f64!(self.height) * scale) as i32,
         }
     }
 
-    pub fn clipped(&self, region: &Region) -> (Size, Region) {
+    pub fn clipped(self, region: &Region) -> (Size, Region) {
         let (w, h) = self.floated();
         let clipped_size = Size::new(
             (w * (region.right - region.left)) as i32,
@@ -147,7 +147,7 @@ impl Size {
     }
 
     /** returns (scale, fitted_size, delta) **/
-    pub fn fit(&self, cell_size: &Size, fit_to: &FitTo) -> (f64, Size) {
+    pub fn fit(self, cell_size: Size, fit_to: &FitTo) -> (f64, Size) {
         use self::FitTo::*;
 
         let (scale, fitted) = match *fit_to {
@@ -163,7 +163,7 @@ impl Size {
         (scale, fitted)
     }
 
-    pub fn fit_with_clipping(&self, cell_size: &Size, drawing: &Drawing) -> (f64, Size, Option<Region>) {
+    pub fn fit_with_clipping(self, cell_size: Size, drawing: &Drawing) -> (f64, Size, Option<Region>) {
         if let Some(ref clip) = drawing.clipping {
             let (clipped_size, clipped_region) = self.clipped(clip);
             let (scale, fitted) = clipped_size.fit(cell_size, &drawing.fit_to);
@@ -174,20 +174,20 @@ impl Size {
         }
     }
 
-    pub fn dimensions(&self) -> i32 {
+    pub fn dimensions(self) -> i32 {
         self.width * self.height
     }
 
-    pub fn ratio(&self) -> (i32, i32) {
+    pub fn ratio(self) -> (i32, i32) {
         let divisor = gcd(self.width, self.height);
         (self.width / divisor, self.height / divisor)
     }
 
-    fn fit_to_original(&self) -> (f64, Size) {
-        (1.0, *self)
+    fn fit_to_original(self) -> (f64, Size) {
+        (1.0, self)
     }
 
-    fn fit_to_original_or_cell(&self, cell: &Size) -> (f64, Size) {
+    fn fit_to_original_or_cell(self, cell: Size) -> (f64, Size) {
         let (scale, fitted) = self.fit_to_cell(cell);
         if 1.0 <= scale {
             self.fit_to_original()
@@ -196,7 +196,7 @@ impl Size {
         }
     }
 
-    fn fit_to_cell(&self, cell: &Size) -> (f64, Size) {
+    fn fit_to_cell(self, cell: Size) -> (f64, Size) {
         let mut scale = f64!(cell.width) / f64!(self.width);
         let result_height = (f64!(self.height) * scale) as i32;
         if result_height > cell.height {
@@ -205,17 +205,17 @@ impl Size {
         (scale, self.scaled(scale))
     }
 
-    fn fit_to_width(&self, cell: &Size) -> (f64, Size) {
+    fn fit_to_width(self, cell: Size) -> (f64, Size) {
         let scale = f64!(cell.width) / f64!(self.width);
         (scale, self.scaled(scale))
     }
 
-    fn fit_to_height(&self, cell: &Size) -> (f64, Size) {
+    fn fit_to_height(self, cell: Size) -> (f64, Size) {
         let scale = f64!(cell.height) / f64!(self.height);
         (scale, self.scaled(scale))
     }
 
-    pub fn fit_to_fixed(&self, w: i32, h: i32) -> (f64, Size) {
+    pub fn fit_to_fixed(self, w: i32, h: i32) -> (f64, Size) {
         let mut scale = f64!(w) / f64!(self.width);
         let result_height = (f64!(self.height) * scale) as i32;
         if result_height > h {
@@ -224,7 +224,7 @@ impl Size {
         (scale, self.scaled(scale))
     }
 
-    fn fit_to_scaled(&self, scale: usize) -> (f64, Size) {
+    fn fit_to_scaled(self, scale: usize) -> (f64, Size) {
         let scale = scale as f64 / 100.0;
         (scale, self.scaled(scale))
     }

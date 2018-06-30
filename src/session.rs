@@ -52,14 +52,14 @@ pub enum WriteContext {
 
 pub fn write_sessions(app: &App, sessions: &[Session], out: &mut String) {
     for session in sessions {
-        write_session(app, session, out);
+        write_session(app, *session, out);
     }
 }
 
-pub fn write_session(app: &App, session: &Session, out: &mut String) {
+pub fn write_session(app: &App, session: Session, out: &mut String) {
     use self::Session::*;
 
-    match *session {
+    match session {
         Options => write_options(&app.states, &app.gui, false, out),
         Entries => write_entries(&app.entries, out),
         Queue => write_queue(&app.remote_cache.state, out),

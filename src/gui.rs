@@ -494,7 +494,7 @@ impl Cell {
     /**
      * @return Scale
      */
-    pub fn draw(&self, image_buffer: &ImageBuffer, cell_size: &Size, fit_to: &FitTo) -> Option<f64> {
+    pub fn draw(&self, image_buffer: &ImageBuffer, cell_size: Size, fit_to: &FitTo) -> Option<f64> {
         self.window.set_size_request(cell_size.width, cell_size.height);
         self.error_text.hide();
         self.image.show();
@@ -510,7 +510,7 @@ impl Cell {
         }
     }
 
-    pub fn show_error(&self, text: &str, cell_size: &Size) {
+    pub fn show_error(&self, text: &str, cell_size: Size) {
         self.window.set_size_request(cell_size.width, cell_size.height);
         self.image.hide();
         self.error_text.set_text(text);
@@ -601,7 +601,7 @@ impl Cell {
         }
     }
 
-    fn draw_animation(&self, image_buffer: &AnimationBuffer, cell_size: &Size) {
+    fn draw_animation(&self, image_buffer: &AnimationBuffer, cell_size: Size) {
         match image_buffer.get_pixbuf_animation() {
             Ok(buf) => {
                 self.image.set_from_animation(&buf);
@@ -609,11 +609,11 @@ impl Cell {
                 self.window.set_size_request(ci_width, ci_height);
             }
             Err(ref error) =>
-                self.show_error(&s!(error), &cell_size)
+                self.show_error(&s!(error), cell_size)
         }
     }
 
-    fn draw_pixbuf(&self, pixbuf: &Pixbuf, cell_size: &Size, fit_to: &FitTo) {
+    fn draw_pixbuf(&self, pixbuf: &Pixbuf, cell_size: Size, fit_to: &FitTo) {
         use size::FitTo::*;
 
         self.image.set_from_pixbuf(Some(pixbuf));
@@ -629,7 +629,7 @@ impl Cell {
         }
     }
 
-    fn draw_static(&self, image_buffer: &StaticImageBuffer, cell_size: &Size, fit_to: &FitTo) -> Option<f64> {
+    fn draw_static(&self, image_buffer: &StaticImageBuffer, cell_size: Size, fit_to: &FitTo) -> Option<f64> {
         self.draw_pixbuf(&image_buffer.get_pixbuf(), cell_size, fit_to);
         image_buffer.original_size.map(|original_size| {
             original_size.fit(cell_size, fit_to).0

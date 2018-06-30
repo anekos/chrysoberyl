@@ -601,10 +601,10 @@ impl SearchKey {
 
 
 impl EntryType {
-    pub fn is_container(&self) -> bool {
+    pub fn is_container(self) -> bool {
         use self::EntryType::*;
 
-        match *self {
+        match self {
             PDF | Archive => true,
             _ => false,
         }

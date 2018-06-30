@@ -87,6 +87,7 @@ impl PopplerDocument {
 impl Drop for PopplerDocument {
     fn drop(&mut self) {
         unsafe {
+            #[cfg_attr(feature = "cargo-clippy", allow(transmute_ptr_to_ptr))]
             let ptr = transmute::<*const sys::document_t, *mut GObject>(self.0);
             g_object_unref(ptr);
         }
@@ -95,7 +96,7 @@ impl Drop for PopplerDocument {
 
 impl PopplerPage {
     #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
-    pub fn render(&self, context: &cairo::Context, link_color: Option<&Color>) {
+    pub fn render(&self, context: &cairo::Context, link_color: Option<Color>) {
         #[cfg(feature = "poppler_lock")]
         let mut count = (*LOCK).lock().unwrap();
         #[cfg(feature = "poppler_lock")]
@@ -146,7 +147,7 @@ impl PopplerPage {
         Size::new(width as i32, height as i32)
     }
 
-    pub fn get_pixbuf(&self, cell: &Size, drawing: &Drawing) -> Pixbuf {
+    pub fn get_pixbuf(&self, cell: Size, drawing: &Drawing) -> Pixbuf {
         let page = self.get_size();
 
         let (scale, fitted, clipped_region) = page.rotate(drawing.rotation).fit_with_clipping(cell, drawing);
@@ -161,9 +162,9 @@ impl PopplerPage {
                 context.rectangle(r.left as f64, r.top as f64, r.right as f64, r.bottom as f64);
                 context.clip();
             }
-            context_rotate(&context, &page, drawing.rotation);
+            context_rotate(&context, page, drawing.rotation);
             context.paint();
-            self.render(&context, Some(&drawing.link_color));
+            self.render(&context, Some(drawing.link_color));
         }
 
         new_pixbuf_from_surface(&surface)
@@ -180,7 +181,7 @@ impl PopplerPage {
 
             let size = self.get_size();
 
-            tap!(g_list_map!(it: *const sys::rectangle_t = listed => util::new_region_on(it, &size)), g_list_free(listed))
+            tap!(g_list_map!(it: *const sys::rectangle_t = listed => util::new_region_on(it, size)), g_list_free(listed))
         }
     }
 
@@ -200,7 +201,7 @@ impl PopplerPage {
                 data: *const sys::link_mapping_t = listed =>
                 if let Some(action) = util::extract_action(&*data.action) {
                     let page = action.page;
-                    let region = util::new_region_on(&data.area, &size);
+                    let region = util::new_region_on(&data.area, size);
                     result.push(Link { page, region });
                 });
 
@@ -215,6 +216,7 @@ impl PopplerPage {
 impl Drop for PopplerPage {
     fn drop(&mut self) {
         unsafe {
+            #[cfg_attr(feature = "cargo-clippy", allow(transmute_ptr_to_ptr))]
             let ptr = transmute::<*const sys::page_t, *mut GObject>(self.0);
             g_object_unref(ptr);
         }
@@ -236,6 +238,7 @@ impl File {
 impl Drop for File {
     fn drop(&mut self) {
         unsafe {
+            #[cfg_attr(feature = "cargo-clippy", allow(transmute_ptr_to_ptr))]
             let ptr = transmute::<*const GFile, *mut GObject>(self.0);
             g_object_unref(ptr);
         }

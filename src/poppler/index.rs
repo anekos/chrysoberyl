@@ -60,10 +60,10 @@ impl Index {
         result
     }
 
-    pub fn write(&self, fmt: &Format, separator: Option<&str>, out: &mut String) {
+    pub fn write(&self, fmt: Format, separator: Option<&str>, out: &mut String) {
         use self::Format::*;
 
-        match *fmt {
+        match fmt {
             Indented =>
                 write_indented(self, separator.unwrap_or(" = "), 0, out),
             OneLine =>

@@ -68,7 +68,7 @@ impl TimerManager {
     }
 
     pub fn wakeup(&self, name: &str) {
-        self.table.get(name).unwrap().wakeup();
+        self.table[name].wakeup();
     }
 }
 

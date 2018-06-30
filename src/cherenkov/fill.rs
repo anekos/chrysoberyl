@@ -21,7 +21,7 @@ pub enum Shape {
 
 
 #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
-pub fn fill(shape: Shape, che: &Region, color: &Color, operator: Option<Operator>, modified: Modified) -> Modified {
+pub fn fill(shape: Shape, che: &Region, color: Color, operator: Option<Operator>, modified: Modified) -> Modified {
     let surface = modified.get_image_surface();
     let context = Context::new(&surface);
 
@@ -30,7 +30,7 @@ pub fn fill(shape: Shape, che: &Region, color: &Color, operator: Option<Operator
     Modified::S(surface)
 }
 
-pub fn mask(surface: Option<ImageSurface>, shape: Shape, che: &Region, color: &Color, operator: Option<Operator>, modified: &Modified) -> ImageSurface {
+pub fn mask(surface: Option<ImageSurface>, shape: Shape, che: &Region, color: Color, operator: Option<Operator>, modified: &Modified) -> ImageSurface {
     let size = modified.get_size();
     let surface = surface.unwrap_or_else(|| ImageSurface::create(Format::ARgb32, size.width, size.height).unwrap());
     let context = Context::new(&surface);
@@ -41,7 +41,7 @@ pub fn mask(surface: Option<ImageSurface>, shape: Shape, che: &Region, color: &C
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
-fn context_fill(context: &Context, shape: Shape, region: &Region, color: &Color, operator: Option<Operator>, w: i32, h: i32) {
+fn context_fill(context: &Context, shape: Shape, region: &Region, color: Color, operator: Option<Operator>, w: i32, h: i32) {
     let (r, g, b, a) = color.tupled4();
     context.set_source_rgba(r, g, b, a);
 

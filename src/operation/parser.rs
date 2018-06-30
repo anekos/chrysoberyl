@@ -128,7 +128,7 @@ pub fn parse_cherenkov(args: &[String]) -> Result<Operation, ParsingError> {
         parse_args(&mut ap, args)
     } .and_then(|_| {
         if n_spokes == 0 {
-            return Err(ParsingError::InvalidArgument(format!("--spokes must be larger than 0")));
+            return Err(ParsingError::InvalidArgument(o!("--spokes must be larger than 0")));
         }
         let seed = Seed::new(&seed);
         let op = Operation::Cherenkov(CherenkovParameter { radius, color, n_spokes, random_hue, seed, x, y });
@@ -174,8 +174,8 @@ where F: FnOnce(PathBuf, Option<String>, IfExist, Option<Size>) -> FileOperation
 
 pub fn parse_fire(args: &[String]) -> Result<Operation, ParsingError> {
     impl MappedType {
-        pub fn input_from_text(&self, text: &str) -> Result<Mapped, ParsingError> {
-            match *self {
+        pub fn input_from_text(self, text: &str) -> Result<Mapped, ParsingError> {
+            match self {
                 MappedType::Input =>
                     Ok(Mapped::Input(CoordPx::default(), Key::from(text))),
                 MappedType::Event => {

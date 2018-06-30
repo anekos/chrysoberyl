@@ -39,15 +39,15 @@ impl Color {
         Color::new4(css_color.r, css_color.g, css_color.b, min!(css_color.a * 255.0, 255.0) as u8)
     }
 
-    pub fn tupled3(&self) -> (f64, f64, f64) {
+    pub fn tupled3(self) -> (f64, f64, f64) {
         (to_f(self.r), to_f(self.g), to_f(self.b))
     }
 
-    pub fn tupled4(&self) -> (f64, f64, f64, f64) {
+    pub fn tupled4(self) -> (f64, f64, f64, f64) {
         (to_f(self.r), to_f(self.g), to_f(self.b), to_f(self.a))
     }
 
-    pub fn option(&self) -> Option<&Color> {
+    pub fn option(self) -> Option<Color> {
         if self.a == 0 {
             None
         } else {

@@ -23,7 +23,7 @@ pub struct PseudoLen(pub usize);
 
 
 impl Index {
-    pub fn with_fly_leaves(&self, fly_leaves: FlyLeaves) -> Position {
+    pub fn with_fly_leaves(self, fly_leaves: FlyLeaves) -> Position {
         Position(fly_leaves.0 + self.0)
     }
 
@@ -35,7 +35,7 @@ impl Index {
 
 
 impl Level {
-    pub fn to_position(&self, sight_size: SightSize) -> Position {
+    pub fn to_position(self, sight_size: SightSize) -> Position {
         Position(self.0 * sight_size.0)
     }
 }
@@ -80,7 +80,7 @@ impl ops::Sub<usize> for Level {
 
 
 impl Position {
-    pub fn to_index(&self, fly_leaves: FlyLeaves) -> Option<Index> {
+    pub fn to_index(self, fly_leaves: FlyLeaves) -> Option<Index> {
         if self.0 < fly_leaves.0 {
             None
         } else {
@@ -88,7 +88,7 @@ impl Position {
         }
     }
 
-    pub fn to_level(&self, sight_size: SightSize) -> Level {
+    pub fn to_level(self, sight_size: SightSize) -> Level {
         Level(self.0 / sight_size.0)
     }
 }

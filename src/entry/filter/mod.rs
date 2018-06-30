@@ -127,7 +127,7 @@ fn eval_value_as_i(info: &Info, content: &EntryContent, v: &EValue) -> Option<i6
     match *v {
         Integer(v) =>
             Some(v),
-        Variable(ref v) =>
+        Variable(v) =>
             eval_variable(info, content, v),
         Glob(_) =>
             None,
@@ -151,15 +151,15 @@ fn eval_value_as_s(info: &Info, content: &EntryContent, v: &EValue) -> Option<St
     match *v {
         Integer(_) | Glob(_) =>
             None,
-        Variable(ref v) =>
+        Variable(v) =>
             eval_variable_as_s(info, content, v)
     }
 }
 
-fn eval_variable(info: &Info, content: &EntryContent, v: &EVariable) -> Option<i64> {
+fn eval_variable(info: &Info, content: &EntryContent, v: EVariable) -> Option<i64> {
     use self::EVariable::*;
 
-    match *v {
+    match v {
         ArchivePage => Some(info.entry.strict.archive_page),
         CurrentPage => info.app.current_page.map(|it| it as i64),
         Width => info.entry.lazy(content, |it| it.dimensions).map(|it| i64!(it.width)),
@@ -172,10 +172,10 @@ fn eval_variable(info: &Info, content: &EntryContent, v: &EVariable) -> Option<i
     }
 }
 
-fn eval_variable_as_s(info: &Info, content: &EntryContent, v: &EVariable) -> Option<String> {
+fn eval_variable_as_s(info: &Info, content: &EntryContent, v: EVariable) -> Option<String> {
     use self::EVariable::*;
 
-    match *v {
+    match v {
         AspectRatio => info.entry.lazy(content, |it| it.dimensions).map(|it| {
             let (w, h) = it.ratio();
             format!("{}:{}", w, h)

@@ -178,8 +178,8 @@ impl Default for Filters {
 }
 
 impl AutoPaging {
-    pub fn enabled(&self) -> bool {
-        AutoPaging::DoNot != *self
+    pub fn enabled(self) -> bool {
+        AutoPaging::DoNot != self
     }
 }
 

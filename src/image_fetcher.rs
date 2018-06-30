@@ -107,7 +107,7 @@ pub fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mu
 
 pub fn fetch(tx: Sender<FetcherOperation>, entry: Arc<Entry>, cell_size: Size, drawing: Drawing) {
     spawn(move || {
-        let image = entry::image::get_image_buffer(&entry, &cell_size, &drawing).map_err(|it| s!(it));
+        let image = entry::image::get_image_buffer(&entry, cell_size, &drawing).map_err(|it| s!(it));
         tx.send(FetcherOperation::Done(entry.key.clone(), image)).unwrap();
     });
 }

@@ -71,7 +71,7 @@ impl<'a> From<&'a EventKey> for Key {
 impl<'a> From<&'a EventScroll> for Key {
     fn from(ev: &'a EventScroll) -> Self {
         let mut key = get_modifiers_text(ev.get_state(), false);
-        key.push_str(&get_direction_text(&ev.get_direction()));
+        key.push_str(&get_direction_text(ev.get_direction()));
         Key(key)
     }
 }
@@ -88,10 +88,10 @@ fn get_modifiers_text(state: ModifierType, ignore_shift: bool) -> String {
     result
 }
 
-fn get_direction_text(direction: &ScrollDirection) -> String {
+fn get_direction_text(direction: ScrollDirection) -> String {
     use self::ScrollDirection::*;
 
-    let name = match *direction {
+    let name = match direction {
         Up => "up",
         Down => "down",
         Left => "left",

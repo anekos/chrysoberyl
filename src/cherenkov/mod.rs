@@ -61,7 +61,7 @@ impl Cherenkoved {
         Cherenkoved { cache: HashMap::new() }
     }
 
-    pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: &Size, drawing: &Drawing) -> Option<Result<ImageBuffer, Box<Error>>> {
+    pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: Size, drawing: &Drawing) -> Option<Result<ImageBuffer, Box<Error>>> {
         if_let_some!(cache_entry = self.cache.get_mut(&entry.key), None);
         Some(get_image_buffer(cache_entry, entry, cell_size, drawing))
     }
@@ -93,13 +93,13 @@ impl Cherenkoved {
         }
     }
 
-    pub fn cherenkov1(&mut self, entry: &Entry, cell_size: &Size, modifier: Modifier, drawing: &Drawing) {
+    pub fn cherenkov1(&mut self, entry: &Entry, cell_size: Size, modifier: Modifier, drawing: &Drawing) {
         self.cherenkov(entry, cell_size, &[modifier], drawing)
     }
 
     pub fn reset(&mut self, entry: &Entry) {
         if_let_some!(entry = self.cache.get_mut(&entry.key), ());
-        for it in entry.modifiers.iter_mut() {
+        for it in &mut entry.modifiers {
             if let Che::Nova(ref mut nv) = it.che {
                 nv.seed.reset();
             }
@@ -107,7 +107,7 @@ impl Cherenkoved {
         entry.expired = true;
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, cell_size: &Size, new_modifiers: &[Modifier], drawing: &Drawing) {
+    pub fn cherenkov(&mut self, entry: &Entry, cell_size: Size, new_modifiers: &[Modifier], drawing: &Drawing) {
         let mut modifiers = self.cache.get(&entry.key).map(|it| it.modifiers.clone()).unwrap_or_else(|| vec![]);
 
         modifiers.extend_from_slice(new_modifiers);
@@ -117,7 +117,7 @@ impl Cherenkoved {
         self.cache.insert(
             entry.key.clone(),
             CacheEntry {
-                cell_size: *cell_size,
+                cell_size,
                 drawing: drawing.clone(),
                 expired: false,
                 image: Some(image_buffer),
@@ -128,8 +128,8 @@ impl Cherenkoved {
 
 
 impl CacheEntry {
-    pub fn get(&self, cell_size: &Size, drawing: &Drawing) -> Option<StaticImageBuffer> {
-        if !self.expired && self.cell_size == *cell_size && self.drawing.fit_to == drawing.fit_to && self.drawing.clipping == drawing.clipping && self.drawing.mask_operator == drawing.mask_operator {
+    pub fn get(&self, cell_size: Size, drawing: &Drawing) -> Option<StaticImageBuffer> {
+        if !self.expired && self.cell_size == cell_size && self.drawing.fit_to == drawing.fit_to && self.drawing.clipping == drawing.clipping && self.drawing.mask_operator == drawing.mask_operator {
             if let Some(ref image) = self.image {
                 return Some(image.clone());
             }
@@ -262,7 +262,7 @@ impl fmt::Display for Operator {
 }
 
 
-fn get_image_buffer(cache_entry: &mut CacheEntry, entry: &Entry, cell_size: &Size, drawing: &Drawing) -> Result<ImageBuffer, Box<Error>> {
+fn get_image_buffer(cache_entry: &mut CacheEntry, entry: &Entry, cell_size: Size, drawing: &Drawing) -> Result<ImageBuffer, Box<Error>> {
     if let Some(image) = cache_entry.get(cell_size, drawing) {
         return Ok(ImageBuffer::Static(image))
     }
@@ -273,11 +273,11 @@ fn get_image_buffer(cache_entry: &mut CacheEntry, entry: &Entry, cell_size: &Siz
 
     cache_entry.image = Some(image.clone());
     cache_entry.drawing = drawing.clone();
-    cache_entry.cell_size = *cell_size;
+    cache_entry.cell_size = cell_size;
     Ok(ImageBuffer::Static(image))
 }
 
-fn re_cherenkov(entry: &Entry, cell_size: &Size, drawing: &Drawing, modifiers: &[Modifier]) -> Result<StaticImageBuffer, Box<Error>> {
+fn re_cherenkov(entry: &Entry, cell_size: Size, drawing: &Drawing, modifiers: &[Modifier]) -> Result<StaticImageBuffer, Box<Error>> {
     let image_buffer = entry::image::get_image_buffer(entry, cell_size, drawing)?;
     if let ImageBuffer::Static(buf) = image_buffer {
         let mut mask = None;
@@ -303,9 +303,9 @@ fn re_cherenkov(entry: &Entry, cell_size: &Size, drawing: &Drawing, modifiers: &
 fn cherenkov_pixbuf(modified: Modified, mask_surface: Option<ImageSurface>, che: &Che) -> (Modified, Option<ImageSurface>) {
     match *che {
         Che::Nova(ref che) => (nova::nova_(che, modified), mask_surface),
-        Che::Fill(shape, ref region, ref color, operator, false) =>
+        Che::Fill(shape, ref region, color, operator, false) =>
             (fill::fill(shape, region, color, operator, modified), mask_surface),
-        Che::Fill(shape, ref region, ref color, operator, true) => {
+        Che::Fill(shape, ref region, color, operator, true) => {
             let mask_surface =  fill::mask(mask_surface, shape, region, color, operator, &modified);
             (modified, Some(mask_surface))
         }

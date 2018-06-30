@@ -109,7 +109,7 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
             let y = if let Some(it) = parameter.y.or_else(|| coord.as_ref().map(|it| it.y)) { it } else { continue };
             app.cache.cherenkov1(
                 &entry,
-                &cell_size,
+                cell_size,
                 Modifier {
                     search_highlight: false,
                     che: Che::Nova(Nova {
@@ -170,7 +170,7 @@ pub fn on_controller(app: &mut App, source: controller::Source) -> EventResult {
 pub fn on_copy_to_clipbaord(app: &mut App, selection: ClipboardSelection) -> EventResult {
     let cell = app.gui.cells(false).nth(0).ok_or(ChryError::Fixed("No image"))?;
     let pixbuf = cell.image.get_pixbuf().ok_or(ChryError::Fixed("No static image"))?;
-    clipboard::store(&selection, &pixbuf);
+    clipboard::store(selection, &pixbuf);
     Ok(())
 }
 
@@ -305,7 +305,7 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Optio
         let cell_size = app.gui.get_cell_size(&app.states.view);
         app.cache.cherenkov1(
             &entry,
-            &cell_size,
+            cell_size,
             Modifier {
                 search_highlight: false,
                 che: Che::Fill(shape, region, color, operator, mask),
@@ -551,7 +551,8 @@ pub fn on_jump(app: &mut App, updated: &mut Updated, name: &str, load: bool) -> 
 }
 
 pub fn on_kill_timer(app: &mut App, name: &str) -> EventResult {
-    Ok(app.timers.unregister(name)?)
+    app.timers.unregister(name)?;
+    Ok(())
 }
 
 pub fn on_last(app: &mut App, updated: &mut Updated, count: Option<usize>, ignore_views: bool, move_by: MoveBy) -> EventResult {
@@ -763,7 +764,7 @@ pub fn on_page(app: &mut App, updated: &mut Updated, page: usize) -> EventResult
     Ok(())
 }
 
-pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, search_path: bool, command_line: &[Expandable], fmt: &poppler::index::Format, separator: Option<&str>) -> EventResult {
+pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, search_path: bool, command_line: &[Expandable], fmt: poppler::index::Format, separator: Option<&str>) -> EventResult {
     if_let_some!((entry, _) = app.current(), Ok(()));
     if let EntryContent::Pdf(ref path, _) = entry.content {
         let mut stdin = o!("");
@@ -831,7 +832,7 @@ pub fn on_push_archive(app: &mut App, path: &PathBuf, meta: Option<Meta>, force:
 }
 
 pub fn on_push_clipboard(app: &mut App, selection: ClipboardSelection, as_operation: bool, meta: Option<Meta>, force: bool) -> EventResult {
-    let ops = clipboard::get_operations(&selection, as_operation, meta, force)?;
+    let ops = clipboard::get_operations(selection, as_operation, meta, force)?;
     for op in ops {
         app.tx.send(op).unwrap();
     }
@@ -1099,7 +1100,7 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
             let modifiers: Vec<Modifier> = regions.iter().map(|region| Modifier { search_highlight: true, che: Che::Fill(Shape::Rectangle, *region, color, None, false) }).collect();
             app.cache.cherenkov(
                 &entry,
-                &cell_size,
+                cell_size,
                 modifiers.as_slice(),
                 &app.states.drawing);
 

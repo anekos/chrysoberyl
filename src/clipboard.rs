@@ -14,7 +14,7 @@ use operation::{Operation, ClipboardSelection};
 
 
 
-pub fn get_operations(selection: &ClipboardSelection, as_operation: bool, meta: Option<Meta>, force: bool) -> Result<Vec<Operation>, Box<Error>> {
+pub fn get_operations(selection: ClipboardSelection, as_operation: bool, meta: Option<Meta>, force: bool) -> Result<Vec<Operation>, Box<Error>> {
     let cb = from_selection(selection);
 
     if let Some(pixbuf) = cb.wait_for_image() {
@@ -44,7 +44,7 @@ pub fn get_operations(selection: &ClipboardSelection, as_operation: bool, meta: 
     Err(ChryError::Fixed("Invalid clipboard"))?
 }
 
-pub fn store(selection: &ClipboardSelection, pixbuf: &Pixbuf) {
+pub fn store(selection: ClipboardSelection, pixbuf: &Pixbuf) {
     let cb = from_selection(selection);
     cb.set_image(pixbuf);
 }
@@ -60,10 +60,10 @@ fn from_pixbuf(pixbuf: &Pixbuf) -> Result<Vec<u8>, Box<Error>> {
     Ok(vec)
 }
 
-fn from_selection(selection: &ClipboardSelection) -> Clipboard {
+fn from_selection(selection: ClipboardSelection) -> Clipboard {
     use self::ClipboardSelection::*;
 
-    let name = match *selection {
+    let name = match selection {
         Primary => "PRIMARY",
         Secondary => "SECONDARY",
         Clipboard => "CLIPBOARD",

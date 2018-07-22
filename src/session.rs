@@ -13,7 +13,7 @@ use entry::filter::expression::Expr as FilterExpr;
 use entry::filter::writer::write as write_expr;
 use entry::{Entry, EntryContainer, EntryType, Key, Meta};
 use gui::{self, Gui};
-use mapping::{Mapping, input_mapping as imap, region_mapping as rmap, event_mapping as emap};
+use mapping::{Mapping, input_mapping as imap, region_mapping as rmap, event_mapping as emap, operation_mapping as omap};
 use operation::option::PreDefinedOptionName;
 use option::common::{bool_to_str as b2s};
 use paginator::Paginator;
@@ -332,6 +332,7 @@ pub fn write_mappings(mappings: &Mapping, out: &mut String) {
     write_input_mappings(None, &mappings.input_mapping, out);
     write_region_mappings(&mappings.region_mapping, out);
     write_event_mappings(&mappings.event_mapping, out);
+    write_operation_mappings(&mappings.operation_mapping, out);
 }
 
 fn write_input_mappings(base: Option<&str>, mappings: &imap::InputMapping, out: &mut String) {
@@ -398,6 +399,16 @@ fn write_event_mappings(mappings: &emap::EventMapping, out: &mut String) {
             sprintln!(out, "");
 
         }
+    }
+}
+
+fn write_operation_mappings(mappings: &omap::OperationMapping, out: &mut String) {
+    for (name, op) in &mappings.table {
+        sprint!(out, "@map operation {}", escape(name));
+        for it in op {
+            sprint!(out, " {}", escape(it));
+        }
+        sprintln!(out, "");
     }
 }
 

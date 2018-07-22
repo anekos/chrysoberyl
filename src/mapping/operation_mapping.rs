@@ -6,7 +6,7 @@ use std::collections::HashMap;
 type OperationCode = Vec<String>;
 
 pub struct OperationMapping {
-    table: HashMap<String, OperationCode>,
+    pub table: HashMap<String, OperationCode>,
 }
 
 

@@ -789,6 +789,12 @@ impl App {
             }));
         }
 
+        {
+            let cell_size = self.gui.get_cell_size(&self.states.view);
+            envs_sub.push((o!("cell_width"), s!(cell_size.width)));
+            envs_sub.push((o!("cell_height"), s!(cell_size.height)));
+        }
+
         puts_show_event(&envs);
         envs.extend_from_slice(&envs_sub);
         self.update_env(&envs);

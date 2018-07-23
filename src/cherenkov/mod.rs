@@ -274,6 +274,7 @@ fn get_image_buffer(cache_entry: &mut CacheEntry, entry: &Entry, cell_size: Size
     cache_entry.image = Some(image.clone());
     cache_entry.drawing = drawing.clone();
     cache_entry.cell_size = cell_size;
+    cache_entry.expired = false;
     Ok(ImageBuffer::Static(image))
 }
 

@@ -28,7 +28,7 @@ Press `3v2V` for 3x2.
 
 ## Cherenkov
 
-Map to button with `@map mouse 2 @cherenkov --color red --radius 0.02`.
+Map to button with `@map input button-2 @cherenkov --color blue --radius 0.02`.
 And click with wheel.
 
 ![Cherenkoved](http://gyazo.snca.net/2017/04/11-192852-ce7d9141eb69efce2c9e67e516dff69d.png)

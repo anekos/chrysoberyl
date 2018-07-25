@@ -23,7 +23,7 @@ The controllable image viewer
 
 Press `3v2V` for 3x2.
 
-[Multi cell view](http://gyazo.snca.net/2017/04/11-191950-d08c6328e4315c20fb705933bcde6dd4.png)
+![Multi cell view](http://gyazo.snca.net/2017/04/11-191950-d08c6328e4315c20fb705933bcde6dd4.png)
 
 
 ## Cherenkov

@@ -1,7 +1,7 @@
 
 use std::error::Error;
 use std::fs::OpenOptions;
-use std::io::{Write, BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::path::{PathBuf, Path};
 
 
@@ -20,5 +20,13 @@ pub fn read_lines<T: AsRef<Path>>(file: T) -> Result<Vec<String>, Box<Error>> {
     for line in file.lines() {
         result.push(line?);
     }
+    Ok(result)
+}
+
+pub fn read_string<T: AsRef<Path>>(file: T) -> Result<String, Box<Error>> {
+    let file = OpenOptions::new().read(true).write(false).append(false).create(false).open(file.as_ref())?;
+    let mut file = BufReader::new(file);
+    let mut result = o!("");
+    file.read_to_string(&mut result)?;
     Ok(result)
 }

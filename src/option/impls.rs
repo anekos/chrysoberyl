@@ -464,6 +464,11 @@ impl OptionValue for Screen {
         set_cycled(self, &[Main, CommandLine, LogView], reverse, n, candidates)
     }
 
+    fn unset(&mut self) -> Result<(), ChryError> {
+        *self = Screen::Main;
+        Ok(())
+    }
+
     fn set(&mut self, value: &str) -> Result<(), ChryError> {
         value.parse().map(|value| {
             *self = value;
@@ -480,6 +485,7 @@ impl FromStr for Screen {
             "main" => Screen::Main,
             "log-view" => Screen::LogView,
             "command-line" => Screen::CommandLine,
+            "ui" => Screen::UserUI,
             _ => return Err(ChryError::InvalidValue(o!(src))),
         };
         Ok(screen)

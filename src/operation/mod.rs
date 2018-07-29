@@ -76,6 +76,7 @@ pub enum Operation {
     LinkAction(Vec<String>),
     Load(Expandable, bool), /* path, search_path */
     LoadDefault,
+    LoadUI(Expandable, bool),
     MakeVisibles(Vec<Option<Region>>),
     Map(MappingTarget, Option<usize>, Vec<String>), /* target, remain, operation */
     Mark(String, Option<(String, usize, Option<EntryType>)>),
@@ -294,7 +295,8 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@jump"                         => parse_jump(whole),
             "@kill-timer"                   => parse_kill_timer(whole),
             "@last" | "@l"                  => parse_move(whole, Last),
-            "@load"                         => parse_load(whole),
+            "@load"                         => parse_load(whole, Load),
+            "@load-ui"                      => parse_load(whole, LoadUI),
             "@map"                          => parse_map(whole, true),
             "@mark"                         => parse_mark(whole),
             "@meow"                         => Ok(Meow),
@@ -493,6 +495,7 @@ impl fmt::Debug for Operation {
             LinkAction(_) => "LinkAction",
             Load(_, _) => "Load",
             LoadDefault => "LoadDefault ",
+            LoadUI(_, _) => "LoadUI",
             MakeVisibles(_) => "MakeVisibles",
             Map(_, _, _) => "Map",
             Mark(_, _) => "Mark",

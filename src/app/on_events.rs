@@ -631,6 +631,11 @@ pub fn on_load_default(app: &mut App) -> EventResult {
     Ok(())
 }
 
+pub fn on_load_ui(app: &mut App, file: &Expandable, search_path: bool) -> EventResult {
+    let path = if search_path { file.search_path(&app.states.path_list) } else { file.expand() };
+    app.gui.set_user_ui(&path, &app.tx)
+}
+
 pub fn on_make_visibles(app: &mut App, regions: &[Option<Region>]) -> EventResult {
     app.gui.make_visibles(regions);
     Ok(())

@@ -514,6 +514,7 @@ impl fmt::Display for gui::Screen {
                 Main => "main",
                 LogView => "log-view",
                 CommandLine => "command-line",
+                UserUI => "ui",
             };
 
         write!(f, "{}", result)

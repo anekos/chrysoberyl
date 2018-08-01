@@ -259,6 +259,8 @@ impl App {
                     on_load(self, file, search_path),
                 LoadDefault =>
                     on_load_default(self),
+                LoadUI(ref file, search_path) =>
+                    on_load_ui(self, file, search_path),
                 MakeVisibles(ref regions) =>
                     on_make_visibles(self, regions),
                 Map(target, remain, mapped_operation) =>

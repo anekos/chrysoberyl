@@ -5,6 +5,7 @@ use std::default::Default;
 use std::error::Error;
 use std::fmt;
 use std::fs::File;
+use std::mem::transmute;
 use std::ops;
 use std::path::Path;
 use std::str::FromStr;
@@ -15,12 +16,14 @@ use gdk::{DisplayExt, EventMask};
 use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimationExt};
 use glib;
 use gtk::prelude::*;
-use gtk::{Adjustment, Align, CssProvider, CssProviderExt, Entry, EventBox, Grid, Image, Label, Layout, Overlay, ScrolledWindow, self, Stack, StyleContext, TextBuffer, TextView, WidgetExt, Window};
+use gtk::{Adjustment, Align, Builder, Button, CssProvider, CssProviderExt, Entry, EventBox, Grid, Image, Label, Layout, Overlay, ScrolledWindow, self, Stack, StyleContext, TextBuffer, TextView, Widget, WidgetExt, Window};
 
 use completion::gui::CompleterUI;
 use constant;
 use errors::*;
+use events::EventName;
 use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
+use mapping::Mapped::Event;
 use operation::Operation;
 use size::{Coord, CoordPx, FitTo, Region, Size};
 use state::{Drawing, Style};
@@ -58,6 +61,8 @@ pub struct Gui {
     status_bar: Layout,
     status_bar_inner: gtk::Box,
     ui_event: Option<UIEvent>,
+    user_box: gtk::Box,
+    user_box_content: Option<Widget>,
 }
 
 #[derive(Clone)]
@@ -106,6 +111,7 @@ pub enum Screen {
     Main,
     LogView,
     CommandLine,
+    UserUI,
 }
 
 
@@ -192,12 +198,15 @@ impl Gui {
             it.pack_end(&grid, true, true, 0);
         });
 
+        let user_box = gtk::Box::new(Orientation::Vertical, 0);
+
         let overlay = tap!(it = Overlay::new(), {
             WidgetExt::set_name(&it, "overlay");
             setup_drag(&it);
             it.add_overlay(&vbox);
             it.add_overlay(&hidden_bar);
             it.add_overlay(&operation_box);
+            it.add_overlay(&user_box);
             it.show_all();
             it.add_overlay(&log_box);
         });
@@ -235,6 +244,8 @@ impl Gui {
             status_bar,
             status_bar_inner,
             ui_event: None,
+            user_box,
+            user_box_content: None,
             vbox,
             window,
         }
@@ -318,6 +329,7 @@ impl Gui {
         let cell = self.cells(false).nth(index).ok_or("Out of index")?;
         save_image(&cell.image, path)
     }
+
     pub fn scroll_views(&self, direction: &Direction, scroll_size: f64, crush: bool, reset_at_end: bool, count: usize) -> bool {
         let mut scrolled = false;
         for cell in self.cells(false) {
@@ -326,11 +338,38 @@ impl Gui {
         scrolled
     }
 
+    pub fn set_user_ui<T: AsRef<Path>>(&mut self, path: &T, app_tx: &Sender<Operation>) -> Result<(), BoxedError> {
+        use util::file;
+
+        if let Some(content) = self.user_box_content.as_ref() {
+            self.user_box.remove(content);
+        }
+
+        let glade_src = file::read_string(path)?;
+        let builder = Builder::new_from_string(&glade_src);
+        self.user_box_content = builder.get_object("user");
+
+        if let Some(content) = self.user_box_content.as_ref() {
+            WidgetExt::set_name(content, "user");
+
+            self.user_box.pack_start(content, true, true, 0);
+            for object in &builder.get_objects() {
+                attach_ui_event(app_tx, object);
+            }
+
+            return Ok(())
+        }
+
+        Err(Box::new(ChryError::NotSupported("ID `user` not found")))
+    }
+
     pub fn get_screen(&self) -> Screen {
         if self.operation_box.get_visible() {
             Screen::CommandLine
         } else if self.log_box.get_visible() {
             Screen::LogView
+        } else if self.user_box.get_visible() {
+            Screen::UserUI
         } else {
             Screen::Main
         }
@@ -346,42 +385,31 @@ impl Gui {
             Screen::Main => {
                 self.set_operation_box_visibility(false);
                 self.set_log_box_visibility(false);
+                self.set_user_ui_visibility(false);
                 self.reset_focus();
             },
             Screen::CommandLine => {
                 self.set_operation_box_visibility(true);
                 self.set_log_box_visibility(false);
+                self.set_user_ui_visibility(false);
             },
             Screen::LogView => {
                 self.set_operation_box_visibility(false);
                 self.set_log_box_visibility(true);
-            }
+                self.set_user_ui_visibility(false);
+            },
+            Screen::UserUI => {
+                self.set_operation_box_visibility(false);
+                self.set_log_box_visibility(false);
+                self.set_user_ui_visibility(true);
+            },
         }
 
         if let Some(ref ui_event) = self.ui_event {
-            ui_event.update_entry(screen != Screen::Main);
+            ui_event.update_screen(screen);
         }
 
         true
-    }
-
-    pub fn set_operation_box_visibility(&self, visibility: bool) {
-        if visibility {
-            self.completer.clear();
-            self.operation_entry.grab_focus();
-            self.operation_box.show();
-        } else {
-            self.operation_box.hide();
-        }
-    }
-
-    pub fn set_log_box_visibility(&self, visibility: bool) {
-        if visibility {
-            self.log_view.grab_focus();
-            self.log_box.show();
-        } else {
-            self.log_box.hide();
-        }
     }
 
     pub fn set_status_bar_align(&self, align: Align) {
@@ -488,6 +516,34 @@ impl Gui {
             },
         }
     }
+
+    fn set_user_ui_visibility(&self, visibility: bool) {
+        if visibility {
+            self.user_box.show();
+        } else {
+            self.user_box.hide();
+        }
+    }
+
+    fn set_operation_box_visibility(&self, visibility: bool) {
+        if visibility {
+            self.completer.clear();
+            self.operation_entry.grab_focus();
+            self.operation_box.show();
+        } else {
+            self.operation_box.hide();
+        }
+    }
+
+    fn set_log_box_visibility(&self, visibility: bool) {
+        if visibility {
+            self.log_view.grab_focus();
+            self.log_box.show();
+        } else {
+            self.log_box.hide();
+        }
+    }
+
 }
 
 impl Cell {
@@ -781,6 +837,29 @@ impl Views {
     }
 }
 
+
+fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
+    unsafe {
+        let widget = transmute::<&glib::Object, &Widget>(object);
+        let ty = widget.get_path().get_object_type();
+
+        if ty.is_a(&Button::static_type()) {
+            if let Some(name) = WidgetExt::get_name(widget) {
+                let button = transmute::<&glib::Object, &Button>(&object);
+                button.connect_button_release_event(clone_army!([app_tx] move |_, ev| {
+                    let button = ev.get_button();
+                    let name = if button == 1 {
+                        format!("ui-{}", name)
+                    } else {
+                        format!("ui-{}-{}", name, button)
+                    };
+                    app_tx.send(Operation::Fire(Event(EventName::User(name)))).unwrap();
+                    Inhibit(true)
+                }));
+            }
+        }
+    }
+}
 
 fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), BoxedError> {
     use gdk::prelude::ContextExt;

@@ -22,7 +22,7 @@ use self::gobject_sys::{GObject, g_object_unref};
 
 use events::EventName;
 use expandable::Expandable;
-use gui::{Gui, DropItemType};
+use gui::{Gui, DropItemType, Screen};
 use key::Key;
 use lazy_sender::LazySender;
 use mapping::Mapped;
@@ -53,7 +53,7 @@ pub enum Event {
     Delete,
     UIKeyPress(Key),
     Scroll(Key, ScrollDirection),
-    UpdateEntry(bool), /* visibility */
+    UpdateScreen(Screen),
     WindowKeyPress(Key, u32),
 }
 
@@ -63,8 +63,8 @@ impl UIEvent {
         UIEvent { tx: register(gui, skip, app_tx) }
     }
 
-    pub fn update_entry(&self, visibility: bool) {
-        self.tx.send(Event::UpdateEntry(visibility)).unwrap();
+    pub fn update_screen(&self, screen: Screen) {
+        self.tx.send(Event::UpdateScreen(screen)).unwrap();
     }
 }
 
@@ -126,32 +126,38 @@ fn register(gui: &Gui, skip: usize, app_tx: &Sender<Operation>) -> Sender<Event>
 
 fn main(app_tx: &Sender<Operation>, rx: &Receiver<Event>, skip: usize) {
     use self::Event::*;
+    use gui::{Screen as S};
 
     let mut sender = LazySender::new(app_tx.clone(), Duration::from_millis(50));
     let mut conf = Conf { skip, .. Conf::default() };
     let mut pressed_at = None;
-    let mut visible = false;
+    let mut screen = S::Main;
 
     while let Ok(event) = rx.recv() {
         match event {
             UIKeyPress(ref key) =>
                 entry_on_ui(app_tx, key),
             WindowKeyPress(key, keyval) =>
-                if !visible { on_key_press(app_tx, key, keyval) },
-            ButtonPress((x, y)) if !visible =>
+                match screen {
+                    S::Main | S::UserUI =>  on_key_press(app_tx, key, keyval),
+                    _ => (),
+                },
+            ButtonPress((x, y)) if screen == S::Main =>
                 pressed_at = Some((x, y)),
             ButtonRelease(key, (x, y)) =>
-                if !visible { on_button_release(app_tx, key, x, y, &mut pressed_at, &mut conf) },
+                match screen {
+                    S::Main => on_button_release(app_tx, key, x, y, &mut pressed_at, &mut conf),
+                    S::UserUI => on_button_release_on_user_ui(app_tx),
+                    _ => (),
+                },
             Delete =>
                 app_tx.send(EventName::Quit.operation()).unwrap(),
             Configure((w, h)) =>
                 on_configure(&mut sender, app_tx, w, h, &mut conf),
-            UpdateEntry(visibility) =>
-                visible = visibility,
+            UpdateScreen(new_screen) =>
+                screen = new_screen,
             Scroll(key, direction) =>
-                if !visible {
-                    on_scroll(app_tx, key, direction);
-                },
+                if screen == S::Main { on_scroll(app_tx, key, direction) },
             _ => (),
         }
     }
@@ -189,6 +195,15 @@ fn on_button_release(tx: &Sender<Operation>, key: Key, x: f64, y: f64, pressed_a
     } else {
         tx.send(Operation::TellRegion(px, py, x, y, key)).unwrap();
     }
+}
+
+fn on_button_release_on_user_ui(tx: &Sender<Operation>) {
+    use operation::option::OptionName::PreDefined;
+    use operation::option::OptionUpdater::Unset;
+    use operation::option::PreDefinedOptionName::Screen;
+
+    tx.send(
+        Operation::UpdateOption(PreDefined(Screen), Unset)).unwrap();
 }
 
 fn on_configure(sender: &mut LazySender, tx: &Sender<Operation>, w: u32, h: u32, conf: &mut Conf) {

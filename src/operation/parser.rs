@@ -479,7 +479,8 @@ pub fn parse_kill_timer(args: &[String]) -> Result<Operation, ParsingError> {
     })
 }
 
-pub fn parse_load(args: &[String]) -> Result<Operation, ParsingError> {
+pub fn parse_load<T>(args: &[String], op: T) -> Result<Operation, ParsingError>
+where T: Fn(Expandable, bool) -> Operation {
     let mut file: String = o!("");
     let mut search_path = false;
 
@@ -489,7 +490,7 @@ pub fn parse_load(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut search_path).add_option(&["--search-path", "-p"], StoreTrue, SEARCH_PATH_DESC);
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Load(Expandable::new(file), search_path)
+        op(Expandable::new(file), search_path)
     })
 }
 

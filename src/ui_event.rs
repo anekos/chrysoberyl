@@ -94,6 +94,7 @@ fn register(gui: &Gui, skip: usize, app_tx: &Sender<Operation>) -> Sender<Event>
     }));
 
     gui.event_box.connect_button_release_event(clone_army!([tx] move |_, button| {
+        println!("fooo");
         tx.send(ButtonRelease(Key::from(button), button.get_position())).unwrap();
         Inhibit(true)
     }));

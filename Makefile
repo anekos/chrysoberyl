@@ -25,4 +25,4 @@ rustfmt-test:
 	rustfmt --write-mode overwrite **/*.rs
 	
 inspector:
-	GTK_DEBUG=interactive ./target/debug/chrysoberyl
+	GTK_DEBUG=interactive ./target/debug/chrysoberyl test-files/

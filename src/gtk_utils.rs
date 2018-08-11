@@ -87,10 +87,10 @@ macro_rules! widget_case_clause {
     };
 
     ($var:ident, $object:ident, $type:tt, $body:expr $(,$rtype:tt, $rbody:expr)*) => {
-        let widget = transmute::<&glib::Object, &Widget>($object);
+        let widget = &*($object as *const glib::Object as *const gtk::Widget);
         let ty = widget.get_path().get_object_type();
         if ty.is_a(&($type::static_type())) {
-            let $var = transmute::<&glib::Object, &$type>(&$object);
+            let $var = &*($object as *const glib::Object as *const $type);
             $body;
         } else {
             widget_case_clause!($var, $object $(, $rtype, $rbody)*);

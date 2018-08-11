@@ -5,7 +5,6 @@ use std::default::Default;
 use std::error::Error;
 use std::fmt;
 use std::fs::File;
-use std::mem::transmute;
 use std::ops;
 use std::path::Path;
 use std::str::FromStr;
@@ -855,7 +854,7 @@ fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
     }
 
     unsafe {
-        let widget = transmute::<&glib::Object, &Widget>(object);
+        let widget = &*(object as *const glib::Object as *const gtk::Widget);
 
         if_let_some!(name = WidgetExt::get_name(widget), ());
 

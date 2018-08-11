@@ -16,14 +16,13 @@ use gdk::{DisplayExt, EventMask};
 use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimationExt};
 use glib;
 use gtk::prelude::*;
-use gtk::{Adjustment, Align, Builder, Button, CssProvider, CssProviderExt, Entry, EventBox, Grid, Image, Label, Layout, Overlay, ScrolledWindow, self, Stack, StyleContext, TextBuffer, TextView, Widget, WidgetExt, Window};
+use gtk::{Adjustment, Align, Builder, Button, CssProvider, CssProviderExt, Entry, EventBox, Grid, Image, Label, Layout, Overlay, RadioButton, ScrolledWindow, self, Stack, Switch, StyleContext, TextBuffer, TextView, Widget, WidgetExt, Window};
 
 use completion::gui::CompleterUI;
 use constant;
 use errors::*;
 use events::EventName;
 use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
-use mapping::Mapped::Event;
 use operation::Operation;
 use size::{Coord, CoordPx, FitTo, Region, Size};
 use state::{Drawing, Style};
@@ -839,25 +838,52 @@ impl Views {
 
 
 fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
+    fn send_button_event(app_tx: &Sender<Operation>, name: &str, button: u32, value: Option<String>) -> Inhibit {
+        let name = if button == 1 {
+            format!("ui-{}", name)
+        } else {
+            format!("ui-{}-{}", name, button)
+        };
+        let event = if let Some(value) = value {
+            let envs = convert_args!(hashmap!("value" => value));
+            EventName::User(name).operation_with_context(envs)
+        } else {
+            EventName::User(name).operation()
+        };
+        app_tx.send(event).unwrap();
+        Inhibit(true)
+    }
+
     unsafe {
         let widget = transmute::<&glib::Object, &Widget>(object);
-        let ty = widget.get_path().get_object_type();
 
-        if ty.is_a(&Button::static_type()) {
-            if let Some(name) = WidgetExt::get_name(widget) {
-                let button = transmute::<&glib::Object, &Button>(&object);
-                button.connect_button_release_event(clone_army!([app_tx] move |_, ev| {
-                    let button = ev.get_button();
-                    let name = if button == 1 {
-                        format!("ui-{}", name)
-                    } else {
-                        format!("ui-{}-{}", name, button)
-                    };
-                    app_tx.send(Operation::Fire(Event(EventName::User(name)))).unwrap();
-                    Inhibit(true)
+        if_let_some!(name = WidgetExt::get_name(widget), ());
+
+        widget_case!(w = object, {
+            RadioButton => {
+                let label = w.get_label();
+                w.connect_button_release_event(clone_army!([app_tx] move |celf, ev| {
+                    celf.set_active(true);
+                    send_button_event(&app_tx, &name, ev.get_button(), label.clone())
+                }));
+            },
+            Button => {
+                let label = w.get_label();
+                w.connect_button_release_event(clone_army!([app_tx] move |_, ev| {
+                    send_button_event(&app_tx, &name, ev.get_button(), label.clone())
+                }));
+            },
+            Switch => {
+                w.connect_button_release_event(clone_army!([app_tx] move |celf, ev| {
+                    let state = !celf.get_state();
+                    celf.set_state(state);
+                    let value = if state { "on" } else { "off" };
+                    send_button_event(&app_tx, &name, ev.get_button(), Some(o!(value)));
+                    let name = format!("{}-{}", name, value);
+                    send_button_event(&app_tx, &name, ev.get_button(), None)
                 }));
             }
-        }
+        });
     }
 }
 

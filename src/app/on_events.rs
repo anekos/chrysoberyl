@@ -375,8 +375,8 @@ pub fn on_fire(app: &mut App, mapped: &Mapped, context: Option<OperationContext>
     }
 
     if let Mapped::Input(coord, _) = *mapped {
-        let context = convert_args!(hashmap!("mapped" => inputs, "x" => s!(coord.x), "y" => s!(coord.y)));
-        app.fire_event_with_context(&EventName::MappedInput, context);
+        let env = convert_args!(hashmap!("mapped" => inputs, "x" => s!(coord.x), "y" => s!(coord.y)));
+        app.fire_event_with_env(&EventName::MappedInput, env);
     }
     Ok(())
 }

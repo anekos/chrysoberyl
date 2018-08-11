@@ -156,10 +156,10 @@ impl App {
         (app, primary_rx, rx)
     }
 
-    pub fn fire_event_with_context(&mut self, event_name: &EventName, context: HashMap<String, String>) {
+    pub fn fire_event_with_env(&mut self, event_name: &EventName, env: HashMap<String, String>) {
         use self::EventName::*;
 
-        let op = event_name.operation_with_context(context);
+        let op = event_name.operation_with_env(env);
 
         match *event_name {
             Initialize => self.tx.send(op).unwrap(),
@@ -168,7 +168,7 @@ impl App {
     }
 
     pub fn fire_event(&mut self, event_name: &EventName) {
-        self.fire_event_with_context(event_name, HashMap::new())
+        self.fire_event_with_env(event_name, HashMap::new())
     }
 
     pub fn operate(&mut self, operation: Operation, context: Option<OperationContext>) {

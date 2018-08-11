@@ -443,12 +443,12 @@ impl Default for ClipboardSelection {
 }
 
 impl EventName {
-    pub fn operation_with_context(&self, context: HashMap<String, String>) -> Operation {
-        Operation::AppEvent(self.clone(), context)
+    pub fn operation_with_env(&self, env: HashMap<String, String>) -> Operation {
+        Operation::AppEvent(self.clone(), env)
     }
 
     pub fn operation(&self) -> Operation {
-        self.operation_with_context(HashMap::new())
+        self.operation_with_env(HashMap::new())
     }
 }
 

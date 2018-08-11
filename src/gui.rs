@@ -845,8 +845,8 @@ fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
             format!("ui-{}-{}", name, button)
         };
         let event = if let Some(value) = value {
-            let envs = convert_args!(hashmap!("value" => value));
-            EventName::User(name).operation_with_context(envs)
+            let env = convert_args!(hashmap!("value" => value));
+            EventName::User(name).operation_with_env(env)
         } else {
             EventName::User(name).operation()
         };

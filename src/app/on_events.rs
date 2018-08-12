@@ -1015,13 +1015,23 @@ pub fn on_save(app: &mut App, path: &Path, sessions: &[Session]) -> EventResult 
     Ok(())
 }
 
-pub fn on_scroll(app: &mut App, direction: &Direction, scroll_size: f64, crush: bool, reset_at_end: bool, operation: &[String], context: Option<OperationContext>) -> EventResult {
+#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+pub fn on_scroll(app: &mut App, direction: Direction, scroll_size: f64, crush: bool, reset_at_end: bool, operation: &[String], reset_scrolls_1: Option<Direction>, context: Option<OperationContext>) -> EventResult {
     let saved = app.counter.clone();
-    if !app.gui.scroll_views(direction, scroll_size, crush, reset_at_end, app.counter.pop()) && !operation.is_empty() {
+    let scrolled = app.gui.scroll_views(direction, scroll_size, crush, app.counter.pop(), reset_scrolls_1);
+
+    if !scrolled && !operation.is_empty() {
         let op = Operation::parse_from_vec(operation)?;
         app.counter = saved;
+        if reset_at_end {
+            if let Operation::Scroll(a, b, c, d, e, _) = op {
+                app.operate(Operation::Scroll(a,  b, c, d, e, Some(direction)), context);
+                return Ok(());
+            }
+        }
         app.operate(op, context);
     }
+
     Ok(())
 }
 

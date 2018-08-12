@@ -967,7 +967,7 @@ pub fn parse_scroll(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut operation).add_argument("operation", List, "Operation");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Scroll(direction, scroll_size, crush, reset_at_end, operation)
+        Operation::Scroll(direction, scroll_size, crush, reset_at_end, operation, None)
     })
 }
 

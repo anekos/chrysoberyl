@@ -329,8 +329,8 @@ impl App {
                     on_search_text(self, &mut updated, text, backward, color),
                 SetEnv(name, value) =>
                     on_set_env(self, &name, &value.map(|it| it.to_string())),
-                Scroll(ref direction, scroll_size, crush, reset_at_end, ref operation) =>
-                    on_scroll(self, direction, scroll_size, crush, reset_at_end, operation, context),
+                Scroll(direction, scroll_size, crush, reset_at_end, ref operation, reset_scrolls_1) =>
+                    on_scroll(self, direction, scroll_size, crush, reset_at_end, operation, reset_scrolls_1, context),
                 Shell(async, read_operations, search_path, as_binary, ref command_line, ref stdin_sources) =>
                     on_shell(self, async, read_operations, search_path, as_binary, command_line, stdin_sources),
                 ShellFilter(ref command_line, search_path) =>

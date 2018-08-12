@@ -48,24 +48,17 @@ chrysoberyl (--help|-h)
 
 ## Options
 
-`--silent`
-:   Suppress stdout
-`--shuffle|-z`
-:   Shuffle entries
-`--expand |e`
-:   Expand directory (`@expand`)
-`--expand-recursive|-E`
-:   Expand directory (`@expand`)
-`(--max-curl-threads|-t) <N_THREADS>`
-:   Set maximum curl threads
-`(--input|-i) <PATH>`
-:   Create the file to input operation commands
-`--encoding <ENCODING>`
-:   Set filename encoding for archives (zip, rar, ...).
-`--role <WINDOW_ROLE>`
-:   Set window role
-`--use-gtk-theme`
-:   Use GTK theme
+| Name                                    | Description                                         |
+| ----                                    | ------------                                        |
+| `--silent`                              | Suppress stdout                                     |
+| `--shuffle\|-z`                         | Shuffle entries                                     |
+| `--expand\|e`                           | Expand directory (`@expand`)                        |
+| `--expand-recursive\|-E`                | Expand directory (`@expand`)                        |
+| `(--max-curl-threads\|-t) <N_THREADS>`  | Set maximum curl threads                            |
+| `(--input\|-i) <PATH>`                  | Create the file to input operation commands         |
+| `--encoding <ENCODING>`                 | Set filename encoding for archives (zip, rar, ...). |
+| `--role <WINDOW_ROLE>`                  | Set window role                                     |
+| `--use-gtk-theme`                       | Use GTK theme                                       |
 
 
 ## Example
@@ -642,159 +635,77 @@ e.g.
 
 # Options
 
-abbrev-length
-:   type: unsigned integer
-:   Max length for `CRHY_ABBREV_PATH`
+| Name                 | Type                                                          | Default                              | Description                                                                                                      |
+| ----                 | ----                                                          | ----                                 | ----                                                                                                             |
+| abbrev-length        | unsigned integer                                              |                                      | Max length for `CRHY_ABBREV_PATH`                                                                                |
+| animation            | boolean                                                       |                                      | Support animation GIF                                                                                            |
+| auto-reload          | boolean                                                       |                                      | Reload current viewingly images when they are updated.                                                           |
+| auto-paging          | no/always/smart                                               |                                      |                                                                                                                  |
+| curl-connect-timeout | unsigned integer                                              | 10                                   | cURL option (seconds)                                                                                            |
+| curl-follow-location | boolean                                                       | true                                 | cURL option                                                                                                      |
+| curl-low-speed-limit | unsigned integer                                              |                                      | cURL option                                                                                                      |
+| curl-low-speed-time  | unsigned integer                                              |                                      | cURL option                                                                                                      |
+| curl-timeout         | type: unsigned integer                                        | none                                 | cURL option (seconds)                                                                                            |
+| empty-status-format  | string-or-file                                                |                                      | Status bar format for empty. Give a string or a mruby script file path (e.g. `@~/.config/chrysoberyl/status.rb`) |
+| fit-to               | width/height/original/original-or-cell/cell/XXX%/WIDTHxHEIGHT | cell                                 |                                                                                                                  |
+| idle-time            | real number                                                   | 0.25                                 | Delay time for `idle` event                                                                                      |
+| history-file         | path                                                          | none                                 | STDIN input history file                                                                                         |
+| horizontal-flip      | boolean                                                       |                                      | Flip images horizontally                                                                                         |
+| horizontal-views     | unsigned integer                                              |                                      | Number of horizontal cells (1 or more)                                                                           |
+| initial-positoin     | top-left/top-right/bottom-left/bottom-right                   |                                      | Initial image position in cell                                                                                   |
+| log-file             | path                                                          | none                                 | Path for log                                                                                                     |
+| mask-operator        | mark operators                                                |                                      |                                                                                                                  |
+| path                 | path                                                          |                                      | Script search path                                                                                               |
+| pre-render           | boolean                                                       | true                                 |                                                                                                                  |
+| pre-render-limit     | unsigned integer                                              | 100                                  | 1 or more                                                                                                        |
+| pre-render-pages     | unsigned integer                                              | 5                                    | 1 ore more                                                                                                       |
+| reverse              | boolean                                                       | false                                |                                                                                                                  |
+| rotation             | 0/1/2/3                                                       |                                      |
+| screen               | main/command-line/log-view                                    |                                      |                                                                                                                  |
+| status-bar           | boolean                                                       | true                                 |                                                                                                                  |
+| status-bar-align     | left/center/right                                             | center                               |                                                                                                                  |
+| status-bar-height    | unsigned integer                                              | none                                 | 1 or more                                                                                                        |
+| status-format        | string-or-file                                                |                                      | Give a string or a mruby script file path (e.g. `@~/.config/chrysoberyl/status.rb`)                              |
+| stdout               |                                                               |                                      |                                                                                                                  |
+| style                | string-or-file                                                |                                      | Give a CSS string or a CSS file path (e.g. `@~/.config/chrysoberyl/style.css`)                                   |
+| title-format         | string-or-file                                                |                                      | Give a string or a mruby script file path (e.g. `@~/.config/chrysoberyl/title.rb`)                               |
+| vertical-flip        | boolean                                                       |                                      | Flip images vertically                                                                                           |
+| vertical-views       | unsigned integer                                              | Number of vertical cells (1 or more) |
+| update-cache-atime   | boolean                                                       | false                                |                                                                                                                  |
+| watch-files          |                                                               |                                      | Fire `file-changed` event when currently viewing images are updated                                              |
+| skip-resize-window   | unsigned integer                                              |                                      | TODO                                                                                                             |
 
-animation
-:   type: boolean
-:   Support animation GIF
+## Mask operators
 
-auto-reload
-:   type: boolean
-:   Reload current viewingly images when they are updated.
-
-auto-paging
-:   type: enum
-:   values: no, always, smart
-
-curl-connect-timeout
-:   type: unsigned integer (seconds)
-:   default: 10
-:   cURL option.
-
-curl-follow-location
-:   type: boolean
-:   default: true
-:   cURL option.
-
-curl-low-speed-limit
-:   type: unsigned integer
-:   cURL option.
-
-curl-low-speed-time
-:   type: unsigned integer
-:   cURL option.
-
-curl-timeout
-:   type: unsigned integer (seconds)
-:   default: none
-:   cURL option.
-
-empty-status-format
-:   type: string-or-file
-:   Status bar format for empty
-:   Give a string or a mruby script file path (e.g. `@~/.config/chrysoberyl/status.rb`)
-
-fit-to
-:   type: enum
-:   values: width, height, original, original-or-cell, cell, XXX%, WIDTHxHEIGHT
-:   default: cell
-
-idle-time
-:   type: floating number
-:   default: 0.25
-:   Delay time for `idle` event.
-
-history-file
-:   type: path
-:   default: none
-:   STDIN input history
-
-horizontal-flip
-:   type: boolean
-:   Flip images horizontally
-
-horizontal-views
-:   type: unsigned integer (>= 1)
-:   Number of horizontal cells.
-
-initial-positoin
-:   type: enum
-:   values: top-left, top-right, bottom-left, bottom-right
-:   Initial image position in cell.
-
-log-file
-:   type: path
-:   default: none
-:   Path for log.
-
-mask-operator
-:   type: enum
-:   values: clear, source, over, in, out, atop, dest, dest-over, dest-in, dest-out, dest-atop, xor, add, saturate, multiply, screen, overlay, darken, lighten, color-dodge, color-burn, hard-light, soft-light, difference, exclusion, hsl-hue, hsl-saturation, hsl-color, hsl-luminosity
-
-path
-:   Script search path
-
-pre-render
-:   type: boolean
-:   default: true
-
-pre-render-limit
-:   type: unsigned integer (>= 1)
-:   default: 100
-
-pre-render-pages
-:   type: unsigned integer (>= 1)
-:   default: 5
-
-reverse
-:   type: boolean
-:   default: false
-
-rotation
-:   type: enum
-:   values: 0, 1, 2, 3
-
-screen
-:   type: enum
-:   values: main, command-line, log-view
-
-status-bar
-:   type: boolean
-:   default: true
-
-status-bar-align
-:   values: left, center, right
-:   default: center
-
-status-bar-height
-:   type: unsigned integer (>= 1)
-:   default: none
-
-status-format
-:   type: string-or-file
-:   Give a string or a mruby script file path (e.g. `@~/.config/chrysoberyl/status.rb`)
-
-stdout
-:   TODO
-
-style
-:   type: string-or-file
-:   Give a CSS string or a CSS file path (e.g. `@~/.config/chrysoberyl/style.css`)
-
-title-format
-:   type: string-or-file
-:   Give a string or a mruby script file path (e.g. `@~/.config/chrysoberyl/status.rb`)
-
-vertical-flip
-:   type: boolean
-:   Flip images vertically
-
-vertical-views
-:   type: unsigned integer (>= 1)
-:   Number of vertical cells.
-
-update-cache-atime
-:   type: boolean
-:   default: false
-
-watch-files
-:   Fire `file-changed` event when currently viewing images are updated.
-
-skip-resize-window
-:   type: unsigned integer
-:   TODO
+- clear
+- source
+- over
+- in
+- out
+- atop
+- dest
+- dest-over
+- dest-in
+- dest-out
+- dest-atop
+- xor
+- add
+- saturate
+- multiply
+- screen
+- overlay
+- darken
+- lighten
+- color-dodge
+- color-burn
+- hard-light
+- soft-light
+- difference
+- exclusion
+- hsl-hue
+- hsl-saturation
+- hsl-color
+- hsl-luminosity
 
 ## Note
 

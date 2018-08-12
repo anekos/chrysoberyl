@@ -49,11 +49,13 @@ impl Definition {
     pub fn new() -> Self {
         let mut original_operations = vec![];
         let mut options: Vec<String> = vec![];
+        let mut mask_operators: Vec<String> = vec![];
         let mut option_values = HashMap::<String, OptionValue>::new();
         let mut arguments = HashMap::new();
         let mut event_names = vec![];
         let mut in_options = false;
         let mut in_events = false;
+        let mut in_mask_operators = false;
 
         for line in README.lines() {
             if in_events {
@@ -62,18 +64,40 @@ impl Definition {
                 } else if line.starts_with("- ") {
                     event_names.push(o!(line[2..]));
                 }
+            } else if in_mask_operators {
+                if !mask_operators.is_empty() && line.is_empty() {
+                    in_mask_operators = false;
+                } else if line.starts_with("- ") {
+                    mask_operators.push(o!(line[2..]));
+                }
             } else if in_options {
-                if line.starts_with('#') {
-                    in_options = false;
-                } else if line.starts_with(":   type: string-or-file") {
-                    option_values.insert(o!(options.last().unwrap()), OptionValue::StringOrFile);
-                } else if line.starts_with(":   type: boolean") {
-                    option_values.insert(o!(options.last().unwrap()), OptionValue::Boolean);
-                } else if line.starts_with(":   values: ") {
-                    let values = line[12..].split(", ").map(|it| o!(it)).collect();
-                    option_values.insert(o!(options.last().unwrap()), OptionValue::Enum(values));
-                } else if !line.is_empty() && !line.starts_with(':') && !line.starts_with('`') {
-                    options.push(o!(line));
+                if line.starts_with('|') {
+                    let mut columns = line.split('|').skip(1);
+                    let name = columns.next().unwrap().trim();
+                    let tipe = columns.next().unwrap().trim();
+                    if name == "Name" || name.starts_with('-') {
+                        continue;
+                    }
+                    match tipe {
+                        "string-or-file" => {
+                            option_values.insert(o!(name), OptionValue::StringOrFile);
+                        }
+                        "boolean" => {
+                            option_values.insert(o!(name), OptionValue::Boolean);
+                        }
+                        "mask operators" => {
+                            option_values.insert(o!(name), OptionValue::Boolean); // Fake value, replace with real value afterwards.
+                        }
+                        values => {
+                            let values: Vec<String> = values.split("/").map(|it| o!(it)).collect();
+                            if !values.is_empty() {
+                                option_values.insert(o!(name), OptionValue::Enum(values));
+                            }
+                        }
+                    };
+                    options.push(o!(name));
+                } else if line == "## Mask operators" {
+                    in_mask_operators = true;
                 }
             } else if line.starts_with("## (@") || line.starts_with("## @") {
                 let src = &line[3..];
@@ -100,6 +124,10 @@ impl Definition {
             } else if line == "# Events" {
                 in_events = true;
             }
+        }
+
+        if let Some(value) = option_values.get_mut("mask-operator") {
+            *value = OptionValue::Enum(mask_operators);
         }
 
         Definition { arguments, event_names, operations: vec![], option_values, options, original_operations }

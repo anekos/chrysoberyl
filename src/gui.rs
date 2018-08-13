@@ -15,7 +15,7 @@ use gdk::{DisplayExt, EventMask};
 use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimationExt};
 use glib;
 use gtk::prelude::*;
-use gtk::{Adjustment, Align, Builder, Button, ComboBoxText, ComboBoxTextExt, CssProvider, CssProviderExt, Entry, EventBox, Grid, Image, Label, Layout, Overlay, RadioButton, ScrolledWindow, self, Stack, Switch, StyleContext, TextBuffer, TextView, Widget, WidgetExt, Window};
+use gtk::{Adjustment, Align, Builder, Button, ComboBoxText, ComboBoxTextExt, CssProvider, CssProviderExt, Entry, EventBox, Grid, Image, Label, Layout, Overlay, RadioButton, Scale, ScrolledWindow, self, Stack, Switch, StyleContext, TextBuffer, TextView, Widget, WidgetExt, Window};
 
 use completion::gui::CompleterUI;
 use constant;
@@ -909,6 +909,13 @@ fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
                 w.connect_button_release_event(clone_army!([app_tx] move |celf, ev| {
                     celf.set_active(true);
                     send_button_event(&app_tx, &name, ev.get_button(), label.clone())
+                }));
+            },
+            Scale => {
+                w.connect_button_release_event(|_, _| Inhibit(true));
+                let adj = w.get_adjustment();
+                adj.connect_value_changed(clone_army!([app_tx] move |celf| {
+                    send_event(&app_tx, &name, Some(s!(celf.get_value())));
                 }));
             },
             Switch => {

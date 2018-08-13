@@ -873,6 +873,8 @@ fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
 
         if_let_some!(name = WidgetExt::get_name(widget), ());
 
+        widget.set_can_focus(false);
+
         widget_case!(w = object, {
             Button => {
                 let label = w.get_label();
@@ -886,6 +888,7 @@ fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
                 }));
             },
             Entry => {
+                w.set_can_focus(true);
                 w.connect_button_release_event(|_, _| Inhibit(true));
                 w.connect_key_press_event(clone_army!([app_tx] move |celf, ev| {
                     let key = Key::from(ev);

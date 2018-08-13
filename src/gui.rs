@@ -352,7 +352,9 @@ impl Gui {
 
             self.user_box.pack_start(content, true, true, 0);
             for object in &builder.get_objects() {
-                attach_ui_event(app_tx, object);
+                if object.is::<Widget>() {
+                    attach_ui_event(app_tx, object);
+                }
             }
 
             return Ok(())

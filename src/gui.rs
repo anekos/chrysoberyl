@@ -918,7 +918,7 @@ fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
                     let name = format!("{}--{}", name, value);
                     send_button_event(&app_tx, &name, ev.get_button(), None)
                 }));
-            }
+            },
         });
     }
 }

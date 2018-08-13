@@ -107,6 +107,7 @@ pub enum Operation {
     Record(usize, usize, entry::Key), /* minimum_move, index, key */
     RecordPre(Vec<String>, usize),
     Refresh(bool), /* image_cache */
+    ResetFocus,
     ResetImage,
     ResetScrolls(bool), /* to_end */
     Save(PathBuf, Vec<Session>),
@@ -525,6 +526,7 @@ impl fmt::Debug for Operation {
             Record(_, _, _) => "Record",
             RecordPre(_, _) => "RecordPre",
             Refresh(_) => "Refresh",
+            ResetFocus => "ResetFocus",
             ResetImage => "ResetImage ",
             ResetScrolls(_) => "ResetScrolls",
             Save(_, _) => "Save",

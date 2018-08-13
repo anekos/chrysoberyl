@@ -872,27 +872,10 @@ fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
         if_let_some!(name = WidgetExt::get_name(widget), ());
 
         widget_case!(w = object, {
-            RadioButton => {
-                let label = w.get_label();
-                w.connect_button_release_event(clone_army!([app_tx] move |celf, ev| {
-                    celf.set_active(true);
-                    send_button_event(&app_tx, &name, ev.get_button(), label.clone())
-                }));
-            },
             Button => {
                 let label = w.get_label();
                 w.connect_button_release_event(clone_army!([app_tx] move |_, ev| {
                     send_button_event(&app_tx, &name, ev.get_button(), label.clone())
-                }));
-            },
-            Switch => {
-                w.connect_button_release_event(clone_army!([app_tx] move |celf, ev| {
-                    let state = !celf.get_state();
-                    celf.set_state(state);
-                    let value = if state { "on" } else { "off" };
-                    send_button_event(&app_tx, &name, ev.get_button(), Some(o!(value)));
-                    let name = format!("{}--{}", name, value);
-                    send_button_event(&app_tx, &name, ev.get_button(), None)
                 }));
             },
             ComboBoxText => {
@@ -917,6 +900,23 @@ fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
                         app_tx.send(Operation::ResetFocus).unwrap();
                     }
                     Inhibit(false)
+                }));
+            },
+            RadioButton => {
+                let label = w.get_label();
+                w.connect_button_release_event(clone_army!([app_tx] move |celf, ev| {
+                    celf.set_active(true);
+                    send_button_event(&app_tx, &name, ev.get_button(), label.clone())
+                }));
+            },
+            Switch => {
+                w.connect_button_release_event(clone_army!([app_tx] move |celf, ev| {
+                    let state = !celf.get_state();
+                    celf.set_state(state);
+                    let value = if state { "on" } else { "off" };
+                    send_button_event(&app_tx, &name, ev.get_button(), Some(o!(value)));
+                    let name = format!("{}--{}", name, value);
+                    send_button_event(&app_tx, &name, ev.get_button(), None)
                 }));
             }
         });

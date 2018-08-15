@@ -875,7 +875,15 @@ fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
 
         widget.set_can_focus(false);
 
+        /* XXX DO NOT SORT types */
         widget_case!(w = object, {
+            RadioButton => {
+                let label = w.get_label();
+                w.connect_button_release_event(clone_army!([app_tx] move |celf, ev| {
+                    celf.set_active(true);
+                    send_button_event(&app_tx, &name, ev.get_button(), label.clone())
+                }));
+            },
             Button => {
                 let label = w.get_label();
                 w.connect_button_release_event(clone_army!([app_tx] move |_, ev| {
@@ -905,13 +913,6 @@ fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
                         app_tx.send(Operation::ResetFocus).unwrap();
                     }
                     Inhibit(false)
-                }));
-            },
-            RadioButton => {
-                let label = w.get_label();
-                w.connect_button_release_event(clone_army!([app_tx] move |celf, ev| {
-                    celf.set_active(true);
-                    send_button_event(&app_tx, &name, ev.get_button(), label.clone())
                 }));
             },
             Scale => {

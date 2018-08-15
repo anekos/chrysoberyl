@@ -160,7 +160,7 @@ impl Size {
             Scale(scale) => self.fit_to_scaled(scale),
         };
 
-        (scale, fitted)
+        (scale, fitted.to_valid())
     }
 
     pub fn fit_with_clipping(self, cell_size: Size, drawing: &Drawing) -> (f64, Size, Option<Region>) {
@@ -227,6 +227,13 @@ impl Size {
     fn fit_to_scaled(self, scale: usize) -> (f64, Size) {
         let scale = scale as f64 / 100.0;
         (scale, self.scaled(scale))
+    }
+
+    fn to_valid(self) -> Size {
+        Size {
+            width: max!(self.width, 1),
+            height: max!(self.height, 1),
+        }
     }
 }
 

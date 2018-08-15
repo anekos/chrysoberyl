@@ -15,7 +15,7 @@ use gdk::{DisplayExt, EventMask};
 use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimationExt};
 use glib;
 use gtk::prelude::*;
-use gtk::{Adjustment, Align, Builder, Button, CssProvider, CssProviderExt, Entry, EventBox, Grid, Image, Label, Layout, Overlay, RadioButton, ScrolledWindow, self, Stack, Switch, StyleContext, TextBuffer, TextView, Widget, WidgetExt, Window};
+use gtk::{Adjustment, Align, Builder, Button, ComboBoxText, ComboBoxTextExt, CssProvider, CssProviderExt, Entry, EventBox, Grid, Image, Label, Layout, Overlay, RadioButton, Scale, ScrolledWindow, self, Stack, Switch, StyleContext, TextBuffer, TextView, Widget, WidgetExt, Window};
 
 use completion::gui::CompleterUI;
 use constant;
@@ -352,7 +352,9 @@ impl Gui {
 
             self.user_box.pack_start(content, true, true, 0);
             for object in &builder.get_objects() {
-                attach_ui_event(app_tx, object);
+                if object.is::<Widget>() {
+                    attach_ui_event(app_tx, object);
+                }
             }
 
             return Ok(())
@@ -499,7 +501,7 @@ impl Gui {
         self.reset_focus();
     }
 
-    fn reset_focus(&self) {
+    pub fn reset_focus(&self) {
         if !self.window.get_visible() {
             return;
         }
@@ -837,11 +839,24 @@ impl Views {
 
 
 fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
+    use key::Key;
+
+    fn send_event(app_tx: &Sender<Operation>, name: &str, value: Option<String>) {
+        let name = format!("ui-{}", name);
+        let event = if let Some(value) = value {
+            let env = convert_args!(hashmap!("value" => value));
+            EventName::User(name).operation_with_env(env)
+        } else {
+            EventName::User(name).operation()
+        };
+        app_tx.send(event).unwrap();
+    }
+
     fn send_button_event(app_tx: &Sender<Operation>, name: &str, button: u32, value: Option<String>) -> Inhibit {
         let name = if button == 1 {
             format!("ui-{}", name)
         } else {
-            format!("ui-{}-{}", name, button)
+            format!("ui-{}--{}", name, button)
         };
         let event = if let Some(value) = value {
             let env = convert_args!(hashmap!("value" => value));
@@ -858,6 +873,9 @@ fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
 
         if_let_some!(name = WidgetExt::get_name(widget), ());
 
+        widget.set_can_focus(false);
+
+        /* XXX DO NOT SORT types */
         widget_case!(w = object, {
             RadioButton => {
                 let label = w.get_label();
@@ -872,16 +890,48 @@ fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
                     send_button_event(&app_tx, &name, ev.get_button(), label.clone())
                 }));
             },
+            ComboBoxText => {
+                w.connect_changed(clone_army!([app_tx] move |celf| {
+                    send_event(&app_tx, &name, celf.get_active_text());
+                }));
+            },
+            Entry => {
+                w.set_can_focus(true);
+                w.connect_button_release_event(|_, _| Inhibit(true));
+                w.connect_key_press_event(clone_army!([app_tx] move |celf, ev| {
+                    let key = Key::from(ev);
+                    let (submit, reset) = match key.as_str() {
+                        "Return" => (true, false),
+                        "C-Return" => (true, true),
+                        "Escape" => (false, true),
+                        _ => (false, false),
+                    };
+                    if submit {
+                        send_event(&app_tx, &name, celf.get_text());
+                    }
+                    if reset {
+                        app_tx.send(Operation::ResetFocus).unwrap();
+                    }
+                    Inhibit(false)
+                }));
+            },
+            Scale => {
+                w.connect_button_release_event(|_, _| Inhibit(true));
+                let adj = w.get_adjustment();
+                adj.connect_value_changed(clone_army!([app_tx] move |celf| {
+                    send_event(&app_tx, &name, Some(s!(celf.get_value())));
+                }));
+            },
             Switch => {
                 w.connect_button_release_event(clone_army!([app_tx] move |celf, ev| {
                     let state = !celf.get_state();
                     celf.set_state(state);
                     let value = if state { "on" } else { "off" };
                     send_button_event(&app_tx, &name, ev.get_button(), Some(o!(value)));
-                    let name = format!("{}-{}", name, value);
+                    let name = format!("{}--{}", name, value);
                     send_button_event(&app_tx, &name, ev.get_button(), None)
                 }));
-            }
+            },
         });
     }
 }

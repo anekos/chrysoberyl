@@ -996,6 +996,11 @@ pub fn on_refresh(app: &mut App, updated: &mut Updated, image: bool) -> EventRes
     Ok(())
 }
 
+pub fn on_reset_focus(app: &mut App) -> EventResult {
+    app.gui.reset_focus();
+    Ok(())
+}
+
 pub fn on_reset_image(app: &mut App, updated: &mut Updated) -> EventResult {
     if let Some((entry, _)) = app.current() {
         app.cache.uncherenkov(&entry.key);

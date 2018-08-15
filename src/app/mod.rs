@@ -319,6 +319,8 @@ impl App {
                     on_record_pre(self, &op, minimum_move, context),
                 Refresh(image) =>
                     on_refresh(self, &mut updated, image),
+                ResetFocus =>
+                    on_reset_focus(self),
                 ResetImage =>
                     on_reset_image(self, &mut updated),
                 ResetScrolls(to_end) =>

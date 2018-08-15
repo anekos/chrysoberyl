@@ -99,7 +99,7 @@ macro_rules! widget_case_clause {
 }
 
 macro_rules! widget_case {
-    ($var:ident = $object:expr, { $type:tt => $body:expr $(, $rtype:tt => $rbody:expr)* }) => {
+    ($var:ident = $object:expr, { $type:tt => $body:expr, $($rtype:tt => $rbody:expr,)* }) => {
         {
             let object = $object;
             widget_case_clause!($var, object, $type, $body $(, $rtype, $rbody)*);

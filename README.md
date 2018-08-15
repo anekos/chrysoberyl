@@ -326,6 +326,12 @@ Load operation script file.
 If `--search-path` is given, load from `search-path`.
 
 
+## @load-ui [(--search-path|-p)] <PATH>
+
+Load `*.glade` file.
+See [Glade - A User Interface Designer](https://glade.gnome.org/).
+
+
 ## @map (input|event|region|operation) ...
 
 ### @map input [(--region|-r) <REGION>] <INPUT> <OPERATION>
@@ -661,7 +667,7 @@ e.g.
 | pre-render-pages     | unsigned integer                                              | 5                                    | 1 ore more                                                                                                       |
 | reverse              | boolean                                                       | false                                |                                                                                                                  |
 | rotation             | 0/1/2/3                                                       |                                      |
-| screen               | main/command-line/log-view                                    |                                      |                                                                                                                  |
+| screen               | main/command-line/log-view/ui                                 |                                      |                                                                                                                  |
 | status-bar           | boolean                                                       | true                                 |                                                                                                                  |
 | status-bar-align     | left/center/right                                             | center                               |                                                                                                                  |
 | status-bar-height    | unsigned integer                                              | none                                 | 1 or more                                                                                                        |
@@ -755,3 +761,21 @@ Variable ← 'type' | 'width' | 'height' | 'path' | 'ext' | 'extension' | 'dimen
 Glob ← '<' string '>'
 BoolVariable ← 'animation' | 'active'
 ```
+
+# User Defined UI
+
+Chrysoberyl supports `*.glade` file.
+You can execute `@load-ui` to load the UI you defined and execute `@set screen ui` to show the UI.
+
+When you click  a named widget or type `Return` on Entry), chrysoberyl fire the event.
+(If you name a widget with `foo`, `ui-foo` will be fired)
+Some events have the environment variable `$CHRY_VALUE`.
+
+## Supported widget types
+
+- Button
+- ComboBoxText
+- Entry
+- RadioButton
+- Scale
+- Switch

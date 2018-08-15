@@ -114,36 +114,12 @@ impl Size {
     //     }
     // }
 
-    pub fn floated(self) -> (f64, f64) {
-        (f64!(self.width), f64!(self.height))
-    }
-
     pub fn rotate(self, n: u8) -> Self {
         if n % 2 == 1 {
             Size { width: self.height, height: self.width }
         } else {
             self
         }
-    }
-
-    pub fn scaled(self, scale: f64) -> Size {
-        Size {
-            width: (f64!(self.width) * scale) as i32,
-            height: (f64!(self.height) * scale) as i32,
-        }
-    }
-
-    pub fn clipped(self, region: &Region) -> (Size, Region) {
-        let (w, h) = self.floated();
-        let clipped_size = Size::new(
-            (w * (region.right - region.left)) as i32,
-            (h * (region.bottom - region.top)) as i32);
-        let clipped_region = Region::new(
-            w * region.left,
-            h * region.top,
-            w * region.right,
-            h * region.bottom);
-        (clipped_size, clipped_region)
     }
 
     /** returns (scale, fitted_size, delta) **/
@@ -161,6 +137,15 @@ impl Size {
         };
 
         (scale, fitted.to_valid())
+    }
+
+    pub fn fit_to_fixed(self, w: i32, h: i32) -> (f64, Size) {
+        let mut scale = f64!(w) / f64!(self.width);
+        let result_height = (f64!(self.height) * scale) as i32;
+        if result_height > h {
+            scale = f64!(h) / f64!(self.height);
+        }
+        (scale, self.scaled(scale))
     }
 
     pub fn fit_with_clipping(self, cell_size: Size, drawing: &Drawing) -> (f64, Size, Option<Region>) {
@@ -183,6 +168,33 @@ impl Size {
         (self.width / divisor, self.height / divisor)
     }
 
+    fn clipped(self, region: &Region) -> (Size, Region) {
+        let (w, h) = self.floated();
+        let clipped_size = Size::new(
+            (w * (region.right - region.left)) as i32,
+            (h * (region.bottom - region.top)) as i32);
+        let clipped_region = Region::new(
+            w * region.left,
+            h * region.top,
+            w * region.right,
+            h * region.bottom);
+        (clipped_size, clipped_region)
+    }
+
+    fn fit_to_cell(self, cell: Size) -> (f64, Size) {
+        let mut scale = f64!(cell.width) / f64!(self.width);
+        let result_height = (f64!(self.height) * scale) as i32;
+        if result_height > cell.height {
+            scale = f64!(cell.height) / f64!(self.height);
+        }
+        (scale, self.scaled(scale))
+    }
+
+    fn fit_to_height(self, cell: Size) -> (f64, Size) {
+        let scale = f64!(cell.height) / f64!(self.height);
+        (scale, self.scaled(scale))
+    }
+
     fn fit_to_original(self) -> (f64, Size) {
         (1.0, self)
     }
@@ -196,12 +208,8 @@ impl Size {
         }
     }
 
-    fn fit_to_cell(self, cell: Size) -> (f64, Size) {
-        let mut scale = f64!(cell.width) / f64!(self.width);
-        let result_height = (f64!(self.height) * scale) as i32;
-        if result_height > cell.height {
-            scale = f64!(cell.height) / f64!(self.height);
-        }
+    fn fit_to_scaled(self, scale: usize) -> (f64, Size) {
+        let scale = scale as f64 / 100.0;
         (scale, self.scaled(scale))
     }
 
@@ -210,23 +218,15 @@ impl Size {
         (scale, self.scaled(scale))
     }
 
-    fn fit_to_height(self, cell: Size) -> (f64, Size) {
-        let scale = f64!(cell.height) / f64!(self.height);
-        (scale, self.scaled(scale))
+    fn floated(self) -> (f64, f64) {
+        (f64!(self.width), f64!(self.height))
     }
 
-    pub fn fit_to_fixed(self, w: i32, h: i32) -> (f64, Size) {
-        let mut scale = f64!(w) / f64!(self.width);
-        let result_height = (f64!(self.height) * scale) as i32;
-        if result_height > h {
-            scale = f64!(h) / f64!(self.height);
+    fn scaled(self, scale: f64) -> Size {
+        Size {
+            width: (f64!(self.width) * scale) as i32,
+            height: (f64!(self.height) * scale) as i32,
         }
-        (scale, self.scaled(scale))
-    }
-
-    fn fit_to_scaled(self, scale: usize) -> (f64, Size) {
-        let scale = scale as f64 / 100.0;
-        (scale, self.scaled(scale))
     }
 
     fn to_valid(self) -> Size {

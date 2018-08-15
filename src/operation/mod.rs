@@ -112,7 +112,7 @@ pub enum Operation {
     ResetScrolls(bool), /* to_end */
     Save(PathBuf, Vec<Session>),
     SearchText(Option<String>, bool, Color), /* text, backward */
-    Scroll(Direction, f64, bool, bool, Vec<String>), /* direction, scroll_size_ratio, crush, reset_at_end, operation */
+    Scroll(Direction, f64, bool, bool, Vec<String>, Option<Direction>), /* direction, scroll_size_ratio, crush, reset_at_end, operation, reset_scrolls_1 */
     SetEnv(String, Option<Expandable>),
     Shell(bool, bool, bool, bool, Vec<Expandable>, Vec<Session>), /* async, operation, search_path, as_binary, command_line, session */
     ShellFilter(Vec<Expandable>, bool), /* path, search_path */
@@ -151,8 +151,8 @@ pub struct CherenkovParameter {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct OperationContext {
-    pub mapped: mapping::Mapped,
     pub cell_index: Option<usize>,
+    pub mapped: mapping::Mapped,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -191,11 +191,11 @@ pub enum QueuedOperation {
 #[derive(Default, Debug, Clone)]
 pub struct Updated {
     pub counter: bool,
-    pub pointer: bool,
-    pub label: bool,
     pub image: bool,
     pub image_options: bool,
+    pub label: bool,
     pub message: bool,
+    pub pointer: bool,
     pub target_regions: Option<Vec<Option<Region>>>,
 }
 
@@ -531,7 +531,7 @@ impl fmt::Debug for Operation {
             ResetScrolls(_) => "ResetScrolls",
             Save(_, _) => "Save",
             SearchText(_, _, _) => "SearchText",
-            Scroll(_, _, _, _, _) => "Scroll",
+            Scroll(_, _, _, _, _, _) => "Scroll",
             SetEnv(_, _) => "SetEnv",
             Shell(_, _, _, _, _ , _) => "Shell",
             ShellFilter(_, _) => "ShellFilter",

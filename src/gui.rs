@@ -83,7 +83,7 @@ pub struct CellIterator<'a> {
     reverse: bool
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Copy)]
 pub enum Direction {
     Left,
     Up,
@@ -328,10 +328,10 @@ impl Gui {
         save_image(&cell.image, path)
     }
 
-    pub fn scroll_views(&self, direction: &Direction, scroll_size: f64, crush: bool, reset_at_end: bool, count: usize) -> bool {
+    pub fn scroll_views(&self, direction: Direction, scroll_size: f64, crush: bool, count: usize, reset_scrolls_1: Option<Direction>) -> bool {
         let mut scrolled = false;
         for cell in self.cells(false) {
-            scrolled |= scroll_window(&cell.window, direction, scroll_size, crush, reset_at_end, count);
+            scrolled |= scroll_window(&cell.window, direction, scroll_size, crush, count, reset_scrolls_1);
         }
         scrolled
     }
@@ -950,14 +950,14 @@ fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), BoxedError>
     Ok(())
 }
 
-fn reset_scroll(window: &ScrolledWindow, direction: &Direction) {
+fn reset_scroll(window: &ScrolledWindow, direction: Direction) {
     use self::Direction::*;
 
     let f = |horizontal| {
         let adj = if horizontal { window.get_hadjustment() } else { window.get_vadjustment() };
         if_let_some!(adj = adj, ());
 
-        let value = match *direction {
+        let value = match direction {
             Right | Down => 0.0,
             Left | Up => adj.get_upper(),
         };
@@ -971,13 +971,13 @@ fn reset_scroll(window: &ScrolledWindow, direction: &Direction) {
         }
     };
 
-    match *direction {
+    match direction {
         Left | Right => f(true),
         Up | Down => f(false),
     }
 }
 
-fn scroll_window(window: &ScrolledWindow, direction: &Direction, scroll_size_ratio: f64, crush: bool, reset_at_end: bool, count: usize) -> bool {
+fn scroll_window(window: &ScrolledWindow, direction: Direction, scroll_size_ratio: f64, crush: bool, count: usize, reset_scrolls_1: Option<Direction>) -> bool {
     use self::Direction::*;
 
     let scroll = |horizontal| -> bool {
@@ -988,7 +988,7 @@ fn scroll_window(window: &ScrolledWindow, direction: &Direction, scroll_size_rat
         let scroll_size = page_size * scroll_size_ratio * count as f64;
         let space = page_size * (1.0 - scroll_size_ratio);
         let value = adj.get_value();
-        let scroll_size = match *direction {
+        let scroll_size = match direction {
             Right | Down => {
                 let rest = adj.get_upper() - value - scroll_size - page_size;
                 if rest < space && crush {
@@ -1010,17 +1010,17 @@ fn scroll_window(window: &ScrolledWindow, direction: &Direction, scroll_size_rat
         adj.set_value(value + scroll_size);
 
         if feq(adj.get_value(), value, 0.000_000_1) {
-            if reset_at_end {
-                reset_scroll(window, direction);
-            }
             false
         } else {
             if horizontal { window.set_hadjustment(&adj) } else { window.set_vadjustment(&adj) }
+            if let Some(direction) = reset_scrolls_1 {
+                reset_scroll(window, direction);
+            }
             true
         }
     };
 
-    match *direction {
+    match direction {
         Left | Right => scroll(true),
         Up | Down => scroll(false),
     }

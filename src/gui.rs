@@ -6,7 +6,7 @@ use std::error::Error;
 use std::fmt;
 use std::fs::File;
 use std::ops;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::mpsc::Sender;
 
@@ -61,6 +61,7 @@ pub struct Gui {
     ui_event: Option<UIEvent>,
     user_box: gtk::Box,
     user_box_content: Option<Widget>,
+    user_ui_file: Option<PathBuf>,
 }
 
 #[derive(Clone)]
@@ -244,6 +245,7 @@ impl Gui {
             ui_event: None,
             user_box,
             user_box_content: None,
+            user_ui_file: None,
             vbox,
             window,
         }
@@ -336,31 +338,8 @@ impl Gui {
         scrolled
     }
 
-    pub fn set_user_ui<T: AsRef<Path>>(&mut self, path: &T, app_tx: &Sender<Operation>) -> Result<(), BoxedError> {
-        use util::file;
-
-        if let Some(content) = self.user_box_content.as_ref() {
-            self.user_box.remove(content);
-        }
-
-        let glade_src = file::read_string(path)?;
-        let builder = Builder::new_from_string(&glade_src);
-        self.user_box_content = builder.get_object("user");
-
-        if let Some(content) = self.user_box_content.as_ref() {
-            WidgetExt::set_name(content, "user");
-
-            self.user_box.pack_start(content, true, true, 0);
-            for object in &builder.get_objects() {
-                if object.is::<Widget>() {
-                    attach_ui_event(app_tx, object);
-                }
-            }
-
-            return Ok(())
-        }
-
-        Err(Box::new(ChryError::NotSupported("ID `user` not found")))
+    pub fn set_user_ui<T: AsRef<Path>>(&mut self, path: &T) {
+        self.user_ui_file = Some(path.as_ref().to_path_buf());
     }
 
     pub fn get_screen(&self) -> Screen {
@@ -375,10 +354,10 @@ impl Gui {
         }
     }
 
-    pub fn change_screen(&mut self, screen: Screen) -> bool {
+    pub fn change_screen(&mut self, screen: Screen, app_tx: &Sender<Operation>) -> Result<bool, BoxedError> {
         let current = self.get_screen();
         if current == screen {
-            return false;
+            return Ok(false);
         }
 
         match screen {
@@ -399,6 +378,7 @@ impl Gui {
                 self.set_user_ui_visibility(false);
             },
             Screen::UserUI => {
+                self.update_user_ui(app_tx)?;
                 self.set_operation_box_visibility(false);
                 self.set_log_box_visibility(false);
                 self.set_user_ui_visibility(true);
@@ -409,7 +389,7 @@ impl Gui {
             ui_event.update_screen(screen);
         }
 
-        true
+        Ok(true)
     }
 
     pub fn set_status_bar_align(&self, align: Align) {
@@ -453,6 +433,37 @@ impl Gui {
 
     pub fn update_user_operations(&mut self, operations: &[String]) {
         self.completer.update_user_operations(operations);
+    }
+
+    fn update_user_ui(&mut self, app_tx: &Sender<Operation>) -> Result<(), BoxedError> {
+        use util::file;
+        use mruby::MRubyEnv;
+
+        if_let_some!(path = self.user_ui_file.as_ref(), Err(Box::new(ChryError::Fixed("Option `user_ui` is empty."))));
+
+        if let Some(content) = self.user_box_content.as_ref() {
+            self.user_box.remove(content);
+        }
+
+        let glade_src = file::read_string(path)?;
+        let glade_src = MRubyEnv::generate_string_from_template(&glade_src)?;
+        let builder = Builder::new_from_string(&glade_src);
+        self.user_box_content = builder.get_object("user");
+
+        if let Some(content) = self.user_box_content.as_ref() {
+            WidgetExt::set_name(content, "user");
+
+            self.user_box.pack_start(content, true, true, 0);
+            for object in &builder.get_objects() {
+                if object.is::<Widget>() {
+                    attach_ui_event(app_tx, object);
+                }
+            }
+
+            return Ok(())
+        }
+
+        Err(Box::new(ChryError::NotSupported("ID `user` not found")))
     }
 
     fn create_images(&mut self, state: &Views) {

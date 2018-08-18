@@ -6,6 +6,7 @@ use std::rc::Rc;
 
 use marksman_escape::Escape;
 use mrusty::{Mruby, MrubyImpl, Value, MrubyFile};
+use regex::{Regex, Captures};
 
 use app::info::AppInfo;
 use constant;
@@ -22,6 +23,24 @@ impl MRubyEnv {
         let instance = MRubyEnv::new();
         let result = instance.eval(source)?;
         Ok(o!(result.to_str()?))
+    }
+
+    pub fn generate_string_from_template(source: &str) -> Result<String, Box<error::Error>> {
+        let instance = MRubyEnv::new();
+        let re = Regex::new(r"\$\{(.*?)\}").unwrap();
+
+        let result = re.replace_all(source, |caps: &Captures| {
+            let source = format!("proc {{ {} }}[].to_s", &caps[1]);
+            match instance.eval(&source) {
+                Ok(result) => match result.to_str() {
+                    Ok(result) => o!(result),
+                    Err(err) => s!(err),
+                },
+                Err(err) => s!(err),
+            }
+        });
+
+        Ok(s!(result))
     }
 
     #[allow(unused_variables)]

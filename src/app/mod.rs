@@ -836,8 +836,14 @@ impl App {
 
     fn update_ui_visibility(&mut self) {
         self.gui.set_status_bar_visibility(self.states.status_bar);
-        if !self.gui.change_screen(self.states.screen) {
-            return;
+
+        match self.gui.change_screen(self.states.screen, &self.tx) {
+            Ok(changed) if !changed => return,
+            Ok(_) => (),
+            Err(err) => {
+                puts_error!(err, "at" => "gui/update_ui_visibility");
+                return
+            },
         }
 
         match self.states.screen {

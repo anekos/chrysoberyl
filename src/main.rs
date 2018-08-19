@@ -45,6 +45,7 @@ extern crate tldextract;
 extern crate url;
 extern crate uuid;
 extern crate uuid_to_pokemon;
+extern crate xml;
 
 #[macro_use] mod macro_utils;
 #[macro_use] mod logger;

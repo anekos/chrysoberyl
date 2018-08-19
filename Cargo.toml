@@ -65,6 +65,7 @@ tldextract = "*"
 url = "*"
 uuid = { version = "0.5", features = ["v4"] }
 uuid_to_pokemon = "*"
+xml-rs = "*"
 
 # https://github.com/gtk-rs/gtk/blob/master/Cargo.toml
 [dependencies.gtk]

@@ -7,6 +7,7 @@ use std::rc::Rc;
 use marksman_escape::Escape;
 use mrusty::{Mruby, MrubyImpl, Value, MrubyFile};
 use regex::{Regex, Captures};
+use xml;
 
 use app::info::AppInfo;
 use constant;
@@ -33,7 +34,7 @@ impl MRubyEnv {
             let source = format!("proc {{ {} }}[].to_s", &caps[1]);
             match instance.eval(&source) {
                 Ok(result) => match result.to_str() {
-                    Ok(result) => o!(result),
+                    Ok(result) => s!(xml::escape::escape_str_attribute(result)),
                     Err(err) => s!(err),
                 },
                 Err(err) => s!(err),

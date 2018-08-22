@@ -117,6 +117,7 @@ pub enum Operation {
     Shell(bool, bool, bool, bool, Vec<Expandable>, Vec<Session>), /* async, operation, search_path, as_binary, command_line, session */
     ShellFilter(Vec<Expandable>, bool), /* path, search_path */
     Show(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
+    ShowCommandLine(String),
     Shuffle(bool), /* Fix current */
     Sort(bool, SortKey, bool), /* fix_current, key, reverse */
     Sorter(bool, Vec<Expandable>, bool), /* fix_current, command, reverse */
@@ -259,6 +260,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@cherenkov-reset"              => Ok(CherenkovReset),
             "@clear"                        => Ok(Clear),
             "@clip"                         => parse_clip(whole),
+            "@command-line"                 => parse_command1(whole, Operation::ShowCommandLine),
             "@controller-fifo" | "@control-fifo"
                                             => parse_controller(whole, controller::Source::Fifo),
             "@controller-file" | "@control-file"
@@ -536,6 +538,7 @@ impl fmt::Debug for Operation {
             Shell(_, _, _, _, _ , _) => "Shell",
             ShellFilter(_, _) => "ShellFilter",
             Show(_, _, _, _) => "Show",
+            ShowCommandLine(_) => "ShowCommandLine",
             Shuffle(_) => "Shuffle",
             Sort(_, _, _) => "Sort",
             Sorter(_, _, _) => "Sorter",

@@ -339,6 +339,8 @@ impl App {
                     on_shell_filter(self, command_line, search_path),
                 Show(count, ignore_views, move_by, _) =>
                     on_show(self, &mut updated, count, ignore_views, move_by),
+                ShowCommandLine(ref initial) =>
+                    on_show_command_line(self, initial),
                 Shuffle(fix_current) =>
                     on_shuffle(self, &mut updated, fix_current),
                 Sort(fix_current, sort_key, reverse) =>

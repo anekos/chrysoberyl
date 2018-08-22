@@ -116,6 +116,11 @@ Clear image entries.
 Clip by mouse selected rectangle.
 
 
+## @command-line <INITIAL_COMMAND>
+
+Show command line with `<INITIAL_COMMAND>`.
+
+
 ## @controller-file <FILE>
 
 Open `<PATH>` file to control chrysoberyl.

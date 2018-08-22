@@ -422,6 +422,15 @@ impl Gui {
         self.window.show();
     }
 
+    pub fn show_command_line(&mut self, initial: &str, app_tx: &Sender<Operation>) -> Result<(), BoxedError> {
+        use gtk::MovementStep;
+
+        self.change_screen(Screen::CommandLine, app_tx)?;
+        self.operation_entry.set_text(initial);
+        self.operation_entry.emit_move_cursor(MovementStep::BufferEnds, 1, false);
+        Ok(())
+    }
+
     pub fn update_style(&self, style: &Style) -> Result<(), glib::Error> {
         match style {
             Style::Literal(ref source) =>

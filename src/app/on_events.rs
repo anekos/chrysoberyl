@@ -1186,6 +1186,10 @@ pub fn on_show(app: &mut App, updated: &mut Updated, count: Option<usize>, ignor
     Ok(())
 }
 
+pub fn on_show_command_line(app: &mut App, initial: &str) -> EventResult {
+    app.gui.show_command_line(initial, &app.tx)
+}
+
 pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) -> EventResult {
     let serial = app.store();
     let app_info = app.app_info();

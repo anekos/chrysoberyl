@@ -41,7 +41,7 @@ use self::option::{OptionName, OptionUpdater};
 pub enum Operation {
     AppEvent(EventName, HashMap<String, String>),
     Backward,
-    ChangeDirectory(String),
+    ChangeDirectory(Expandable),
     Cherenkov(CherenkovParameter),
     CherenkovReset,
     Clear,

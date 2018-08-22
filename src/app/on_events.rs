@@ -88,8 +88,9 @@ pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName
     Ok(())
 }
 
-pub fn on_change_directory(path: &str) -> EventResult {
-    env::set_current_dir(path)?;
+pub fn on_change_directory(path: &Expandable) -> EventResult {
+    let path = path.to_string();
+    env::set_current_dir(&path)?;
     puts_event!("change_directory", "path" => o!(path));
     Ok(())
 }

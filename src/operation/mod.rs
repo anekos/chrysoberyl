@@ -272,7 +272,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@count"                        => parse_count(whole),
             "@cycle"                        => parse_option_cycle(whole),
             "@dec" | "@decrement" | "@decrease" | "@--"
-                                            => parse_usize(whole, OptionUpdater::Decrement, 10),
+                                            => parse_usize(whole, OptionUpdater::Decrement, 1),
             "@default"                      => Ok(LoadDefault),
             "@define-switch"                => parse_define_switch(whole),
             "@delete"                       => parse_delete(whole),
@@ -293,7 +293,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@forward" | "@fwd"             => Ok(Forward),
             "@go"                           => parse_go(whole),
             "@inc" | "@increment" | "@increase" | "@++"
-                                            => parse_usize(whole, OptionUpdater::Increment, 10),
+                                            => parse_usize(whole, OptionUpdater::Increment, 1),
             "@input"                        => parse_input(whole),
             "@jump"                         => parse_jump(whole),
             "@kill-timer"                   => parse_kill_timer(whole),

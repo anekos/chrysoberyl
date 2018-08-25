@@ -1533,6 +1533,8 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
         }
     }
 
+    fix_option_values(app);
+
     updated.image = true;
 
     if let PreDefined(ref option_name) = *option_name {
@@ -1722,4 +1724,15 @@ fn maybe_reverse(reverse: bool, original: Ordering) -> Ordering {
     } else {
         original
     }
+}
+
+fn fix_option_values(app: &mut App) {
+    fn non_zero(v: &mut usize) {
+        if *v <= 0 {
+            *v = 1;
+        }
+    }
+
+    non_zero(&mut app.states.view.rows);
+    non_zero(&mut app.states.view.cols);
 }

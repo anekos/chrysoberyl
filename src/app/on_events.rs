@@ -1728,7 +1728,7 @@ fn maybe_reverse(reverse: bool, original: Ordering) -> Ordering {
 
 fn fix_option_values(app: &mut App) {
     fn non_zero(v: &mut usize) {
-        if *v <= 0 {
+        if *v == 0 {
             *v = 1;
         }
     }

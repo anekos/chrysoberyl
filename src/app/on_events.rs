@@ -1589,21 +1589,29 @@ pub fn on_user(_: &mut App, data: &[(String, String)]) -> EventResult {
 }
 
 pub fn on_views(app: &mut App, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>) -> EventResult {
+    use operation::option::PreDefinedOptionName::*;
+
     if let Some(cols) = cols {
-        app.states.view.cols = cols
+        app.states.view.cols = cols;
+        app.update_env_for_option(&HorizontalViews);
     }
     if let Some(rows) = rows {
-        app.states.view.rows = rows
+        app.states.view.rows = rows;
+        app.update_env_for_option(&VerticalViews);
     }
     on_update_views(app, updated)
 }
 
 pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool) -> EventResult {
+    use operation::option::PreDefinedOptionName::*;
+
     let count = app.counter.pop();
     if for_rows {
         app.states.view.rows = count;
+        app.update_env_for_option(&VerticalViews);
     } else {
         app.states.view.cols = count;
+        app.update_env_for_option(&HorizontalViews);
     };
     on_update_views(app, updated)
 }

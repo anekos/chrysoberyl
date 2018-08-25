@@ -28,7 +28,7 @@ impl MRubyEnv {
 
     pub fn generate_string_from_template(source: &str) -> Result<String, Box<error::Error>> {
         let instance = MRubyEnv::new();
-        let re = Regex::new(r"\$\{(.*?)\}").unwrap();
+        let re = Regex::new(r"\$\{(.*?)\}\$").unwrap();
 
         let result = re.replace_all(source, |caps: &Captures| {
             let source = format!("proc {{ {} }}[].to_s", &caps[1]);

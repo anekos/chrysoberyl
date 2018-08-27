@@ -10,6 +10,7 @@ extern crate argparse;
 extern crate atty;
 extern crate cairo;
 extern crate cmdline_parser;
+extern crate crossbeam;
 extern crate css_color_parser;
 extern crate ctrlc;
 extern crate curl;

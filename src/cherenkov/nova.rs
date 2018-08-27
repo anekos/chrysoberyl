@@ -23,7 +23,9 @@
 
 use std::f64::consts::PI;
 
+use crossbeam;
 use gdk_pixbuf::PixbufExt;
+use num_cpus;
 use rand::distributions::{Distribution, Uniform};
 use rand::{Rng, RngCore, SeedableRng, self, StdRng};
 
@@ -124,42 +126,60 @@ pub fn nova(nv: &Nova, pixels: &mut [u8], rowstride: i32, width: i32, height: i3
         (spokes, spoke_colors)
     };
 
-    for y in 0..height {
-        for x in 0..width {
-            let u = f64!(x - cx) / radius;
-            let v = f64!(y - cy) / radius;
-            let l = (u * u + v * v).sqrt();
+    let threads = num_cpus::get();
+    trace!("cherenkov: threads={}", threads);
 
-            let t = (u.atan2(v) / (2.0 * PI) + 0.51) * nv.n_spokes as f64;
-            let i = t.floor() as usize;
-            let t = t - i as f64;
-            let i = i % nv.n_spokes;
+    let mut lines: Vec<(usize, &mut [u8])> = pixels.chunks_mut(rowstride as usize).enumerate().collect();
+    let chunks: Vec<&mut [(usize, &mut [u8])]> = lines.chunks_mut(height as usize / threads).collect();
 
-            let w1 = spokes[i] * (1.0 - t) + spokes[(i + 1) % nv.n_spokes] * t;
-            let w1 = w1 * w1;
+    crossbeam::scope(|scope| {
+        let mut handles = vec![];
+        for chunk in chunks {
+            let handle = scope.spawn(clone_army!([spokes, spoke_colors] move || {
+                for (y, line) in chunk {
+                    let y = *y as i32;
+                    for x in 0..width {
+                        let u = f64!(x - cx) / radius;
+                        let v = f64!(y - cy) / radius;
+                        let l = (u * u + v * v).sqrt();
 
-            let w = 1.0 / (l + 0.001) * 0.9;
-            let nova_alpha = clamp(w, 0.0, 1.0);
-            let compl_ratio = 1.0 - nova_alpha;
-            let ptr = (y * rowstride + x * 4 /* RGB+ALPHA */) as usize;
+                        let t = (u.atan2(v) / (2.0 * PI) + 0.51) * nv.n_spokes as f64;
+                        let i = t.floor() as usize;
+                        let t = t - i as f64;
+                        let i = i % nv.n_spokes;
 
-            for ci in 0..3 {
-                let in_color = f64!(pixels[ptr + ci]) / 255.0;
-                let spoke_color = spoke_colors[i][ci] * (1.0 - t) + spoke_colors[(i + 1) % nv.n_spokes][ci] * t;
+                        let w1 = spokes[i] * (1.0 - t) + spokes[(i + 1) % nv.n_spokes] * t;
+                        let w1 = w1 * w1;
 
-                let mut out_color = if w > 1.0 {
-                    clamp(spoke_color * w, 0.0, 1.0)
-                } else {
-                    in_color * compl_ratio + spoke_color * nova_alpha
-                };
+                        let w = 1.0 / (l + 0.001) * 0.9;
+                        let nova_alpha = clamp(w, 0.0, 1.0);
+                        let compl_ratio = 1.0 - nova_alpha;
+                        let ptr = (x * 4 /* RGB+ALPHA */) as usize;
 
-                let c = clamp(w1 * w, 0.0, 1.0);
-                out_color += c;
-                out_color *= 255.0;
-                pixels[ptr + ci] = clamp(out_color, 0.0, 255.0) as u8;
-            }
+                        for ci in 0..3 {
+                            let in_color = f64!(line[ptr + ci]) / 255.0;
+                            let spoke_color = spoke_colors[i][ci] * (1.0 - t) + spoke_colors[(i + 1) % nv.n_spokes][ci] * t;
+
+                            let mut out_color = if w > 1.0 {
+                                clamp(spoke_color * w, 0.0, 1.0)
+                            } else {
+                                in_color * compl_ratio + spoke_color * nova_alpha
+                            };
+
+                            let c = clamp(w1 * w, 0.0, 1.0);
+                            out_color += c;
+                            out_color *= 255.0;
+                            line[ptr + ci] = clamp(out_color, 0.0, 255.0) as u8;
+                        }
+                    }
+                }
+            }));
+            handles.push(handle);
         }
-    }
+        for handle in handles {
+            handle.join().unwrap();
+        }
+    });
 }
 
 #[cfg(test)]#[test]

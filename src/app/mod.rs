@@ -39,7 +39,6 @@ use state::{AutoPaging, States, PreFetchState};
 use termination;
 use timer::TimerManager;
 use util::path::path_to_str;
-use version;
 use watcher::Watcher;
 
 mod error_loop_detector;
@@ -929,8 +928,8 @@ fn set_envs() {
     }
 
     let version = env!("CARGO_PKG_VERSION").to_string();
-    let sha = version::sha();
-    let date = version::commit_date();
+    let sha = env!("VERGEN_SHA");
+    let date = env!("VERGEN_COMMIT_DATE");
 
     puts_event!("version", "version" => version, "git_hash" => sha, "date" => date);
 

@@ -106,7 +106,6 @@ mod termination;
 mod timer;
 mod ui_event;
 mod util;
-mod version;
 mod watcher;
 
 

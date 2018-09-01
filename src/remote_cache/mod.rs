@@ -23,7 +23,7 @@ use errors::ChryError;
 use events::EventName;
 use file_extension::get_entry_type_from_filename;
 use mapping;
-use operation::{Operation, QueuedOperation};
+use operation::{Operation, QueuedOperation, Updated};
 use sorting_buffer::SortingBuffer;
 
 pub mod curl_options;
@@ -134,7 +134,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                 state.threads.push(processor(thread_id, main_tx.clone()));
                 state.idles.push(thread_id);
             }
-            log_status(&SP::Initial, &state, buffer.len());
+            log_status(&app_tx, &SP::Initial, &state, buffer.len());
         }
 
 
@@ -149,10 +149,10 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                     if let Some(worker) = state.idles.pop() {
                         state.processing.insert(request.clone());
                         state.threads[worker].send(request).unwrap();
-                        log_status(&SP::Process(url), &state, buffer.len());
+                        log_status(&app_tx, &SP::Process(url), &state, buffer.len());
                     } else {
                         state.queued.push_back(request);
-                        log_status(&SP::Queue(url), &state, buffer.len());
+                        log_status(&app_tx, &SP::Queue(url), &state, buffer.len());
                     }
                 }
                 Done(thread_id, request) => {
@@ -164,7 +164,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                         make_queued_operation(request.cache_filepath, request.url, request.meta, request.force, request.entry_type));
                     app_tx.send(Operation::Pull).unwrap();
                     try_next(&app_tx, thread_id, &mut state);
-                    log_status(&SP::Complete(thread_id), &state, buffer.len());
+                    log_status(&app_tx, &SP::Complete(thread_id), &state, buffer.len());
                 }
                 Fail(thread_id, err, request) => {
                     let mut state = state.lock().unwrap();
@@ -173,7 +173,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                     buffer.skip(request.ticket);
                     app_tx.send(Operation::Pull).unwrap();
                     try_next(&app_tx, thread_id, &mut state);
-                    log_status(&SP::Fail(thread_id, err, request.url), &state, buffer.len());
+                    log_status(&app_tx, &SP::Fail(thread_id, err, request.url), &state, buffer.len());
                 }
             }
         }
@@ -288,7 +288,7 @@ fn try_next(app_tx: &Sender<Operation>, thread_id: TID, state: &mut State) {
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
-fn log_status(sp: &SP, state: &State, buffers: usize) {
+fn log_status(app_tx: &Sender<Operation>, sp: &SP, state: &State, buffers: usize) {
     use self::SP::*;
 
     let idles = state.idles.len();
@@ -310,6 +310,8 @@ fn log_status(sp: &SP, state: &State, buffers: usize) {
     env::set_var(env_name("remote_thread"), t);
     env::set_var(env_name("remote_ok"), o);
     env::set_var(env_name("remote_fail"), f);
+
+    app_tx.send(Operation::Update(Updated { remote: true, ..Default::default() })).unwrap();
 }
 
 

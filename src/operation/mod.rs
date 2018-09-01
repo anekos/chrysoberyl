@@ -197,7 +197,7 @@ pub struct Updated {
     pub label: bool,
     pub message: bool,
     pub pointer: bool,
-    pub queue: bool,
+    pub remote: bool,
     pub target_regions: Option<Vec<Option<Region>>>,
 }
 

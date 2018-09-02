@@ -937,6 +937,9 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
 
 pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) -> EventResult {
     let buffered = app.remote_cache.fetch(url, meta, force, entry_type);
+    if buffered.is_empty() {
+        updated.queue = true;
+    }
     push_buffered(app, updated, buffered)
 }
 

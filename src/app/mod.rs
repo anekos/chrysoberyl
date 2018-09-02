@@ -444,7 +444,7 @@ impl App {
             }
         }
 
-        if updated.image || updated.image_options || updated.label || updated.message {
+        if updated.image || updated.image_options || updated.label || updated.message || updated.queue {
             self.update_label(updated.image, false);
         }
     }

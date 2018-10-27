@@ -1,6 +1,8 @@
 
 use std::path::{Path, PathBuf};
-use std::env::{self, home_dir};
+use std::env;
+
+use dirs::home_dir;
 
 use shellexpand;
 

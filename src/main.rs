@@ -14,6 +14,7 @@ extern crate crossbeam;
 extern crate css_color_parser;
 extern crate ctrlc;
 extern crate curl;
+extern crate dirs;
 extern crate encoding;
 extern crate env_logger;
 extern crate filetime;

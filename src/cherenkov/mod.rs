@@ -4,7 +4,7 @@ use std::error::Error;
 use std::fmt;
 use std::str::FromStr;
 
-use cairo::{Context, Format, ImageSurface, self, SurfacePattern};
+use cairo::{Context, Format, ImageSurface, Pattern, self, SurfacePattern};
 use gdk::prelude::ContextExt;
 use gdk_pixbuf::{Pixbuf, PixbufExt};
 
@@ -322,7 +322,7 @@ fn apply_mask(pixbuf: &Pixbuf, mask: &ImageSurface, operator: cairo::Operator) -
     context.paint();
 
     context.set_operator(operator);
-    let pattern = SurfacePattern::create(&mask);
+    let pattern = Pattern::SurfacePattern(SurfacePattern::create(&mask));
     context.mask(&pattern);
 
     new_pixbuf_from_surface(&surface)

@@ -21,6 +21,13 @@ impl<K, V> Cache<K, V> where K: Hash + Eq, V: Clone {
         }
     }
 
+    pub fn each<F>(&mut self, block: F) where F: Fn(&mut V) -> () {
+        let mut entries = self.entries.lock().unwrap();
+        for (_, entry) in entries.iter_mut() {
+            block(entry)
+        }
+    }
+
     pub fn update_limit(&mut self, limit: usize) {
         let mut entries = self.entries.lock().unwrap();
         entries.set_capacity(limit);

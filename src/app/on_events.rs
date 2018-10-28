@@ -280,11 +280,12 @@ pub fn on_file_changed(app: &mut App, updated: &mut Updated, path: &Path) -> Eve
     }
 
     let len = app.gui.len();
+    let cell_size = app.get_cell_size();
     for delta in 0..len {
         if let Some((entry, _)) = app.current_with(delta) {
             if let EntryContent::Image(ref entry_path) = entry.content {
                 if entry_path == path {
-                    app.cache.clear_entry(&entry.key);
+                    app.cache.clear_entry(cell_size, &entry.key);
                     updated.image = true;
                 }
             }
@@ -997,9 +998,10 @@ pub fn on_record_pre(app: &mut App, operation: &[String], minimum_move: usize, c
 pub fn on_refresh(app: &mut App, updated: &mut Updated, image: bool) -> EventResult {
     if image {
         let len = app.gui.len();
+        let cell_size = app.get_cell_size();
         for index in 0..len {
             if let Some((entry, _)) = app.current_with(index) {
-                app.cache.clear_entry(&entry.key);
+                app.cache.clear_entry(cell_size, &entry.key);
                 updated.image = true;
             }
         }

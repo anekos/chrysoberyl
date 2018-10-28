@@ -11,10 +11,14 @@ use state::Drawing;
 
 
 
+const SIZE_LIMIT: usize = 3;
+
+
 #[derive(Clone)]
 pub struct ImageCache {
+    limit: usize,
     cherenkoved: Arc<Mutex<Cherenkoved>>,
-    cache: Cache<Key, Result<ImageBuffer, String>>, /* String for display the error */
+    cache: Cache<Size, Cache<Key, Result<ImageBuffer, String>>>, /* String for display the error */
     fetching: Arc<(Mutex<HashMap<Key, bool>>, Condvar)>,
 }
 
@@ -22,14 +26,16 @@ pub struct ImageCache {
 impl ImageCache {
     pub fn new(limit: usize) -> ImageCache {
         ImageCache {
+            cache: Cache::new(SIZE_LIMIT),
             cherenkoved: Arc::new(Mutex::new(Cherenkoved::new())),
-            cache: Cache::new(limit),
             fetching: Arc::new((Mutex::new(HashMap::new()), Condvar::new())),
+            limit,
         }
     }
 
     pub fn update_limit(&mut self, limit: usize) {
-        self.cache.update_limit(limit);
+        self.limit = limit;
+        self.cache.each(move |it| it.update_limit(limit));
     }
 
     pub fn clear(&mut self) {
@@ -44,16 +50,22 @@ impl ImageCache {
         cond.notify_all();
     }
 
-    pub fn clear_entry(&mut self, key: &Key) -> bool {
-        self.cache.clear_entry(key)
+    pub fn clear_entry(&mut self, cell_size: Size, key: &Key) -> bool {
+        let mut cache = self.get_sized_cache(cell_size);
+        cache.clear_entry(key)
     }
 
-    pub fn mark_fetching(&mut self, key: Key) -> bool {
+    pub fn mark_fetching(&mut self, cell_size: Size, key: Key) -> bool {
         trace!("image_cache/mark_fetching: key={:?}", key);
+
+        let contains = {
+            let mut cache = self.get_sized_cache(cell_size);
+            cache.contains(&key)
+        };
 
         let &(ref fetching, _) = &*self.fetching;
         let mut fetching = fetching.lock().unwrap();
-        if self.cache.contains(&key) || fetching.contains_key(&key) {
+        if contains || fetching.contains_key(&key) {
             false
         } else {
             fetching.insert(key, true);
@@ -61,15 +73,20 @@ impl ImageCache {
         }
     }
 
-    pub fn push(&mut self, key: &Key, image_buffer: Result<ImageBuffer, String>) {
+    pub fn push(&mut self, cell_size: Size, key: &Key, image_buffer: Result<ImageBuffer, String>) {
         trace!("image_cache/push: key={:?}", key);
 
-        let &(ref fetching, ref cond) = &*self.fetching;
-        let mut fetching = fetching.lock().unwrap();
-        if fetching.remove(key) == Some(true) {
-            self.cache.push(key.clone(), image_buffer);
+        let do_push = {
+            let &(ref fetching, ref cond) = &*self.fetching;
+            let mut fetching = fetching.lock().unwrap();
+            let result = fetching.remove(key) == Some(true);
+            cond.notify_all();
+            result
+        };
+        if do_push {
+            let mut cache = self.get_sized_cache(cell_size);
+            cache.push(key.clone(), image_buffer);
         }
-        cond.notify_all();
     }
 
     pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: Size, drawing: &Drawing) -> Result<ImageBuffer, String> {
@@ -78,7 +95,8 @@ impl ImageCache {
             cherenkoved.get_image_buffer(entry, cell_size, drawing).map(|it| it.map_err(|it| s!(it)))
         }.unwrap_or_else(|| {
             self.wait(&entry.key);
-            self.cache.get_or_update(entry.key.clone(), move |_| {
+            let cache = self.get_sized_cache(cell_size);
+            cache.get_or_update(entry.key.clone(), move |_| {
                 entry::image::get_image_buffer(entry, cell_size, drawing).map_err(|it| s!(it))
             })
         })
@@ -117,6 +135,13 @@ impl ImageCache {
     pub fn clear_search_highlights(&mut self) -> bool {
         let mut cherenkoved = self.cherenkoved.lock().unwrap();
         cherenkoved.clear_search_highlights()
+    }
+
+    fn get_sized_cache(&mut self, cell_size: Size) -> Cache<Key, Result<ImageBuffer, String>> {
+        let limit = self.limit;
+        self.cache.get_or_update(cell_size, move |_| {
+            Cache::new(limit)
+        })
     }
 
     fn wait(&mut self, key: &Key) {

@@ -528,6 +528,10 @@ impl App {
 
     /* Private methods */
 
+    fn get_cell_size(&self) -> Size {
+        self.gui.get_cell_size(&self.states.view)
+    }
+
     fn reset_view(&mut self) {
         self.gui.reset_view(&self.states.view);
         self.update_paginator_condition();
@@ -586,7 +590,7 @@ impl App {
     fn show_image(&mut self, to_end: bool, target_regions: Option<Vec<Option<Region>>>) -> (bool, Option<Size>, Option<Size>) {
         let mut original_image_size = None;
         let mut fit_image_size = None;
-        let cell_size = self.gui.get_cell_size(&self.states.view);
+        let cell_size = self.get_cell_size();
 
         self.cancel_lazy_draw();
 

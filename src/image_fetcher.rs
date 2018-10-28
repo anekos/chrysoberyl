@@ -80,7 +80,7 @@ fn main(mut cache: ImageCache) -> Sender<FetcherOperation> {
                 }
                 Done(key, image_buffer) => {
                     idles += 1;
-                    cache.push(&key, image_buffer);
+                    cache.push(current_target.cell_size, &key, image_buffer);
                     start(&tx, &mut cache, &mut current_target.entries, &mut idles, current_target.cell_size, &current_target.drawing);
                 }
             }
@@ -94,7 +94,7 @@ fn main(mut cache: ImageCache) -> Sender<FetcherOperation> {
 pub fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mut VecDeque<Arc<Entry>>, idles: &mut usize, cell_size: Size, drawing: &Drawing) {
     while 0 < *idles {
         if let Some(entry) = entries.pop_front() {
-            if cache.mark_fetching(entry.key.clone()) {
+            if cache.mark_fetching(cell_size, entry.key.clone()) {
                 *idles -= 1;
                 fetch(tx.clone(), entry, cell_size, drawing.clone());
             }

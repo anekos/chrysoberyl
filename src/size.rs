@@ -26,7 +26,7 @@ pub struct CoordPx {
     pub height: u32,
 }
 
-#[derive(Clone, PartialEq, Eq, Copy, Debug, Default, Ord)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq)]
 pub struct Size {
     pub width: i32,
     pub height: i32,

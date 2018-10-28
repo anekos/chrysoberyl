@@ -1563,7 +1563,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 app.sorting_buffer.set_stability(app.states.stable_push),
             StatusBar => {
                 app.update_ui_visibility();
-                updated.image_options = true;
+                updated.size = true;
             },
             Screen =>
                 app.update_ui_visibility(),
@@ -1571,10 +1571,10 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 app.gui.set_status_bar_align(app.states.status_bar_align.0),
             StatusBarHeight => {
                 app.update_status_bar_height();
-                updated.image_options = true;
+                updated.size = true;
             }
             FitTo | Rotation | HorizontalFlip | VerticalFlip =>
-                updated.image_options = true,
+                updated.size = true,
             PreFetchLimit =>
                 app.cache.update_limit(app.states.pre_fetch.limit_of_items),
             Style =>
@@ -1646,7 +1646,7 @@ pub fn on_when(app: &mut App, filter: FilterExpr, unless: bool, op: &[String], c
 }
 
 pub fn on_window_resized(app: &mut App, updated: &mut Updated) -> EventResult {
-    updated.image_options = true;
+    updated.size = true;
     // Ignore followed PreFetch
     app.pre_fetch_serial += 1;
     app.gui.refresh_status_bar_width();
@@ -1686,7 +1686,7 @@ fn is_url(path: &str) -> bool {
 }
 
 fn on_update_views(app: &mut App, updated: &mut Updated, ignore_views: bool) -> EventResult {
-    updated.image_options = true;
+    updated.size = true;
     let serial = app.store();
     app.reset_view();
     app.restore_or_first(updated, serial, ignore_views);

@@ -200,6 +200,7 @@ pub struct Updated {
     pub message: bool,
     pub pointer: bool,
     pub remote: bool,
+    pub size: bool,
     pub target_regions: Option<Vec<Option<Region>>>,
 }
 

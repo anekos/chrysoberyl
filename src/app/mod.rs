@@ -438,7 +438,7 @@ impl App {
             return;
         }
 
-        if updated.image || updated.image_options {
+        if updated.image || updated.image_options || updated.size {
             self.fire_event(&EventName::ShowImagePre);
             let (showed, original_image_size, fit_image_size) = time!("show_image" => self.show_image(to_end, updated.target_regions.clone()));
             self.on_image_updated(original_image_size, fit_image_size);
@@ -448,7 +448,7 @@ impl App {
             }
         }
 
-        if updated.image || updated.image_options || updated.label || updated.message || updated.remote {
+        if updated.image || updated.image_options || updated.label || updated.message || updated.remote | updated.size {
             self.update_label(updated.image, false);
         }
     }

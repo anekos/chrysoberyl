@@ -1,15 +1,16 @@
 
-#[derive(Clone)]
+use errors::ChryError;
+
+
+
+#[derive(Clone, Default)]
 pub struct Counter {
-    value: Option<usize>
+    value: Option<usize>,
+    stack: Vec<Option<usize>>,
 }
 
 
 impl Counter {
-    pub fn new() -> Self {
-        Counter { value: None }
-    }
-
     /**
      * If `count` is not None, overwrite `self.count`
      */
@@ -24,16 +25,17 @@ impl Counter {
         self.value.unwrap_or(1)
     }
 
-    pub fn pop(&mut self) -> usize {
-        if_let_some!(result = self.value, 1);
-        self.set(None);
-        result
+    pub fn pop(&mut self) -> Result<(), ChryError> {
+        if let Some(item) = self.stack.pop() {
+            self.value = item;
+            Ok(())
+        } else {
+            Err(ChryError::Fixed("Empty stack"))
+        }
     }
 
-    pub fn pop_option(&mut self) -> Option<usize> {
-        if_let_some!(result = self.value, None);
-        self.set(None);
-        Some(result)
+    pub fn push(&mut self) {
+        self.stack.push(self.value.take());
     }
 
     pub fn push_digit(&mut self, digit: u8) {
@@ -46,5 +48,17 @@ impl Counter {
 
     pub fn set(&mut self, value: Option<usize>) {
         self.value = value;
+    }
+
+    pub fn take(&mut self) -> usize {
+        if_let_some!(result = self.value, 1);
+        self.set(None);
+        result
+    }
+
+    pub fn take_option(&mut self) -> Option<usize> {
+        if_let_some!(result = self.value, None);
+        self.set(None);
+        Some(result)
     }
 }

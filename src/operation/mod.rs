@@ -92,8 +92,10 @@ pub enum Operation {
     PdfIndex(bool, bool, bool, Vec<Expandable>, poppler::index::Format, Option<String>), /* async, read_operations, search_path, ... */
     PreFetch(u64),
     Previous(Option<usize>, bool, MoveBy, bool, bool), /* count, ignore_views, move_by, wrap, forget */
+    PopCount,
     Pull,
     Push(Expandable, Option<Meta>, bool), /* path, meta, force */
+    PushCount,
     PushArchive(Expandable, Option<Meta>, bool), /* path, meta, force */
     PushClipboard(ClipboardSelection, bool, Option<Meta>, bool), /* selection, as_operation, meta, force */
     PushDirectory(Expandable, Option<Meta>, bool), /* path, meta, force */
@@ -313,7 +315,9 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@pdf-index"                    => parse_pdf_index(whole),
             "@link-action" | "@link"        => Ok(Operation::LinkAction(whole[1..].to_vec())),
             "@prev" | "@p" | "@previous"    => parse_move5(whole, Previous),
+            "@pop-count"                    => Ok(PopCount),
             "@push"                         => parse_push(whole, |it, meta, force| Push(Expandable::new(it), meta, force)),
+            "@push-count"                   => Ok(PushCount),
             "@push-archive"                 => parse_push(whole, |it, meta, force| PushArchive(Expandable::new(it), meta, force)),
             "@push-clipboard"               => parse_push_clipboard(whole),
             "@push-directory" | "@push-dir" => parse_push(whole, |it, meta, force| PushDirectory(Expandable::new(it), meta, force)),
@@ -514,8 +518,10 @@ impl fmt::Debug for Operation {
             PdfIndex(_, _, _, _, _, _) => "PdfIndex",
             PreFetch(_) => "PreFetch",
             Previous(_, _, _, _, _) => "Previous",
+            PopCount => "PopCount",
             Pull => "Pull ",
             Push(_, _, _) => "Push",
+            PushCount => "PushCount",
             PushArchive(_, _, _) => "PushArchive",
             PushClipboard(_, _, _, _) => "PushClipboard",
             PushDirectory(_, _, _) => "PushDirectory",

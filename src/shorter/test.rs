@@ -1,5 +1,5 @@
 
-use std::env::home_dir;
+use dirs::home_dir;
 
 use shorter::*;
 

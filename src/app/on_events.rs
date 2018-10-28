@@ -829,6 +829,11 @@ pub fn on_pull(app: &mut App, updated: &mut Updated) -> EventResult {
     push_buffered(app, updated, buffered)
 }
 
+pub fn on_push_count(app: &mut App) -> EventResult {
+    app.counter.push();
+    Ok(())
+}
+
 pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<Meta>, force: bool) -> EventResult {
     if is_url(&path) {
         app.tx.send(Operation::PushURL(path, meta, force, None))?;

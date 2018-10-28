@@ -295,7 +295,7 @@ impl App {
                 Push(path, meta, force) =>
                     on_push(self, &mut updated, path.to_string(), meta, force),
                 PushCount =>
-                    Ok(self.counter.push()),
+                    on_push_count(self),
                 PushArchive(file, meta, force) =>
                     on_push_archive(self, &file.expand(), meta, force, None),
                 PushClipboard(selection, as_operation, meta, force) =>

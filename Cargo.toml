@@ -85,3 +85,8 @@ features = ["termination"]
 [build-dependencies]
 pkg-config = "*"
 vergen = "2.*"
+
+[dev-dependencies.cargo-husky]
+version = "1"
+default-features = false
+features = ["precommit-hook", "run-cargo-test", "run-cargo-clippy"]

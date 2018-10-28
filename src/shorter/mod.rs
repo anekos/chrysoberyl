@@ -1,7 +1,7 @@
 
-use std::env::home_dir;
 use std::path::{PathBuf, Path};
 
+use dirs::home_dir;
 use tldextract::{TldExtractor, TldOption};
 use url::Url;
 
@@ -43,7 +43,7 @@ pub fn shorten_url(url: &Url, max: usize) -> String {
 }
 
 pub fn shorten_host(host: &str) -> Option<String> {
-    EXTRACTOR.extract(host).map(|it| it.domain).ok()
+    EXTRACTOR.extract(host).ok().and_then(|it| it.domain)
 }
 
 pub fn shorten_path<T: AsRef<Path>>(path: &T, max: usize) -> String {

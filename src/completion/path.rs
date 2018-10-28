@@ -1,5 +1,7 @@
 
-use std::env::{current_dir, home_dir};
+use std::env::current_dir;
+
+use dirs::home_dir;
 
 use shellexpand_wrapper as sh;
 

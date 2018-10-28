@@ -115,7 +115,7 @@ impl App {
 
         let app = App {
             cache: cache.clone(),
-            counter: Counter::new(),
+            counter: Counter::default(),
             current_base_scale: None,
             current_env_keys: HashSet::new(),
             do_clear_cache: false,
@@ -288,10 +288,14 @@ impl App {
                     on_pre_fetch(self, pre_fetch_serial),
                 Previous(count, ignore_views, move_by, wrap, remember) =>
                     on_previous(self, &mut updated, &mut to_end, count, ignore_views, move_by, wrap, remember),
+                PopCount =>
+                    on_pop_count(self),
                 Pull =>
                     on_pull(self, &mut updated),
                 Push(path, meta, force) =>
                     on_push(self, &mut updated, path.to_string(), meta, force),
+                PushCount =>
+                    Ok(self.counter.push()),
                 PushArchive(file, meta, force) =>
                     on_push_archive(self, &file.expand(), meta, force, None),
                 PushClipboard(selection, as_operation, meta, force) =>
@@ -504,7 +508,7 @@ impl App {
 
     pub fn paging(&mut self, wrap: bool, ignore_sight: bool) -> Paging {
         Paging {
-            count: self.counter.pop(),
+            count: self.counter.take(),
             wrap,
             ignore_sight,
         }
@@ -512,7 +516,7 @@ impl App {
 
     pub fn paging_with_count(&mut self, wrap: bool, ignore_sight: bool, count: Option<usize>) -> Paging {
         Paging {
-            count: self.counter.overwrite(count).pop(),
+            count: self.counter.overwrite(count).take(),
             wrap,
             ignore_sight,
         }
@@ -649,7 +653,7 @@ impl App {
 
     fn update_counter_env(&mut self, do_pop: bool) {
         let count = if do_pop {
-            self.counter.pop()
+            self.counter.take()
         } else {
             self.counter.peek()
         };

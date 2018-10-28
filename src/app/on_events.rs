@@ -250,7 +250,7 @@ pub fn on_eval(app: &mut App, op: &[String], context: Option<OperationContext>) 
 }
 
 pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Option<PathBuf>) -> EventResult {
-    let count = app.counter.pop();
+    let count = app.counter.take();
     let center = app.current_for_file();
     let serial = app.store();
     let app_info = app.app_info();
@@ -389,7 +389,7 @@ pub fn on_first(app: &mut App, updated: &mut Updated, count: Option<usize>, igno
             updated.pointer = app.paginator.first(&paging);
         },
         MoveBy::Archive => {
-            let count = app.counter.overwrite(count).pop();
+            let count = app.counter.overwrite(count).take();
             if let Some(first) = app.entries.find_nth_archive(count, false) {
                 let paging = app.paging_with_index(false, ignore_views, first);
                 updated.pointer = app.paginator.show(&paging);
@@ -563,7 +563,7 @@ pub fn on_last(app: &mut App, updated: &mut Updated, count: Option<usize>, ignor
             updated.pointer = app.paginator.last(&paging);
         }
         MoveBy::Archive => {
-            let count = app.counter.overwrite(count).pop();
+            let count = app.counter.overwrite(count).take();
             if let Some(nth) = app.entries.find_nth_archive(count, true) {
                 let paging = app.paging_with_index(false, ignore_views, nth);
                 updated.pointer = app.paginator.show(&paging);
@@ -726,7 +726,7 @@ pub fn on_next(app: &mut App, updated: &mut Updated, count: Option<usize>, ignor
             updated.pointer = app.paginator.next(&paging);
         }
         MoveBy::Archive => {
-            let count = app.counter.overwrite(count).pop();
+            let count = app.counter.overwrite(count).take();
             let current = app.current();
             if let Some(next) = app.entries.find_next_archive(current, count) {
                 let paging = app.paging_with_index(false, ignore_views, next);
@@ -808,7 +808,7 @@ pub fn on_previous(app: &mut App, updated: &mut Updated, to_end: &mut bool, coun
             *to_end = count.is_none() && !ignore_views;
         }
         MoveBy::Archive => {
-            let count = app.counter.overwrite(count).pop();
+            let count = app.counter.overwrite(count).take();
             let current = app.current();
             if let Some(previous) = app.entries.find_previous_archive(current, count) {
                 let paging = app.paging_with_index(false, ignore_views, previous);
@@ -816,6 +816,11 @@ pub fn on_previous(app: &mut App, updated: &mut Updated, to_end: &mut bool, coun
             }
         }
     }
+    Ok(())
+}
+
+pub fn on_pop_count(app: &mut App) -> EventResult {
+    app.counter.pop()?;
     Ok(())
 }
 
@@ -1025,7 +1030,7 @@ pub fn on_save(app: &mut App, path: &Path, sessions: &[Session]) -> EventResult 
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 pub fn on_scroll(app: &mut App, direction: Direction, scroll_size: f64, crush: bool, reset_at_end: bool, operation: &[String], reset_scrolls_1: Option<Direction>, context: Option<OperationContext>) -> EventResult {
     let saved = app.counter.clone();
-    let scrolled = app.gui.scroll_views(direction, scroll_size, crush, app.counter.pop(), reset_scrolls_1);
+    let scrolled = app.gui.scroll_views(direction, scroll_size, crush, app.counter.take(), reset_scrolls_1);
 
     if !scrolled && !operation.is_empty() {
         let op = Operation::parse_from_vec(operation)?;
@@ -1407,7 +1412,7 @@ pub fn on_unclip(app: &mut App, updated: &mut Updated) -> EventResult {
 pub fn on_undo(app: &mut App, updated: &mut Updated, count: Option<usize>) -> EventResult {
     // `counted` should be evaluated
     #[cfg_attr(feature = "cargo-clippy", allow(or_fun_call))]
-    let count = count.unwrap_or(app.counter.pop());
+    let count = count.unwrap_or(app.counter.take());
 
     if let Some((ref entry, _)) = app.current() {
         app.cache.undo_cherenkov(&entry.key, count)
@@ -1521,15 +1526,15 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
         };
 
         match *updater {
-            Cycle(ref reverse, ref candidates) => value.cycle(*reverse, app.counter.pop(), candidates)?,
+            Cycle(ref reverse, ref candidates) => value.cycle(*reverse, app.counter.take(), candidates)?,
             Disable => value.disable()?,
             Enable => value.enable()?,
             Set(ref arg) => value.set(arg)?,
             Toggle => value.toggle()?,
             Unset => value.unset()?,
-            SetByCount => value.set_from_count(app.counter.pop_option())?,
-            Increment(delta) => value.increment(app.counter.pop_option().unwrap_or(delta))?,
-            Decrement(delta) => value.decrement(app.counter.pop_option().unwrap_or(delta))?,
+            SetByCount => value.set_from_count(app.counter.take_option())?,
+            Increment(delta) => value.increment(app.counter.take_option().unwrap_or(delta))?,
+            Decrement(delta) => value.decrement(app.counter.take_option().unwrap_or(delta))?,
         }
     }
 
@@ -1605,7 +1610,7 @@ pub fn on_views(app: &mut App, updated: &mut Updated, cols: Option<usize>, rows:
 pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool) -> EventResult {
     use operation::option::PreDefinedOptionName::*;
 
-    let count = app.counter.pop();
+    let count = app.counter.take();
     if for_rows {
         app.states.view.rows = count;
         app.update_env_for_option(&VerticalViews);
@@ -1654,7 +1659,7 @@ pub fn on_with_message(app: &mut App, updated: &mut Updated, message: Option<Str
 }
 
 pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) -> EventResult {
-    let count = index.unwrap_or_else(|| app.counter.pop()) - 1;
+    let count = index.unwrap_or_else(|| app.counter.take()) - 1;
     app.gui.save(path, count)
 }
 

@@ -91,7 +91,7 @@
 @map input c            @unclip
 @map input C            @reset-image
 @map input u            @undo
-@map input colon        @set screen command-line
+@map input colon        ; @push-count ; @set screen command-line ; @pop-count
 @map input i            @set screen log-view
 @map input slash        @command-line '@search '
 

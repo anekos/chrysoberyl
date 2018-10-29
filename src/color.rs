@@ -8,7 +8,7 @@ use rand::{thread_rng, Rng};
 
 
 
-#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy, Hash)]
 pub struct Color {
     r: u8,
     g: u8,

@@ -2,6 +2,7 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
 use cairo::{Context, Format, ImageSurface, Pattern, self, SurfacePattern};
@@ -54,7 +55,6 @@ pub struct CacheEntry {
 
 #[derive(Clone, Debug, PartialEq, Copy)]
 pub struct Operator(pub cairo::Operator);
-
 
 
 impl Cherenkoved {
@@ -175,6 +175,47 @@ impl Che {
         } else {
             self.clone()
         }
+    }
+}
+
+impl Eq for Operator {
+}
+
+impl Hash for Operator {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        use cairo::Operator::*;
+        let n = match self.0 {
+            Clear         => 1,
+            Source        => 2,
+            Over          => 3,
+            In            => 4,
+            Out           => 5,
+            Atop          => 6,
+            Dest          => 7,
+            DestOver      => 8,
+            DestIn        => 9,
+            DestOut       => 10,
+            DestAtop      => 11,
+            Xor           => 12,
+            Add           => 13,
+            Saturate      => 14,
+            Multiply      => 15,
+            Screen        => 16,
+            Overlay       => 17,
+            Darken        => 18,
+            Lighten       => 19,
+            ColorDodge    => 20,
+            ColorBurn     => 21,
+            HardLight     => 22,
+            SoftLight     => 23,
+            Difference    => 24,
+            Exclusion     => 25,
+            HslHue        => 26,
+            HslSaturation => 27,
+            HslColor      => 28,
+            HslLuminosity => 29,
+        };
+        n.hash(state);
     }
 }
 

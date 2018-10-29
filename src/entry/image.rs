@@ -26,9 +26,19 @@ pub struct Imaging<'a> {
     pub drawing: &'a Drawing,
 }
 
+#[derive(Clone, Hash, PartialEq, Eq)]
+pub struct ImagingKey {
+    pub cell_size: Size,
+    pub drawing: Drawing,
+}
+
 impl<'a> Imaging<'a> {
     pub fn new(cell_size: Size, drawing: &'a Drawing) -> Imaging<'a> {
         Imaging { cell_size, drawing }
+    }
+
+    pub fn to_key(&self) -> ImagingKey {
+        ImagingKey { cell_size: self.cell_size, drawing: self.drawing.clone() }
     }
 }
 

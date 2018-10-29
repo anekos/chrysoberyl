@@ -58,7 +58,7 @@ pub struct States {
     pub watch_files: bool,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Drawing {
     pub animation: bool,
     pub clipping: Option<Region>,

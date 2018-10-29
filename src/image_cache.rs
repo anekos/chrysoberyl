@@ -7,7 +7,6 @@ use cherenkov::{Cherenkoved, Modifier};
 use entry::image::Imaging;
 use entry::{Entry, Key, self};
 use image::ImageBuffer;
-use size::Size;
 
 
 
@@ -18,7 +17,7 @@ const SIZE_LIMIT: usize = 3;
 pub struct ImageCache {
     limit: usize,
     cherenkoved: Arc<Mutex<Cherenkoved>>,
-    cache: Cache<Size, Cache<Key, Result<ImageBuffer, String>>>, /* String for display the error */
+    cache: Cache<Imaging, Cache<Key, Result<ImageBuffer, String>>>, /* String for display the error */
     fetching: Arc<(Mutex<HashMap<Key, bool>>, Condvar)>,
 }
 
@@ -50,16 +49,16 @@ impl ImageCache {
         cond.notify_all();
     }
 
-    pub fn clear_entry(&mut self, cell_size: Size, key: &Key) -> bool {
-        let mut cache = self.get_sized_cache(cell_size);
+    pub fn clear_entry(&mut self, imaging: &Imaging, key: &Key) -> bool {
+        let mut cache = self.get_image_cache(imaging);
         cache.clear_entry(key)
     }
 
-    pub fn mark_fetching(&mut self, cell_size: Size, key: Key) -> bool {
+    pub fn mark_fetching(&mut self, imaging: &Imaging, key: Key) -> bool {
         trace!("image_cache/mark_fetching: key={:?}", key);
 
         let contains = {
-            let mut cache = self.get_sized_cache(cell_size);
+            let mut cache = self.get_image_cache(imaging);
             cache.contains(&key)
         };
 
@@ -73,7 +72,7 @@ impl ImageCache {
         }
     }
 
-    pub fn push(&mut self, cell_size: Size, key: &Key, image_buffer: Result<ImageBuffer, String>) {
+    pub fn push(&mut self, imaging: &Imaging, key: &Key, image_buffer: Result<ImageBuffer, String>) {
         trace!("image_cache/push: key={:?}", key);
 
         let do_push = {
@@ -84,7 +83,7 @@ impl ImageCache {
             result
         };
         if do_push {
-            let mut cache = self.get_sized_cache(cell_size);
+            let mut cache = self.get_image_cache(imaging);
             cache.push(key.clone(), image_buffer);
         }
     }
@@ -95,7 +94,7 @@ impl ImageCache {
             cherenkoved.get_image_buffer(entry, imaging).map(|it| it.map_err(|it| s!(it)))
         }.unwrap_or_else(|| {
             self.wait(&entry.key);
-            let cache = self.get_sized_cache(imaging.cell_size);
+            let cache = self.get_image_cache(imaging);
             cache.get_or_update(entry.key.clone(), move |_| {
                 entry::image::get_image_buffer(entry, imaging).map_err(|it| s!(it))
             })
@@ -137,9 +136,9 @@ impl ImageCache {
         cherenkoved.clear_search_highlights()
     }
 
-    fn get_sized_cache(&mut self, cell_size: Size) -> Cache<Key, Result<ImageBuffer, String>> {
+    fn get_image_cache(&mut self, imaging: &Imaging) -> Cache<Key, Result<ImageBuffer, String>> {
         let limit = self.limit;
-        self.cache.get_or_update(cell_size, move |_| {
+        self.cache.get_or_update(imaging.clone(), move |_| {
             Cache::new(limit)
         })
     }

@@ -531,10 +531,7 @@ impl App {
 
     fn get_imaging(&self) -> Imaging {
         let cell_size = self.gui.get_cell_size(&self.states.view);
-        Imaging::new(cell_size, &self.states.drawing)
-    }
-    fn get_cell_size(&self) -> Size {
-        self.gui.get_cell_size(&self.states.view)
+        Imaging::new(cell_size, self.states.drawing.clone())
     }
 
     fn reset_view(&mut self) {
@@ -595,12 +592,12 @@ impl App {
     fn show_image(&mut self, to_end: bool, target_regions: Option<Vec<Option<Region>>>) -> (bool, Option<Size>, Option<Size>) {
         let mut original_image_size = None;
         let mut fit_image_size = None;
-        let cell_size = self.get_cell_size();
+        let imaging = self.get_imaging();
 
         self.cancel_lazy_draw();
 
         if self.states.pre_fetch.enabled {
-            self.pre_fetch(cell_size, 0..1);
+            self.pre_fetch(imaging.cell_size, 0..1);
         }
 
         let mut invalid_all = true;
@@ -609,8 +606,7 @@ impl App {
 
         for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
             if let Some((entry, _)) = self.current_with(index) {
-                let image_buffer = self.cache.get_image_buffer(&entry, &Imaging::new(cell_size, &self.states.drawing));
-                let imaging = self.get_imaging();
+                let image_buffer = self.cache.get_image_buffer(&entry, &imaging);
                 match image_buffer {
                     Ok(image_buffer) => {
                         let scale = cell.draw(&image_buffer, imaging.cell_size, &self.states.drawing.fit_to);

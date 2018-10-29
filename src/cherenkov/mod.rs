@@ -53,7 +53,7 @@ pub struct CacheEntry {
     modifiers: Vec<Modifier>,
 }
 
-#[derive(Clone, Debug, PartialEq, Copy)]
+#[derive(Clone, Debug, Copy)]
 pub struct Operator(pub cairo::Operator);
 
 
@@ -175,6 +175,13 @@ impl Che {
         } else {
             self.clone()
         }
+    }
+}
+
+
+impl PartialEq for Operator {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
     }
 }
 

@@ -21,40 +21,30 @@ use util::path::path_to_str;
 
 
 
-pub struct Imaging<'a> {
-    pub cell_size: Size,
-    pub drawing: &'a Drawing,
-}
-
 #[derive(Clone, Hash, PartialEq, Eq)]
-pub struct ImagingKey {
+pub struct Imaging {
     pub cell_size: Size,
     pub drawing: Drawing,
 }
 
-impl<'a> Imaging<'a> {
-    pub fn new(cell_size: Size, drawing: &'a Drawing) -> Imaging<'a> {
+impl Imaging {
+    pub fn new(cell_size: Size, drawing: Drawing) -> Imaging {
         Imaging { cell_size, drawing }
     }
-
-    pub fn to_key(&self) -> ImagingKey {
-        ImagingKey { cell_size: self.cell_size, drawing: self.drawing.clone() }
-    }
 }
+
 
 pub fn get_image_buffer(entry: &Entry, imaging: &Imaging) -> Result<ImageBuffer, Box<error::Error>> {
     if imaging.drawing.animation && is_animation(entry) {
         Ok(get_animation_buffer(entry).map(ImageBuffer::Animation)?)
     } else {
-        get_static_image_buffer(entry, imaging.cell_size, &imaging.drawing).map(ImageBuffer::Static)
+        get_static_image_buffer(entry, imaging).map(ImageBuffer::Static)
     }
 }
 
 
-pub fn get_static_image_buffer(entry: &Entry, cell_size: Size, drawing: &Drawing) -> Result<StaticImageBuffer, Box<error::Error>> {
+pub fn get_static_image_buffer(entry: &Entry, imaging: &Imaging) -> Result<StaticImageBuffer, Box<error::Error>> {
     use self::EntryContent::*;
-
-    let imaging = Imaging { cell_size, drawing };
 
     match (*entry).content {
         Image(ref path) =>
@@ -136,7 +126,7 @@ fn make_scaled_from_file(path: &str, imaging: &Imaging) -> Result<StaticImageBuf
 fn make_scaled_from_pdf<T: AsRef<Path>>(pdf_path: &T, index: usize, imaging: &Imaging) -> StaticImageBuffer {
     let document = PopplerDocument::new_from_file(pdf_path);
     let page = document.nth_page(index);
-    let pixbuf = page.get_pixbuf(imaging.cell_size, imaging.drawing);
+    let pixbuf = page.get_pixbuf(imaging.cell_size, &imaging.drawing);
     let size = page.get_size();
     StaticImageBuffer::new_from_pixbuf(&pixbuf, Some(size))
 }

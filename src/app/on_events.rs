@@ -1488,6 +1488,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 PreFetchEnabled => &mut app.states.pre_fetch.enabled,
                 PreFetchLimit => &mut app.states.pre_fetch.limit_of_items,
                 PreFetchPageSize => &mut app.states.pre_fetch.page_size,
+                PreFetchStages => &mut app.states.pre_fetch.cache_stages,
                 Reverse => &mut app.states.reverse,
                 Rotation => &mut app.states.drawing.rotation,
                 Screen => &mut app.states.screen,

@@ -4,10 +4,10 @@ use std::sync::{Arc, Mutex, Condvar};
 
 use cache::Cache;
 use cherenkov::{Cherenkoved, Modifier};
+use entry::image::Imaging;
 use entry::{Entry, Key, self};
-use image::{ImageBuffer};
+use image::ImageBuffer;
 use size::Size;
-use state::Drawing;
 
 
 
@@ -89,27 +89,27 @@ impl ImageCache {
         }
     }
 
-    pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: Size, drawing: &Drawing) -> Result<ImageBuffer, String> {
+    pub fn get_image_buffer(&mut self, entry: &Entry, imaging: &Imaging) -> Result<ImageBuffer, String> {
         {
             let mut cherenkoved = self.cherenkoved.lock().unwrap();
-            cherenkoved.get_image_buffer(entry, cell_size, drawing).map(|it| it.map_err(|it| s!(it)))
+            cherenkoved.get_image_buffer(entry, imaging).map(|it| it.map_err(|it| s!(it)))
         }.unwrap_or_else(|| {
             self.wait(&entry.key);
-            let cache = self.get_sized_cache(cell_size);
+            let cache = self.get_sized_cache(imaging.cell_size);
             cache.get_or_update(entry.key.clone(), move |_| {
-                entry::image::get_image_buffer(entry, cell_size, drawing).map_err(|it| s!(it))
+                entry::image::get_image_buffer(entry, imaging).map_err(|it| s!(it))
             })
         })
     }
 
-    pub fn cherenkov1(&mut self, entry: &Entry, cell_size: Size, modifier: Modifier, drawing: &Drawing) {
+    pub fn cherenkov1(&mut self, entry: &Entry, imaging: &Imaging, modifier: Modifier) {
         let mut cherenkoved = self.cherenkoved.lock().unwrap();
-        cherenkoved.cherenkov1(entry, cell_size, modifier, drawing)
+        cherenkoved.cherenkov1(entry, imaging, modifier)
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, cell_size: Size, modifiers: &[Modifier], drawing: &Drawing) {
+    pub fn cherenkov(&mut self, entry: &Entry, imaging: &Imaging, modifiers: &[Modifier]) {
         let mut cherenkoved = self.cherenkoved.lock().unwrap();
-        cherenkoved.cherenkov(entry, cell_size, modifiers, drawing)
+        cherenkoved.cherenkov(entry, imaging, modifiers)
     }
 
     pub fn cherenkov_reset(&mut self, entry: &Entry) {

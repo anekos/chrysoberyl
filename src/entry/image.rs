@@ -22,16 +22,21 @@ use util::path::path_to_str;
 
 
 pub struct Imaging<'a> {
-    cell_size: Size,
-    drawing: &'a Drawing,
+    pub cell_size: Size,
+    pub drawing: &'a Drawing,
 }
 
+impl<'a> Imaging<'a> {
+    pub fn new(cell_size: Size, drawing: &'a Drawing) -> Imaging<'a> {
+        Imaging { cell_size, drawing }
+    }
+}
 
-pub fn get_image_buffer(entry: &Entry, cell: Size, drawing: &Drawing) -> Result<ImageBuffer, Box<error::Error>> {
-    if drawing.animation && is_animation(entry) {
+pub fn get_image_buffer(entry: &Entry, imaging: &Imaging) -> Result<ImageBuffer, Box<error::Error>> {
+    if imaging.drawing.animation && is_animation(entry) {
         Ok(get_animation_buffer(entry).map(ImageBuffer::Animation)?)
     } else {
-        get_static_image_buffer(entry, cell, drawing).map(ImageBuffer::Static)
+        get_static_image_buffer(entry, imaging.cell_size, &imaging.drawing).map(ImageBuffer::Static)
     }
 }
 

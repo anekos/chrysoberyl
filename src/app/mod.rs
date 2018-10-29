@@ -17,6 +17,7 @@ use command_line::Initial;
 use config;
 use constant;
 use counter::Counter;
+use entry::image::Imaging;
 use entry::{Entry, EntryContainer, EntryContent, Serial, Key};
 use error_channel;
 use events::EventName;
@@ -528,6 +529,10 @@ impl App {
 
     /* Private methods */
 
+    fn get_imaging(&self) -> Imaging {
+        let cell_size = self.gui.get_cell_size(&self.states.view);
+        Imaging::new(cell_size, &self.states.drawing)
+    }
     fn get_cell_size(&self) -> Size {
         self.gui.get_cell_size(&self.states.view)
     }
@@ -604,10 +609,11 @@ impl App {
 
         for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
             if let Some((entry, _)) = self.current_with(index) {
-                let image_buffer = self.cache.get_image_buffer(&entry, cell_size, &self.states.drawing);
+                let image_buffer = self.cache.get_image_buffer(&entry, &Imaging::new(cell_size, &self.states.drawing));
+                let imaging = self.get_imaging();
                 match image_buffer {
                     Ok(image_buffer) => {
-                        let scale = cell.draw(&image_buffer, cell_size, &self.states.drawing.fit_to);
+                        let scale = cell.draw(&image_buffer, imaging.cell_size, &self.states.drawing.fit_to);
                         if base_scale.is_none() {
                             base_scale = scale;
                         }
@@ -618,7 +624,7 @@ impl App {
                         }
                     }
                     Err(error) =>
-                        cell.show_error(&error, cell_size)
+                        cell.show_error(&error, imaging.cell_size)
                 }
                 showed = true;
             } else {

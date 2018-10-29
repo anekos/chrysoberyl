@@ -101,7 +101,7 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
 
     let context_coord = context.map(|it| it.mapped).and_then(|it| if let Mapped::Input(coord, _) = it { Some(coord) } else { None });
 
-    let cell_size = app.gui.get_cell_size(&app.states.view);
+    let cell_size = app.get_cell_size();
 
     for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
         if let Some((entry, _)) = app.current_with(index) {
@@ -110,7 +110,7 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
             let y = if let Some(it) = parameter.y.or_else(|| coord.as_ref().map(|it| it.y)) { it } else { continue };
             app.cache.cherenkov1(
                 &entry,
-                cell_size,
+                &Imaging::new(cell_size, &app.states.drawing),
                 Modifier {
                     search_highlight: false,
                     che: Che::Nova(Nova {
@@ -121,8 +121,7 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
                         color: parameter.color,
                         seed: parameter.seed.clone(),
                     })
-                },
-                &app.states.drawing);
+                });
             updated.image = true;
         }
     }
@@ -304,15 +303,14 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Optio
         .unwrap_or_else(|| (Region::full(), cell_index));
 
     if let Some((entry, _)) = app.current_with(cell_index) {
-        let cell_size = app.gui.get_cell_size(&app.states.view);
+        let cell_size = app.get_cell_size();
         app.cache.cherenkov1(
             &entry,
-            cell_size,
+            &Imaging::new(cell_size, &app.states.drawing),
             Modifier {
                 search_highlight: false,
                 che: Che::Fill(shape, region, color, operator, mask),
-            },
-            &app.states.drawing);
+            });
         updated.image = true;
     }
     Ok(())
@@ -1128,15 +1126,14 @@ pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>
             }
             first_regions.push(Some(regions[0]));
 
-            let cell_size = app.gui.get_cell_size(&app.states.view);
+            let cell_size = app.get_cell_size();
 
             app.cache.clear_entry_search_highlights(&entry);
             let modifiers: Vec<Modifier> = regions.iter().map(|region| Modifier { search_highlight: true, che: Che::Fill(Shape::Rectangle, *region, color, None, false) }).collect();
             app.cache.cherenkov(
                 &entry,
-                cell_size,
-                modifiers.as_slice(),
-                &app.states.drawing);
+                &Imaging::new(cell_size, &app.states.drawing),
+                modifiers.as_slice());
 
             if new_found_on.is_none() {
                 updated.pointer = app.paginator.update_index(Index(index));

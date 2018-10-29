@@ -7,6 +7,7 @@ use std::thread::spawn;
 
 use num_cpus;
 
+use entry::image::Imaging;
 use entry::{Entry, Key, self};
 use image::ImageBuffer;
 use image_cache::ImageCache;
@@ -107,7 +108,8 @@ pub fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mu
 
 pub fn fetch(tx: Sender<FetcherOperation>, entry: Arc<Entry>, cell_size: Size, drawing: Drawing) {
     spawn(move || {
-        let image = entry::image::get_image_buffer(&entry, cell_size, &drawing).map_err(|it| s!(it));
+        let imaging = Imaging::new(cell_size, &drawing);
+        let image = entry::image::get_image_buffer(&entry, &imaging).map_err(|it| s!(it));
         tx.send(FetcherOperation::Done(entry.key.clone(), image)).unwrap();
     });
 }

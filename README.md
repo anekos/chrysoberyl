@@ -613,7 +613,7 @@ For developper.
 DEPRECATED.
 
 
-## (@views|@v) <COLUMNS> [<ROWS>]
+## (@views|@v) [--ignore-views] <COLUMNS> [<ROWS>]
 
 Set the number of view cells.
 The default of `ROWS` is 1.

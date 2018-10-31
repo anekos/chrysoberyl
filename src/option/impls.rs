@@ -94,7 +94,9 @@ macro_rules! def_uint_cycle {
 
         for _ in 0 .. $n {
             if $reverse {
-                if *$target != 0 {
+                if *$target == 0 {
+                    *$target = <$type>::max_value();
+                } else {
                     *$target -= 1;
                 }
             } else if *$target < <$type>::max_value() {

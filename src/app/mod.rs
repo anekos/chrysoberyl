@@ -618,7 +618,7 @@ impl App {
                 }
                 showed = true;
             } else {
-                cell.image.set_from_pixbuf(None);
+                cell.hide();
             }
         }
 

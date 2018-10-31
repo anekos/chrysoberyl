@@ -586,6 +586,11 @@ impl Cell {
         }
     }
 
+    pub fn hide(&self) {
+        self.error_text.hide();
+        self.image.set_from_pixbuf(None);
+    }
+
     pub fn show_error(&self, text: &str, cell_size: Size) {
         self.window.set_size_request(cell_size.width, cell_size.height);
         self.image.hide();

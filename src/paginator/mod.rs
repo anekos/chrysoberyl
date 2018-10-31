@@ -103,6 +103,7 @@ impl Paginator {
     pub fn update_condition(&mut self, condition: &Condition) {
         self.len = condition.len;
         self.sight_size = SightSize(condition.sight_size);
+        self.fly_leaves = FlyLeaves(min!(self.sight_size.0 - 1, self.fly_leaves.0));
     }
 
     pub fn first(&mut self, paging: &Paging) -> bool {

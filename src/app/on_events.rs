@@ -264,7 +264,7 @@ pub fn on_expand(app: &mut App, updated: &mut Updated, recursive: bool, base: Op
     app.update_paginator_condition();
 
     if expanded {
-        app.restore_or_first(updated, serial);
+        app.restore_or_first(updated, serial, false);
     }
 
     updated.label = true;
@@ -1207,7 +1207,7 @@ pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) -> Ev
     app.entries.shuffle(&app_info);
 
     if fix_current {
-        app.restore_or_first(updated, serial);
+        app.restore_or_first(updated, serial, false);
         updated.image = 1 < app.gui.len();
     } else {
         updated.image = true;
@@ -1257,7 +1257,7 @@ pub fn on_sort(app: &mut App, updated: &mut Updated, fix_current: bool, sort_key
     }
 
     if fix_current {
-        app.restore_or_first(updated, serial);
+        app.restore_or_first(updated, serial, false);
         updated.image = 1 < app.gui.len();
     } else {
         updated.image = true;
@@ -1335,7 +1335,7 @@ pub fn on_sorter(app: &mut App, updated: &mut Updated, fix_current: bool, sorter
     }
 
     if fix_current {
-        app.restore_or_first(updated, serial);
+        app.restore_or_first(updated, serial, false);
         updated.image = 1 < app.gui.len() || removed;
     } else {
         updated.image = true;
@@ -1582,7 +1582,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 updated.image = true;
             },
             VerticalViews | HorizontalViews =>
-                on_update_views(app, updated)?,
+                on_update_views(app, updated, false)?,
             UpdateCacheAccessTime =>
                 app.remote_cache.do_update_atime = app.states.update_cache_atime,
             _ => ()
@@ -1598,7 +1598,7 @@ pub fn on_user(_: &mut App, data: &[(String, String)]) -> EventResult {
     Ok(())
 }
 
-pub fn on_views(app: &mut App, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>) -> EventResult {
+pub fn on_views(app: &mut App, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>, ignore_views: bool) -> EventResult {
     use operation::option::PreDefinedOptionName::*;
 
     if let Some(cols) = cols {
@@ -1609,10 +1609,10 @@ pub fn on_views(app: &mut App, updated: &mut Updated, cols: Option<usize>, rows:
         app.states.view.rows = rows;
         app.update_env_for_option(&VerticalViews);
     }
-    on_update_views(app, updated)
+    on_update_views(app, updated, ignore_views)
 }
 
-pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool) -> EventResult {
+pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool, ignore_views: bool) -> EventResult {
     use operation::option::PreDefinedOptionName::*;
 
     let count = app.counter.take();
@@ -1623,7 +1623,7 @@ pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool) -> 
         app.states.view.cols = count;
         app.update_env_for_option(&HorizontalViews);
     };
-    on_update_views(app, updated)
+    on_update_views(app, updated, ignore_views)
 }
 
 pub fn on_wakeup_timer(app: &mut App, name: &str) -> EventResult {
@@ -1683,11 +1683,11 @@ fn is_url(path: &str) -> bool {
     index < 10
 }
 
-fn on_update_views(app: &mut App, updated: &mut Updated) -> EventResult {
+fn on_update_views(app: &mut App, updated: &mut Updated, ignore_views: bool) -> EventResult {
     updated.image_options = true;
     let serial = app.store();
     app.reset_view();
-    app.restore_or_first(updated, serial);
+    app.restore_or_first(updated, serial, ignore_views);
     Ok(())
 }
 

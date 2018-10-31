@@ -1135,12 +1135,14 @@ pub fn parse_views(args: &[String]) -> Result<Operation, ParsingError> {
     let mut for_rows = false;
     let mut rows = None;
     let mut cols = None;
+    let mut ignore_views = false;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut for_rows).add_option(&["--rows", "-r"], StoreTrue, "Set rows");
         ap.refer(&mut cols).add_argument("columns", StoreOption, "Columns");
         ap.refer(&mut rows).add_argument("rows", StoreOption, "Rows");
+        ap.refer(&mut ignore_views).add_option(&["--ignore-views", "-i"], StoreTrue, "Ignore the number of views");
         parse_args(&mut ap, args)
     } .and_then(|_| {
         if Some(0) == cols || Some(0) == rows {
@@ -1149,12 +1151,12 @@ pub fn parse_views(args: &[String]) -> Result<Operation, ParsingError> {
         Ok(
             if cols.is_some() || rows.is_some() {
                 if for_rows {
-                    Operation::Views(rows, cols)
+                    Operation::Views(rows, cols, ignore_views)
                 } else {
-                    Operation::Views(cols, rows)
+                    Operation::Views(cols, rows, ignore_views)
                 }
             } else {
-                Operation::ViewsFellow(for_rows)
+                Operation::ViewsFellow(for_rows, ignore_views)
             }
         )
     })

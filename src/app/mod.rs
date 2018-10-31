@@ -372,10 +372,10 @@ impl App {
                     on_update_option(self, &mut updated, option_name, updater),
                 User(ref data) =>
                     on_user(self, data),
-                Views(cols, rows) =>
-                    on_views(self, &mut updated, cols, rows),
-                ViewsFellow(for_rows) =>
-                    on_views_fellow(self, &mut updated, for_rows),
+                Views(cols, rows, ignore_views) =>
+                    on_views(self, &mut updated, cols, rows, ignore_views),
+                ViewsFellow(for_rows, ignore_views) =>
+                    on_views_fellow(self, &mut updated, for_rows, ignore_views),
                 WakeupTimer(ref name) =>
                     on_wakeup_timer(self, name),
                 When(filter, unless, op) =>
@@ -907,9 +907,15 @@ impl App {
         self.current().map(|it| it.0.serial)
     }
 
-    fn restore_or_first(&mut self, updated: &mut Updated, serial: Option<Serial>) {
+    fn restore_or_first(&mut self, updated: &mut Updated, serial: Option<Serial>, ignore_views: bool) {
         updated.pointer = if let Some(index) = serial.and_then(|it| self.entries.search_by_serial(it)) {
-            self.paginator.update_index(Index(index))
+            println!("ignore_views: {:?}", ignore_views);
+            if ignore_views {
+                let paging = self.paging_with_count(false, true, Some(index + 1));
+                self.paginator.first(&paging)
+            } else {
+                self.paginator.update_index(Index(index))
+            }
         } else {
             let paging = self.paging(false, false);
             self.paginator.first(&paging)

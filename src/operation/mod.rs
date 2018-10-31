@@ -133,8 +133,8 @@ pub enum Operation {
     UpdateOption(OptionName, OptionUpdater),
     UpdateUI,
     User(Vec<(String, String)>),
-    Views(Option<usize>, Option<usize>),
-    ViewsFellow(bool), /* for_rows */
+    Views(Option<usize>, Option<usize>, bool), /* cols, rows, ignore_views */
+    ViewsFellow(bool, bool), /* for_rows, ignore_views */
     WakeupTimer(String),
     When(FilterExpr, bool, Vec<String>), /* filter, reverse(unless), operation */
     WithMessage(Option<String>, Box<Operation>),
@@ -560,8 +560,8 @@ impl fmt::Debug for Operation {
             UpdateOption(ref name, _) => return write!(f, "UpdateOption({:?})", name),
             UpdateUI => "UpdateUI ",
             User(_) => "User",
-            Views(_, _) => "Views",
-            ViewsFellow(_) => "ViewsFellow",
+            Views(_, _, _) => "Views",
+            ViewsFellow(_, _) => "ViewsFellow",
             WakeupTimer(_) => "WakeupTimer",
             When(_, _, _) => "When",
             WithMessage(_, _) => "WithMessage",

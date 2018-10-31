@@ -12,6 +12,20 @@ pub fn range_contains<T: PartialOrd>(range: &Range<T>, index: &T) -> bool {
     range.start <= *index && *index <= range.end
 }
 
+pub fn cycle_n(v: usize, size: usize, reverse: bool, n: usize) -> usize {
+    let n = n % size;
+
+    if reverse {
+        if v < n {
+            size - (n - v)
+        } else {
+            v - n
+        }
+    } else {
+        v.wrapping_add(n) % size
+    }
+}
+
 macro_rules! cycle_uint {
     ( $type:ty, $reverse:expr, $n:expr, $target:ident ) => {
         {
@@ -41,4 +55,21 @@ fn test_cycle_uint() {
     assert_eq!(cycle(255, false, 2), 1);
     assert_eq!(cycle(0, false, 255), 255);
     assert_eq!(cycle(0, false, 256), 0);
+}
+
+#[cfg(test)]#[test]
+fn test_cycle_n() {
+    assert_eq!(cycle_n(0, 10, false, 1), 1);
+    assert_eq!(cycle_n(0, 10, false, 10), 0);
+    assert_eq!(cycle_n(0, 10, false, 11), 1);
+    assert_eq!(cycle_n(0, 10, false, 10011), 1);
+    assert_eq!(cycle_n(8, 10, false, 1), 9);
+
+    assert_eq!(cycle_n(0, 10, true, 1), 9);
+    assert_eq!(cycle_n(0, 10, true, 10), 0);
+    assert_eq!(cycle_n(0, 10, true, 11), 9);
+    assert_eq!(cycle_n(8, 10, true, 1), 7);
+    assert_eq!(cycle_n(8, 10, true, 8), 0);
+
+    assert_eq!(cycle_n(1, 2, false, 1), 0);
 }

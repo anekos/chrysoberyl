@@ -909,7 +909,6 @@ impl App {
 
     fn restore_or_first(&mut self, updated: &mut Updated, serial: Option<Serial>, ignore_views: bool) {
         updated.pointer = if let Some(index) = serial.and_then(|it| self.entries.search_by_serial(it)) {
-            println!("ignore_views: {:?}", ignore_views);
             if ignore_views {
                 let paging = self.paging_with_count(false, true, Some(index + 1));
                 self.paginator.first(&paging)

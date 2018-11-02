@@ -1,21 +1,21 @@
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::error::Error;
 use std::sync::mpsc::Sender;
 
 use num::Integer;
 
-use option::*;
 use operation::Operation;
+use option::*;
+use util::num::cycle_n;
 
 
-
-const NO_VALUE_ERROR: &str = "User switch has no value.";
 
 
 pub struct UserSwitch {
     app_tx: Sender<Operation>,
-    values: VecDeque<Vec<String>>,
+    value: usize,
+    values: Vec<Vec<String>>,
 }
 
 pub struct DummySwtich {
@@ -51,20 +51,32 @@ impl UserSwitchManager {
 
 impl OptionValue for UserSwitch {
     fn toggle(&mut self) -> Result<(), ChryError> {
-        self.cycle(false, 1, &[]).and_then(|_| self.send())
+        self.cycle(false, 1, &[])
+    }
+
+    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+        value.parse()
+            .map_err(|it| ChryError::Standard(format!("Invalid value: {} ({})", value, it)))
+            .and_then(|value| {
+                if value < self.values.len() {
+                    if self.value != value {
+                        self.value = value;
+                        return self.send()
+                    }
+                    Ok(())
+                } else {
+                    Err(ChryError::Fixed("Too large"))
+                }
+            })
     }
 
     fn cycle(&mut self, reverse: bool, n: usize, _: &[String]) -> Result<(), ChryError> {
-        for _ in 0 .. n {
-            if reverse {
-                let back = self.values.pop_back().expect(NO_VALUE_ERROR);
-                self.values.push_front(back);
-            } else {
-                let front = self.values.pop_front().expect(NO_VALUE_ERROR);
-                self.values.push_back(front);
-            }
+        let new_value = cycle_n(self.value, self.values.len(), reverse, n);
+        if new_value != self.value {
+            self.value = new_value;
+            return self.send()
         }
-        self.send()
+        Ok(())
     }
 }
 
@@ -72,12 +84,13 @@ impl UserSwitch {
     pub fn new(app_tx: Sender<Operation>, values: Vec<Vec<String>>) -> Self {
         UserSwitch {
             app_tx,
-            values: VecDeque::from(values)
+            value: 0,
+            values,
         }
     }
 
     pub fn current(&self) -> Vec<String> {
-        self.values.front().cloned().expect(NO_VALUE_ERROR)
+        self.values[self.value].clone()
     }
 
     pub fn current_operation(&self) -> Result<Operation, ChryError> {

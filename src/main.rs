@@ -55,6 +55,7 @@ extern crate xml;
 #[macro_use] mod error_channel;
 #[macro_use] mod from_macro;
 #[macro_use] mod gtk_utils;
+#[macro_use] mod util;
 
 mod app;
 mod app_path;
@@ -106,7 +107,6 @@ mod state;
 mod termination;
 mod timer;
 mod ui_event;
-mod util;
 mod watcher;
 
 

@@ -2,6 +2,7 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
 use cairo::{Context, Format, ImageSurface, Pattern, self, SurfacePattern};
@@ -9,6 +10,7 @@ use gdk::prelude::ContextExt;
 use gdk_pixbuf::{Pixbuf, PixbufExt};
 
 use color::Color;
+use entry::image::Imaging;
 use entry::{Entry, Key, self};
 use errors::ChryError;
 use gtk_utils::new_pixbuf_from_surface;
@@ -51,9 +53,8 @@ pub struct CacheEntry {
     modifiers: Vec<Modifier>,
 }
 
-#[derive(Clone, Debug, PartialEq, Copy)]
+#[derive(Clone, Debug, Copy)]
 pub struct Operator(pub cairo::Operator);
-
 
 
 impl Cherenkoved {
@@ -61,9 +62,9 @@ impl Cherenkoved {
         Cherenkoved { cache: HashMap::new() }
     }
 
-    pub fn get_image_buffer(&mut self, entry: &Entry, cell_size: Size, drawing: &Drawing) -> Option<Result<ImageBuffer, Box<Error>>> {
+    pub fn get_image_buffer(&mut self, entry: &Entry, imaging: &Imaging) -> Option<Result<ImageBuffer, Box<Error>>> {
         if_let_some!(cache_entry = self.cache.get_mut(&entry.key), None);
-        Some(get_image_buffer(cache_entry, entry, cell_size, drawing))
+        Some(get_image_buffer(cache_entry, entry, imaging))
     }
 
     pub fn remove(&mut self, key: &Key) {
@@ -93,8 +94,8 @@ impl Cherenkoved {
         }
     }
 
-    pub fn cherenkov1(&mut self, entry: &Entry, cell_size: Size, modifier: Modifier, drawing: &Drawing) {
-        self.cherenkov(entry, cell_size, &[modifier], drawing)
+    pub fn cherenkov1(&mut self, entry: &Entry, imaging: &Imaging, modifier: Modifier) {
+        self.cherenkov(entry, imaging, &[modifier])
     }
 
     pub fn reset(&mut self, entry: &Entry) {
@@ -107,18 +108,18 @@ impl Cherenkoved {
         entry.expired = true;
     }
 
-    pub fn cherenkov(&mut self, entry: &Entry, cell_size: Size, new_modifiers: &[Modifier], drawing: &Drawing) {
+    pub fn cherenkov(&mut self, entry: &Entry, imaging: &Imaging, new_modifiers: &[Modifier]) {
         let mut modifiers = self.cache.get(&entry.key).map(|it| it.modifiers.clone()).unwrap_or_else(|| vec![]);
 
         modifiers.extend_from_slice(new_modifiers);
 
-        if_let_ok!(image_buffer = time!("re_cherenkov" => re_cherenkov(entry, cell_size, drawing, &modifiers)), |_| ());
+        if_let_ok!(image_buffer = time!("re_cherenkov" => re_cherenkov(entry, imaging, &modifiers)), |_| ());
 
         self.cache.insert(
             entry.key.clone(),
             CacheEntry {
-                cell_size,
-                drawing: drawing.clone(),
+                cell_size: imaging.cell_size,
+                drawing: imaging.drawing.clone(),
                 expired: false,
                 image: Some(image_buffer),
                 modifiers,
@@ -174,6 +175,54 @@ impl Che {
         } else {
             self.clone()
         }
+    }
+}
+
+
+impl PartialEq for Operator {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl Eq for Operator {
+}
+
+impl Hash for Operator {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        use cairo::Operator::*;
+        let n = match self.0 {
+            Clear         => 1,
+            Source        => 2,
+            Over          => 3,
+            In            => 4,
+            Out           => 5,
+            Atop          => 6,
+            Dest          => 7,
+            DestOver      => 8,
+            DestIn        => 9,
+            DestOut       => 10,
+            DestAtop      => 11,
+            Xor           => 12,
+            Add           => 13,
+            Saturate      => 14,
+            Multiply      => 15,
+            Screen        => 16,
+            Overlay       => 17,
+            Darken        => 18,
+            Lighten       => 19,
+            ColorDodge    => 20,
+            ColorBurn     => 21,
+            HardLight     => 22,
+            SoftLight     => 23,
+            Difference    => 24,
+            Exclusion     => 25,
+            HslHue        => 26,
+            HslSaturation => 27,
+            HslColor      => 28,
+            HslLuminosity => 29,
+        };
+        n.hash(state);
     }
 }
 
@@ -262,36 +311,36 @@ impl fmt::Display for Operator {
 }
 
 
-fn get_image_buffer(cache_entry: &mut CacheEntry, entry: &Entry, cell_size: Size, drawing: &Drawing) -> Result<ImageBuffer, Box<Error>> {
-    if let Some(image) = cache_entry.get(cell_size, drawing) {
+fn get_image_buffer(cache_entry: &mut CacheEntry, entry: &Entry, imaging: &Imaging) -> Result<ImageBuffer, Box<Error>> {
+    if let Some(image) = cache_entry.get(imaging.cell_size, &imaging.drawing) {
         return Ok(ImageBuffer::Static(image))
     }
 
     let modifiers = cache_entry.modifiers.clone();
 
-    let image = re_cherenkov(entry, cell_size, drawing, &modifiers)?;
+    let image = re_cherenkov(entry, imaging, &modifiers)?;
 
     cache_entry.image = Some(image.clone());
-    cache_entry.drawing = drawing.clone();
-    cache_entry.cell_size = cell_size;
+    cache_entry.drawing = imaging.drawing.clone();
+    cache_entry.cell_size = imaging.cell_size;
     cache_entry.expired = false;
     Ok(ImageBuffer::Static(image))
 }
 
-fn re_cherenkov(entry: &Entry, cell_size: Size, drawing: &Drawing, modifiers: &[Modifier]) -> Result<StaticImageBuffer, Box<Error>> {
-    let image_buffer = entry::image::get_image_buffer(entry, cell_size, drawing)?;
+fn re_cherenkov(entry: &Entry, imaging: &Imaging, modifiers: &[Modifier]) -> Result<StaticImageBuffer, Box<Error>> {
+    let image_buffer = entry::image::get_image_buffer(entry, imaging)?;
     if let ImageBuffer::Static(buf) = image_buffer {
         let mut mask = None;
         let mut modified = Modified::P(buf.get_pixbuf());
         for modifier in modifiers {
-            let modifier = modifier.fix(&buf.original_size, drawing);
+            let modifier = modifier.fix(&buf.original_size, &imaging.drawing);
             let (_modified, _mask) = cherenkov_pixbuf(modified, mask, &modifier.che);
             modified = _modified;
             mask = _mask;
         }
         let pixbuf = modified.get_pixbuf();
         let pixbuf = if let Some(mask) = mask {
-            apply_mask(&pixbuf, &mask, drawing.mask_operator.0)
+            apply_mask(&pixbuf, &mask, imaging.drawing.mask_operator.0)
         } else {
             pixbuf
         };

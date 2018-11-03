@@ -58,7 +58,7 @@ pub struct States {
     pub watch_files: bool,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Drawing {
     pub animation: bool,
     pub clipping: Option<Region>,
@@ -72,6 +72,7 @@ pub struct Drawing {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PreFetchState {
+    pub cache_stages: usize,
     pub enabled: bool,
     pub limit_of_items: usize,
     pub page_size: usize,
@@ -160,6 +161,7 @@ impl Default for Drawing {
 impl Default for PreFetchState {
     fn default() -> Self {
         PreFetchState {
+            cache_stages: 3,
             enabled: true,
             page_size: 5,
             limit_of_items: 100,

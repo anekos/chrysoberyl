@@ -45,6 +45,7 @@ iterable_enum!(PreDefinedOptionName =>
     PreFetchEnabled,
     PreFetchLimit,
     PreFetchPageSize,
+    PreFetchStages,
     Reverse,
     Rotation,
     Screen,
@@ -93,6 +94,7 @@ impl FromStr for PreDefinedOptionName {
             "pre-render"                           => PreFetchEnabled,
             "pre-render-limit"                     => PreFetchLimit,
             "pre-render-pages"                     => PreFetchPageSize,
+            "pre-render-stages"                    => PreFetchStages,
             "reverse" | "rev"                      => Reverse,
             "rotation"                             => Rotation,
             "screen"                               => Screen,
@@ -124,7 +126,7 @@ impl PreDefinedOptionName {
             AbbrevLength | Animation | AutoReload | AutoPaging |
                 ColorLink |
                 FitTo | HorizontalFlip | HorizontalViews | IdleTime | InitialPosition | LogFile | MaskOperator |
-                PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize |
+                PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize | PreFetchStages |
                 Reverse | Rotation | Screen | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusFormat | EmptyStatusFormat | Style |
                 StdOut | UpdateCacheAccessTime | TitleFormat | VerticalFlip | VerticalViews | WatchFiles | HistoryFile => false,
             CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => true,

@@ -7,6 +7,7 @@ use std::thread::spawn;
 
 use num_cpus;
 
+use entry::image::Imaging;
 use entry::{Entry, Key, self};
 use image::ImageBuffer;
 use image_cache::ImageCache;
@@ -50,6 +51,12 @@ impl ImageFetcher {
 }
 
 
+impl FetchTarget {
+    fn get_imaging(&self) -> Imaging {
+        Imaging::new(self.cell_size, self.drawing.clone())
+    }
+}
+
 impl Default for FetchTarget {
     fn default() -> FetchTarget {
         FetchTarget {
@@ -76,12 +83,19 @@ fn main(mut cache: ImageCache) -> Sender<FetcherOperation> {
             match op {
                 Refresh(new_targets) => {
                     current_target = new_targets;
-                    start(&tx, &mut cache, &mut current_target.entries, &mut idles, current_target.cell_size, &current_target.drawing);
+                    let imaging = current_target.get_imaging();
+                    start(
+                        &tx,
+                        &mut cache,
+                        &mut current_target.entries,
+                        &mut idles,
+                        &imaging);
                 }
                 Done(key, image_buffer) => {
                     idles += 1;
-                    cache.push(&key, image_buffer);
-                    start(&tx, &mut cache, &mut current_target.entries, &mut idles, current_target.cell_size, &current_target.drawing);
+                    let imaging = current_target.get_imaging();
+                    cache.push(&imaging, &key, image_buffer);
+                    start(&tx, &mut cache, &mut current_target.entries, &mut idles, &imaging);
                 }
             }
         }
@@ -91,12 +105,12 @@ fn main(mut cache: ImageCache) -> Sender<FetcherOperation> {
 }
 
 
-pub fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mut VecDeque<Arc<Entry>>, idles: &mut usize, cell_size: Size, drawing: &Drawing) {
+pub fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mut VecDeque<Arc<Entry>>, idles: &mut usize, imaging: &Imaging) {
     while 0 < *idles {
         if let Some(entry) = entries.pop_front() {
-            if cache.mark_fetching(entry.key.clone()) {
+            if cache.mark_fetching(imaging, entry.key.clone()) {
                 *idles -= 1;
-                fetch(tx.clone(), entry, cell_size, drawing.clone());
+                fetch(tx.clone(), entry, imaging.clone());
             }
         } else {
             return;
@@ -105,9 +119,9 @@ pub fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mu
 }
 
 
-pub fn fetch(tx: Sender<FetcherOperation>, entry: Arc<Entry>, cell_size: Size, drawing: Drawing) {
+pub fn fetch(tx: Sender<FetcherOperation>, entry: Arc<Entry>, imaging: Imaging) {
     spawn(move || {
-        let image = entry::image::get_image_buffer(&entry, cell_size, &drawing).map_err(|it| s!(it));
+        let image = entry::image::get_image_buffer(&entry, &imaging).map_err(|it| s!(it));
         tx.send(FetcherOperation::Done(entry.key.clone(), image)).unwrap();
     });
 }

@@ -153,6 +153,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, context: 
         PreFetchEnabled => gen("pre-render", &b2s(st.pre_fetch.enabled), context),
         PreFetchLimit => gen("pre-render-limit", &st.pre_fetch.limit_of_items, context),
         PreFetchPageSize => gen("pre-render-pages", &st.pre_fetch.page_size, context),
+        PreFetchStages => gen("pre-render-stages", &st.pre_fetch.cache_stages, context),
         Reverse => gen("reverse", &b2s(st.reverse), context),
         Rotation => gen("rotation", &st.drawing.rotation, context),
         Screen => gen("screen", &st.screen, context),

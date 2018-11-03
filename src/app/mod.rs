@@ -17,6 +17,7 @@ use command_line::Initial;
 use config;
 use constant;
 use counter::Counter;
+use entry::image::Imaging;
 use entry::{Entry, EntryContainer, EntryContent, Serial, Key};
 use error_channel;
 use events::EventName;
@@ -438,7 +439,7 @@ impl App {
             return;
         }
 
-        if updated.image || updated.image_options {
+        if updated.image || updated.image_options || updated.size {
             self.fire_event(&EventName::ShowImagePre);
             let (showed, original_image_size, fit_image_size) = time!("show_image" => self.show_image(to_end, updated.target_regions.clone()));
             self.on_image_updated(original_image_size, fit_image_size);
@@ -448,7 +449,7 @@ impl App {
             }
         }
 
-        if updated.image || updated.image_options || updated.label || updated.message || updated.remote {
+        if updated.image || updated.image_options || updated.label || updated.message || updated.remote | updated.size {
             self.update_label(updated.image, false);
         }
     }
@@ -528,6 +529,11 @@ impl App {
 
     /* Private methods */
 
+    fn get_imaging(&self) -> Imaging {
+        let cell_size = self.gui.get_cell_size(&self.states.view);
+        Imaging::new(cell_size, self.states.drawing.clone())
+    }
+
     fn reset_view(&mut self) {
         self.gui.reset_view(&self.states.view);
         self.update_paginator_condition();
@@ -586,12 +592,12 @@ impl App {
     fn show_image(&mut self, to_end: bool, target_regions: Option<Vec<Option<Region>>>) -> (bool, Option<Size>, Option<Size>) {
         let mut original_image_size = None;
         let mut fit_image_size = None;
-        let cell_size = self.gui.get_cell_size(&self.states.view);
+        let imaging = self.get_imaging();
 
         self.cancel_lazy_draw();
 
         if self.states.pre_fetch.enabled {
-            self.pre_fetch(cell_size, 0..1);
+            self.pre_fetch(imaging.cell_size, 0..1);
         }
 
         let mut invalid_all = true;
@@ -600,10 +606,10 @@ impl App {
 
         for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
             if let Some((entry, _)) = self.current_with(index) {
-                let image_buffer = self.cache.get_image_buffer(&entry, cell_size, &self.states.drawing);
+                let image_buffer = self.cache.get_image_buffer(&entry, &imaging);
                 match image_buffer {
                     Ok(image_buffer) => {
-                        let scale = cell.draw(&image_buffer, cell_size, &self.states.drawing.fit_to);
+                        let scale = cell.draw(&image_buffer, imaging.cell_size, &self.states.drawing.fit_to);
                         if base_scale.is_none() {
                             base_scale = scale;
                         }
@@ -614,7 +620,7 @@ impl App {
                         }
                     }
                     Err(error) =>
-                        cell.show_error(&error, cell_size)
+                        cell.show_error(&error, imaging.cell_size)
                 }
                 showed = true;
             } else {

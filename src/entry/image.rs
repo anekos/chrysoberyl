@@ -21,27 +21,40 @@ use util::path::path_to_str;
 
 
 
-pub fn get_image_buffer(entry: &Entry, cell: Size, drawing: &Drawing) -> Result<ImageBuffer, Box<error::Error>> {
-    if drawing.animation && is_animation(entry) {
-        Ok(get_animation_buffer(entry).map(ImageBuffer::Animation)?)
-    } else {
-        get_static_image_buffer(entry, cell, drawing).map(ImageBuffer::Static)
+#[derive(Clone, Hash, PartialEq, Eq)]
+pub struct Imaging {
+    pub cell_size: Size,
+    pub drawing: Drawing,
+}
+
+impl Imaging {
+    pub fn new(cell_size: Size, drawing: Drawing) -> Imaging {
+        Imaging { cell_size, drawing }
     }
 }
 
 
-pub fn get_static_image_buffer(entry: &Entry, cell: Size, drawing: &Drawing) -> Result<StaticImageBuffer, Box<error::Error>> {
+pub fn get_image_buffer(entry: &Entry, imaging: &Imaging) -> Result<ImageBuffer, Box<error::Error>> {
+    if imaging.drawing.animation && is_animation(entry) {
+        Ok(get_animation_buffer(entry).map(ImageBuffer::Animation)?)
+    } else {
+        get_static_image_buffer(entry, imaging).map(ImageBuffer::Static)
+    }
+}
+
+
+pub fn get_static_image_buffer(entry: &Entry, imaging: &Imaging) -> Result<StaticImageBuffer, Box<error::Error>> {
     use self::EntryContent::*;
 
     match (*entry).content {
         Image(ref path) =>
-            make_scaled_from_file(path_to_str(path), cell, drawing),
+            make_scaled_from_file(path_to_str(path), &imaging),
         Archive(_, ref entry) =>
-            make_scaled(&*entry.content.as_slice(), cell, drawing),
+            make_scaled(&*entry.content.as_slice(), &imaging),
         Memory(ref content, _) =>
-            make_scaled(content, cell, drawing),
+            make_scaled(content, &imaging),
         Pdf(ref path, index) =>
-            Ok(make_scaled_from_pdf(&**path, index, cell, drawing))
+            Ok(make_scaled_from_pdf(&**path, index, &imaging))
     }
 }
 
@@ -72,7 +85,7 @@ fn is_animation(entry: &Entry) -> bool {
     false
 }
 
-fn make_scaled(buffer: &[u8], cell: Size, drawing: &Drawing) -> Result<StaticImageBuffer, Box<error::Error>> {
+fn make_scaled(buffer: &[u8], imaging: &Imaging) -> Result<StaticImageBuffer, Box<error::Error>> {
     let loader = PixbufLoader::new();
     loader.write(buffer)?;
 
@@ -82,7 +95,7 @@ fn make_scaled(buffer: &[u8], cell: Size, drawing: &Drawing) -> Result<StaticIma
 
     let source = loader.get_pixbuf().ok_or_else(|| Box::new(ChryError::Fixed("Invalid image")))?;
     let original = Size::from_pixbuf(&source);
-    let (scale, fitted, clipped_region) = original.rotate(drawing.rotation).fit_with_clipping(cell, drawing);
+    let (scale, fitted, clipped_region) = original.rotate(imaging.drawing.rotation).fit_with_clipping(imaging.cell_size, &imaging.drawing);
 
     let result = {
         let surface = ImageSurface::create(Format::ARgb32, fitted.width, fitted.height).unwrap();
@@ -93,8 +106,8 @@ fn make_scaled(buffer: &[u8], cell: Size, drawing: &Drawing) -> Result<StaticIma
             context.rectangle(r.left as f64, r.top as f64, r.right as f64, r.bottom as f64);
             context.clip();
         }
-        context_rotate(&context, original, drawing.rotation);
-        context_flip(&context, original, drawing.horizontal_flip, drawing.vertical_flip);
+        context_rotate(&context, original, imaging.drawing.rotation);
+        context_flip(&context, original, imaging.drawing.horizontal_flip, imaging.drawing.vertical_flip);
         context.set_source_pixbuf(&source, 0.0, 0.0);
         context.paint();
         new_pixbuf_from_surface(&surface)
@@ -103,17 +116,17 @@ fn make_scaled(buffer: &[u8], cell: Size, drawing: &Drawing) -> Result<StaticIma
     Ok(StaticImageBuffer::new_from_pixbuf(&result, Some(original)))
 }
 
-fn make_scaled_from_file(path: &str, cell: Size, drawing: &Drawing) -> Result<StaticImageBuffer, Box<error::Error>> {
+fn make_scaled_from_file(path: &str, imaging: &Imaging) -> Result<StaticImageBuffer, Box<error::Error>> {
     let mut file = File::open(path)?;
     let mut buffer: Vec<u8> = vec![];
     let _ = file.read_to_end(&mut buffer)?;
-    make_scaled(buffer.as_slice(), cell, drawing)
+    make_scaled(buffer.as_slice(), imaging)
 }
 
-fn make_scaled_from_pdf<T: AsRef<Path>>(pdf_path: &T, index: usize, cell: Size, drawing: &Drawing) -> StaticImageBuffer {
+fn make_scaled_from_pdf<T: AsRef<Path>>(pdf_path: &T, index: usize, imaging: &Imaging) -> StaticImageBuffer {
     let document = PopplerDocument::new_from_file(pdf_path);
     let page = document.nth_page(index);
-    let pixbuf = page.get_pixbuf(cell, drawing);
+    let pixbuf = page.get_pixbuf(imaging.cell_size, &imaging.drawing);
     let size = page.get_size();
     StaticImageBuffer::new_from_pixbuf(&pixbuf, Some(size))
 }

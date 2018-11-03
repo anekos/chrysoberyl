@@ -1,6 +1,7 @@
 
 use std::cmp::Ordering;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::ops::Add;
 use std::str::FromStr;
 
@@ -26,7 +27,7 @@ pub struct CoordPx {
     pub height: u32,
 }
 
-#[derive(Clone, PartialEq, Eq, Copy, Debug, Default, Ord)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq)]
 pub struct Size {
     pub width: i32,
     pub height: i32,
@@ -40,7 +41,7 @@ pub struct Region {
     pub bottom: f64,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum FitTo {
     Original,
     OriginalOrCell,
@@ -302,6 +303,18 @@ impl Add for Region {
 impl Default for Region {
     fn default() -> Self {
         Region::new(0.0, 0.0, 1.0, 1.0)
+    }
+}
+
+impl Eq for Region {
+}
+
+impl Hash for Region {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        ((self.left * 10000.0) as u64).hash(state);
+        ((self.right * 10000.0) as u64).hash(state);
+        ((self.top * 10000.0) as u64).hash(state);
+        ((self.bottom * 10000.0) as u64).hash(state);
     }
 }
 

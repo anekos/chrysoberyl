@@ -14,10 +14,17 @@ pub struct Cache<K: Hash + Eq, V> {
 }
 
 
-impl<K, V> Cache<K, V> where K: Hash + Eq, V: Clone {
+impl<K, V> Cache<K, V> where K: Hash + Eq + Clone, V: Clone {
     pub fn new(limit: usize) -> Cache<K, V> {
         Cache {
             entries: Arc::new(Mutex::new(LruCache::new(limit)))
+        }
+    }
+
+    pub fn each<F>(&mut self, block: F) where F: Fn(&mut V) -> () {
+        let mut entries = self.entries.lock().unwrap();
+        for (_, entry) in entries.iter_mut() {
+            block(entry)
         }
     }
 

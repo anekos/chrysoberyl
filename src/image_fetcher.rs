@@ -11,8 +11,6 @@ use entry::image::Imaging;
 use entry::{Entry, Key, self};
 use image::ImageBuffer;
 use image_cache::ImageCache;
-use size::Size;
-use state::Drawing;
 
 
 
@@ -20,9 +18,9 @@ pub struct ImageFetcher {
     main_tx: Sender<FetcherOperation>,
 }
 
+#[derive(Default)]
 pub struct FetchTarget {
-    cell_size: Size,
-    drawing: Drawing,
+    imaging: Imaging,
     entries: VecDeque<Arc<Entry>>,
 }
 
@@ -39,33 +37,16 @@ impl ImageFetcher {
         }
     }
 
-    pub fn new_target(&self, entries: VecDeque<Arc<Entry>>, cell_size: Size, drawing: Drawing) {
+    pub fn new_target(&self, entries: VecDeque<Arc<Entry>>, imaging: Imaging) {
         self.main_tx.send(
             FetcherOperation::Refresh(
                 FetchTarget {
-                    cell_size,
-                    drawing,
+                    imaging,
                     entries,
                 })).unwrap();
     }
 }
 
-
-impl FetchTarget {
-    fn get_imaging(&self) -> Imaging {
-        Imaging::new(self.cell_size, self.drawing.clone())
-    }
-}
-
-impl Default for FetchTarget {
-    fn default() -> FetchTarget {
-        FetchTarget {
-            cell_size: Size::new(0, 0),
-            drawing: Drawing::default(),
-            entries: VecDeque::new()
-        }
-    }
-}
 
 
 fn main(mut cache: ImageCache) -> Sender<FetcherOperation> {
@@ -83,19 +64,17 @@ fn main(mut cache: ImageCache) -> Sender<FetcherOperation> {
             match op {
                 Refresh(new_targets) => {
                     current_target = new_targets;
-                    let imaging = current_target.get_imaging();
                     start(
                         &tx,
                         &mut cache,
                         &mut current_target.entries,
                         &mut idles,
-                        &imaging);
+                        &current_target.imaging);
                 }
                 Done(key, image_buffer) => {
                     idles += 1;
-                    let imaging = current_target.get_imaging();
-                    cache.push(&imaging, &key, image_buffer);
-                    start(&tx, &mut cache, &mut current_target.entries, &mut idles, &imaging);
+                    cache.push(&current_target.imaging, &key, image_buffer);
+                    start(&tx, &mut cache, &mut current_target.entries, &mut idles, &current_target.imaging);
                 }
             }
         }

@@ -21,7 +21,7 @@ use util::path::path_to_str;
 
 
 
-#[derive(Clone, Hash, PartialEq, Eq)]
+#[derive(Clone, Default, Eq, Hash, PartialEq)]
 pub struct Imaging {
     pub cell_size: Size,
     pub drawing: Drawing,
@@ -32,7 +32,6 @@ impl Imaging {
         Imaging { cell_size, drawing }
     }
 }
-
 
 pub fn get_image_buffer(entry: &Entry, imaging: &Imaging) -> Result<ImageBuffer, Box<error::Error>> {
     if imaging.drawing.animation && is_animation(entry) {

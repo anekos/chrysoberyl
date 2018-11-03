@@ -788,8 +788,8 @@ pub fn on_pre_fetch(app: &mut App, serial: u64) -> EventResult {
         trace!("on_pre_fetch: pre_fetch_serial={} serial={}", app.pre_fetch_serial, serial);
 
         if app.pre_fetch_serial == serial {
-            let cell_size = app.gui.get_cell_size(&app.states.view);
-            app.pre_fetch(cell_size, 1..pre_fetch.page_size);
+            let imaging = app.get_imaging();
+            app.pre_fetch(imaging, 1..pre_fetch.page_size);
         }
     }
     Ok(())

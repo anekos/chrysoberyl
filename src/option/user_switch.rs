@@ -93,10 +93,12 @@ impl OptionValue for UserSwitch {
     fn set(&mut self, value: &str) -> Result<(), ChryError> {
         value.parse()
             .map_err(|it| ChryError::Standard(format!("Invalid value: {} ({})", value, it)))
-            .and_then(|value| {
-                if value < self.values.len() {
+            .and_then(|value: usize| {
+                if value == 0 {
+                    Err(ChryError::Fixed("Zero is invalid"))
+                } else if value <= self.values.len() {
                     if self.value != value {
-                        self.value = value;
+                        self.value = value - 1;
                         return self.send()
                     }
                     Ok(())
@@ -108,7 +110,7 @@ impl OptionValue for UserSwitch {
 
     fn set_from_count(&mut self, count: Option<usize>) -> Result<(), ChryError> {
         if let Some(count) = count {
-            self.set(&format!("{}", count))
+            self.set(&format!("{}", count - 1))
         } else {
             self.unset()
         }

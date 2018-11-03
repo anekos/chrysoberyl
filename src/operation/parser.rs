@@ -270,8 +270,12 @@ pub fn parse_count(args: &[String]) -> Result<Operation, ParsingError> {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut count).add_argument("count", StoreOption, "Put count");
         parse_args(&mut ap, args)
-    } .map(|_| {
-        Operation::Count(count)
+    } .and_then(|_| {
+        if count == Some(0) {
+            Err(ParsingError::Fixed("Zero is invalid"))
+        } else {
+            Ok(Operation::Count(count))
+        }
     })
 }
 

@@ -28,6 +28,9 @@ pub struct UserSwitchManager {
 }
 
 
+const OVERFLOW: Result<(), ChryError> = Err(ChryError::Fixed("Overflow"));
+
+
 impl UserSwitchManager {
     pub fn new(app_tx: Sender<Operation>) -> Self {
         UserSwitchManager {
@@ -50,8 +53,41 @@ impl UserSwitchManager {
 
 
 impl OptionValue for UserSwitch {
-    fn toggle(&mut self) -> Result<(), ChryError> {
-        self.cycle(false, 1, &[])
+    fn cycle(&mut self, reverse: bool, n: usize, _: &[String]) -> Result<(), ChryError> {
+        let new_value = cycle_n(self.value, self.values.len(), reverse, n);
+        if new_value != self.value {
+            self.value = new_value;
+            return self.send()
+        }
+        Ok(())
+    }
+
+    fn decrement(&mut self, delta: usize) -> Result<(), ChryError> {
+        if_let_some!(new_value = self.value.checked_sub(delta), OVERFLOW);
+        self.value = new_value;
+        self.send()
+    }
+
+    fn disable(&mut self) -> Result<(), ChryError> {
+        self.unset()
+    }
+
+    fn enable(&mut self) -> Result<(), ChryError> {
+        self.set("1")
+    }
+
+    fn increment(&mut self, delta: usize) -> Result<(), ChryError> {
+        if_let_some!(new_value = self.value.checked_add(delta), OVERFLOW);
+        if new_value < self.values.len() {
+            self.value = new_value;
+            self.send()
+        } else {
+            OVERFLOW
+        }
+    }
+
+    fn is_enabled(&self) -> Result<bool, ChryError> {
+        Ok(self.value == 1)
     }
 
     fn set(&mut self, value: &str) -> Result<(), ChryError> {
@@ -70,13 +106,21 @@ impl OptionValue for UserSwitch {
             })
     }
 
-    fn cycle(&mut self, reverse: bool, n: usize, _: &[String]) -> Result<(), ChryError> {
-        let new_value = cycle_n(self.value, self.values.len(), reverse, n);
-        if new_value != self.value {
-            self.value = new_value;
-            return self.send()
+    fn set_from_count(&mut self, count: Option<usize>) -> Result<(), ChryError> {
+        if let Some(count) = count {
+            self.set(&format!("{}", count))
+        } else {
+            self.unset()
         }
-        Ok(())
+    }
+
+    fn toggle(&mut self) -> Result<(), ChryError> {
+        self.cycle(false, 1, &[])
+    }
+
+    fn unset(&mut self) -> Result<(), ChryError> {
+        self.value = 0;
+        self.send()
     }
 }
 

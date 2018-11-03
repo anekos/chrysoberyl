@@ -14,57 +14,61 @@ const SIZE_LIMIT: usize = 3;
 
 
 #[derive(Clone)]
+pub struct Stage {
+    cache: Cache<Key, Result<ImageBuffer, String>>,
+    fetching: Arc<(Mutex<HashMap<Key, bool>>, Condvar)>,
+}
+
+
+#[derive(Clone)]
 pub struct ImageCache {
     limit: usize,
     cherenkoved: Arc<Mutex<Cherenkoved>>,
-    cache: Cache<Imaging, Cache<Key, Result<ImageBuffer, String>>>, /* String for display the error */
-    fetching: Arc<(Mutex<HashMap<Key, bool>>, Condvar)>,
+    stages: Cache<Imaging, Stage>, /* String for display the error */
 }
 
 
 impl ImageCache {
     pub fn new(limit: usize) -> ImageCache {
         ImageCache {
-            cache: Cache::new(SIZE_LIMIT),
+            stages: Cache::new(SIZE_LIMIT),
             cherenkoved: Arc::new(Mutex::new(Cherenkoved::new())),
-            fetching: Arc::new((Mutex::new(HashMap::new()), Condvar::new())),
             limit,
         }
     }
 
     pub fn update_limit(&mut self, limit: usize) {
         self.limit = limit;
-        self.cache.each(move |it| it.update_limit(limit));
+        self.stages.each(move |it| it.cache.update_limit(limit));
     }
 
     pub fn clear(&mut self) {
-        self.cache.clear();
+        self.stages.each(|stage| {
+            // Cancel current fetchings
+            let &(ref fetching, ref cond) = &*stage.fetching;
+            let mut fetching = fetching.lock().unwrap();
+            for it in fetching.values_mut() {
+                *it = false;
+            }
+            cond.notify_all();
+        });
 
-        // Cancel current fetchings
-        let &(ref fetching, ref cond) = &*self.fetching;
-        let mut fetching = fetching.lock().unwrap();
-        for it in fetching.values_mut() {
-            *it = false;
-        }
-        cond.notify_all();
+        self.stages.clear();
     }
 
     pub fn clear_entry(&mut self, imaging: &Imaging, key: &Key) -> bool {
-        let mut cache = self.get_image_cache(imaging);
-        cache.clear_entry(key)
+        let mut stage = self.get_stage(imaging);
+        stage.cache.clear_entry(key)
     }
 
     pub fn mark_fetching(&mut self, imaging: &Imaging, key: Key) -> bool {
         trace!("image_cache/mark_fetching: key={:?}", key);
 
-        let contains = {
-            let mut cache = self.get_image_cache(imaging);
-            cache.contains(&key)
-        };
+        let stage = self.get_stage(imaging);
 
-        let &(ref fetching, _) = &*self.fetching;
+        let &(ref fetching, _) = &*stage.fetching;
         let mut fetching = fetching.lock().unwrap();
-        if contains || fetching.contains_key(&key) {
+        if stage.cache.contains(&key) || fetching.contains_key(&key) {
             false
         } else {
             fetching.insert(key, true);
@@ -75,16 +79,17 @@ impl ImageCache {
     pub fn push(&mut self, imaging: &Imaging, key: &Key, image_buffer: Result<ImageBuffer, String>) {
         trace!("image_cache/push: key={:?}", key);
 
+        let mut stage = self.get_stage(imaging);
+
         let do_push = {
-            let &(ref fetching, ref cond) = &*self.fetching;
+            let &(ref fetching, ref cond) = &*stage.fetching;
             let mut fetching = fetching.lock().unwrap();
             let result = fetching.remove(key) == Some(true);
             cond.notify_all();
             result
         };
         if do_push {
-            let mut cache = self.get_image_cache(imaging);
-            cache.push(key.clone(), image_buffer);
+            stage.cache.push(key.clone(), image_buffer);
         }
     }
 
@@ -93,9 +98,15 @@ impl ImageCache {
             let mut cherenkoved = self.cherenkoved.lock().unwrap();
             cherenkoved.get_image_buffer(entry, imaging).map(|it| it.map_err(|it| s!(it)))
         }.unwrap_or_else(|| {
-            self.wait(&entry.key);
-            let cache = self.get_image_cache(imaging);
-            cache.get_or_update(entry.key.clone(), move |_| {
+            let stage = self.get_stage(imaging);
+
+            let &(ref fetching, ref cond) = &*stage.fetching;
+            let mut fetching = fetching.lock().unwrap();
+            while fetching.get(&entry.key) == Some(&true) {
+                fetching = cond.wait(fetching).unwrap();
+            }
+
+            stage.cache.get_or_update(entry.key.clone(), move |_| {
                 entry::image::get_image_buffer(entry, imaging).map_err(|it| s!(it))
             })
         })
@@ -136,21 +147,10 @@ impl ImageCache {
         cherenkoved.clear_search_highlights()
     }
 
-    fn get_image_cache(&mut self, imaging: &Imaging) -> Cache<Key, Result<ImageBuffer, String>> {
+    fn get_stage(&mut self, imaging: &Imaging) -> Stage {
         let limit = self.limit;
-        self.cache.get_or_update(imaging.clone(), move |_| {
-            Cache::new(limit)
+        self.stages.get_or_update(imaging.clone(), move |_| {
+            Stage { cache: Cache::new(limit), fetching: Arc::new((Mutex::new(HashMap::new()), Condvar::new())) }
         })
-    }
-
-    fn wait(&mut self, key: &Key) {
-        trace!("image_cache/wait/start: key={:?}", key);
-
-        let &(ref fetching, ref cond) = &*self.fetching;
-        let mut fetching = fetching.lock().unwrap();
-        while fetching.get(key) == Some(&true) {
-            fetching = cond.wait(fetching).unwrap();
-        }
-        trace!("image_cache/wait/end: key={:?}", key);
     }
 }

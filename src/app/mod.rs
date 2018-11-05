@@ -570,7 +570,7 @@ impl App {
         }
     }
 
-    fn pre_fetch(&mut self, cell_size: Size, range: Range<usize>) {
+    fn pre_fetch(&mut self, imaging: Imaging, range: Range<usize>) {
         let len = self.gui.len();
         let mut entries = VecDeque::new();
 
@@ -583,7 +583,7 @@ impl App {
             }
         }
 
-        self.fetcher.new_target(entries, cell_size, self.states.drawing.clone());
+        self.fetcher.new_target(entries, imaging);
     }
 
     /**
@@ -597,7 +597,7 @@ impl App {
         self.cancel_lazy_draw();
 
         if self.states.pre_fetch.enabled {
-            self.pre_fetch(imaging.cell_size, 0..1);
+            self.pre_fetch(imaging.clone(), 0..1);
         }
 
         let mut invalid_all = true;

@@ -11,8 +11,6 @@ use entry::image::Imaging;
 use entry::{Entry, Key, self};
 use image::ImageBuffer;
 use image_cache::ImageCache;
-use size::Size;
-use state::Drawing;
 
 
 
@@ -20,15 +18,15 @@ pub struct ImageFetcher {
     main_tx: Sender<FetcherOperation>,
 }
 
+#[derive(Default)]
 pub struct FetchTarget {
-    cell_size: Size,
-    drawing: Drawing,
+    imaging: Imaging,
     entries: VecDeque<Arc<Entry>>,
 }
 
 pub enum FetcherOperation {
     Refresh(FetchTarget),
-    Done(Key, Result<ImageBuffer, String>),
+    Done(Key, Imaging, Result<ImageBuffer, String>),
 }
 
 
@@ -39,33 +37,16 @@ impl ImageFetcher {
         }
     }
 
-    pub fn new_target(&self, entries: VecDeque<Arc<Entry>>, cell_size: Size, drawing: Drawing) {
+    pub fn new_target(&self, entries: VecDeque<Arc<Entry>>, imaging: Imaging) {
         self.main_tx.send(
             FetcherOperation::Refresh(
                 FetchTarget {
-                    cell_size,
-                    drawing,
+                    imaging,
                     entries,
                 })).unwrap();
     }
 }
 
-
-impl FetchTarget {
-    fn get_imaging(&self) -> Imaging {
-        Imaging::new(self.cell_size, self.drawing.clone())
-    }
-}
-
-impl Default for FetchTarget {
-    fn default() -> FetchTarget {
-        FetchTarget {
-            cell_size: Size::new(0, 0),
-            drawing: Drawing::default(),
-            entries: VecDeque::new()
-        }
-    }
-}
 
 
 fn main(mut cache: ImageCache) -> Sender<FetcherOperation> {
@@ -83,19 +64,17 @@ fn main(mut cache: ImageCache) -> Sender<FetcherOperation> {
             match op {
                 Refresh(new_targets) => {
                     current_target = new_targets;
-                    let imaging = current_target.get_imaging();
                     start(
                         &tx,
                         &mut cache,
                         &mut current_target.entries,
                         &mut idles,
-                        &imaging);
+                        &current_target.imaging);
                 }
-                Done(key, image_buffer) => {
+                Done(key, imaging, image_buffer) => {
                     idles += 1;
-                    let imaging = current_target.get_imaging();
                     cache.push(&imaging, &key, image_buffer);
-                    start(&tx, &mut cache, &mut current_target.entries, &mut idles, &imaging);
+                    start(&tx, &mut cache, &mut current_target.entries, &mut idles, &current_target.imaging);
                 }
             }
         }
@@ -105,7 +84,7 @@ fn main(mut cache: ImageCache) -> Sender<FetcherOperation> {
 }
 
 
-pub fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mut VecDeque<Arc<Entry>>, idles: &mut usize, imaging: &Imaging) {
+fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mut VecDeque<Arc<Entry>>, idles: &mut usize, imaging: &Imaging) {
     while 0 < *idles {
         if let Some(entry) = entries.pop_front() {
             if cache.mark_fetching(imaging, entry.key.clone()) {
@@ -119,9 +98,9 @@ pub fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mu
 }
 
 
-pub fn fetch(tx: Sender<FetcherOperation>, entry: Arc<Entry>, imaging: Imaging) {
+fn fetch(tx: Sender<FetcherOperation>, entry: Arc<Entry>, imaging: Imaging) {
     spawn(move || {
-        let image = entry::image::get_image_buffer(&entry, &imaging).map_err(|it| s!(it));
-        tx.send(FetcherOperation::Done(entry.key.clone(), image)).unwrap();
+        let image_buffer = entry::image::get_image_buffer(&entry, &imaging).map_err(|it| s!(it));
+        tx.send(FetcherOperation::Done(entry.key.clone(), imaging, image_buffer)).unwrap();
     });
 }

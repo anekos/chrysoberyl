@@ -945,10 +945,12 @@ fn set_envs() {
     let version = env!("CARGO_PKG_VERSION").to_string();
     let sha = env!("VERGEN_SHA");
     let date = env!("VERGEN_COMMIT_DATE");
+    let mut args = env::args();
 
     puts_event!("version", "version" => version, "git_hash" => sha, "date" => date);
 
     env::set_var(constant::env_name("GIT_HASH"), sha);
     env::set_var(constant::env_name("GIT_DATE"), date);
     env::set_var(constant::env_name("VERSION"), version);
+    env::set_var(constant::env_name("APP_PATH"), args.next().unwrap());
 }

@@ -18,12 +18,13 @@ pub struct EntryInfo {
 }
 
 pub struct LazyEntryInfo {
-    pub dimensions: Option<Size>, // PDF makes None
-    pub is_animated: bool,
-    pub file_size: Option<u64>,
     pub accessed: Option<SystemTime>,
     pub created: Option<SystemTime>,
+    pub dimensions: Option<Size>, // PDF makes None
+    pub file_size: Option<u64>,
+    pub is_animated: bool,
     pub modified: Option<SystemTime>,
+    pub valid: bool,
 }
 
 
@@ -87,6 +88,11 @@ impl LazyEntryInfo {
             Pdf(_, _) => None,
         };
 
+        let valid = match *content {
+            Image(_) | Archive(_, _) | Memory(_, _) => size_anim.is_some(),
+            Pdf(_, _) => true,
+        };
+
         let file_size = if let Memory(ref content, _) = *content {
             Some(content.len() as u64)
         } else {
@@ -96,12 +102,13 @@ impl LazyEntryInfo {
         let file_meta = content.local_file_path().and_then(|ref it| metadata(it).ok());
 
         LazyEntryInfo {
-            dimensions: size_anim.map(|it| it.0),
-            is_animated: size_anim.map(|it| it.1).unwrap_or(false),
-            file_size: file_size.or_else(|| file_meta.as_ref().map(|it| it.len())),
             accessed: file_meta.as_ref().and_then(|it| it.accessed().ok()),
             created: file_meta.as_ref().and_then(|it| it.created().ok()),
+            dimensions: size_anim.map(|it| it.0),
+            file_size: file_size.or_else(|| file_meta.as_ref().map(|it| it.len())),
+            is_animated: size_anim.map(|it| it.1).unwrap_or(false),
             modified: file_meta.as_ref().and_then(|it| it.modified().ok()),
+            valid,
         }
     }
 }

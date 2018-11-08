@@ -131,7 +131,7 @@ fn bool_variable() -> Parser<char, EBool> {
         seq(name).map(move |_| EBool::Variable(var))
     }
 
-    gen("active", Active) | gen("animation", Animation)
+    gen("active", Active) | gen("animation", Animation) | gen("valid", Valid)
 }
 
 fn lit_true() -> Parser<char, EBool> {
@@ -251,6 +251,7 @@ fn test_parser() {
     assert_parse("width < 200 and height < 400");
     assert_parse("width < 200 and height < 400");
     assert_parse("width < 200 and height < 400 and extension == <jpg>");
+    assert_parse("valid");
 
     assert_parse("when path == <google> width < 200");
     assert_parse("unless path == <google> width < 200");

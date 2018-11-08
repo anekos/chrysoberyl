@@ -73,6 +73,7 @@ pub enum EVariable {
 pub enum EBVariable {
     Active, // AppWindowActive
     Animation,
+    Valid,
 }
 
 

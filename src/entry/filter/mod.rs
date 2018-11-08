@@ -95,7 +95,8 @@ fn eval_bool(info: &Info, content: &EntryContent, b: &EBool) -> bool {
         Variable(ref name) => {
             return match *name {
                 Active => info.app.active,
-                Animation => info.entry.lazy(content, |it| it.is_animated)
+                Animation => info.entry.lazy(content, |it| it.is_animated),
+                Valid => info.entry.lazy(content, |it| it.valid),
             }
         },
         Resolution(w, h) =>

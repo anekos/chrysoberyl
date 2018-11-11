@@ -307,8 +307,10 @@ impl Gui {
         self.status_bar_inner.set_property_width_request(width);
     }
 
-    pub fn register_ui_events(&mut self, skip: usize, app_tx: &Sender<Operation>) {
-        self.ui_event = Some(UIEvent::new(self, skip, app_tx));
+    pub fn register_ui_events(&mut self, skip: usize, time_to_hide_pointer: Option<u32>, app_tx: &Sender<Operation>) {
+        let ui_event = UIEvent::new(self, skip, app_tx);
+        ui_event.update_time_to_hide_pointer(time_to_hide_pointer);
+        self.ui_event = Some(ui_event);
     }
 
     pub fn reset_scrolls(&self, position: Position, to_end: bool) {
@@ -349,6 +351,12 @@ impl Gui {
         let cursor = Cursor::new_for_display(&display, cursor_type);
         let window = self.window.get_window().unwrap();
         window.set_cursor(Some(&cursor));
+    }
+
+    pub fn set_time_to_hide_pointer(&mut self, time: Option<u32>) {
+        if let Some(ref mut ui_event) = self.ui_event {
+            ui_event.update_time_to_hide_pointer(time);
+        }
     }
 
     pub fn set_user_ui<T: AsRef<Path>>(&mut self, path: &T) {

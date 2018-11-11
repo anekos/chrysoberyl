@@ -21,14 +21,19 @@ impl LazySender {
         LazySender { current: Arc::new(Mutex::new(None)), tx, delay }
     }
 
-    pub fn initialize(&mut self, op: Operation)  {
+    pub fn cancel(&self) {
+        let mut current = self.current.lock().unwrap();
+        *current = None;
+    }
+
+    pub fn initialize(&self, op: Operation)  {
         let current = self.current.lock().unwrap();
         if current.is_none() {
             self.tx.send(op).unwrap();
         }
     }
 
-    pub fn request(&mut self, op: Operation)  {
+    pub fn request(&self, op: Operation)  {
         let mut current = self.current.lock().unwrap();
         let expired_at = Instant::now() + self.delay;
 
@@ -50,22 +55,25 @@ impl LazySender {
                 sleep(delay);
 
                 {
-                    let current = current.lock().unwrap();
+                    let mut current = current.lock().unwrap();
+                    println!("current: {:?}", *current);
 
-                    if let Some((expired_at, ref op)) = *current {
+                    if let Some((expired_at, ref op)) = current.take() {
                         let now = Instant::now();
                         if expired_at <= now {
                             tx.send(op.clone()).unwrap();
-                            break;
                         } else {
                             delay = expired_at - now;
+                            continue;
                         }
                     }
+                    break;
                 }
             }
-
-            let mut current = current.lock().unwrap();
-            *current = None;
         });
+    }
+
+    pub fn set_delay(&mut self, duration: Duration) {
+        self.delay = duration;
     }
 }

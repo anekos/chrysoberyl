@@ -499,7 +499,7 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
 pub fn on_initialized(app: &mut App) -> EventResult {
     app.tx.send(Operation::UpdateUI).unwrap();
 
-    app.gui.register_ui_events(app.states.skip_resize_window, &app.primary_tx);
+    app.gui.register_ui_events(app.states.skip_resize_window, app.states.time_to_hide_pointer, &app.primary_tx);
     app.update_style();
     app.update_label(true, true);
     app.gui.show();
@@ -1584,6 +1584,8 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 app.cache.update_limit(app.states.pre_fetch.limit_of_items),
             Style =>
                 app.update_style(),
+            TimeToHidePointer =>
+                app.gui.set_time_to_hide_pointer(app.states.time_to_hide_pointer),
             Animation | ColorLink => {
                 app.cache.clear();
                 updated.image = true;

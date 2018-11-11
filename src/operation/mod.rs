@@ -520,7 +520,7 @@ impl fmt::Debug for Operation {
             PdfIndex(_, _, _, _, _, _) => "PdfIndex",
             PreFetch(_) => "PreFetch",
             Previous(_, _, _, _, _) => "Previous",
-            Pointer(visibility) => return write!(f, "pointer({:?})", visibility),
+            Pointer(visibility) => return write!(f, "Pointer({:?})", visibility),
             PopCount => "PopCount",
             Pull => "Pull ",
             Push(_, _, _) => "Push",

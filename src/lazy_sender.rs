@@ -56,17 +56,17 @@ impl LazySender {
 
                 {
                     let mut current = current.lock().unwrap();
-                    println!("current: {:?}", *current);
 
-                    if let Some((expired_at, ref op)) = current.take() {
+                    if let Some((expired_at, op)) = current.as_ref() {
                         let now = Instant::now();
-                        if expired_at <= now {
+                        if *expired_at <= now {
                             tx.send(op.clone()).unwrap();
                         } else {
-                            delay = expired_at - now;
+                            delay = *expired_at - now;
                             continue;
                         }
                     }
+                    *current = None;
                     break;
                 }
             }

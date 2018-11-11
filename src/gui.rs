@@ -11,7 +11,7 @@ use std::str::FromStr;
 use std::sync::mpsc::Sender;
 
 use cairo::{Context, ImageSurface, Format};
-use gdk::{DisplayExt, EventMask};
+use gdk::{Cursor, CursorType, Display, DisplayExt, EventMask, WindowExt};
 use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimationExt};
 use glib;
 use gtk::prelude::*;
@@ -211,6 +211,7 @@ impl Gui {
         });
 
         let event_box = tap!(it = EventBox::new(), {
+            it.add_events(EventMask::POINTER_MOTION_MASK.bits() as i32);
             it.add(&overlay);
             it.show();
         });
@@ -306,8 +307,10 @@ impl Gui {
         self.status_bar_inner.set_property_width_request(width);
     }
 
-    pub fn register_ui_events(&mut self, skip: usize, app_tx: &Sender<Operation>) {
-        self.ui_event = Some(UIEvent::new(self, skip, app_tx));
+    pub fn register_ui_events(&mut self, skip: usize, time_to_hide_pointer: Option<u32>, app_tx: &Sender<Operation>) {
+        let ui_event = UIEvent::new(self, skip, app_tx);
+        ui_event.update_time_to_hide_pointer(time_to_hide_pointer);
+        self.ui_event = Some(ui_event);
     }
 
     pub fn reset_scrolls(&self, position: Position, to_end: bool) {
@@ -336,6 +339,24 @@ impl Gui {
             scrolled |= scroll_window(&cell.window, direction, scroll_size, crush, count, reset_scrolls_1);
         }
         scrolled
+    }
+
+    pub fn set_pointer_visibility(&self, visibility: bool) {
+        let display = Display::get_default().unwrap();
+        let cursor_type = if visibility {
+            CursorType::Arrow
+        } else {
+            CursorType::BlankCursor
+        };
+        let cursor = Cursor::new_for_display(&display, cursor_type);
+        let window = self.window.get_window().unwrap();
+        window.set_cursor(Some(&cursor));
+    }
+
+    pub fn set_time_to_hide_pointer(&mut self, time: Option<u32>) {
+        if let Some(ref mut ui_event) = self.ui_event {
+            ui_event.update_time_to_hide_pointer(time);
+        }
     }
 
     pub fn set_user_ui<T: AsRef<Path>>(&mut self, path: &T) {

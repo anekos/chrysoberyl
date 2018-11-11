@@ -92,7 +92,7 @@ impl FromStr for PreDefinedOptionName {
             "log-file" | "log"                     => LogFile,
             "mask-operator"                        => MaskOperator,
             "path"                                 => PathList,
-            "pointer"                              => TimeToHidePointer,
+            "pointer-hide-delay"                   => TimeToHidePointer,
             "pre-render"                           => PreFetchEnabled,
             "pre-render-limit"                     => PreFetchLimit,
             "pre-render-pages"                     => PreFetchPageSize,

@@ -166,6 +166,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, context: 
         StdOut => gen("stdout", &st.stdout, context),
         Style => gen("style", &st.style, context),
         EmptyStatusFormat => gen("empty-status-format", &st.empty_status_format, context),
+        TimeToHidePointer => geno("pointer", &st.time_to_hide_pointer, context),
         TitleFormat => gen("title-format", &st.title_format, context),
         UpdateCacheAccessTime => gen("update-cache-atime", &b2s(st.update_cache_atime), context),
         VerticalFlip => gen("vertical-flip", &st.drawing.vertical_flip, context),

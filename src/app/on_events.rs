@@ -1506,6 +1506,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 StatusFormat => &mut app.states.status_format,
                 StdOut => &mut app.states.stdout,
                 Style => &mut app.states.style,
+                TimeToHidePointer => &mut app.states.time_to_hide_pointer,
                 TitleFormat => &mut app.states.title_format,
                 UpdateCacheAccessTime => &mut app.states.update_cache_atime,
                 VerticalFlip => &mut app.states.drawing.vertical_flip,

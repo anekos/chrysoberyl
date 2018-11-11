@@ -57,6 +57,7 @@ iterable_enum!(PreDefinedOptionName =>
     StatusFormat,
     StdOut,
     Style,
+    TimeToHidePointer,
     TitleFormat,
     UpdateCacheAccessTime,
     VerticalFlip,
@@ -91,6 +92,7 @@ impl FromStr for PreDefinedOptionName {
             "log-file" | "log"                     => LogFile,
             "mask-operator"                        => MaskOperator,
             "path"                                 => PathList,
+            "pointer"                              => TimeToHidePointer,
             "pre-render"                           => PreFetchEnabled,
             "pre-render-limit"                     => PreFetchLimit,
             "pre-render-pages"                     => PreFetchPageSize,
@@ -128,7 +130,7 @@ impl PreDefinedOptionName {
                 FitTo | HorizontalFlip | HorizontalViews | IdleTime | InitialPosition | LogFile | MaskOperator |
                 PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize | PreFetchStages |
                 Reverse | Rotation | Screen | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusFormat | EmptyStatusFormat | Style |
-                StdOut | UpdateCacheAccessTime | TitleFormat | VerticalFlip | VerticalViews | WatchFiles | HistoryFile => false,
+                StdOut | UpdateCacheAccessTime | TimeToHidePointer | TitleFormat | VerticalFlip | VerticalViews | WatchFiles | HistoryFile => false,
             CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => true,
         }
     }

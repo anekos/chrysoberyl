@@ -168,7 +168,6 @@ fn main(app_tx: &Sender<Operation>, rx: &Receiver<Event>, skip: usize) {
             Configure((w, h)) =>
                 on_configure(&mut on_configure_sender, app_tx, w, h, &mut conf),
             UpdateTimeToHidePointer(None) => {
-                println!("pointer: none");
                 app_tx.send(Operation::Pointer(true)).unwrap();
                 on_motion_sender.cancel();
                 ignore_motion = true;
@@ -178,7 +177,6 @@ fn main(app_tx: &Sender<Operation>, rx: &Receiver<Event>, skip: usize) {
                 app_tx.send(Operation::Pointer(false)).unwrap();
             }
             UpdateTimeToHidePointer(Some(time)) => {
-                println!("pointer: {:?}", time);
                 on_motion_sender.set_delay(Duration::from_millis(time.into()));
                 on_motion(&mut on_motion_sender);
                 ignore_motion = false;

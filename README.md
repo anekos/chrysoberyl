@@ -129,7 +129,7 @@ Open `<PATH>` file to control chrysoberyl.
 
 Open `<PATH>` fifo file to control chrysoberyl.
 
-## @controller-socket) [--as-binary|-b] <FILE>
+## @controller-socket [--as-binary|-b] <FILE>
 
 Open `<PATH>` socket to control chrysoberyl.
 

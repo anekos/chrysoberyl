@@ -92,6 +92,7 @@ pub enum Operation {
     PdfIndex(bool, bool, bool, Vec<Expandable>, poppler::index::Format, Option<String>), /* async, read_operations, search_path, ... */
     PreFetch(u64),
     Previous(Option<usize>, bool, MoveBy, bool, bool), /* count, ignore_views, move_by, wrap, forget */
+    Pointer(bool),
     PopCount,
     Pull,
     Push(Expandable, Option<Meta>, bool), /* path, meta, force */
@@ -519,6 +520,7 @@ impl fmt::Debug for Operation {
             PdfIndex(_, _, _, _, _, _) => "PdfIndex",
             PreFetch(_) => "PreFetch",
             Previous(_, _, _, _, _) => "Previous",
+            Pointer(_) => "Pointer",
             PopCount => "PopCount",
             Pull => "Pull ",
             Push(_, _, _) => "Push",

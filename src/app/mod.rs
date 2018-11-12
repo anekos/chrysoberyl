@@ -289,6 +289,8 @@ impl App {
                     on_pre_fetch(self, pre_fetch_serial),
                 Previous(count, ignore_views, move_by, wrap, remember) =>
                     on_previous(self, &mut updated, &mut to_end, count, ignore_views, move_by, wrap, remember),
+                Pointer(visibility) =>
+                    on_pointer(self, visibility),
                 PopCount =>
                     on_pop_count(self),
                 Pull =>

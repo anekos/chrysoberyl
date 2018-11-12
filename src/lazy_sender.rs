@@ -21,6 +21,13 @@ impl LazySender {
         LazySender { current: Arc::new(Mutex::new(None)), tx, delay }
     }
 
+    pub fn initialize(&mut self, op: Operation)  {
+        let current = self.current.lock().unwrap();
+        if current.is_none() {
+            self.tx.send(op).unwrap();
+        }
+    }
+
     pub fn request(&mut self, op: Operation)  {
         let mut current = self.current.lock().unwrap();
         let expired_at = Instant::now() + self.delay;

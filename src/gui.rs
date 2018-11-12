@@ -11,7 +11,7 @@ use std::str::FromStr;
 use std::sync::mpsc::Sender;
 
 use cairo::{Context, ImageSurface, Format};
-use gdk::{DisplayExt, EventMask};
+use gdk::{Cursor, CursorType, Display, DisplayExt, EventMask, WindowExt};
 use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimationExt};
 use glib;
 use gtk::prelude::*;
@@ -211,6 +211,7 @@ impl Gui {
         });
 
         let event_box = tap!(it = EventBox::new(), {
+            it.add_events(EventMask::POINTER_MOTION_MASK.bits() as i32);
             it.add(&overlay);
             it.show();
         });
@@ -336,6 +337,18 @@ impl Gui {
             scrolled |= scroll_window(&cell.window, direction, scroll_size, crush, count, reset_scrolls_1);
         }
         scrolled
+    }
+
+    pub fn set_pointer_visibility(&self, visibility: bool) {
+        let display = Display::get_default().unwrap();
+        let cursor_type = if visibility {
+            CursorType::Arrow
+        } else {
+            CursorType::BlankCursor
+        };
+        let cursor = Cursor::new_for_display(&display, cursor_type);
+        let window = self.window.get_window().unwrap();
+        window.set_cursor(Some(&cursor));
     }
 
     pub fn set_user_ui<T: AsRef<Path>>(&mut self, path: &T) {

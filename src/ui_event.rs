@@ -51,8 +51,9 @@ pub enum Event {
     ButtonRelease(Key, (f64, f64)),
     Configure((u32, u32)),
     Delete,
-    UIKeyPress(Key),
+    Motion,
     Scroll(Key, ScrollDirection),
+    UIKeyPress(Key),
     UpdateScreen(Screen),
     WindowKeyPress(Key, u32),
 }
@@ -86,6 +87,11 @@ fn register(gui: &Gui, skip: usize, app_tx: &Sender<Operation>) -> Sender<Event>
     gui.vbox.connect_key_press_event(clone_army!([tx] move |_, key| {
         tx.send(WindowKeyPress(Key::from(key), key.as_ref().keyval)).unwrap();
         Inhibit(true)
+    }));
+
+    gui.event_box.connect_motion_notify_event(clone_army!([tx] move |_, _| {
+        tx.send(Motion).unwrap();
+        Inhibit(false)
     }));
 
     gui.event_box.connect_button_press_event(clone_army!([tx] move |_, button| {
@@ -128,7 +134,8 @@ fn main(app_tx: &Sender<Operation>, rx: &Receiver<Event>, skip: usize) {
     use self::Event::*;
     use gui::{Screen as S};
 
-    let mut sender = LazySender::new(app_tx.clone(), Duration::from_millis(50));
+    let mut on_configure_sender = LazySender::new(app_tx.clone(), Duration::from_millis(50));
+    let mut on_motion_sender = LazySender::new(app_tx.clone(), Duration::from_millis(1000));
     let mut conf = Conf { skip, .. Conf::default() };
     let mut pressed_at = None;
     let mut screen = S::Main;
@@ -153,11 +160,13 @@ fn main(app_tx: &Sender<Operation>, rx: &Receiver<Event>, skip: usize) {
             Delete =>
                 app_tx.send(EventName::Quit.operation()).unwrap(),
             Configure((w, h)) =>
-                on_configure(&mut sender, app_tx, w, h, &mut conf),
+                on_configure(&mut on_configure_sender, app_tx, w, h, &mut conf),
             UpdateScreen(new_screen) =>
                 screen = new_screen,
             Scroll(key, direction) =>
                 if screen == S::Main { on_scroll(app_tx, key, direction) },
+            Motion =>
+                on_motion(&mut on_motion_sender),
             _ => (),
         }
     }
@@ -221,6 +230,11 @@ fn on_configure(sender: &mut LazySender, tx: &Sender<Operation>, w: u32, h: u32,
     }
     conf.width = w;
     conf.height = h;
+}
+
+fn on_motion(sender: &mut LazySender) {
+    sender.initialize(Operation::Pointer(true));
+    sender.request(Operation::Pointer(false));
 }
 
 fn on_drag_data_received(tx: &Sender<Operation>, selection: &SelectionData, drop_item_type: &DropItemType) {

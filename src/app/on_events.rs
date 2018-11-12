@@ -682,6 +682,7 @@ pub fn on_mark(app: &mut App, updated: &mut Updated, name: String, key: Option<(
 
 #[allow(unused_variables)]
 pub fn on_meow(app: &mut App, updated: &mut Updated) -> EventResult {
+    println!("meow");
     Ok(())
 }
 
@@ -815,6 +816,11 @@ pub fn on_previous(app: &mut App, updated: &mut Updated, to_end: &mut bool, coun
             }
         }
     }
+    Ok(())
+}
+
+pub fn on_pointer(app: &mut App, visibility: bool) -> EventResult {
+    app.gui.set_pointer_visibility(visibility);
     Ok(())
 }
 

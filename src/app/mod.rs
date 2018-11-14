@@ -295,26 +295,26 @@ impl App {
                     on_pop_count(self),
                 Pull =>
                     on_pull(self, &mut updated),
-                Push(path, meta, force) =>
-                    on_push(self, &mut updated, path.to_string(), meta, force),
+                Push(path, meta, force, show) =>
+                    on_push(self, &mut updated, path.to_string(), meta, force, show),
                 PushCount =>
                     on_push_count(self),
-                PushArchive(file, meta, force) =>
-                    on_push_archive(self, &file.expand(), meta, force, None),
-                PushClipboard(selection, as_operation, meta, force) =>
-                    on_push_clipboard(self, selection, as_operation, meta, force),
-                PushDirectory(file, meta, force) =>
-                    on_push_directory(self, &mut updated, file.expand(), meta, force),
-                PushImage(file, meta, force, expand_level) =>
-                    on_push_image(self, &mut updated, file.expand(), meta, force, expand_level, None),
-                PushMemory(buf, meta) =>
-                    on_push_memory(self, &mut updated, buf, meta),
-                PushPdf(file, meta, force) =>
-                    on_push_pdf(self, &mut updated, file.expand(), meta, force, None),
+                PushArchive(file, meta, force, show) =>
+                    on_push_archive(self, &file.expand(), meta, force, show, None),
+                PushClipboard(selection, as_operation, meta, force, show) =>
+                    on_push_clipboard(self, selection, as_operation, meta, force, show),
+                PushDirectory(file, meta, force, show) =>
+                    on_push_directory(self, &mut updated, file.expand(), meta, force, show),
+                PushImage(file, meta, force, show, expand_level) =>
+                    on_push_image(self, &mut updated, file.expand(), meta, force, show, expand_level, None),
+                PushMemory(buf, meta, show) =>
+                    on_push_memory(self, &mut updated, buf, meta, show),
+                PushPdf(file, meta, force, show) =>
+                    on_push_pdf(self, &mut updated, file.expand(), meta, force, show, None),
                 PushSibling(next, meta, force, show) =>
                     on_push_sibling(self, &mut updated, next, meta, force, show),
-                PushURL(url, meta, force, entry_type) =>
-                    on_push_url(self, &mut updated, url, meta, force, entry_type),
+                PushURL(url, meta, force, show, entry_type) =>
+                    on_push_url(self, &mut updated, url, meta, force, show, entry_type),
                 Query(operation, caption) =>
                     on_query(self, &mut updated, operation, caption),
                 Random =>

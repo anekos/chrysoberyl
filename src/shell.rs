@@ -68,7 +68,7 @@ fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<Str
             if as_binary {
                 let mut buffer = vec![];
                 match stdout.read_to_end(&mut buffer) {
-                    Ok(_) => tx.send(Operation::PushMemory(buffer, None)).unwrap(),
+                    Ok(_) => tx.send(Operation::PushMemory(buffer, None, false)).unwrap(),
                     Err(err) => puts_error!(err, "at" => "shell_stdout/as_binary"),
                 }
             } else {

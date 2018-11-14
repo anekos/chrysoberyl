@@ -14,29 +14,30 @@ use operation::{Operation, ClipboardSelection};
 
 
 
-pub fn get_operations(selection: ClipboardSelection, as_operation: bool, meta: Option<Meta>, force: bool) -> Result<Vec<Operation>, Box<Error>> {
+pub fn get_operations(selection: ClipboardSelection, as_operation: bool, meta: Option<Meta>, force: bool, show: bool) -> Result<Vec<Operation>, Box<Error>> {
     let cb = from_selection(selection);
 
     if let Some(pixbuf) = cb.wait_for_image() {
         let buffer = from_pixbuf(&pixbuf)?;
-        return Ok(vec![Operation::PushMemory(buffer, meta)]);
+        return Ok(vec![Operation::PushMemory(buffer, meta, show)]);
     }
 
     {
         let uris = cb.wait_for_uris();
         if !uris.is_empty() {
-            return Ok(uris.into_iter().map(|uri| Operation::PushURL(uri, meta.clone(), force, None)).collect())
+            return Ok(uris.into_iter().enumerate().map(|(index, uri)| Operation::PushURL(uri, meta.clone(), force, show && index == 0, None)).collect())
         }
     }
 
     if let Some(text) = cb.wait_for_text() {
-        return Ok(text.lines().into_iter().flat_map(|line| {
+        let lines = text.lines();
+        return Ok(lines.into_iter().enumerate().flat_map(|(index, line)| {
             if as_operation {
                 Operation::parse_fuzziness(line).map_err(|err| {
                     puts_error!(err, "operation" => o!(line), "at" => "clipboard/get_operations");
                 })
             } else {
-                Ok(Operation::Push(Expandable::expanded(o!(line)), meta.clone(), force))
+                Ok(Operation::Push(Expandable::expanded(o!(line)), meta.clone(), force, show && index == 0))
             }
         }).collect());
     }

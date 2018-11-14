@@ -53,7 +53,8 @@ impl Hash for ArchiveEntry {
 }
 
 
-pub fn fetch_entries(path: &PathBuf, meta: Option<Meta>, encodings: &[EncodingRef], tx: Sender<Operation>, mut sorting_buffer: SortingBuffer<QueuedOperation>, force: bool, url: Option<String>) {
+#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+pub fn fetch_entries(path: &PathBuf, meta: Option<Meta>, show: bool, encodings: &[EncodingRef], tx: Sender<Operation>, mut sorting_buffer: SortingBuffer<QueuedOperation>, force: bool, url: Option<String>) {
     let from_index: HashMap<usize, (usize, String)> = {
         #[derive(Clone, Debug)]
         struct IndexWithName {
@@ -146,6 +147,7 @@ pub fn fetch_entries(path: &PathBuf, meta: Option<Meta>, encodings: &[EncodingRe
                                     ArchiveEntry { name: (*name).to_owned(), index: serial, content: Arc::new(content) },
                                     meta.clone(),
                                     force,
+                                    show && serial == 0,
                                     url.clone()));
                             break;
                         }

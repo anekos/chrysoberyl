@@ -550,7 +550,6 @@ Execute `COMMAND` and pass the STDOUT of chrysoberyl to the `COMMAND` STDIN.
 ## @show [--wrap|-w] [--archive|-a] [--ignore-views|-i] [<COUNT>]
 
 Show the entry.
-This operation does not consider `views`.
 
 ## @shuffle
 

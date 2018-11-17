@@ -59,7 +59,7 @@ pub fn register_as_binary(tx: Sender<Operation>) {
         let mut stdin = stdin.lock();
         let mut buf = vec![];
         stdin.read_to_end(&mut buf).unwrap();
-        tx.send(Operation::PushMemory(buf, None)).unwrap();
+        tx.send(Operation::PushMemory(buf, None, false)).unwrap();
     });
 }
 

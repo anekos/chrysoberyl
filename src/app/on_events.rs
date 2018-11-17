@@ -443,13 +443,13 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
                 if first_path.is_none() {
                     *first_path = Some(file.clone());
                 }
-                on_events::on_push(app, updated, file.clone(), None, false)?;
+                on_events::on_push(app, updated, file.clone(), None, false, false)?;
             }
             CLE::Controller(source) => {
                 controller::register(app.tx.clone(), source)?;
             },
             CLE::Expand(file, recursive) => {
-                on_events::on_push(app, updated, file.clone(), None, false)?;
+                on_events::on_push(app, updated, file.clone(), None, false, false)?;
                 app.tx.send(Operation::Expand(recursive, Some(Path::new(&file).to_path_buf()))).unwrap();
             },
             CLE::Operation(op) => {
@@ -535,19 +535,14 @@ pub fn on_jump(app: &mut App, updated: &mut Updated, name: &str, load: bool) -> 
     let (ref entry_type, ref path, _) = *key;
 
     let op = match *entry_type {
-        Image => Some(Operation::PushImage(Expandable::new(path.clone()), None, false, None)),
-        Archive => Some(Operation::PushArchive(Expandable::new(path.clone()), None, false)),
-        PDF => Some(Operation::PushPdf(Expandable::new(path.clone()), None, false)),
-        _ => None,
+        Image => Operation::PushImage(Expandable::new(path.clone()), None, false, true, None),
+        Archive => Operation::PushArchive(Expandable::new(path.clone()), None, false, true),
+        PDF => Operation::PushPdf(Expandable::new(path.clone()), None, false, true),
+        _ => return Err(ChryError::Fixed("Entry not found"))?,
     };
 
-    if let Some(op) = op {
-        app.states.go = Some(SearchKey::from_key(key));
-        app.tx.send(op).unwrap();
-        return Ok(())
-    }
-
-    Err(ChryError::Fixed("Entry not found"))?
+    app.tx.send(op).unwrap();
+    Ok(())
 }
 
 pub fn on_kill_timer(app: &mut App, name: &str) -> EventResult {
@@ -839,54 +834,55 @@ pub fn on_push_count(app: &mut App) -> EventResult {
     Ok(())
 }
 
-pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<Meta>, force: bool) -> EventResult {
+pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<Meta>, force: bool, show: bool) -> EventResult {
     if is_url(&path) {
-        app.tx.send(Operation::PushURL(path, meta, force, None))?;
+        app.tx.send(Operation::PushURL(path, meta, force, show, None))?;
         return Ok(())
     }
 
-    on_push_path(app, updated, &Path::new(&path).to_path_buf(), meta, force)
+    on_push_path(app, updated, &Path::new(&path).to_path_buf(), meta, force, show)
 }
 
-pub fn on_push_archive(app: &mut App, path: &PathBuf, meta: Option<Meta>, force: bool, url: Option<String>) -> EventResult {
-    archive::fetch_entries(path, meta, &app.encodings, app.tx.clone(), app.sorting_buffer.clone(), force, url);
+pub fn on_push_archive(app: &mut App, path: &PathBuf, meta: Option<Meta>, force: bool, show: bool, url: Option<String>) -> EventResult {
+    archive::fetch_entries(path, meta, show, &app.encodings, app.tx.clone(), app.sorting_buffer.clone(), force, url);
     Ok(())
 }
 
-pub fn on_push_clipboard(app: &mut App, selection: ClipboardSelection, as_operation: bool, meta: Option<Meta>, force: bool) -> EventResult {
-    let ops = clipboard::get_operations(selection, as_operation, meta, force)?;
+pub fn on_push_clipboard(app: &mut App, selection: ClipboardSelection, as_operation: bool, meta: Option<Meta>, force: bool, show: bool) -> EventResult {
+    let ops = clipboard::get_operations(selection, as_operation, meta, force, show)?;
     for op in ops {
         app.tx.send(op).unwrap();
     }
     Ok(())
 }
 
-pub fn on_push_directory(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) -> EventResult {
+pub fn on_push_directory(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, show: bool) -> EventResult {
     let buffered = app.sorting_buffer.push_with_reserve(
-        QueuedOperation::PushDirectory(file, meta, force));
+        QueuedOperation::PushDirectory(file, meta, force, show));
     push_buffered(app, updated, buffered)
 }
 
-pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) -> EventResult {
+#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, show: bool, expand_level: Option<u8>, url: Option<String>) -> EventResult {
     let buffered = app.sorting_buffer.push_with_reserve(
-        QueuedOperation::PushImage(file, meta, force, expand_level, url));
+        QueuedOperation::PushImage(file, meta, force, show, expand_level, url));
     push_buffered(app, updated, buffered)
 }
 
-pub fn on_push_memory(app: &mut App, updated: &mut Updated, buf: Vec<u8>, meta: Option<Meta>) -> EventResult {
+pub fn on_push_memory(app: &mut App, updated: &mut Updated, buf: Vec<u8>, meta: Option<Meta>, show: bool) -> EventResult {
     let buffered = app.sorting_buffer.push_with_reserve(
-        QueuedOperation::PushMemory(buf, meta));
+        QueuedOperation::PushMemory(buf, meta, show));
     push_buffered(app, updated, buffered)
 }
 
-pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: Option<Meta>, force: bool) -> EventResult {
+pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: Option<Meta>, force: bool, show: bool) -> EventResult {
     if let Ok(path) = path.canonicalize() {
         if let Some(entry_type) = get_entry_type_from_filename(&path) {
             match entry_type {
                 EntryType::Archive =>
-                    return on_push_archive(app, &path, meta, force, None),
+                    return on_push_archive(app, &path, meta, force, show, None),
                 EntryType::PDF =>
-                    return on_push_pdf(app, updated, path.to_path_buf(), meta, force, None),
+                    return on_push_pdf(app, updated, path.to_path_buf(), meta, force, show, None),
                 _ =>
                     ()
             }
@@ -894,22 +890,22 @@ pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: 
     }
 
     if path.is_dir() {
-        on_push_directory(app, updated, path.clone(), meta, force)
+        on_push_directory(app, updated, path.clone(), meta, force, show)
     } else {
-        on_push_image(app, updated, path.clone(), meta, force, None, None)
+        on_push_image(app, updated, path.clone(), meta, force, show, None, None)
     }
 }
 
-pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, url: Option<String>) -> EventResult {
+pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, show: bool, url: Option<String>) -> EventResult {
     let document = PopplerDocument::new_from_file(&file);
     let n_pages = document.n_pages();
 
     let buffered = app.sorting_buffer.push_with_reserve(
-        QueuedOperation::PushPdfEntries(file, n_pages, meta, force, url));
+        QueuedOperation::PushPdfEntries(file, n_pages, meta, force, show, url));
     push_buffered(app, updated, buffered)
 }
 
-pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: Option<Meta>, force: bool, go: bool) -> EventResult {
+pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: Option<Meta>, force: bool, show: bool) -> EventResult {
     fn find_sibling(base: &PathBuf, next: bool) -> Option<PathBuf> {
         base.parent().and_then(|dir| {
             dir.read_dir().ok().and_then(|dir| {
@@ -942,16 +938,13 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
     });
 
     if let Some(found) = found {
-        if go {
-            on_go(app, updated, &SearchKey { path: o!(path_to_str(&found)), index: None})?;
-        }
-        on_push_path(app, updated, &found, meta, force)?;
+        on_push_path(app, updated, &found, meta, force, show)?;
     }
     Ok(())
 }
 
-pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) -> EventResult {
-    let buffered = app.remote_cache.fetch(url, meta, force, entry_type);
+pub fn on_push_url(app: &mut App, updated: &mut Updated, url: String, meta: Option<Meta>, force: bool, show: bool, entry_type: Option<EntryType>) -> EventResult {
+    let buffered = app.remote_cache.fetch(url, meta, force, show, entry_type);
     push_buffered(app, updated, buffered)
 }
 
@@ -1705,35 +1698,56 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
 
     let before_len = app.entries.len();
     let app_info = app.app_info();
+    let mut show_index = None;
 
     for op in ops {
+        let len = app.entries.len();
+        let mut do_show = false;
+
         match op {
-            PushImage(path, meta, force, expand_level, url) =>
-                app.entries.push_image(&app_info, &path, meta, force, expand_level, url)?,
-            PushDirectory(path, meta, force) =>
-                app.entries.push_directory(&app_info, &path, &meta, force)?,
-            PushArchive(archive_path, meta, force, url) =>
-                on_push_archive(app, &archive_path, meta, force, url)?,
-            PushArchiveEntry(archive_path, entry, meta, force, url) =>
-                app.entries.push_archive_entry(&app_info, &archive_path, &entry, meta, force, url),
-            PushMemory(buf, meta) =>
-                app.entries.push_memory(&app_info, buf, meta, false, None)?,
-            PushPdf(pdf_path, meta, force, url) =>
-                on_push_pdf(app, updated, pdf_path, meta, force, url)?,
-            PushPdfEntries(pdf_path, pages, meta, force, url) => {
+            PushImage(path, meta, force, show, expand_level, url) => {
+                app.entries.push_image(&app_info, &path, meta, force, expand_level, url)?;
+                do_show = show;
+            },
+            PushDirectory(path, meta, force, show) => {
+                app.entries.push_directory(&app_info, &path, &meta, force)?;
+                do_show = show;
+            },
+            PushArchive(archive_path, meta, force, show, url) =>
+                on_push_archive(app, &archive_path, meta, force, show, url)?,
+            PushArchiveEntry(archive_path, entry, meta, force, show, url) => {
+                app.entries.push_archive_entry(&app_info, &archive_path, &entry, meta, force, url);
+                do_show = show;
+            },
+            PushMemory(buf, meta, show) => {
+                app.entries.push_memory(&app_info, buf, meta, false, None)?;
+                do_show = show;
+            },
+            PushPdf(pdf_path, meta, force, show, url) =>
+                on_push_pdf(app, updated, pdf_path, meta, force, show, url)?,
+            PushPdfEntries(pdf_path, pages, meta, force, show, url) => {
                 let pdf_path = Arc::new(pdf_path.clone());
                 for index in 0 .. pages {
                     app.entries.push_pdf_entry(&app_info, &pdf_path, index, meta.clone(), force, url.clone());
                 }
-            }
+                do_show = show;
+            },
         }
+
+        if do_show {
+            show_index = Some(len + 1);
+        }
+
         updated.label = true;
     }
 
     app.update_paginator_condition();
     app.remote_cache.update_sorting_buffer_len();
 
-    if before_len == 0 && 0 < app.entries.len() {
+    if let Some(show_index) = show_index {
+        let paging = app.paging_with_count(false, false, Some(show_index));
+        updated.pointer = app.paginator.show(&paging);
+    } else if before_len == 0 && 0 < app.entries.len() {
         updated.pointer |= app.paginator.reset_level()
     }
 

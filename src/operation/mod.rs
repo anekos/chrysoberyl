@@ -95,16 +95,16 @@ pub enum Operation {
     Pointer(bool),
     PopCount,
     Pull,
-    Push(Expandable, Option<Meta>, bool), /* path, meta, force */
+    Push(Expandable, Option<Meta>, bool, bool), /* path, meta, force, show */
     PushCount,
-    PushArchive(Expandable, Option<Meta>, bool), /* path, meta, force */
-    PushClipboard(ClipboardSelection, bool, Option<Meta>, bool), /* selection, as_operation, meta, force */
-    PushDirectory(Expandable, Option<Meta>, bool), /* path, meta, force */
-    PushImage(Expandable, Option<Meta>, bool, Option<u8>), /* path, meta, force, expand-level */
-    PushMemory(Vec<u8>, Option<Meta>), /* memory */
-    PushPdf(Expandable, Option<Meta>, bool),
+    PushArchive(Expandable, Option<Meta>, bool, bool), /* path, meta, force, show */
+    PushClipboard(ClipboardSelection, bool, Option<Meta>, bool, bool), /* selection, as_operation, meta, force, show */
+    PushDirectory(Expandable, Option<Meta>, bool, bool), /* path, meta, force, show */
+    PushImage(Expandable, Option<Meta>, bool, bool, Option<u8>), /* path, meta, force, show, expand-level */
+    PushMemory(Vec<u8>, Option<Meta>, bool), /* memory, meta, show */
+    PushPdf(Expandable, Option<Meta>, bool, bool), /* path, meta, force, show */
     PushSibling(bool, Option<Meta>, bool, bool), /* next?, meta, force, show */
-    PushURL(String, Option<Meta>, bool, Option<EntryType>),
+    PushURL(String, Option<Meta>, bool, bool, Option<EntryType>), /* path, meta, force, show, entry_type */
     Query(Vec<String>, Option<String>), /* operation, caption */
     Random,
     Record(usize, usize, entry::Key), /* minimum_move, index, key */
@@ -183,13 +183,13 @@ pub enum MoveBy {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum QueuedOperation {
-    PushArchive(PathBuf, Option<Meta>, bool, Option<String>), /* path, meta, force, remote-url */
-    PushArchiveEntry(PathBuf, ArchiveEntry, Option<Meta>, bool, Option<String>), /* path, archive-entry, meta, force, remote-url */
-    PushDirectory(PathBuf, Option<Meta>, bool), /* path, meta, force */
-    PushImage(PathBuf, Option<Meta>, bool, Option<u8>, Option<String>), /* path, meta, force, expand-level, remote-url */
-    PushMemory(Vec<u8>, Option<Meta>), /* memory */
-    PushPdf(PathBuf, Option<Meta>, bool, Option<String>), /* path, meta, force, remote-url */
-    PushPdfEntries(PathBuf, usize, Option<Meta>, bool, Option<String>), /* path, pages, meta, force, remote-url */
+    PushArchive(PathBuf, Option<Meta>, bool, bool, Option<String>), /* path, meta, force, show, remote-url */
+    PushArchiveEntry(PathBuf, ArchiveEntry, Option<Meta>, bool, bool, Option<String>), /* path, archive-entry, meta, force, show, remote-url */
+    PushDirectory(PathBuf, Option<Meta>, bool, bool), /* path, meta, force */
+    PushImage(PathBuf, Option<Meta>, bool, bool, Option<u8>, Option<String>), /* path, meta, force, show, expand-level, remote-url */
+    PushMemory(Vec<u8>, Option<Meta>, bool), /* memory */
+    PushPdf(PathBuf, Option<Meta>, bool, bool, Option<String>), /* path, meta, force, show, remote-url */
+    PushPdfEntries(PathBuf, usize, Option<Meta>, bool, bool, Option<String>), /* path, pages, meta, force, show, remote-url */
 }
 
 #[derive(Default, Debug, Clone)]
@@ -318,14 +318,14 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@link-action" | "@link"        => Ok(Operation::LinkAction(whole[1..].to_vec())),
             "@prev" | "@p" | "@previous"    => parse_move5(whole, Previous),
             "@pop-count"                    => Ok(PopCount),
-            "@push"                         => parse_push(whole, |it, meta, force| Push(Expandable::new(it), meta, force)),
+            "@push"                         => parse_push(whole, |it, meta, force, show| Push(Expandable::new(it), meta, force, show)),
             "@push-count"                   => Ok(PushCount),
-            "@push-archive"                 => parse_push(whole, |it, meta, force| PushArchive(Expandable::new(it), meta, force)),
+            "@push-archive"                 => parse_push(whole, |it, meta, force, show| PushArchive(Expandable::new(it), meta, force, show)),
             "@push-clipboard"               => parse_push_clipboard(whole),
-            "@push-directory" | "@push-dir" => parse_push(whole, |it, meta, force| PushDirectory(Expandable::new(it), meta, force)),
+            "@push-directory" | "@push-dir" => parse_push(whole, |it, meta, force, show| PushDirectory(Expandable::new(it), meta, force, show)),
             "@push-image"                   => parse_push_image(whole),
             "@push-next"                    => parse_push_sibling(whole, true),
-            "@push-pdf"                     => parse_push(whole, |it, meta, force| PushPdf(Expandable::new(it), meta, force)),
+            "@push-pdf"                     => parse_push(whole, |it, meta, force, show| PushPdf(Expandable::new(it), meta, force, show)),
             "@push-previous" | "@push-prev" => parse_push_sibling(whole, false),
             "@push-url"                     => parse_push_url(whole),
             "@query"                        => parse_query(whole),
@@ -387,7 +387,7 @@ impl Operation {
 
     pub fn parse_fuzziness(s: &str) -> Result<Operation, ChryError> {
         match _parse_from_str(s) {
-            Err(ParsingError::NotOperation(_)) => Ok(Operation::Push(Expandable::new(o!(s)), None, false)),
+            Err(ParsingError::NotOperation(_)) => Ok(Operation::Push(Expandable::new(o!(s)), None, false, false)),
             Err(err) => Err(ChryError::from(err)),
             Ok(op) => Ok(op)
         }
@@ -523,16 +523,16 @@ impl fmt::Debug for Operation {
             Pointer(visibility) => return write!(f, "Pointer({:?})", visibility),
             PopCount => "PopCount",
             Pull => "Pull ",
-            Push(_, _, _) => "Push",
+            Push(_, _, _, _) => "Push",
             PushCount => "PushCount",
-            PushArchive(_, _, _) => "PushArchive",
-            PushClipboard(_, _, _, _) => "PushClipboard",
-            PushDirectory(_, _, _) => "PushDirectory",
-            PushImage(_, _, _, _) => "PushImage",
-            PushMemory(_, _) => "PushMemory",
-            PushPdf(_, _, _) => "PushPdf",
+            PushArchive(_, _, _, _) => "PushArchive",
+            PushClipboard(_, _, _, _, _) => "PushClipboard",
+            PushDirectory(_, _, _, _) => "PushDirectory",
+            PushImage(_, _, _, _, _) => "PushImage",
+            PushMemory(_, _, _) => "PushMemory",
+            PushPdf(_, _, _, _) => "PushPdf",
             PushSibling(_, _, _, _) => "PushSibling",
-            PushURL(_, _, _, _) => "PushURL",
+            PushURL(_, _, _, _, _) => "PushURL",
             Query(_, _) => "Query",
             Random => "Random ",
             Record(_, _, _) => "Record",

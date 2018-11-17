@@ -60,6 +60,7 @@ pub struct Request {
     pub url: String,
     cache_filepath: PathBuf,
     force: bool,
+    show: bool,
     options: CurlOptions,
     ticket: usize,
 }
@@ -67,7 +68,7 @@ pub struct Request {
 
 #[derive(Clone)]
 enum Getter {
-    Queue(String, PathBuf, Option<Meta>, bool, Option<EntryType>),
+    Queue(String, PathBuf, Option<Meta>, bool, bool, Option<EntryType>), /* url, filepath, meta, force, show, entry_type */
     Done(usize, Request),
     Fail(usize, String, Request),
 }
@@ -89,7 +90,7 @@ impl RemoteCache {
         RemoteCache { main_tx, sorting_buffer, do_update_atime: false, state }
     }
 
-    pub fn fetch(&mut self, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) -> Vec<QueuedOperation> {
+    pub fn fetch(&mut self, url: String, meta: Option<Meta>, force: bool, show: bool, entry_type: Option<EntryType>) -> Vec<QueuedOperation> {
         if_let_ok!(filepath = generate_temporary_filename(&url), |err: Box<Error>| {
             puts_error!(err, "at" => "generate_temporary_filename");
             vec![]
@@ -102,11 +103,11 @@ impl RemoteCache {
                 }
             }
             let result = self.sorting_buffer.push_with_reserve(
-                make_queued_operation(filepath, url, meta, force, entry_type));
+                make_queued_operation(filepath, url, meta, force, show, entry_type));
             self.update_sorting_buffer_len();
             result
         } else {
-            self.main_tx.send(Getter::Queue(url, filepath, meta, force, entry_type)).unwrap();
+            self.main_tx.send(Getter::Queue(url, filepath, meta, force, show, entry_type)).unwrap();
             vec![]
         }
     }
@@ -140,11 +141,11 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
 
         while let Ok(it) = main_rx.recv() {
             match it {
-                Queue(url, cache_filepath, meta, force, entry_type) => {
+                Queue(url, cache_filepath, meta, force, show, entry_type) => {
                     let mut state = state.lock().unwrap();
                     let ticket = buffer.reserve();
 
-                    let request = Request { ticket, url: url.clone(), cache_filepath, meta, force, entry_type, options: state.curl_options.clone() };
+                    let request = Request { ticket, url: url.clone(), cache_filepath, meta, force, show, entry_type, options: state.curl_options.clone() };
 
                     if let Some(worker) = state.idles.pop() {
                         state.processing.insert(request.clone());
@@ -161,7 +162,7 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                     state.processing.remove(&request);
                     buffer.push(
                         request.ticket,
-                        make_queued_operation(request.cache_filepath, request.url, request.meta, request.force, request.entry_type));
+                        make_queued_operation(request.cache_filepath, request.url, request.meta, request.force, request.show, request.entry_type));
                     app_tx.send(Operation::Pull).unwrap();
                     try_next(&app_tx, thread_id, &mut state);
                     log_status(&app_tx, &SP::Complete(thread_id), &state, buffer.len());
@@ -258,18 +259,18 @@ fn generate_temporary_filename(url: &str) -> Result<PathBuf, Box<Error>> {
     Ok(result)
 }
 
-fn make_queued_operation(file: PathBuf, url: String, meta: Option<Meta>, force: bool, entry_type: Option<EntryType>) -> QueuedOperation {
+fn make_queued_operation(file: PathBuf, url: String, meta: Option<Meta>, force: bool, show: bool, entry_type: Option<EntryType>) -> QueuedOperation {
     let entry_type = entry_type.or_else(|| {
         get_entry_type_from_filename(&file)
     }).unwrap_or(EntryType::Image);
 
     match entry_type {
         EntryType::Image =>
-            QueuedOperation::PushImage(file, meta, force, None, Some(url)),
+            QueuedOperation::PushImage(file, meta, force, show, None, Some(url)),
         EntryType::Archive =>
-            QueuedOperation::PushArchive(file, meta, force, Some(url)),
+            QueuedOperation::PushArchive(file, meta, force, show, Some(url)),
         EntryType::PDF =>
-            QueuedOperation::PushPdf(file, meta, force,  Some(url)),
+            QueuedOperation::PushPdf(file, meta, force, show, Some(url)),
         _ =>
             not_implemented!(),
     }

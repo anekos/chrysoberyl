@@ -778,20 +778,22 @@ pub fn parse_pdf_index(args: &[String]) -> Result<Operation, ParsingError> {
 }
 
 pub fn parse_push<T>(args: &[String], op: T) -> Result<Operation, ParsingError>
-where T: Fn(String, Option<Meta>, bool) -> Operation {
+where T: Fn(String, Option<Meta>, bool, bool) -> Operation {
     let mut meta: Vec<MetaEntry> = vec![];
     let mut paths = Vec::<String>::new();
     let mut force = false;
+    let mut show = false;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut meta).add_option(&["--meta", "-m"], Collect, "Meta data");
         ap.refer(&mut force).add_option(&["--force", "-f"], StoreTrue, "Meta data");
+        ap.refer(&mut show).add_option(&["--show", "-s"], StoreTrue, "Show this image after push");
         ap.refer(&mut paths).add_argument("Path", Collect, "Path to resource").required();
         parse_args(&mut ap, args)
     } .map(|_| {
         let meta = new_opt_meta(meta);
-        let ops = paths.into_iter().map(|it| op(it, meta.clone(), force)).collect();
+        let ops = paths.into_iter().map(|it| op(it, meta.clone(), force, show)).collect();
         Operation::Multi(ops, false)
     })
 }
@@ -801,6 +803,7 @@ pub fn parse_push_clipboard(args: &[String]) -> Result<Operation, ParsingError> 
     let mut as_operation = false;
     let mut selection = ClipboardSelection::default();
     let mut force = false;
+    let mut show = false;
 
     {
         let mut ap = ArgumentParser::new();
@@ -813,10 +816,11 @@ pub fn parse_push_clipboard(args: &[String]) -> Result<Operation, ParsingError> 
             .add_option(&["--clipboard", "-c"], StoreConst(ClipboardSelection::Clipboard), "Use `Clipboard`")
             .add_option(&["--primary", "-1", "-p"], StoreConst(ClipboardSelection::Primary), "Use `Primary`")
             .add_option(&["--secondary", "-2", "-s"], StoreConst(ClipboardSelection::Secondary), "Use `Secondary`");
+        ap.refer(&mut show).add_option(&["--show", "-s"], StoreTrue, "Show this image after push");
         parse_args(&mut ap, args)
     } .map(|_| {
         let meta = new_opt_meta(meta);
-        Operation::PushClipboard(selection, as_operation, meta, force)
+        Operation::PushClipboard(selection, as_operation, meta, force, show)
     })
 }
 
@@ -825,6 +829,7 @@ pub fn parse_push_image(args: &[String]) -> Result<Operation, ParsingError> {
     let mut paths = Vec::<String>::new();
     let mut expand_level = None;
     let mut force = false;
+    let mut show = false;
 
     {
         let mut ap = ArgumentParser::new();
@@ -834,10 +839,11 @@ pub fn parse_push_image(args: &[String]) -> Result<Operation, ParsingError> {
             .add_option(&["--expand", "-e"], StoreConst(Some(0)), "Push and expand")
             .add_option(&["--expand-recursive", "-E"], StoreOption, "Push and expand recursive");
         ap.refer(&mut paths).add_argument("Path", Collect, "Path to image file").required();
+        ap.refer(&mut show).add_option(&["--show", "-s"], StoreTrue, "Show this image after push");
         parse_args(&mut ap, args)
     } .map(|_| {
         let meta = new_opt_meta(meta);
-        let ops = paths.into_iter().map(|it| Operation::PushImage(Expandable::new(it), meta.clone(), force, expand_level)).collect();
+        let ops = paths.into_iter().map(|it| Operation::PushImage(Expandable::new(it), meta.clone(), force, show, expand_level)).collect();
         Operation::Multi(ops, false)
     })
 }
@@ -862,18 +868,20 @@ pub fn parse_push_url(args: &[String]) -> Result<Operation, ParsingError> {
     let mut meta: Vec<MetaEntry> = vec![];
     let mut urls = Vec::<String>::new();
     let mut force = false;
+    let mut show = false;
     let mut entry_type = None;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut meta).add_option(&["--meta", "-m"], Collect, "Meta data");
         ap.refer(&mut force).add_option(&["--force", "-f"], StoreTrue, "Meta data");
+        ap.refer(&mut show).add_option(&["--show", "-s"], StoreTrue, "Show the found entry");
         ap.refer(&mut entry_type).add_option(&["--type", "-t", "--as"], StoreOption, "Type (image/archive/pdf)");
         ap.refer(&mut urls).add_argument("URL", Collect, "URL").required();
         parse_args(&mut ap, args)
     } .map(|_| {
         let meta = new_opt_meta(meta);
-        let ops = urls.into_iter().map(|it| Operation::PushURL(it, meta.clone(), force, entry_type)).collect();
+        let ops = urls.into_iter().map(|it| Operation::PushURL(it, meta.clone(), force, show,entry_type)).collect();
         Operation::Multi(ops, false)
     })
 }

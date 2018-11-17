@@ -424,48 +424,48 @@ e.g)
 Show `COUNT`th previous entry.
 
 
-## @push [--meta <KEY_VALUE>]... [--force|-f] <PATH>
+## @push [--meta <KEY_VALUE>]... [--force|-f] [--show|-s] <PATH>
 
 Add a entry.
 `PATH` is URL, file or directory.
 
 
-## @push-archive [--meta <KEY_VALUE>]... [--force|-f] <FILE>
+## @push-archive [--meta <KEY_VALUE>]... [--force|-f] [--show|-s] <FILE>
 
 Add a archive file.
 
 
-## @push-clipboard [--meta <KEY_VALUE>]... [--operation|-o] [--primary|-1|--secondary|-2|--clipboard]
+## @push-clipboard [--meta <KEY_VALUE>]... [--operation|-o] [--show|-s] [--primary|-1|--secondary|-2|--clipboard]
 
 Add a clipboard image.
 
 
-## (@push-directory|@push-dir) [--meta <KEY_VALUE>]... [--force|-f] <DIRECTORY>
+## (@push-directory|@push-dir) [--meta <KEY_VALUE>]... [--force|-f] [--show|-s] <DIRECTORY>
 
 Add the images that the `DIRECTORY` contains.
 
 
-## @push-image [--meta <KEY_VALUE>]... [--force|-f] [--expand|-e] [--expand-recursive|-E] <FILE>
+## @push-image [--meta <KEY_VALUE>]... [--force|-f] [--show|-s] [--expand|-e] [--expand-recursive|-E] <FILE>
 
 Add a image.
 If `--expand` (or `--expand-recursive`) is given, add the images that the directory of `PATH` contains.
 
 
-## @push-next
+## @push-next [--show|-s]
 
 Add a next file.
 
 
-## @push-pdf
+## @push-pdf [--show|-s]
 
 Add a PDF file.
 
 
-## (@push-previous|@push-prev)
+## (@push-previous|@push-prev) [--show|-s]
 
 Add a previous file.
 
-## @push-url [--meta <KEY_VALUE>]... [--force|-f] [(--type|-t|--as) <TYPE>] <URL>
+## @push-url [--meta <KEY_VALUE>]... [--force|-f] [--show|-s] [(--type|-t|--as) <TYPE>] <URL>
 
 Add a URL to image/PDF/archive.
 

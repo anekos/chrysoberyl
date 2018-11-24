@@ -45,6 +45,9 @@ pub enum OptionValue {
     StringOrFile,
 }
 
+const SESSIONS: &str = "options entries queue paths position mappings envs filter reading status markers timers all";
+
+
 impl Definition {
     pub fn new() -> Self {
         let mut original_operations = vec![];
@@ -217,6 +220,7 @@ fn value() -> Parser<char, Value> {
             "OPTION" => Value::OptionName,
             "PATH" => Value::Path,
             "VALUE" => Value::OptionValue,
+            "SESSION" => Value::Literals(SESSIONS.split(' ').map(|it| s!(it)).collect()),
             _ => Value::Any,
         }
     })

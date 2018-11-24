@@ -1231,6 +1231,8 @@ impl FromStr for Session {
                 Ok(Session::Filter),
             "reading" | "read" | "r" =>
                 Ok(Session::Reading),
+            "status" | "stat" | "s" =>
+                Ok(Session::Status),
             "markers" | "marks" =>
                 Ok(Session::Markers),
             "timers" | "t" =>

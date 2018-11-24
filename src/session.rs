@@ -22,6 +22,7 @@ use state::{self, States, Filters};
 use timer::TimerManager;
 use util::path::path_to_str;
 use util::shell::{escape, escape_pathbuf};
+use util::string::join;
 use util::time::duration_to_seconds;
 
 
@@ -39,6 +40,7 @@ pub enum Session {
     Position,
     Queue,
     Reading,
+    Status,
     Timers,
     All,
 }
@@ -77,7 +79,8 @@ pub fn write_session(app: &App, session: Session, out: &mut String) {
             write_mappings(&app.mapping, out);
             write_markers(&app.marker, out);
             write_paginator(app.current().map(|it| it.0), &app.paginator, out);
-        }
+        },
+        Status => write_status(&app, out),
         All => {
             write_options(&app.states, &app.gui, false, out);
             write_entries(&app.entries, out);
@@ -232,6 +235,11 @@ pub fn write_queue(state: &Arc<Mutex<::remote_cache::State>>, out: &mut String) 
         sprint!(out, "{}", meta_args(&request.meta));
         sprintln!(out, " {}", escape(&request.url));
     }
+}
+
+pub fn write_status(app: &App, out: &mut String) {
+    let len: Vec<String> = app.cache.len().iter().map(|it| s!(it)).collect();
+    sprintln!(out, "# cache={}", join(len.as_slice(), ','));
 }
 
 pub fn write_entries(entries: &EntryContainer, out: &mut String) {

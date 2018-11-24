@@ -28,6 +28,12 @@ pub struct ImageCache {
 }
 
 
+impl Stage {
+    pub fn len(&self) -> usize {
+        self.cache.len()
+    }
+}
+
 impl ImageCache {
     pub fn new(limit: usize) -> ImageCache {
         ImageCache {
@@ -39,7 +45,7 @@ impl ImageCache {
 
     pub fn update_limit(&mut self, limit: usize) {
         self.limit = limit;
-        self.stages.each(move |it| it.cache.update_limit(limit));
+        self.stages.each_mut(move |it| it.cache.update_limit(limit));
     }
 
     pub fn clear(&mut self) {
@@ -110,6 +116,14 @@ impl ImageCache {
                 entry::image::get_image_buffer(entry, imaging).map_err(|it| s!(it))
             })
         })
+    }
+
+    pub fn len(&self) -> Vec<usize> {
+        let mut result = vec![];
+        self.stages.each(|it| {
+            result.push(it.len());
+        });
+        result
     }
 
     pub fn cherenkov1(&mut self, entry: &Entry, imaging: &Imaging, modifier: Modifier) {

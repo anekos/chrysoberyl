@@ -91,6 +91,7 @@ pub fn write_session(app: &App, session: Session, out: &mut String) {
             write_filters(&app.states.last_filter, out);
             write_timers(&app.timers, out);
             write_paginator(app.current().map(|it| it.0), &app.paginator, out);
+            write_status(app, out);
         }
     }
 }

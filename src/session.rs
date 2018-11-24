@@ -29,17 +29,17 @@ use util::time::duration_to_seconds;
 
 #[derive(Clone, Debug, PartialEq, Copy)]
 pub enum Session {
-    Options,
     Entries,
-    Queue,
-    Position,
-    Paths,
-    Mappings,
-    Markers,
     Envs,
     Filter,
-    Timers,
+    Mappings,
+    Markers,
+    Options,
+    Paths,
+    Position,
+    Queue,
     Reading,
+    Timers,
     All,
 }
 

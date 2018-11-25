@@ -54,9 +54,17 @@ pub enum WriteContext {
 }
 
 
-pub fn write_sessions(app: &App, sessions: &[Session], out: &mut String) {
+pub fn write_sessions(app: &App, sessions: &[Session], freeze: bool, out: &mut String) {
+    if freeze {
+        sprintln!(out, "@enable freeze");
+    }
+
     for session in sessions {
         write_session(app, *session, out);
+    }
+
+    if freeze {
+        sprintln!(out, "@queue @disable freeze");
     }
 }
 
@@ -150,6 +158,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, context: 
         CurlLowSpeedTime => geno("curl-low-speed-time", &st.curl_options.low_speed_time, context),
         CurlTimeout => geno("curl-timeout", &st.curl_options.connect_timeout, context),
         FitTo => gen("fit-to", &st.drawing.fit_to, context),
+        Freeze => gen("auto-reload", &b2s(st.freezed), context),
         HistoryFile => genp("history-file", &st.history_file, context),
         HorizontalFlip => gen("horizontal-flip", &st.drawing.horizontal_flip, context),
         HorizontalViews => gen("horizontal-views", &st.view.cols, context),

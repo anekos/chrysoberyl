@@ -215,8 +215,8 @@ impl App {
                     on_delete(self, &mut updated, *expr),
                 Draw =>
                     ok!(updated.image = true),
-                Editor(ref editor_command, ref files, ref sessions, comment_out) =>
-                   on_editor(self, editor_command.clone(), files, sessions, comment_out),
+                Editor(ref editor_command, ref files, ref sessions, comment_out, freeze) =>
+                   on_editor(self, editor_command.clone(), files, sessions, comment_out, freeze),
                 Error(error) =>
                     on_error(self, &mut updated, error),
                 Eval(ref op) =>
@@ -317,6 +317,8 @@ impl App {
                     on_push_url(self, &mut updated, url, meta, force, show, entry_type),
                 Query(operation, caption) =>
                     on_query(self, &mut updated, operation, caption),
+                Queue(ref operation) =>
+                    on_queue(self, operation),
                 Random =>
                     on_random(self, &mut updated, len),
                 Record(minimum_move, position, key) =>
@@ -331,16 +333,16 @@ impl App {
                     on_reset_image(self, &mut updated),
                 ResetScrolls(to_end) =>
                     on_reset_scrolls(self, to_end),
-                Save(ref path, ref sources) =>
-                    on_save(self, path, sources),
+                Save(ref path, ref sources, freeze) =>
+                    on_save(self, path, sources, freeze),
                 SearchText(text, backward, color) =>
                     on_search_text(self, &mut updated, text, backward, color),
                 SetEnv(name, value) =>
                     on_set_env(self, &name, &value.map(|it| it.to_string())),
                 Scroll(direction, scroll_size, crush, reset_at_end, ref operation, reset_scrolls_1) =>
                     on_scroll(self, direction, scroll_size, crush, reset_at_end, operation, reset_scrolls_1, context),
-                Shell(async, read_operations, search_path, as_binary, ref command_line, ref stdin_sources) =>
-                    on_shell(self, async, read_operations, search_path, as_binary, command_line, stdin_sources),
+                Shell(async, read_operations, search_path, as_binary, ref command_line, ref stdin_sources, freeze) =>
+                    on_shell(self, async, read_operations, search_path, as_binary, command_line, stdin_sources, freeze),
                 ShellFilter(ref command_line, search_path) =>
                     on_shell_filter(self, command_line, search_path),
                 Show(count, ignore_views, move_by, _) =>
@@ -438,6 +440,10 @@ impl App {
             self.do_clear_cache = true;
             // FIXME Re-draw just after UI updated
             self.send_lazy_draw(Some(100), to_end);
+            return;
+        }
+
+        if self.states.freezed {
             return;
         }
 

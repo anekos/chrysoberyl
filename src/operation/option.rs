@@ -34,6 +34,7 @@ iterable_enum!(PreDefinedOptionName =>
     CurlTimeout,
     EmptyStatusFormat,
     FitTo,
+    Freeze,
     HistoryFile,
     HorizontalFlip,
     HorizontalViews,
@@ -84,6 +85,7 @@ impl FromStr for PreDefinedOptionName {
             "curl-timeout"                         => CurlTimeout,
             "empty-status-format"                  => EmptyStatusFormat,
             "fit-to" | "fit"                       => FitTo,
+            "freeze" | "freezed"                   => Freeze,
             "history-file"                         => HistoryFile,
             "horizontal-flip"                      => HorizontalFlip,
             "horizontal-views"                     => HorizontalViews,
@@ -127,7 +129,7 @@ impl PreDefinedOptionName {
         match *self {
             AbbrevLength | Animation | AutoReload | AutoPaging |
                 ColorLink |
-                FitTo | HorizontalFlip | HorizontalViews | IdleTime | InitialPosition | LogFile | MaskOperator |
+                FitTo | Freeze | HorizontalFlip | HorizontalViews | IdleTime | InitialPosition | LogFile | MaskOperator |
                 PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize | PreFetchStages |
                 Reverse | Rotation | Screen | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusFormat | EmptyStatusFormat | Style |
                 StdOut | UpdateCacheAccessTime | TimeToHidePointer | TitleFormat | VerticalFlip | VerticalViews | WatchFiles | HistoryFile => false,

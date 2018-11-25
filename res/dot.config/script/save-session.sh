@@ -24,4 +24,4 @@ function dialog {
 
 path="$(dialog)"
 
-printf '@save %q\n' "$path"
+printf '@save --freeze %q\n' "$path"

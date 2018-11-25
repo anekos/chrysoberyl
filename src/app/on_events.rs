@@ -212,14 +212,14 @@ pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) -> Even
     Ok(())
 }
 
-pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Expandable], sessions: &[Session], comment_out: bool) -> EventResult {
+pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Expandable], sessions: &[Session], comment_out: bool, freeze: bool) -> EventResult {
     let tx = app.tx.clone();
     let source = with_ouput_string!(out, {
         for file in files {
             let mut file = File::open(file.expand())?;
             file.read_to_string(out)?;
         }
-        write_sessions(app, sessions, out);
+        write_sessions(app, sessions, freeze, out);
         if comment_out {
             let mut co = prefixed_lines("# ", out);
             swap(&mut co, out);
@@ -957,6 +957,12 @@ pub fn on_query(app: &mut App, updated: &mut Updated, operation: Vec<String>, ca
     Ok(())
 }
 
+pub fn on_queue(app: &mut App, op: &[String]) -> EventResult {
+    let op = Operation::parse_from_vec(op)?;
+    app.tx.send(op).unwrap();
+    Ok(())
+}
+
 pub fn on_quit() -> EventResult {
     termination::execute();
     Ok(())
@@ -1025,9 +1031,9 @@ pub fn on_reset_scrolls(app: &mut App, to_end: bool) -> EventResult {
     Ok(())
 }
 
-pub fn on_save(app: &mut App, path: &Path, sessions: &[Session]) -> EventResult {
+pub fn on_save(app: &mut App, path: &Path, sessions: &[Session], freeze: bool) -> EventResult {
     let mut file = File::create(path)?;
-    file.write_all(with_ouput_string!(out, write_sessions(app, sessions, out)).as_str().as_bytes())?;
+    file.write_all(with_ouput_string!(out, write_sessions(app, sessions, freeze, out)).as_str().as_bytes())?;
     Ok(())
 }
 
@@ -1163,9 +1169,10 @@ pub fn on_set_env(_: &mut App, name: &str, value: &Option<String>) -> EventResul
     Ok(())
 }
 
-pub fn on_shell(app: &mut App, async: bool, read_operations: bool, search_path: bool, as_binary: bool, command_line: &[Expandable], sessions: &[Session]) -> EventResult {
+#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+pub fn on_shell(app: &mut App, async: bool, read_operations: bool, search_path: bool, as_binary: bool, command_line: &[Expandable], sessions: &[Session], freeze: bool) -> EventResult {
     let stdin = if !sessions.is_empty() {
-        Some(with_ouput_string!(out, write_sessions(app, sessions, out)))
+        Some(with_ouput_string!(out, write_sessions(app, sessions, freeze, out)))
     } else {
         None
     };
@@ -1461,6 +1468,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
     use size;
 
     let mut dummy_switch = DummySwtich::new();
+    let freezed = app.states.freezed;
 
     {
         let value: &mut OptionValue = match *option_name {
@@ -1476,6 +1484,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 CurlTimeout => &mut app.states.curl_options.timeout,
                 EmptyStatusFormat => &mut app.states.empty_status_format,
                 FitTo => &mut app.states.drawing.fit_to,
+                Freeze => &mut app.states.freezed,
                 HistoryFile => &mut app.states.history_file,
                 HorizontalFlip => &mut app.states.drawing.horizontal_flip,
                 HorizontalViews => &mut app.states.view.cols,
@@ -1557,6 +1566,8 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 app.update_watcher(),
             AbbrevLength =>
                 updated.label = true,
+            Freeze if freezed && !app.states.freezed =>
+                updated.image = true,
             StablePush =>
                 app.sorting_buffer.set_stability(app.states.stable_push),
             StatusBar => {

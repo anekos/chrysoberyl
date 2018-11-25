@@ -328,16 +328,18 @@ pub fn parse_editor(args: &[String]) -> Result<Operation, ParsingError> {
     let mut files: Vec<Expandable> = vec![];
     let mut comment_out = false;
     let mut command_line: Option<Expandable> = None;
+    let mut freeze = false;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut files).add_option(&["--file", "-f"], Collect, "Insert the given file");
         ap.refer(&mut sessions).add_option(&["--session", "-S"], Collect, "Sessions");
         ap.refer(&mut comment_out).add_option(&["--comment-out", "-c"], StoreTrue, "Comment out");
+        ap.refer(&mut freeze).add_option(&["--freeze", "-f"], StoreTrue, "Insert freezer to stop drawing");
         ap.refer(&mut command_line).add_argument("command-line", StoreOption, "Command line to open editor");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Editor(command_line, files, sessions, comment_out)
+        Operation::Editor(command_line, files, sessions, comment_out, freeze)
     })
 }
 
@@ -929,17 +931,19 @@ pub fn parse_refresh(args: &[String]) -> Result<Operation, ParsingError> {
 pub fn parse_save(args: &[String]) -> Result<Operation, ParsingError> {
     let mut path: String = o!("");
     let mut sources: Vec<Session> = vec![];
+    let mut freeze = false;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut sources).add_option(&["--target", "-t"], Collect, "Target");
         ap.refer(&mut path).add_argument("path", Store, "Save to").required();
+        ap.refer(&mut freeze).add_option(&["--freeze", "-f"], StoreTrue, "Insert freezer to stop drawing");
         parse_args(&mut ap, args)
     } .and_then(|_| {
         if sources.is_empty() {
             sources.push(Session::All);
         }
-        Ok(Operation::Save(sh::expand_to_pathbuf(&path), sources))
+        Ok(Operation::Save(sh::expand_to_pathbuf(&path), sources, freeze))
     })
 }
 
@@ -1008,6 +1012,7 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, ParsingError> {
     let mut as_binary = false;
     let mut command_line: Vec<String> = vec![];
     let mut sessions: Vec<Session> = vec![];
+    let mut freeze = false;
 
     {
         let mut ap = ArgumentParser::new();
@@ -1022,10 +1027,11 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, ParsingError> {
             .add_option(&["--as-binary", "--as-bin", "-b"], StoreTrue, "As image file");
         ap.refer(&mut search_path).add_option(&["--search-path", "-p"], StoreTrue, SEARCH_PATH_DESC);
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
+        ap.refer(&mut freeze).add_option(&["--freeze", "-f"], StoreTrue, "Insert freezer to stop drawing");
         parse_args(&mut ap, args)
     } .and_then(|_| {
         let command_line = command_line.into_iter().map(Expandable::new).collect();
-        Ok(Operation::Shell(async, read_operations, search_path, as_binary, command_line, sessions))
+        Ok(Operation::Shell(async, read_operations, search_path, as_binary, command_line, sessions, freeze))
     })
 }
 

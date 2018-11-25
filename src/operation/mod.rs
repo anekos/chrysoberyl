@@ -54,7 +54,7 @@ pub enum Operation {
     DefineUserSwitch(String, Vec<Vec<String>>),
     Delete(Box<entry::filter::expression::Expr>),
     Draw,
-    Editor(Option<Expandable>, Vec<Expandable>, Vec<Session>, bool), /* editor_command, options, session, comment_out */
+    Editor(Option<Expandable>, Vec<Expandable>, Vec<Session>, bool, bool), /* editor_command, options, session, comment_out, freeze */
     Error(String),
     Eval(Vec<String>),
     Expand(bool, Option<PathBuf>), /* recursive, base */
@@ -106,6 +106,7 @@ pub enum Operation {
     PushSibling(bool, Option<Meta>, bool, bool), /* next?, meta, force, show */
     PushURL(String, Option<Meta>, bool, bool, Option<EntryType>), /* path, meta, force, show, entry_type */
     Query(Vec<String>, Option<String>), /* operation, caption */
+    Queue(Vec<String>),
     Random,
     Record(usize, usize, entry::Key), /* minimum_move, index, key */
     RecordPre(Vec<String>, usize),
@@ -113,11 +114,11 @@ pub enum Operation {
     ResetFocus,
     ResetImage,
     ResetScrolls(bool), /* to_end */
-    Save(PathBuf, Vec<Session>),
+    Save(PathBuf, Vec<Session>, bool), /* path, sessions, freeze */
     SearchText(Option<String>, bool, Color), /* text, backward */
     Scroll(Direction, f64, bool, bool, Vec<String>, Option<Direction>), /* direction, scroll_size_ratio, crush, reset_at_end, operation, reset_scrolls_1 */
     SetEnv(String, Option<Expandable>),
-    Shell(bool, bool, bool, bool, Vec<Expandable>, Vec<Session>), /* async, operation, search_path, as_binary, command_line, session */
+    Shell(bool, bool, bool, bool, Vec<Expandable>, Vec<Session>, bool), /* async, operation, search_path, as_binary, command_line, session, freeze */
     ShellFilter(Vec<Expandable>, bool), /* path, search_path */
     Show(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     ShowCommandLine(String),
@@ -329,6 +330,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@push-previous" | "@push-prev" => parse_push_sibling(whole, false),
             "@push-url"                     => parse_push_url(whole),
             "@query"                        => parse_query(whole),
+            "@queue"                        => Ok(Operation::Queue(whole[1..].to_vec())),
             "@quit"                         => Ok(EventName::Quit.operation()),
             "@record"                       => parse_record_pre(whole),
             "@random" | "@rand"             => Ok(Random),
@@ -483,7 +485,7 @@ impl fmt::Debug for Operation {
             DefineUserSwitch(_, _) => "DefineUserSwitch",
             Delete(_) => "delete",
             Draw => "Draw ",
-            Editor(_, _, _, _) => "Editor",
+            Editor(_, _, _, _, _) => "Editor",
             Error(ref error) => return write!(f, "Error({:?})", error),
             Eval(_) => "Eval",
             Expand(_, _) => "Expand",
@@ -534,6 +536,7 @@ impl fmt::Debug for Operation {
             PushSibling(_, _, _, _) => "PushSibling",
             PushURL(_, _, _, _, _) => "PushURL",
             Query(_, _) => "Query",
+            Queue(_) => "Queue",
             Random => "Random ",
             Record(_, _, _) => "Record",
             RecordPre(_, _) => "RecordPre",
@@ -541,11 +544,11 @@ impl fmt::Debug for Operation {
             ResetFocus => "ResetFocus",
             ResetImage => "ResetImage ",
             ResetScrolls(_) => "ResetScrolls",
-            Save(_, _) => "Save",
+            Save(_, _, _) => "Save",
             SearchText(_, _, _) => "SearchText",
             Scroll(_, _, _, _, _, _) => "Scroll",
             SetEnv(_, _) => "SetEnv",
-            Shell(_, _, _, _, _ , _) => "Shell",
+            Shell(_, _, _, _, _ , _, _) => "Shell",
             ShellFilter(_, _) => "ShellFilter",
             Show(_, _, _, _) => "Show",
             ShowCommandLine(_) => "ShowCommandLine",

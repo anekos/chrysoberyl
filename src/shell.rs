@@ -74,7 +74,6 @@ fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<Str
             } else {
                 for line in BufReader::new(stdout).lines() {
                     let line = line.unwrap();
-                    puts_event!("shell/stdout", "line" => line);
                     match Operation::parse_fuzziness(&line) {
                         Ok(op) => tx.send(op).unwrap(),
                         Err(err) => puts_error!(err, "at" => "shell_stdout", "for" => &line),

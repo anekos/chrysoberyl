@@ -48,6 +48,10 @@ impl ImageCache {
         self.stages.each_mut(move |it| it.cache.update_limit(limit));
     }
 
+    pub fn update_stages(&mut self, stages: usize) {
+        self.stages.update_limit(stages);
+    }
+
     pub fn clear(&mut self) {
         self.stages.each(|stage| {
             // Cancel current fetchings

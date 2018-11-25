@@ -1586,6 +1586,8 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 updated.size = true,
             PreFetchLimit =>
                 app.cache.update_limit(app.states.pre_fetch.limit_of_items),
+            PreFetchStages =>
+                app.cache.update_stages(app.states.pre_fetch.cache_stages),
             Style =>
                 app.update_style(),
             TimeToHidePointer =>

@@ -2,10 +2,12 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use enum_iterator::IntoEnumIterator;
 use pom::parser::*;
 use pom::{Parser, TextInput};
 
 use constant::README;
+use session::Session;
 use util::pom::from_vec_char;
 
 
@@ -44,8 +46,6 @@ pub enum OptionValue {
     Enum(Vec<String>),
     StringOrFile,
 }
-
-const SESSIONS: &str = "options entries queue paths position mappings envs filter reading status markers timers all";
 
 
 impl Definition {
@@ -220,7 +220,7 @@ fn value() -> Parser<char, Value> {
             "OPTION" => Value::OptionName,
             "PATH" => Value::Path,
             "VALUE" => Value::OptionValue,
-            "SESSION" => Value::Literals(SESSIONS.split(' ').map(|it| s!(it)).collect()),
+            "SESSION" => Value::Literals(Session::into_enum_iter().map(|it| s!(it)).collect()),
             _ => Value::Any,
         }
     })

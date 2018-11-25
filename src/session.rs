@@ -28,7 +28,7 @@ use util::time::duration_to_seconds;
 
 
 
-#[derive(Clone, Debug, PartialEq, Copy)]
+#[derive(Clone, Debug, PartialEq, Copy, IntoEnumIterator)]
 pub enum Session {
     Entries,
     Envs,
@@ -533,3 +533,27 @@ impl fmt::Display for gui::Screen {
 }
 
 
+impl fmt::Display for Session {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::Session::*;
+
+        let result =
+            match *self {
+                Entries => "entries",
+                Envs => "envs",
+                Filter => "filter",
+                Mappings => "mappings",
+                Markers => "markers",
+                Options => "options",
+                Paths => "paths",
+                Position => "position",
+                Queue => "queue",
+                Reading => "reading",
+                Status => "status",
+                Timers => "timers",
+                All => "all",
+            };
+
+        write!(f, "{}", result)
+    }
+}

@@ -65,6 +65,7 @@ pub struct App {
     pub states: States,
     pub timers: TimerManager,
     pub tx: Sender<Operation>,
+    pub user_switches: UserSwitchManager,
     counter: Counter,
     current_base_scale: Option<f64>, // Scale of first scaled image
     current_env_keys: HashSet<String>,
@@ -79,7 +80,6 @@ pub struct App {
     rng: ThreadRng,
     search_text: Option<String>,
     sorting_buffer: SortingBuffer<QueuedOperation>,
-    user_switches: UserSwitchManager,
     watcher: Watcher,
 }
 

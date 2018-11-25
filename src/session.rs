@@ -16,6 +16,7 @@ use gui::{self, Gui};
 use mapping::{Mapping, input_mapping as imap, region_mapping as rmap, event_mapping as emap, operation_mapping as omap};
 use operation::option::PreDefinedOptionName;
 use option::common::{bool_to_str as b2s};
+use option::user_switch::{UserSwitch, UserSwitchManager};
 use paginator::Paginator;
 use size::FitTo;
 use state::{self, States, Filters};
@@ -41,6 +42,7 @@ pub enum Session {
     Queue,
     Reading,
     Status,
+    Switches,
     Timers,
     All,
 }
@@ -77,10 +79,12 @@ pub fn write_session(app: &App, session: Session, out: &mut String) {
             write_entries(&app.entries, out);
             write_queue(&app.remote_cache.state, out);
             write_mappings(&app.mapping, out);
+            write_switches(&app.user_switches, out);
             write_markers(&app.marker, out);
             write_paginator(app.current().map(|it| it.0), &app.paginator, out);
         },
         Status => write_status(&app, out),
+        Switches => write_switches(&app.user_switches, out),
         All => {
             write_options(&app.states, &app.gui, false, out);
             write_entries(&app.entries, out);
@@ -241,6 +245,26 @@ pub fn write_queue(state: &Arc<Mutex<::remote_cache::State>>, out: &mut String) 
 pub fn write_status(app: &App, out: &mut String) {
     let len: Vec<String> = app.cache.len().iter().map(|it| s!(it)).collect();
     sprintln!(out, "cache={}", join(len.as_slice(), ','));
+}
+
+pub fn write_switches(switches: &UserSwitchManager, out: &mut String) {
+    // FIXME Escape `@@`
+    let mut switches: Vec<(&String, &UserSwitch)> = switches.iter().collect();
+    switches.sort_by_key(|it| it.1);
+
+    for (k, switch) in &switches {
+        sprint!(out, "@define-switch {}", escape(k));
+        for (index, op) in switch.iter().enumerate() {
+            if index != 0 {
+                sprint!(out, " @@");
+            }
+            for it in op {
+                sprint!(out, " {}", escape(it));
+            }
+        }
+        sprintln!(out, "");
+        sprintln!(out, "@set {} {}", escape(k), switch.current_value());
+    }
 }
 
 pub fn write_entries(entries: &EntryContainer, out: &mut String) {
@@ -550,6 +574,7 @@ impl fmt::Display for Session {
                 Queue => "queue",
                 Reading => "reading",
                 Status => "status",
+                Switches => "switches",
                 Timers => "timers",
                 All => "all",
             };

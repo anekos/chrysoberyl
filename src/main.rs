@@ -1,5 +1,6 @@
 
 #[macro_use] extern crate closet;
+#[macro_use] extern crate enum_iterator_derive;
 #[macro_use] extern crate enum_primitive;
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate log;
@@ -16,6 +17,7 @@ extern crate ctrlc;
 extern crate curl;
 extern crate dirs;
 extern crate encoding;
+extern crate enum_iterator;
 extern crate env_logger;
 extern crate filetime;
 extern crate gdk;

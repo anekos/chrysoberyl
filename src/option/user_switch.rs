@@ -1,6 +1,8 @@
 
-use std::collections::HashMap;
+use std::cmp::{Ord, Ordering};
+use std::collections::{hash_map, HashMap};
 use std::error::Error;
+use std::slice;
 use std::sync::mpsc::Sender;
 
 use num::Integer;
@@ -14,6 +16,7 @@ use util::num::cycle_n;
 
 pub struct UserSwitch {
     app_tx: Sender<Operation>,
+    serial: usize,
     value: usize,
     values: Vec<Vec<String>>,
 }
@@ -24,6 +27,7 @@ pub struct DummySwtich {
 
 pub struct UserSwitchManager {
     app_tx: Sender<Operation>,
+    serial: usize,
     table: HashMap<String, UserSwitch>,
 }
 
@@ -35,22 +39,48 @@ impl UserSwitchManager {
     pub fn new(app_tx: Sender<Operation>) -> Self {
         UserSwitchManager {
             app_tx,
-            table: HashMap::new()
+            serial: 0,
+            table: HashMap::new(),
         }
     }
 
     pub fn register(&mut self, name: String, values: Vec<Vec<String>>) -> Result<Operation, Box<Error>> {
-        let switch = UserSwitch::new(self.app_tx.clone(), values);
+        let switch = UserSwitch::new(self.app_tx.clone(), self.serial, values);
         let result = switch.current_operation()?;
         self.table.insert(name, switch);
+        self.serial += 1;
         Ok(result)
     }
 
     pub fn get(&mut self, name: &str) -> Option<&mut UserSwitch> {
         self.table.get_mut(name)
     }
+
+    pub fn iter(&self) -> hash_map::Iter<String, UserSwitch> {
+        self.table.iter()
+    }
 }
 
+
+impl Ord for UserSwitch {
+    fn cmp(&self, other: &UserSwitch) -> Ordering {
+        self.serial.cmp(&other.serial)
+    }
+}
+
+impl PartialOrd for UserSwitch {
+    fn partial_cmp(&self, other: &UserSwitch) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Eq for UserSwitch {}
+
+impl PartialEq for UserSwitch {
+    fn eq(&self, other: &UserSwitch) -> bool {
+        self.serial == other.serial
+    }
+}
 
 impl OptionValue for UserSwitch {
     fn cycle(&mut self, reverse: bool, n: usize, _: &[String]) -> Result<(), ChryError> {
@@ -127,9 +157,10 @@ impl OptionValue for UserSwitch {
 }
 
 impl UserSwitch {
-    pub fn new(app_tx: Sender<Operation>, values: Vec<Vec<String>>) -> Self {
+    pub fn new(app_tx: Sender<Operation>, serial: usize, values: Vec<Vec<String>>) -> Self {
         UserSwitch {
             app_tx,
+            serial,
             value: 0,
             values,
         }
@@ -141,6 +172,14 @@ impl UserSwitch {
 
     pub fn current_operation(&self) -> Result<Operation, ChryError> {
         Operation::parse_from_vec(&self.current())
+    }
+
+    pub fn current_value(&self) -> usize {
+        self.value + 1
+    }
+
+    pub fn iter(&self) -> slice::Iter<Vec<String>> {
+        self.values.iter()
     }
 
     pub fn send(&self) -> Result<(), ChryError> {

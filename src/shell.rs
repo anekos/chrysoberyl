@@ -16,7 +16,7 @@ use util::string::join;
 type Envs = HashMap<String, String>;
 
 pub fn call(async: bool, command_line: &[String], stdin: Option<String>, as_binary: bool, tx: Option<Sender<Operation>>) {
-    let envs = if async { Some(store_envs()) } else { None };
+    let envs = if async { Some(get_envs()) } else { None };
 
     if async {
         let command_line = command_line.to_vec();
@@ -100,7 +100,7 @@ fn pass<T: Read + Send>(source: &str, out: Option<T>) {
     }
 }
 
-fn store_envs() -> Envs {
+fn get_envs() -> Envs {
     let mut result = HashMap::new();
 
     for (key, value) in env::vars_os() {

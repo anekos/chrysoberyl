@@ -43,16 +43,6 @@ macro_rules! o {
     }
 }
 
-macro_rules! option {
-    ( $condition:expr, $value:expr ) => {
-        if $condition {
-            Some($value)
-        } else {
-            None
-        }
-    }
-}
-
 macro_rules! s {
     ( $expr:expr ) => {
         format!("{}", $expr)

@@ -4,6 +4,7 @@ use std::env;
 use std::io::{BufReader, BufRead, Read};
 use std::process::{Command, Stdio, Child};
 use std::sync::mpsc::Sender;
+use std::sync::{Arc, Mutex};
 use std::thread::spawn;
 
 use errors::ChryError;
@@ -14,19 +15,84 @@ use util::string::join;
 
 
 type Envs = HashMap<String, String>;
+type Entries = Arc<Mutex<HashMap<u32, Process>>>;
 
-pub fn call(async: bool, command_line: &[String], stdin: Option<String>, as_binary: bool, tx: Option<Sender<Operation>>) {
+#[derive(Default)]
+pub struct Process {
+    pub command_line: Vec<String>,
+}
+
+struct Finalizer {
+    entries: Entries,
+    pid: u32,
+    process: termination::Process,
+}
+
+pub struct ProcessManager {
+    entries: Entries,
+    tx: Sender<Operation>,
+}
+
+
+impl ProcessManager {
+    pub fn new(tx: Sender<Operation>) -> Self {
+        ProcessManager {
+            entries: Entries::default(),
+            tx,
+        }
+    }
+
+    pub fn call(&mut self, async: bool, command_line: &[String], stdin: Option<String>, as_binary: bool, read_operations: bool) {
+        let tx = if as_binary || read_operations {
+            Some(self.tx.clone())
+        } else {
+            None
+        };
+        call(self.entries.clone(), async, command_line, stdin, as_binary, tx);
+    }
+
+    pub fn each<F>(&self, mut block: F) where F: FnMut((&u32, &Process)) -> () {
+        let entries = self.entries.lock().unwrap();
+        for pair in &*entries {
+            block(pair)
+        }
+    }
+}
+
+
+impl  Finalizer {
+    fn new(entries: Entries, pid: u32, command_line: Vec<String>) -> Finalizer {
+        {
+            let mut entries = entries.lock().unwrap();
+            entries.insert(pid, Process { command_line });
+        }
+
+        let process = termination::Process::Kill(pid);
+        termination::register(process.clone());
+
+        Finalizer { entries, pid, process }
+    }
+
+    fn finalize(self) {
+        let mut entries = self.entries.lock().unwrap();
+        entries.remove(&self.pid);
+        termination::unregister(&self.process);
+    }
+}
+
+
+fn call(entries: Entries, async: bool, command_line: &[String], stdin: Option<String>, as_binary: bool, tx: Option<Sender<Operation>>) {
     let envs = if async { Some(get_envs()) } else { None };
 
     if async {
         let command_line = command_line.to_vec();
-        spawn(move || run(tx, envs, &command_line, stdin, as_binary));
+        spawn(move || run(entries, tx, envs, &command_line, stdin, as_binary));
     } else {
-        run(tx, envs, command_line, stdin, as_binary);
+        run(entries, tx, envs, command_line, stdin, as_binary);
     }
 }
 
-fn run(tx: Option<Sender<Operation>>, envs: Option<Envs>, command_line: &[String], stdin: Option<String>, as_binary: bool) {
+fn run(entries: Entries, tx: Option<Sender<Operation>>, envs: Option<Envs>, command_line: &[String], stdin: Option<String>, as_binary: bool) {
     let mut command = Command::new("setsid");
     command
         .args(command_line);
@@ -42,8 +108,7 @@ fn run(tx: Option<Sender<Operation>>, envs: Option<Envs>, command_line: &[String
 
     let child = command.spawn().unwrap();
 
-    let terminator = termination::Process::Kill(child.id());
-    termination::register(terminator.clone());
+    let finalizer = Finalizer::new(entries, child.id(), command_line.to_vec());
 
     puts_event!("shell/open");
     match process_stdout(tx, child, stdin, as_binary) {
@@ -51,7 +116,7 @@ fn run(tx: Option<Sender<Operation>>, envs: Option<Envs>, command_line: &[String
         Err(err) => puts_error!(err, "at" => "shell", "for" => join(command_line, ',')),
     }
 
-    termination::unregister(&terminator);
+    finalizer.finalize();
 }
 
 fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<String>, as_binary: bool) -> Result<(), ChryError> {

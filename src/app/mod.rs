@@ -34,6 +34,7 @@ use paginator::values::Index;
 use paginator::{self, Paginator, Paging};
 use remote_cache::RemoteCache;
 use script;
+use shell::ProcessManager;
 use size::{Size, FitTo, Region};
 use sorting_buffer::SortingBuffer;
 use state::{AutoPaging, States, PreFetchState};
@@ -60,6 +61,7 @@ pub struct App {
     pub marker: HashMap<String, Key>,
     pub paginator: Paginator,
     pub primary_tx: Sender<Operation>,
+    pub process_manager: ProcessManager,
     pub query_operation: Option<Vec<String>>,
     pub remote_cache: RemoteCache,
     pub states: States,
@@ -135,6 +137,7 @@ impl App {
             paginator: Paginator::new(),
             pre_fetch_serial: 0,
             primary_tx,
+            process_manager: ProcessManager::new(tx.clone()),
             query_operation: None,
             remote_cache: RemoteCache::new(initial.curl_threads, tx.clone(), sorting_buffer.clone()),
             rng: rand::thread_rng(),

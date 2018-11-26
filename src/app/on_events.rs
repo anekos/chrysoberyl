@@ -40,7 +40,6 @@ use option::user_switch::DummySwtich;
 use poppler::{PopplerDocument, self};
 use script;
 use session::{Session, write_sessions};
-use shell;
 use shell_filter;
 use shellexpand_wrapper as sh;
 use state;
@@ -766,12 +765,12 @@ pub fn on_page(app: &mut App, updated: &mut Updated, page: usize) -> EventResult
     Ok(())
 }
 
-pub fn on_pdf_index(app: &App, async: bool, read_operations: bool, search_path: bool, command_line: &[Expandable], fmt: poppler::index::Format, separator: Option<&str>) -> EventResult {
+pub fn on_pdf_index(app: &mut App, async: bool, read_operations: bool, search_path: bool, command_line: &[Expandable], fmt: poppler::index::Format, separator: Option<&str>) -> EventResult {
     if_let_some!((entry, _) = app.current(), Ok(()));
     if let EntryContent::Pdf(ref path, _) = entry.content {
         let mut stdin = o!("");
         PopplerDocument::new_from_file(&**path).index().write(fmt, separator, &mut stdin);
-        shell::call(async, &expand_all(command_line, search_path, &app.states.path_list), Some(stdin), false, option!(read_operations, app.tx.clone()));
+        app.process_manager.call(async, &expand_all(command_line, search_path, &app.states.path_list), Some(stdin), false, read_operations);
         Ok(())
     } else {
         Err(Box::new(ChryError::Fixed("current entry is not PDF")))
@@ -1178,8 +1177,7 @@ pub fn on_shell(app: &mut App, async: bool, read_operations: bool, search_path: 
     };
 
     app.update_counter_env(true);
-    let tx = app.tx.clone();
-    shell::call(async, &expand_all(command_line, search_path, &app.states.path_list), stdin, as_binary, option!(read_operations || as_binary, tx));
+    app.process_manager.call(async, &expand_all(command_line, search_path, &app.states.path_list), stdin, as_binary, read_operations);
     Ok(())
 }
 

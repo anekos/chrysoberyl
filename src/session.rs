@@ -254,6 +254,13 @@ pub fn write_queue(state: &Arc<Mutex<::remote_cache::State>>, out: &mut String) 
 pub fn write_status(app: &App, out: &mut String) {
     let len: Vec<String> = app.cache.len().iter().map(|it| s!(it)).collect();
     sprintln!(out, "cache={}", join(len.as_slice(), ','));
+    app.process_manager.each(|(pid, process)| {
+        sprint!(out, "process: pid={}", pid);
+        for it in &process.command_line {
+            sprint!(out, " {}", escape(it));
+        }
+        sprintln!(out, "");
+    });
 }
 
 pub fn write_switches(switches: &UserSwitchManager, out: &mut String) {

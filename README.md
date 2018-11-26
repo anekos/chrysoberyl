@@ -476,6 +476,10 @@ Add a URL to image/PDF/archive.
 - pdf
 
 
+## @queue <OPERATION>...
+
+Queue the operation to processsing queue.
+
 ## @quit
 
 See you.

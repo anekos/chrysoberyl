@@ -8,9 +8,9 @@ use std::thread::spawn;
 
 use libc;
 
+use chainer;
 use errors::ChryError;
 use operation::Operation;
-use termination;
 
 use controller::process_lines;
 
@@ -31,7 +31,7 @@ pub fn register<T: AsRef<Path>>(tx: Sender<Operation>, path: &T) {
         return
     }
 
-    termination::register(termination::Process::Delete(path.as_ref().to_path_buf()));
+    chainer::register(chainer::Target::File(path.as_ref().to_path_buf()));
 
     let path = path.as_ref().to_path_buf();
     spawn(move || {

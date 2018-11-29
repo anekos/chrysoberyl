@@ -963,7 +963,7 @@ pub fn on_queue(app: &mut App, op: &[String]) -> EventResult {
 }
 
 pub fn on_quit() -> EventResult {
-    termination::execute();
+    chainer::execute();
     Ok(())
 }
 

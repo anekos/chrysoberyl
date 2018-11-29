@@ -13,6 +13,7 @@ use gtk::prelude::*;
 use libc;
 use rand::{self, ThreadRng};
 
+use chainer;
 use command_line::Initial;
 use config;
 use constant;
@@ -38,7 +39,6 @@ use shell::ProcessManager;
 use size::{Size, FitTo, Region};
 use sorting_buffer::SortingBuffer;
 use state::{AutoPaging, States, PreFetchState};
-use termination;
 use timer::TimerManager;
 use util::path::path_to_str;
 use watcher::Watcher;

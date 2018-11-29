@@ -1,6 +1,7 @@
 
 /**
  * Chain file and process to chrysoberyl.
+ * At exiting, Chrysoberyl terminate the process or delete the file.
  */
 
 use std::fs::remove_file;

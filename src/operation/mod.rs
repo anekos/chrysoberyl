@@ -9,6 +9,7 @@ use std::time::Duration;
 use cmdline_parser::Parser;
 
 use archive::ArchiveEntry;
+use chainer;
 use cherenkov::Operator;
 use cherenkov::fill::Shape;
 use cherenkov::nova::Seed;
@@ -41,6 +42,7 @@ use self::option::{OptionName, OptionUpdater};
 pub enum Operation {
     AppEvent(EventName, HashMap<String, String>),
     Backward,
+    Chain(chainer::Target),
     ChangeDirectory(Expandable),
     Cherenkov(CherenkovParameter),
     CherenkovReset,
@@ -127,6 +129,7 @@ pub enum Operation {
     Sorter(bool, Vec<Expandable>, bool), /* fix_current, command, reverse */
     TellRegion(f64, f64, f64, f64, Key), /* lef,t top, right, bottom, mousesbutton */
     Timer(Option<String>, Vec<String>, Duration, Option<usize>, bool),
+    Unchain(chainer::Target),
     Unclip,
     Undo(Option<usize>),
     Unmap(MappingTarget),
@@ -262,6 +265,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@backward" | "@back"           => Ok(Backward),
             "@cd" | "@chdir" | "@change-directory"
                                             => parse_command1(whole, Operation::ChangeDirectory),
+            "@chain"                        => parse_chainer(whole, Operation::Chain),
             "@cherenkov"                    => parse_cherenkov(whole),
             "@cherenkov-reset"              => Ok(CherenkovReset),
             "@clear"                        => Ok(Clear),
@@ -349,6 +353,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@sort"                         => parse_sort(whole),
             "@timer"                        => parse_timer(whole),
             "@toggle"                       => parse_option_1(whole, OptionUpdater::Toggle),
+            "@unchain"                      => parse_chainer(whole, Operation::Unchain),
             "@unclip"                       => Ok(Unclip),
             "@undo"                         => parse_undo(whole),
             "@unless"                       => parse_when(whole, true),
@@ -472,6 +477,7 @@ impl fmt::Debug for Operation {
         let s = match *self {
             AppEvent(ref ev, _) => return write!(f, "AppEvent({:?})", ev),
             Backward => "Backward",
+            Chain(_) => "Chain",
             ChangeDirectory(_) => "ChangeDirectory",
             Cherenkov(_) => "Cherenkov",
             CherenkovReset => "CherenkovReset",
@@ -558,6 +564,7 @@ impl fmt::Debug for Operation {
             TellRegion(_, _, _, _, _) => "TellRegion",
             Timer(_, _, _, _, _) => "Timer",
             UIAction(_) => "UIAction",
+            Unchain(_) => "Unchain",
             Unclip => "Unclip ",
             Undo(_) => "Undo",
             Unmap(_) => "Unmap",

@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse, StoreOption, List};
 
+use chainer;
 use cherenkov::fill::Shape;
 use cherenkov::nova::Seed;
 use color::Color;
@@ -37,6 +38,27 @@ where T: FnOnce(usize) -> OptionUpdater {
         parse_args(&mut ap, args)
     } .map(|_| {
         Operation::UpdateOption(option_name, op(delta))
+    })
+}
+
+pub fn parse_chainer<T>(args: &[String], op: T) -> Result<Operation, ParsingError>
+where T: FnOnce(chainer::Target) -> Operation {
+    let mut is_file = false;
+    let mut target = o!("");
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut is_file)
+            .add_option(&["-f", "--file"], StoreTrue, "Target is file")
+            .add_option(&["-p", "--process"], StoreFalse, "Target is process (default)");
+        ap.refer(&mut target).add_argument("PID/Path", Store, "PID or File path");
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        let target = if is_file {
+            chainer::Target::File(Path::new(&target).to_path_buf())
+        } else {
+            chainer::Target::Process(target.parse().map_err(|_| ParsingError::InvalidArgument(target))?)
+        };
+        Ok(op(target))
     })
 }
 

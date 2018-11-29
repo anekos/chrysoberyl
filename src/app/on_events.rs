@@ -16,6 +16,7 @@ use natord;
 use rand::distributions::{Distribution, Uniform};
 
 use archive;
+use chainer;
 use cherenkov::Operator;
 use cherenkov::fill::Shape;
 use clipboard;
@@ -84,6 +85,11 @@ pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName
         on_quit()?;
     }
 
+    Ok(())
+}
+
+pub fn on_chain(target: chainer::Target) -> EventResult {
+    chainer::register(target);
     Ok(())
 }
 
@@ -1385,6 +1391,11 @@ pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f6
 
 pub fn on_timer(app: &mut App, name: Option<String>, op: Vec<String>, interval: Duration, repeat: Option<usize>, async: bool) -> EventResult {
     app.timers.register(name, op, interval, repeat, async)
+}
+
+pub fn on_unchain(target: &chainer::Target) -> EventResult {
+    chainer::unregister(target);
+    Ok(())
 }
 
 pub fn on_ui_action(app: &mut App, action_type: UIActionType) -> EventResult {

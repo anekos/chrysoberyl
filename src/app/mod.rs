@@ -13,7 +13,6 @@ use gtk::prelude::*;
 use libc;
 use rand::{self, ThreadRng};
 
-use chainer;
 use command_line::Initial;
 use config;
 use constant;
@@ -192,6 +191,8 @@ impl App {
                     on_app_event(self, &mut updated, event_name, context),
                 Backward =>
                     on_histoy_go(self, &mut updated, false),
+                Chain(target) =>
+                    on_chain(target),
                 ChangeDirectory(ref path) =>
                     on_change_directory(path),
                 Cherenkov(ref parameter) =>
@@ -364,6 +365,8 @@ impl App {
                     on_timer(self, name, op, interval, repeat, async),
                 UIAction(action_type) =>
                     on_ui_action(self, action_type),
+                Unchain(ref target) =>
+                    on_unchain(target),
                 Unclip =>
                     on_unclip(self, &mut updated),
                 Undo(count) =>

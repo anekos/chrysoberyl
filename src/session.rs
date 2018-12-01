@@ -213,7 +213,7 @@ pub fn write_options(st: &States, gui: &Gui, reading: bool, out: &mut String) {
         }
 
         match *option_name {
-            HorizontalViews | VerticalViews => (),
+            HorizontalViews | VerticalViews | Freeze => (),
             _ => write(out, option_name),
         }
     }

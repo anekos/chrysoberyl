@@ -7,9 +7,9 @@ use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread::spawn;
 
+use chainer;
 use errors::ChryError;
 use operation::Operation;
-use termination;
 use util::string::join;
 
 
@@ -25,7 +25,7 @@ pub struct Process {
 struct Finalizer {
     entries: Entries,
     pid: u32,
-    process: termination::Process,
+    target: chainer::Target,
 }
 
 pub struct ProcessManager {
@@ -67,16 +67,16 @@ impl  Finalizer {
             entries.insert(pid, Process { command_line });
         }
 
-        let process = termination::Process::Kill(pid);
-        termination::register(process.clone());
+        let target = chainer::Target::Process(pid);
+        chainer::register(target.clone());
 
-        Finalizer { entries, pid, process }
+        Finalizer { entries, pid, target }
     }
 
     fn finalize(self) {
         let mut entries = self.entries.lock().unwrap();
         entries.remove(&self.pid);
-        termination::unregister(&self.process);
+        chainer::unregister(&self.target);
     }
 }
 

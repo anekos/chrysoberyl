@@ -6,8 +6,8 @@ use std::path::Path;
 use std::sync::mpsc::Sender;
 use std::thread::spawn;
 
+use chainer;
 use operation::Operation;
-use termination;
 
 use controller::process;
 
@@ -16,7 +16,7 @@ use controller::process;
 pub fn register<T: AsRef<Path>>(tx: Sender<Operation>, path: T) -> Result<(), Box<Error>> {
     let listener = UnixListener::bind(path.as_ref())?;
 
-    termination::register(termination::Process::Delete(path.as_ref().to_path_buf()));
+    chainer::register(chainer::Target::File(path.as_ref().to_path_buf()));
 
     spawn(move || {
         with_error!(at = "controller/unix_socket", {
@@ -37,7 +37,7 @@ pub fn register<T: AsRef<Path>>(tx: Sender<Operation>, path: T) -> Result<(), Bo
 pub fn register_as_binary<T: AsRef<Path>>(tx: Sender<Operation>, path: T) -> Result<(), Box<Error>> {
     let listener = UnixListener::bind(path.as_ref())?;
 
-    termination::register(termination::Process::Delete(path.as_ref().to_path_buf()));
+    chainer::register(chainer::Target::File(path.as_ref().to_path_buf()));
 
     spawn(move || {
         with_error!(at = "controller/unix_socket", {

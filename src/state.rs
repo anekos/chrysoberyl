@@ -165,10 +165,10 @@ impl Default for Drawing {
 impl Default for PreFetchState {
     fn default() -> Self {
         PreFetchState {
-            cache_stages: 3,
+            cache_stages: 2,
             enabled: true,
             page_size: 5,
-            limit_of_items: 100,
+            limit_of_items: 10,
         }
     }
 }

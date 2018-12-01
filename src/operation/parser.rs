@@ -54,7 +54,7 @@ where T: FnOnce(chainer::Target) -> Operation {
         parse_args(&mut ap, args)
     } .and_then(|_| {
         let target = if is_file {
-            chainer::Target::File(Path::new(&target).to_path_buf())
+            chainer::Target::File(sh::expand_to_pathbuf(&target))
         } else {
             chainer::Target::Process(target.parse().map_err(|_| ParsingError::InvalidArgument(target))?)
         };

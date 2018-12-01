@@ -8,11 +8,13 @@ use std::sync::mpsc:: Sender;
 
 use cmdline_parser::Parser;
 use mkstemp::TempFile;
+
+use expandable::Expandable;
 use operation::Operation;
 
 
 
-pub fn start_edit(tx: &Sender<Operation>, editor_command: Option<String>, default_text: &str) {
+pub fn start_edit(tx: &Sender<Operation>, editor_command: &[Expandable], default_text: &str) {
     let mut temp_file = {
         let mut temp = env::temp_dir();
         temp.push("chrysoberyl.XXXXXX");
@@ -22,10 +24,11 @@ pub fn start_edit(tx: &Sender<Operation>, editor_command: Option<String>, defaul
     temp_file.write_all(default_text.as_bytes()).unwrap();
 
     let (command_name, args) = {
-        let editor = editor_command.unwrap_or_else(|| {
-            env::var("EDITOR").unwrap_or_else(|_| o!("gvim --nofork"))
-        });
-        let command_line: Vec<String> = Parser::new(&editor).map(|(_, it)| it).collect();
+        let command_line: Vec<String> = if editor_command.is_empty() {
+            env::var("EDITOR").map(|editor| Parser::new(&editor).map(|(_, it)| it).collect()).unwrap_or_else(|_| vec![o!("gvim"), o!("--nofork")])
+        } else {
+            editor_command.iter().map(|it| it.to_string()).collect()
+        };
         let (name, args) = command_line.split_first().unwrap();
         (name.clone(), args.to_vec())
     };

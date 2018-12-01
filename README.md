@@ -190,7 +190,7 @@ Disable `OPTION`.
 Redraw image.
 
 
-## @editor [(--file|-f) <PATH>] [(--session|-s) <SESSION>] [--comment-out|-c] [--freeze|-f] [<COMMAND_LINE>]
+## @editor [(--file|-f) <PATH>] [(--session|-s) <SESSION>] [--comment-out|-c] [--freeze|-f] <COMMAND_LINE>...
 
 ### SESSION
 

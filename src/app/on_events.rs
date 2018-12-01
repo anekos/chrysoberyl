@@ -217,7 +217,7 @@ pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) -> Even
     Ok(())
 }
 
-pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Expandable], sessions: &[Session], comment_out: bool, freeze: bool) -> EventResult {
+pub fn on_editor(app: &mut App, editor_command: Vec<Expandable>, files: &[Expandable], sessions: &[Session], comment_out: bool, freeze: bool) -> EventResult {
     let tx = app.tx.clone();
     let source = with_ouput_string!(out, {
         for file in files {
@@ -230,7 +230,7 @@ pub fn on_editor(app: &mut App, editor_command: Option<Expandable>, files: &[Exp
             swap(&mut co, out);
         }
     });
-    spawn(move || editor::start_edit(&tx, editor_command.map(|it| it.to_string()), &source));
+    spawn(move || editor::start_edit(&tx, &editor_command, &source));
     Ok(())
 }
 

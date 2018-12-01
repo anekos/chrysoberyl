@@ -349,7 +349,7 @@ pub fn parse_editor(args: &[String]) -> Result<Operation, ParsingError> {
     let mut sessions: Vec<Session> = vec![];
     let mut files: Vec<Expandable> = vec![];
     let mut comment_out = false;
-    let mut command_line: Option<Expandable> = None;
+    let mut command_line: Vec<Expandable> = vec![];
     let mut freeze = false;
 
     {
@@ -358,7 +358,7 @@ pub fn parse_editor(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut sessions).add_option(&["--session", "-S"], Collect, "Sessions");
         ap.refer(&mut comment_out).add_option(&["--comment-out", "-c"], StoreTrue, "Comment out");
         ap.refer(&mut freeze).add_option(&["--freeze", "-f"], StoreTrue, "Insert freezer to stop drawing");
-        ap.refer(&mut command_line).add_argument("command-line", StoreOption, "Command line to open editor");
+        ap.refer(&mut command_line).add_argument("command-line", Collect, "Command line to open editor");
         parse_args(&mut ap, args)
     } .map(|_| {
         Operation::Editor(command_line, files, sessions, comment_out, freeze)

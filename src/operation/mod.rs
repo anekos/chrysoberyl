@@ -56,7 +56,7 @@ pub enum Operation {
     DefineUserSwitch(String, Vec<Vec<String>>),
     Delete(Box<entry::filter::expression::Expr>),
     Draw,
-    Editor(Option<Expandable>, Vec<Expandable>, Vec<Session>, bool, bool), /* editor_command, options, session, comment_out, freeze */
+    Editor(Vec<Expandable>, Vec<Expandable>, Vec<Session>, bool, bool), /* editor_command, options, session, comment_out, freeze */
     Error(String),
     Eval(Vec<String>),
     Expand(bool, Option<PathBuf>), /* recursive, base */

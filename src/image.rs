@@ -53,7 +53,7 @@ impl ImageBuffer {
 
         match *self {
             Static(ref image) =>
-                Some(Size::new(image.width, image.height)),
+                Some(image.get_fit_size()),
             Animation(_) =>
                 None,
         }
@@ -84,6 +84,10 @@ impl StaticImageBuffer {
             self.width,
             self.height,
             self.rowstride)
+    }
+
+    pub fn get_fit_size(&self) -> Size {
+        Size::new(self.width, self.height)
     }
 }
 

@@ -9,7 +9,8 @@ use std::thread::spawn;
 
 use chainer;
 use errors::ChryError;
-use operation::Operation;
+use expandable::Expandable;
+use operation::{Operation, ReadAs};
 use util::string::join;
 
 
@@ -42,13 +43,13 @@ impl ProcessManager {
         }
     }
 
-    pub fn call(&mut self, async: bool, command_line: &[String], stdin: Option<String>, as_binary: bool, read_operations: bool) {
-        let tx = if as_binary || read_operations {
+    pub fn call(&mut self, async: bool, command_line: &[String], stdin: Option<String>, read_as: ReadAs) {
+        let tx = if read_as != ReadAs::Ignore {
             Some(self.tx.clone())
         } else {
             None
         };
-        call(self.entries.clone(), async, command_line, stdin, as_binary, tx);
+        call(self.entries.clone(), async, command_line, stdin, read_as, tx);
     }
 
     pub fn each<F>(&self, mut block: F) where F: FnMut((&u32, &Process)) -> () {
@@ -81,18 +82,18 @@ impl  Finalizer {
 }
 
 
-fn call(entries: Entries, async: bool, command_line: &[String], stdin: Option<String>, as_binary: bool, tx: Option<Sender<Operation>>) {
+fn call(entries: Entries, async: bool, command_line: &[String], stdin: Option<String>, read_as: ReadAs, tx: Option<Sender<Operation>>) {
     let envs = if async { Some(get_envs()) } else { None };
 
     if async {
         let command_line = command_line.to_vec();
-        spawn(move || run(entries, tx, envs, &command_line, stdin, as_binary));
+        spawn(move || run(entries, tx, envs, &command_line, stdin, read_as));
     } else {
-        run(entries, tx, envs, command_line, stdin, as_binary);
+        run(entries, tx, envs, command_line, stdin, read_as);
     }
 }
 
-fn run(entries: Entries, tx: Option<Sender<Operation>>, envs: Option<Envs>, command_line: &[String], stdin: Option<String>, as_binary: bool) {
+fn run(entries: Entries, tx: Option<Sender<Operation>>, envs: Option<Envs>, command_line: &[String], stdin: Option<String>, read_as: ReadAs) {
     let mut command = Command::new("setsid");
     command
         .args(command_line);
@@ -111,7 +112,7 @@ fn run(entries: Entries, tx: Option<Sender<Operation>>, envs: Option<Envs>, comm
     let finalizer = Finalizer::new(entries, child.id(), command_line.to_vec());
 
     puts_event!("shell/open");
-    match process_stdout(tx, child, stdin, as_binary) {
+    match process_stdout(tx, child, stdin, read_as) {
         Ok(_) => puts_event!("shell/close"),
         Err(err) => puts_error!(err, "at" => "shell", "for" => join(command_line, ',')),
     }
@@ -119,7 +120,7 @@ fn run(entries: Entries, tx: Option<Sender<Operation>>, envs: Option<Envs>, comm
     finalizer.finalize();
 }
 
-fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<String>, as_binary: bool) -> Result<(), ChryError> {
+fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<String>, read_as: ReadAs) -> Result<(), ChryError> {
     use std::io::Write;
 
     if let Some(stdin) = stdin {
@@ -130,20 +131,30 @@ fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<Str
         let stderr = child.stderr;
         spawn(move || pass("stderr", stderr));
         if let Some(mut stdout) = child.stdout {
-            if as_binary {
-                let mut buffer = vec![];
-                match stdout.read_to_end(&mut buffer) {
-                    Ok(_) => tx.send(Operation::PushMemory(buffer, None, false)).unwrap(),
-                    Err(err) => puts_error!(err, "at" => "shell_stdout/as_binary"),
-                }
-            } else {
-                for line in BufReader::new(stdout).lines() {
-                    let line = line.unwrap();
-                    match Operation::parse_fuzziness(&line) {
-                        Ok(op) => tx.send(op).unwrap(),
-                        Err(err) => puts_error!(err, "at" => "shell_stdout", "for" => &line),
+            match read_as {
+                ReadAs::Binary => {
+                    let mut buffer = vec![];
+                    match stdout.read_to_end(&mut buffer) {
+                        Ok(_) => tx.send(Operation::PushMemory(buffer, None, false)).unwrap(),
+                        Err(err) => puts_error!(err, "at" => "shell_stdout/as_binary"),
                     }
-                }
+                },
+                ReadAs::Operations => {
+                    for line in BufReader::new(stdout).lines() {
+                        let line = line.unwrap();
+                        match Operation::parse_fuzziness(&line) {
+                            Ok(op) => tx.send(op).unwrap(),
+                            Err(err) => puts_error!(err, "at" => "shell_stdout", "for" => &line),
+                        }
+                    }
+                },
+                ReadAs::Paths => {
+                    for line in BufReader::new(stdout).lines() {
+                        let line = line.unwrap();
+                        tx.send(Operation::Push(Expandable::new(line), None, false, false)).unwrap();
+                    }
+                },
+                ReadAs::Ignore => panic!("WTF: read_as == Ignore"),
             }
         } else {
             return Err("Could not get stdout")?;

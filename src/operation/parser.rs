@@ -262,7 +262,7 @@ pub fn parse_controller_socket(args: &[String]) -> Result<Operation, ParsingErro
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut as_binary).add_option(&["--as-binary", "--as-bin", "-b"], StoreTrue, "As image file");
+        ap.refer(&mut as_binary).add_option(&["--binary", "--bin", "-b"], StoreTrue, "As image file");
         ap.refer(&mut path).add_argument("path", Store, "Path").required();
         parse_args(&mut ap, args)
     } .map(|_| {
@@ -357,7 +357,7 @@ pub fn parse_editor(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut files).add_option(&["--file", "-f"], Collect, "Insert the given file");
         ap.refer(&mut sessions).add_option(&["--session", "-S"], Collect, "Sessions");
         ap.refer(&mut comment_out).add_option(&["--comment-out", "-c"], StoreTrue, "Comment out");
-        ap.refer(&mut freeze).add_option(&["--freeze", "-f"], StoreTrue, "Insert freezer to stop drawing");
+        ap.refer(&mut freeze).add_option(&["--freeze", "-F"], StoreTrue, "Insert freezer to stop drawing");
         ap.refer(&mut command_line).add_argument("command-line", Collect, "Command line to open editor");
         parse_args(&mut ap, args)
     } .map(|_| {
@@ -973,7 +973,7 @@ pub fn parse_save(args: &[String]) -> Result<Operation, ParsingError> {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut sources).add_option(&["--target", "-t"], Collect, "Target");
         ap.refer(&mut path).add_argument("path", Store, "Save to").required();
-        ap.refer(&mut freeze).add_option(&["--freeze", "-f"], StoreTrue, "Insert freezer to stop drawing");
+        ap.refer(&mut freeze).add_option(&["--freeze", "-F"], StoreTrue, "Insert freezer to stop drawing");
         parse_args(&mut ap, args)
     } .and_then(|_| {
         if sources.is_empty() {
@@ -1043,9 +1043,8 @@ pub fn parse_search(args: &[String]) -> Result<Operation, ParsingError> {
 
 pub fn parse_shell(args: &[String]) -> Result<Operation, ParsingError> {
     let mut async = true;
-    let mut read_operations = false;
+    let mut read_as = ReadAs::Ignore;
     let mut search_path = false;
-    let mut as_binary = false;
     let mut command_line: Vec<String> = vec![];
     let mut sessions: Vec<Session> = vec![];
     let mut freeze = false;
@@ -1056,18 +1055,17 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, ParsingError> {
             .add_option(&["--async", "-a"], StoreTrue, "Async (Non-blocking)")
             .add_option(&["--sync", "-s"], StoreFalse, "Sync (Blocking)");
         ap.refer(&mut sessions).add_option(&["--session", "-S"], Collect, "Sessions");
-        ap.refer(&mut read_operations)
-            .add_option(&["--operation", "-o"], StoreTrue, "Read operations from stdout")
-            .add_option(&["--no-operation", "-O"], StoreTrue, "Dont read operations from stdout");
-        ap.refer(&mut as_binary)
-            .add_option(&["--as-binary", "--as-bin", "-b"], StoreTrue, "As image file");
+        ap.refer(&mut read_as)
+            .add_option(&["--binary", "--bin", "-b"], StoreConst(ReadAs::Binary), "As image file")
+            .add_option(&["--path", "-P"], StoreConst(ReadAs::Paths), "Read as path list")
+            .add_option(&["--operation", "-o"], StoreConst(ReadAs::Operations), "Read operations from stdout");
         ap.refer(&mut search_path).add_option(&["--search-path", "-p"], StoreTrue, SEARCH_PATH_DESC);
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
-        ap.refer(&mut freeze).add_option(&["--freeze", "-f"], StoreTrue, "Insert freezer to stop drawing");
+        ap.refer(&mut freeze).add_option(&["--freeze", "-F"], StoreTrue, "Insert freezer to stop drawing");
         parse_args(&mut ap, args)
     } .and_then(|_| {
         let command_line = command_line.into_iter().map(Expandable::new).collect();
-        Ok(Operation::Shell(async, read_operations, search_path, as_binary, command_line, sessions, freeze))
+        Ok(Operation::Shell(async, read_as, search_path, command_line, sessions, freeze))
     })
 }
 

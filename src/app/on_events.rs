@@ -36,7 +36,7 @@ use gui::Direction;
 use key::Key;
 use logger;
 use operation::option::{OptionName, OptionUpdater};
-use operation::{ClipboardSelection, MappingTarget, MoveBy, Operation, OperationContext, self, SortKey, UIActionType};
+use operation::{ClipboardSelection, MappingTarget, MoveBy, Operation, OperationContext, self, ReadAs, SortKey, UIActionType};
 use option::user_switch::DummySwtich;
 use poppler::{PopplerDocument, self};
 use script;
@@ -781,7 +781,8 @@ pub fn on_pdf_index(app: &mut App, async: bool, read_operations: bool, search_pa
     if let EntryContent::Pdf(ref path, _) = entry.content {
         let mut stdin = o!("");
         PopplerDocument::new_from_file(&**path).index().write(fmt, separator, &mut stdin);
-        app.process_manager.call(async, &expand_all(command_line, search_path, &app.states.path_list), Some(stdin), false, read_operations);
+        let read_as = if read_operations { ReadAs::Operations } else { ReadAs::Ignore };
+        app.process_manager.call(async, &expand_all(command_line, search_path, &app.states.path_list), Some(stdin), read_as);
         Ok(())
     } else {
         Err(Box::new(ChryError::Fixed("current entry is not PDF")))
@@ -1180,7 +1181,7 @@ pub fn on_set_env(_: &mut App, name: &str, value: &Option<String>) -> EventResul
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
-pub fn on_shell(app: &mut App, async: bool, read_operations: bool, search_path: bool, as_binary: bool, command_line: &[Expandable], sessions: &[Session], freeze: bool) -> EventResult {
+pub fn on_shell(app: &mut App, async: bool, read_as: ReadAs, search_path: bool, command_line: &[Expandable], sessions: &[Session], freeze: bool) -> EventResult {
     let stdin = if !sessions.is_empty() {
         Some(with_ouput_string!(out, write_sessions(app, sessions, freeze, out)))
     } else {
@@ -1188,7 +1189,7 @@ pub fn on_shell(app: &mut App, async: bool, read_operations: bool, search_path: 
     };
 
     app.update_counter_env(true);
-    app.process_manager.call(async, &expand_all(command_line, search_path, &app.states.path_list), stdin, as_binary, read_operations);
+    app.process_manager.call(async, &expand_all(command_line, search_path, &app.states.path_list), stdin, read_as);
     Ok(())
 }
 

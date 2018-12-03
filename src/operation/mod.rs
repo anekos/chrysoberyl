@@ -121,7 +121,7 @@ pub enum Operation {
     SearchText(Option<String>, bool, Color), /* text, backward */
     Scroll(Direction, f64, bool, bool, Vec<String>, Option<Direction>), /* direction, scroll_size_ratio, crush, reset_at_end, operation, reset_scrolls_1 */
     SetEnv(String, Option<Expandable>),
-    Shell(bool, bool, bool, bool, Vec<Expandable>, Vec<Session>, bool), /* async, operation, search_path, as_binary, command_line, session, freeze */
+    Shell(bool, ReadAs, bool, Vec<Expandable>, Vec<Session>, bool), /* async, operation, search_path, command_line, session, freeze */
     ShellFilter(Vec<Expandable>, bool), /* path, search_path */
     Show(Option<usize>, bool, MoveBy, bool), /* count, ignore-views, archive/page, wrap */
     ShowCommandLine(String),
@@ -185,6 +185,15 @@ pub enum MoveBy {
     Page,
     Archive,
 }
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum ReadAs {
+    Binary,
+    Paths,
+    Ignore,
+    Operations,
+}
+
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum QueuedOperation {
@@ -557,7 +566,7 @@ impl fmt::Debug for Operation {
             SearchText(_, _, _) => "SearchText",
             Scroll(_, _, _, _, _, _) => "Scroll",
             SetEnv(_, _) => "SetEnv",
-            Shell(_, _, _, _, _ , _, _) => "Shell",
+            Shell(_, _, _, _ , _, _) => "Shell",
             ShellFilter(_, _) => "ShellFilter",
             Show(_, _, _, _) => "Show",
             ShowCommandLine(_) => "ShowCommandLine",

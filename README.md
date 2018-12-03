@@ -129,7 +129,7 @@ Open `<PATH>` file to control chrysoberyl.
 
 Open `<PATH>` fifo file to control chrysoberyl.
 
-## @controller-socket [--as-binary|-b] <FILE>
+## @controller-socket [--binary|-b] <FILE>
 
 Open `<PATH>` socket to control chrysoberyl.
 
@@ -190,7 +190,7 @@ Disable `OPTION`.
 Redraw image.
 
 
-## @editor [(--file|-f) <PATH>] [(--session|-s) <SESSION>] [--comment-out|-c] [--freeze|-f] <COMMAND_LINE>...
+## @editor [(--file|-f) <PATH>] [(--session|-s) <SESSION>] [--comment-out|-c] [--freeze|-F] <COMMAND_LINE>...
 
 ### SESSION
 
@@ -511,7 +511,7 @@ If `--image` is given, clear the caches for currently viewing entries.
 Remove any effects (cherenkov etc).
 
 
-## @save [(--target|-t) <TARGET>] [--freeze|-f] <PATH>
+## @save [(--target|-t) <TARGET>] [--freeze|-F] <PATH>
 
 Write the session data to `PATH`.
 You can `@load` `PATH` file to restore current session.
@@ -545,7 +545,7 @@ Set ENV.
 Set `COUNT` as value to `OPTION`.
 
 
-## @shell [--async|-a] [--sync|-s] [(--session|-S) <SESSION>]... [--freeze|-f] [--operation|-o] [--no-operation|-O] [--search-path|-p] [--as-binary|-b] <COMMAND> <COMMAND_ARG1>...
+## @shell [--async|-a] [--sync|-s] [(--session|-S) <SESSION>]... [--freeze|-F] [--operation|-o] [--path|-P] [--search-path|-p] [--binary|-b] <COMMAND> <COMMAND_ARG1>...
 
 Execute shell command.
 If `--operation` is given, chrysoberyl read the STDOUT of the command as operation commands.

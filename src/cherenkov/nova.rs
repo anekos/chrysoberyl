@@ -84,6 +84,7 @@ impl Seed {
 
 #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
 pub fn nova_(nv: &Nova, modified: Modified) -> Modified {
+
     let pixbuf = modified.get_pixbuf();
     let channels = pixbuf.get_n_channels();
 

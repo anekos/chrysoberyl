@@ -100,7 +100,7 @@ fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mut Ve
 
 fn fetch(tx: Sender<FetcherOperation>, entry: Arc<Entry>, imaging: Imaging) {
     spawn(move || {
-        let image_buffer = entry::image::get_image_buffer(&entry, &imaging).map_err(|it| s!(it));
+        let image_buffer = entry::image::get_image_buffer(&(*entry).content, &imaging).map_err(|it| s!(it));
         tx.send(FetcherOperation::Done(entry.key.clone(), imaging, image_buffer)).unwrap();
     });
 }

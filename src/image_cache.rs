@@ -1,5 +1,7 @@
 
 use std::collections::HashMap;
+use std::error::Error;
+use std::path::Path;
 use std::sync::{Arc, Mutex, Condvar};
 
 use cache::Cache;
@@ -117,9 +119,14 @@ impl ImageCache {
             }
 
             stage.cache.get_or_update(entry.key.clone(), move |_| {
-                entry::image::get_image_buffer(entry, imaging).map_err(|it| s!(it))
+                entry::image::get_image_buffer(&entry.content, imaging).map_err(|it| s!(it))
             })
         })
+    }
+
+    pub fn generate_animation_gif<T: AsRef<Path>>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T) -> Result<(), Box<Error>> {
+        let cherenkoved = self.cherenkoved.lock().unwrap();
+        cherenkoved.generate_animation_gif(entry, imaging, length, path)
     }
 
     pub fn len(&self) -> Vec<usize> {

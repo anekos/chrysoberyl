@@ -243,6 +243,8 @@ impl App {
                     on_fly_leaves(self, &mut updated, n),
                 Forward =>
                     on_histoy_go(self, &mut updated, true),
+                Gif(ref path, length) =>
+                    on_gif(self, path, length),
                 Go(ref key) =>
                     on_go(self, &mut updated, key),
                 InitialProcess(entries, shuffle, stdin_as_binary) =>

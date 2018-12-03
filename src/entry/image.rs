@@ -10,7 +10,7 @@ use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
 
-use entry::{Entry, EntryContent};
+use entry::EntryContent;
 use errors::ChryError;
 use gtk_utils::{new_pixbuf_from_surface, context_flip, context_rotate};
 use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
@@ -33,19 +33,19 @@ impl Imaging {
     }
 }
 
-pub fn get_image_buffer(entry: &Entry, imaging: &Imaging) -> Result<ImageBuffer, Box<error::Error>> {
-    if imaging.drawing.animation && is_animation(entry) {
-        Ok(get_animation_buffer(entry).map(ImageBuffer::Animation)?)
+pub fn get_image_buffer(entry_content: &EntryContent, imaging: &Imaging) -> Result<ImageBuffer, Box<error::Error>> {
+    if imaging.drawing.animation && is_animation(entry_content) {
+        Ok(get_animation_buffer(entry_content).map(ImageBuffer::Animation)?)
     } else {
-        get_static_image_buffer(entry, imaging).map(ImageBuffer::Static)
+        get_static_image_buffer(entry_content, imaging).map(ImageBuffer::Static)
     }
 }
 
 
-pub fn get_static_image_buffer(entry: &Entry, imaging: &Imaging) -> Result<StaticImageBuffer, Box<error::Error>> {
+pub fn get_static_image_buffer(entry_content: &EntryContent, imaging: &Imaging) -> Result<StaticImageBuffer, Box<error::Error>> {
     use self::EntryContent::*;
 
-    match (*entry).content {
+    match *entry_content {
         Image(ref path) =>
             make_scaled_from_file(path_to_str(path), &imaging),
         Archive(_, ref entry) =>
@@ -58,10 +58,10 @@ pub fn get_static_image_buffer(entry: &Entry, imaging: &Imaging) -> Result<Stati
 }
 
 
-pub fn get_animation_buffer(entry: &Entry) -> Result<AnimationBuffer, Box<error::Error>> {
+pub fn get_animation_buffer(entry_content: &EntryContent) -> Result<AnimationBuffer, Box<error::Error>> {
     use self::EntryContent::*;
 
-    match (*entry).content {
+    match *entry_content {
         Image(ref path) =>
             Ok(AnimationBuffer::new_from_file(path)?),
         Archive(_, ref entry) =>
@@ -71,8 +71,8 @@ pub fn get_animation_buffer(entry: &Entry) -> Result<AnimationBuffer, Box<error:
 }
 
 
-fn is_animation(entry: &Entry) -> bool {
-    if let Some(img) = get_meta(entry) {
+fn is_animation(entry_content: &EntryContent) -> bool {
+    if let Some(img) = get_meta(entry_content) {
         if let Ok(img) = img {
             if let Ok(gif) = img.into::<Gif>() {
                 if gif.is_animated() {
@@ -130,10 +130,10 @@ fn make_scaled_from_pdf<T: AsRef<Path>>(pdf_path: &T, index: usize, imaging: &Im
     StaticImageBuffer::new_from_pixbuf(&pixbuf, Some(size))
 }
 
-fn get_meta(entry: &Entry) -> Option<Result<GenericMetadata, immeta::Error>> {
+fn get_meta(entry_content: &EntryContent) -> Option<Result<GenericMetadata, immeta::Error>> {
     use self::EntryContent::*;
 
-    match (*entry).content {
+    match *entry_content {
         Image(ref path) =>
             Some(immeta::load_from_file(&path)),
         Archive(_, ref entry) =>

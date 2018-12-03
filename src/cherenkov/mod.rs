@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::path::Path;
 use std::str::FromStr;
+use std::thread::spawn;
 
 use cairo::{Context, Format, ImageSurface, Pattern, self, SurfacePattern};
 use gdk::prelude::ContextExt;
@@ -11,7 +13,7 @@ use gdk_pixbuf::{Pixbuf, PixbufExt};
 
 use color::Color;
 use entry::image::Imaging;
-use entry::{Entry, Key, self};
+use entry::{Entry, EntryContent, Key, self};
 use errors::ChryError;
 use gtk_utils::new_pixbuf_from_surface;
 use image::{ImageBuffer, StaticImageBuffer};
@@ -64,7 +66,61 @@ impl Cherenkoved {
 
     pub fn get_image_buffer(&mut self, entry: &Entry, imaging: &Imaging) -> Option<Result<ImageBuffer, Box<Error>>> {
         if_let_some!(cache_entry = self.cache.get_mut(&entry.key), None);
-        Some(get_image_buffer(cache_entry, entry, imaging))
+        Some(get_image_buffer(cache_entry, &entry.content, imaging))
+    }
+
+    pub fn generate_animation_gif<T: AsRef<Path>>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T) -> Result<(), Box<Error>> {
+        use gif;
+        use gif::SetParameter;
+        use image::ImageBuffer::Static;
+        use gdk_pixbuf::PixbufExt;
+        use std::fs::File;
+
+        fn generate(mut file: File, mut cache_entry: CacheEntry, entry_content: &EntryContent, imaging: &Imaging, size: Size, length: u8) -> Result<(), Box<Error>> {
+            let (width, height) = (size.width as u16, size.height as u16);
+
+            let mut encoder = gif::Encoder::new(&mut file, width, height, &[])?;
+            encoder.set(gif::Repeat::Infinite)?;
+
+            cache_entry.image = None;
+            for _ in 0 .. length {
+                let mut cache_entry = cache_entry.clone();
+                cache_entry.reseed();
+                if let Static(buffer) = get_image_buffer(&mut cache_entry, &entry_content, &imaging)? {
+                    let pixbuf = buffer.get_pixbuf();
+                    let channels = pixbuf.get_n_channels();
+
+                    if channels == 4 {
+                        let pixels: &mut [u8] = unsafe { pixbuf.get_pixels() };
+                        let frame = gif::Frame::from_rgba(width, height, &mut *pixels);
+                        encoder.write_frame(&frame)?;
+                    } else {
+                        return Err(ChryError::Fixed("Invalid channels"))?;
+                    }
+                }
+            }
+
+            puts_event!("cherenkov/generate_animation_gif/done");
+            Ok(())
+        }
+
+        if_let_some!(cache_entry = self.cache.get(&entry.key).cloned(), Err(ChryError::Fixed("Not cherenkoved"))?);
+        let size = {
+            if_let_some!(image = cache_entry.image.as_ref(), Err(ChryError::Fixed("Not cherenkoved"))?);;
+            image.get_fit_size()
+        };
+
+        let imaging = imaging.clone();
+        let entry_content = entry.content.clone();
+        let file = File::create(path.as_ref())?;
+
+        spawn(move || {
+            if let Err(err) = generate(file, cache_entry, &entry_content, &imaging, size, length) {
+                puts_error!(err, "at" => "cherenkoved/generate_animation_gif");
+            }
+        });
+
+        Ok(())
     }
 
     pub fn remove(&mut self, key: &Key) {
@@ -100,12 +156,7 @@ impl Cherenkoved {
 
     pub fn reset(&mut self, entry: &Entry) {
         if_let_some!(entry = self.cache.get_mut(&entry.key), ());
-        for it in &mut entry.modifiers {
-            if let Che::Nova(ref mut nv) = it.che {
-                nv.seed.reset();
-            }
-        }
-        entry.expired = true;
+        entry.reseed();
     }
 
     pub fn cherenkov(&mut self, entry: &Entry, imaging: &Imaging, new_modifiers: &[Modifier]) {
@@ -113,7 +164,7 @@ impl Cherenkoved {
 
         modifiers.extend_from_slice(new_modifiers);
 
-        if_let_ok!(image_buffer = time!("re_cherenkov" => re_cherenkov(entry, imaging, &modifiers)), |_| ());
+        if_let_ok!(image_buffer = time!("re_cherenkov" => re_cherenkov(&entry.content, imaging, &modifiers)), |_| ());
 
         self.cache.insert(
             entry.key.clone(),
@@ -144,6 +195,15 @@ impl CacheEntry {
         let changed = before != self.modifiers.len();
         self.expired = changed;
         changed
+    }
+
+    pub fn reseed(&mut self) {
+        for it in &mut self.modifiers {
+            if let Che::Nova(ref mut nv) = it.che {
+                nv.seed.reset();
+            }
+        }
+        self.expired = true;
     }
 }
 
@@ -311,14 +371,14 @@ impl fmt::Display for Operator {
 }
 
 
-fn get_image_buffer(cache_entry: &mut CacheEntry, entry: &Entry, imaging: &Imaging) -> Result<ImageBuffer, Box<Error>> {
+fn get_image_buffer(cache_entry: &mut CacheEntry, entry_content: &EntryContent, imaging: &Imaging) -> Result<ImageBuffer, Box<Error>> {
     if let Some(image) = cache_entry.get(imaging.cell_size, &imaging.drawing) {
         return Ok(ImageBuffer::Static(image))
     }
 
     let modifiers = cache_entry.modifiers.clone();
 
-    let image = re_cherenkov(entry, imaging, &modifiers)?;
+    let image = re_cherenkov(entry_content, imaging, &modifiers)?;
 
     cache_entry.image = Some(image.clone());
     cache_entry.drawing = imaging.drawing.clone();
@@ -327,8 +387,8 @@ fn get_image_buffer(cache_entry: &mut CacheEntry, entry: &Entry, imaging: &Imagi
     Ok(ImageBuffer::Static(image))
 }
 
-fn re_cherenkov(entry: &Entry, imaging: &Imaging, modifiers: &[Modifier]) -> Result<StaticImageBuffer, Box<Error>> {
-    let image_buffer = entry::image::get_image_buffer(entry, imaging)?;
+fn re_cherenkov(entry_content: &EntryContent, imaging: &Imaging, modifiers: &[Modifier]) -> Result<StaticImageBuffer, Box<Error>> {
+    let image_buffer = entry::image::get_image_buffer(entry_content, imaging)?;
     if let ImageBuffer::Static(buf) = image_buffer {
         let mut mask = None;
         let mut modified = Modified::P(buf.get_pixbuf());

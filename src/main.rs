@@ -22,6 +22,7 @@ extern crate env_logger;
 extern crate filetime;
 extern crate gdk;
 extern crate gdk_pixbuf;
+extern crate gif;
 extern crate glib;
 extern crate globset;
 extern crate gtk;

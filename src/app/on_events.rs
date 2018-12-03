@@ -413,6 +413,12 @@ pub fn on_fly_leaves(app: &mut App, updated: &mut Updated, n: usize) -> EventRes
     Ok(())
 }
 
+pub fn on_gif(app: &mut App, path: &PathBuf, length: u8) -> EventResult {
+    if_let_some!((entry, _) = app.current(), Ok(()));
+    let imaging = app.get_imaging();
+    app.cache.generate_animation_gif(&entry, &imaging, length, path)
+}
+
 pub fn on_go(app: &mut App, updated: &mut Updated, key: &SearchKey) -> EventResult {
     let index = app.entries.search(key);
     if let Some(index) = index {
@@ -682,7 +688,6 @@ pub fn on_mark(app: &mut App, updated: &mut Updated, name: String, key: Option<(
 
 #[allow(unused_variables)]
 pub fn on_meow(app: &mut App, updated: &mut Updated) -> EventResult {
-    println!("meow");
     Ok(())
 }
 

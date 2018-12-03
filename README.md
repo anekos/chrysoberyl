@@ -297,6 +297,11 @@ Make fragile operation file.
 You can write operation commands on this file to operate chrysoberyl.
 
 
+## @gif [(--length|-l) <LENGTH>] <PATH>
+
+Generate cherenkoved animation gif to the `PATH`.
+
+
 ## @go <PATH> [<INDEX>]
 
 Show the entry.

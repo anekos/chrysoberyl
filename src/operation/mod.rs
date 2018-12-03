@@ -68,9 +68,10 @@ pub enum Operation {
     FlushBuffer,
     FlyLeaves(usize),
     Forward,
+    Gif(PathBuf, u8),
     Go(entry::SearchKey),
-    Input(Vec<mapping::Mapped>),
     InitialProcess(Vec<command_line::Entry>, bool, bool), /* command_lin::entries, shuffle, stdin_as_binary */
+    Input(Vec<mapping::Mapped>),
     Jump(String, bool), /* marker name, load */
     KillTimer(String),
     Last(Option<usize>, bool, MoveBy, bool),
@@ -301,6 +302,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@flush-buffer"                 => Ok(FlushBuffer),
             "@fly-leaves"                   => parse_fly_leaves(whole),
             "@forward" | "@fwd"             => Ok(Forward),
+            "@gif"                          => parse_gif(whole),
             "@go"                           => parse_go(whole),
             "@inc" | "@increment" | "@increase" | "@++"
                                             => parse_usize(whole, OptionUpdater::Increment, 1),
@@ -503,6 +505,7 @@ impl fmt::Debug for Operation {
             FlushBuffer => "FlushBuffer",
             FlyLeaves(_) => "FlyLeaves",
             Forward => "Forward",
+            Gif(_, _) => "Gif",
             Go(_) => "Go",
             InitialProcess(_, _, _) => "InitialProcess",
             Input(_) => "Input",

@@ -889,9 +889,9 @@ pub fn on_push_clipboard(app: &mut App, selection: ClipboardSelection, as_operat
     Ok(())
 }
 
-pub fn on_push_directory(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, show: bool) -> EventResult {
+pub fn on_push_directory(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool) -> EventResult {
     let buffered = app.sorting_buffer.push_with_reserve(
-        QueuedOperation::PushDirectory(file, meta, force, show));
+        QueuedOperation::PushDirectory(file, meta, force));
     push_buffered(app, updated, buffered)
 }
 
@@ -923,7 +923,7 @@ pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: 
     }
 
     if path.is_dir() {
-        on_push_directory(app, updated, path.clone(), meta, force, show)
+        on_push_directory(app, updated, path.clone(), meta, force)
     } else {
         on_push_image(app, updated, path.clone(), meta, force, show, None, None)
     }
@@ -1744,34 +1744,43 @@ fn on_update_views(app: &mut App, updated: &mut Updated, ignore_views: bool) -> 
 }
 
 fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>) -> EventResult {
+    enum ShowTarget {
+        Index(usize),
+        Path(PathBuf),
+    }
+
     use operation::QueuedOperation::*;
 
     let before_len = app.entries.len();
     let app_info = app.app_info();
-    let mut show_index = None;
+    let mut last_show_target = None;
 
     for op in ops {
         let len = app.entries.len();
-        let mut do_show = false;
+        let mut show_target = None;
 
         match op {
             PushImage(path, meta, force, show, expand_level, url) => {
                 app.entries.push_image(&app_info, &path, meta, force, expand_level, url)?;
-                do_show = show;
+                if show {
+                    show_target = Some(ShowTarget::Path(path));
+                }
             },
-            PushDirectory(path, meta, force, show) => {
-                app.entries.push_directory(&app_info, &path, &meta, force)?;
-                do_show = show;
-            },
+            PushDirectory(path, meta, force) =>
+                app.entries.push_directory(&app_info, &path, &meta, force)?,
             PushArchive(archive_path, meta, force, show, url) =>
                 on_push_archive(app, &archive_path, meta, force, show, url)?,
             PushArchiveEntry(archive_path, entry, meta, force, show, url) => {
                 app.entries.push_archive_entry(&app_info, &archive_path, &entry, meta, force, url);
-                do_show = show;
+                if show {
+                    show_target = Some(ShowTarget::Path(archive_path));
+                }
             },
             PushMemory(buf, meta, show) => {
                 app.entries.push_memory(&app_info, buf, meta, false, None)?;
-                do_show = show;
+                if show {
+                    show_target = Some(ShowTarget::Index(len))
+                }
             },
             PushPdf(pdf_path, meta, force, show, url) =>
                 on_push_pdf(app, updated, pdf_path, meta, force, show, url)?,
@@ -1780,12 +1789,14 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
                 for index in 0 .. pages {
                     app.entries.push_pdf_entry(&app_info, &pdf_path, index, meta.clone(), force, url.clone());
                 }
-                do_show = show;
+                if show {
+                    show_target = Some(ShowTarget::Path((*pdf_path).clone()));
+                }
             },
         }
 
-        if do_show {
-            show_index = Some(len + 1);
+        if show_target.is_some() {
+            last_show_target = show_target;
         }
 
         updated.label = true;
@@ -1794,9 +1805,21 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
     app.update_paginator_condition();
     app.remote_cache.update_sorting_buffer_len();
 
-    if let Some(show_index) = show_index {
-        let paging = app.paging_with_count(false, false, Some(show_index));
-        updated.pointer = app.paginator.show(&paging);
+    if let Some(show_target) = last_show_target {
+        let index = match show_target {
+            ShowTarget::Path(path) => {
+                path.to_str().and_then(|path| {
+                    let key = entry::SearchKey { path: o!(path), index: None };
+                    app.entries.search(&key)
+                })
+            },
+            ShowTarget::Index(index) =>
+                Some(index)
+        };
+        if let Some(index) = index {
+            let paging = app.paging_with_count(false, false, Some(index + 1));
+            updated.pointer = app.paginator.show(&paging);
+        }
     } else if before_len == 0 && 0 < app.entries.len() {
         updated.pointer |= app.paginator.reset_level()
     }

@@ -73,6 +73,12 @@ impl ImageCache {
         stage.cache.clear_entry(key)
     }
 
+    pub fn clear_each_entry(&mut self, key: &Key) {
+        self.stages.each_mut(move |it| {
+            it.cache.clear_entry(key);
+        });
+    }
+
     pub fn mark_fetching(&mut self, imaging: &Imaging, key: Key) -> bool {
         trace!("image_cache/mark_fetching: key={:?}", key);
 

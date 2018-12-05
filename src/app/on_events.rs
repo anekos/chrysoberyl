@@ -159,6 +159,19 @@ pub fn on_clear(app: &mut App, updated: &mut Updated) -> EventResult {
     Ok(())
 }
 
+pub fn on_clear_cache_entry(app: &mut App, updated: &mut Updated, key: &entry::Key) -> EventResult {
+    app.cache.clear_each_entry(key);
+    for (index, _) in app.gui.cells(app.states.reverse).enumerate() {
+        if let Some((ref entry, _)) = app.current_with(index) {
+            if entry.key == *key {
+                updated.image = true;
+                break;
+            }
+        }
+    }
+    Ok(())
+}
+
 pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region, context: Option<OperationContext>) -> EventResult {
     let inner = extract_region_from_context(context).map(|it| it.0).unwrap_or(inner);
     let current = app.states.drawing.clipping.unwrap_or_default();
@@ -417,11 +430,13 @@ pub fn on_gif(app: &mut App, path: &PathBuf, length: u8, show: bool) -> EventRes
     if_let_some!((entry, _) = app.current(), Ok(()));
     let imaging = app.get_imaging();
     let tx = app.tx.clone();
-    let destination: Expandable = path.to_str().map(|it| Expandable::new(it.to_string())).ok_or(ChryError::Fixed("WTF"))?;
+    let destination = path.to_str().map(|it| it.to_string()).ok_or(ChryError::Fixed("WTF"))?;
 
     app.cache.generate_animation_gif(&entry, &imaging, length, path, move || {
         if show {
-            tx.send(Operation::PushImage(destination, None, false, true, None)).unwrap()
+            let key = (EntryType::Image, destination.clone(), 0);
+            tx.send(Operation::ClearCacheEntry(key)).unwrap();
+            tx.send(Operation::PushImage(Expandable::new(destination), None, false, true, None)).unwrap();
         }
     })
 }

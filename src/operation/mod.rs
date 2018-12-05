@@ -47,6 +47,7 @@ pub enum Operation {
     Cherenkov(CherenkovParameter),
     CherenkovReset,
     Clear,
+    ClearCacheEntry(entry::Key), /* internal use only */
     Clip(Region),
     Context(OperationContext, Box<Operation>),
     Controller(controller::Source),
@@ -492,7 +493,8 @@ impl fmt::Debug for Operation {
             ChangeDirectory(_) => "ChangeDirectory",
             Cherenkov(_) => "Cherenkov",
             CherenkovReset => "CherenkovReset",
-            Clear => "Clear ",
+            Clear => "Clear",
+            ClearCacheEntry(_) => "ClearCacheEntry",
             Clip(_) => "Clip",
             Context(_, _) => "Context",
             Controller(_) => "Controller",

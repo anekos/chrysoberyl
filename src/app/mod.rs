@@ -201,6 +201,8 @@ impl App {
                     on_cherenkov_reset(self, &mut updated),
                 Clear =>
                     on_clear(self, &mut updated),
+                ClearCacheEntry(ref key) =>
+                    on_clear_cache_entry(self, &mut updated, key),
                 Clip(region) =>
                     on_clip(self, &mut updated, region, context),
                 Context(context, op) =>

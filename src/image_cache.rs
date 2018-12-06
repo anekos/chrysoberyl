@@ -124,9 +124,10 @@ impl ImageCache {
         })
     }
 
-    pub fn generate_animation_gif<T: AsRef<Path>>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T) -> Result<(), Box<Error>> {
+    pub fn generate_animation_gif<T: AsRef<Path>, F>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T, on_complete: F) -> Result<(), Box<Error>> 
+        where F: FnOnce() + Send + 'static {
         let cherenkoved = self.cherenkoved.lock().unwrap();
-        cherenkoved.generate_animation_gif(entry, imaging, length, path)
+        cherenkoved.generate_animation_gif(entry, imaging, length, path, on_complete)
     }
 
     pub fn len(&self) -> Vec<usize> {

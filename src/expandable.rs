@@ -51,6 +51,7 @@ impl Expandable {
     pub fn expanded(path: String) -> Self {
         Expandable::Expanded(path)
     }
+
     pub fn expand(&self) -> PathBuf {
         use self::Expandable::*;
 

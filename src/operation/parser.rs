@@ -453,14 +453,16 @@ pub fn parse_fly_leaves(args: &[String]) -> Result<Operation, ParsingError> {
 pub fn parse_gif(args: &[String]) -> Result<Operation, ParsingError> {
     let mut path: String = o!("");
     let mut length = 4;
+    let mut show = false;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut length).add_option(&["--length", "-l"], Store, "Animation length");
+        ap.refer(&mut show).add_option(&["--show", "-s"], StoreTrue, "Show the found entry");
         ap.refer(&mut path).add_argument("path", Store, "Save to").required();
         parse_args(&mut ap, args)
     } .and_then(|_| {
-        Ok(Operation::Gif(sh::expand_to_pathbuf(&path), length))
+        Ok(Operation::Gif(sh::expand_to_pathbuf(&path), length, show))
     })
 }
 

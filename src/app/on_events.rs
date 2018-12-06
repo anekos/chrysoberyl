@@ -413,10 +413,17 @@ pub fn on_fly_leaves(app: &mut App, updated: &mut Updated, n: usize) -> EventRes
     Ok(())
 }
 
-pub fn on_gif(app: &mut App, path: &PathBuf, length: u8) -> EventResult {
+pub fn on_gif(app: &mut App, path: &PathBuf, length: u8, show: bool) -> EventResult {
     if_let_some!((entry, _) = app.current(), Ok(()));
     let imaging = app.get_imaging();
-    app.cache.generate_animation_gif(&entry, &imaging, length, path)
+    let tx = app.tx.clone();
+    let destination: Expandable = path.to_str().map(|it| Expandable::new(it.to_string())).ok_or(ChryError::Fixed("WTF"))?;
+
+    app.cache.generate_animation_gif(&entry, &imaging, length, path, move || {
+        if show {
+            tx.send(Operation::PushImage(destination, None, false, true, None)).unwrap()
+        }
+    })
 }
 
 pub fn on_go(app: &mut App, updated: &mut Updated, key: &SearchKey) -> EventResult {

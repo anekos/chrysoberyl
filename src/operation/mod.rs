@@ -68,7 +68,7 @@ pub enum Operation {
     FlushBuffer,
     FlyLeaves(usize),
     Forward,
-    Gif(PathBuf, u8),
+    Gif(PathBuf, u8, bool), /* path, length, show */
     Go(entry::SearchKey),
     InitialProcess(Vec<command_line::Entry>, bool, bool), /* command_lin::entries, shuffle, stdin_as_binary */
     Input(Vec<mapping::Mapped>),
@@ -514,7 +514,7 @@ impl fmt::Debug for Operation {
             FlushBuffer => "FlushBuffer",
             FlyLeaves(_) => "FlyLeaves",
             Forward => "Forward",
-            Gif(_, _) => "Gif",
+            Gif(_, _, _) => "Gif",
             Go(_) => "Go",
             InitialProcess(_, _, _) => "InitialProcess",
             Input(_) => "Input",

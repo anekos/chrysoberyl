@@ -69,7 +69,8 @@ impl Cherenkoved {
         Some(get_image_buffer(cache_entry, &entry.content, imaging))
     }
 
-    pub fn generate_animation_gif<T: AsRef<Path>>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T) -> Result<(), Box<Error>> {
+    pub fn generate_animation_gif<T: AsRef<Path>, F>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T, on_complete: F) -> Result<(), Box<Error>>
+    where F: FnOnce() + Send + 'static {
         use gif;
         use gif::SetParameter;
         use image::ImageBuffer::Static;
@@ -117,6 +118,8 @@ impl Cherenkoved {
         spawn(move || {
             if let Err(err) = generate(file, cache_entry, &entry_content, &imaging, size, length) {
                 puts_error!(err, "at" => "cherenkoved/generate_animation_gif");
+            } else {
+                on_complete();
             }
         });
 

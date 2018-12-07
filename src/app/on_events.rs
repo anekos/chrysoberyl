@@ -1744,9 +1744,18 @@ fn on_update_views(app: &mut App, updated: &mut Updated, ignore_views: bool) -> 
 }
 
 fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>) -> EventResult {
+    fn gen_target(show: bool, url: &Option<String>, path: &PathBuf) -> Option<ShowTarget> {
+        if show {
+            url.clone().map(ShowTarget::Url).or_else(|| path.canonicalize().ok().map(ShowTarget::File))
+        } else {
+            None
+        }
+    }
+
     enum ShowTarget {
         Index(usize),
-        Path(PathBuf),
+        File(PathBuf),
+        Url(String),
     }
 
     use operation::QueuedOperation::*;
@@ -1761,20 +1770,16 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
 
         match op {
             PushImage(path, meta, force, show, expand_level, url) => {
+                show_target = gen_target(show, &url, &path);
                 app.entries.push_image(&app_info, &path, meta, force, expand_level, url)?;
-                if show {
-                    show_target = Some(ShowTarget::Path(path));
-                }
             },
             PushDirectory(path, meta, force) =>
                 app.entries.push_directory(&app_info, &path, &meta, force)?,
             PushArchive(archive_path, meta, force, show, url) =>
                 on_push_archive(app, &archive_path, meta, force, show, url)?,
             PushArchiveEntry(archive_path, entry, meta, force, show, url) => {
+                show_target = gen_target(show, &url, &archive_path);
                 app.entries.push_archive_entry(&app_info, &archive_path, &entry, meta, force, url);
-                if show {
-                    show_target = Some(ShowTarget::Path(archive_path));
-                }
             },
             PushMemory(buf, meta, show) => {
                 app.entries.push_memory(&app_info, buf, meta, false, None)?;
@@ -1785,12 +1790,10 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
             PushPdf(pdf_path, meta, force, show, url) =>
                 on_push_pdf(app, updated, pdf_path, meta, force, show, url)?,
             PushPdfEntries(pdf_path, pages, meta, force, show, url) => {
+                show_target = gen_target(show, &url, &pdf_path);
                 let pdf_path = Arc::new(pdf_path.clone());
                 for index in 0 .. pages {
                     app.entries.push_pdf_entry(&app_info, &pdf_path, index, meta.clone(), force, url.clone());
-                }
-                if show {
-                    show_target = Some(ShowTarget::Path((*pdf_path).clone()));
                 }
             },
         }
@@ -1807,11 +1810,15 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
 
     if let Some(show_target) = last_show_target {
         let index = match show_target {
-            ShowTarget::Path(path) => {
+            ShowTarget::File(path) => {
                 path.to_str().and_then(|path| {
                     let key = entry::SearchKey { path: o!(path), index: None };
                     app.entries.search(&key)
                 })
+            },
+            ShowTarget::Url(url) => {
+                let key = entry::SearchKey { path: url, index: None };
+                app.entries.search(&key)
             },
             ShowTarget::Index(index) =>
                 Some(index)

@@ -16,6 +16,7 @@ use util::pom::from_vec_char;
 pub enum Value {
     Any,
     Directory,
+    EventName,
     File,
     Literals(Vec<String>),
     Operator,
@@ -50,82 +51,99 @@ pub enum OptionValue {
 
 impl Definition {
     pub fn new() -> Self {
+        #[derive(Debug)]
+        enum In {
+            Other,
+            Options,
+            Events,
+            MaskOperators
+        }
+
         let mut original_operations = vec![];
         let mut options: Vec<String> = vec![];
         let mut mask_operators: Vec<String> = vec![];
         let mut option_values = HashMap::<String, OptionValue>::new();
         let mut arguments = HashMap::new();
         let mut event_names = vec![];
-        let mut in_options = false;
-        let mut in_events = false;
-        let mut in_mask_operators = false;
+        let mut current = In::Other;
 
         for line in README.lines() {
-            if in_events {
-                if line.starts_with('#') {
-                    in_events = false;
-                } else if line.starts_with("- ") {
-                    event_names.push(o!(line[2..]));
-                }
-            } else if in_mask_operators {
-                if !mask_operators.is_empty() && line.is_empty() {
-                    in_mask_operators = false;
-                } else if line.starts_with("- ") {
-                    mask_operators.push(o!(line[2..]));
-                }
-            } else if in_options {
-                if line.starts_with('|') {
-                    let mut columns = line.split('|').skip(1);
-                    let name = columns.next().unwrap().trim();
-                    let tipe = columns.next().unwrap().trim();
-                    if name == "Name" || name.starts_with('-') {
-                        continue;
-                    }
-                    match tipe {
-                        "string-or-file" => {
-                            option_values.insert(o!(name), OptionValue::StringOrFile);
-                        }
-                        "boolean" => {
-                            option_values.insert(o!(name), OptionValue::Boolean);
-                        }
-                        "mask operators" => {
-                            option_values.insert(o!(name), OptionValue::Boolean); // Fake value, replace with real value afterwards.
-                        }
-                        values => {
-                            let values: Vec<String> = values.split('/').map(|it| o!(it)).collect();
-                            if !values.is_empty() {
-                                option_values.insert(o!(name), OptionValue::Enum(values));
-                            }
-                        }
-                    };
-                    options.push(o!(name));
-                } else if line == "## Mask operators" {
-                    in_mask_operators = true;
-                }
-            } else if line.starts_with("## (@") || line.starts_with("## @") {
-                let src = &line[3..];
-                match parse(src, definition) {
-                    Err(e) => panic!(format!("Err: {:?} for {:?}", e, line)),
-                    Ok((ref ops, ref args)) if ops.is_empty() => panic!(format!("Empty: line={:?}, ops={:?}, args={:?}", line, ops, args)),
-                    Ok((ops, args)) => {
-                        let args = Rc::new(args);
-                        for (i, op) in ops.into_iter().enumerate() {
-                            if arguments.contains_key(&op) {
-                                panic!("Duplicated: {:?}", op);
-                            }
-                            if i == 0 {
-                                original_operations.push(format!("@{}", op.clone()));
-                            }
-                            if !args.is_empty() {
-                                arguments.insert(op, args.clone());
-                            }
+            match current {
+                In::Events => {
+                    if line.starts_with('#') {
+                        current = In::Other;
+                    } else if line.starts_with("| ") {
+                        let mut columns = line.split('|').skip(1);
+                        match columns.next().unwrap().trim() {
+                            "Name" | "----" => (),
+                            name => event_names.push(o!(name)),
                         }
                     }
+                },
+                In::MaskOperators => {
+                    if !mask_operators.is_empty() && line.is_empty() {
+                        current = In::Other;
+                    } else if line.starts_with("- ") {
+                        mask_operators.push(o!(line[2..]));
+                    }
+                },
+                In::Options => {
+                    if line.starts_with('|') {
+                        let mut columns = line.split('|').skip(1);
+                        let name = columns.next().unwrap().trim();
+                        let tipe = columns.next().unwrap().trim();
+                        if name == "Name" || name.starts_with('-') {
+                            continue;
+                        }
+                        match tipe {
+                            "string-or-file" => {
+                                option_values.insert(o!(name), OptionValue::StringOrFile);
+                            }
+                            "boolean" => {
+                                option_values.insert(o!(name), OptionValue::Boolean);
+                            }
+                            "mask operators" => {
+                                option_values.insert(o!(name), OptionValue::Boolean); // Fake value, replace with real value afterwards.
+                            }
+                            values => {
+                                let values: Vec<String> = values.split('/').map(|it| o!(it)).collect();
+                                if !values.is_empty() {
+                                    option_values.insert(o!(name), OptionValue::Enum(values));
+                                }
+                            }
+                        };
+                        options.push(o!(name));
+                    } else if line == "## Mask operators" {
+                        current = In::MaskOperators;
+                    }
+                },
+                In::Other => {
+                    if line.starts_with("## (@") || line.starts_with("## @") {
+                        let src = &line[3..];
+                        match parse(src, definition) {
+                            Err(e) => panic!(format!("Err: {:?} for {:?}", e, line)),
+                            Ok((ref ops, ref args)) if ops.is_empty() => panic!(format!("Empty: line={:?}, ops={:?}, args={:?}", line, ops, args)),
+                            Ok((ops, args)) => {
+                                let args = Rc::new(args);
+                                for (i, op) in ops.into_iter().enumerate() {
+                                    if arguments.contains_key(&op) {
+                                        panic!("Duplicated: {:?}", op);
+                                    }
+                                    if i == 0 {
+                                        original_operations.push(format!("@{}", op.clone()));
+                                    }
+                                    if !args.is_empty() {
+                                        arguments.insert(op, args.clone());
+                                    }
+                                }
+                            }
+                        }
+                    } else if line == "# Options" {
+                        current = In::Options;
+                    } else if line == "# Events" {
+                        current = In::Events;
+                    }
                 }
-            } else if line == "# Options" {
-                in_options = true;
-            } else if line == "# Events" {
-                in_events = true;
             }
         }
 
@@ -211,16 +229,21 @@ fn spaces1() -> Parser<char, ()> {
     one_of(" \t").repeat(1..).map(|_| ())
 }
 
+fn dots() -> Parser<char, Argument> {
+    sym('.').repeat(1..).map(|_| Argument::Dots)
+}
+
 fn value() -> Parser<char, Value> {
     (sym('<') * id() - sym('>') - any()).map(|it| {
         match &*it {
             "DIRECTORY" => Value::Directory,
+            "EVENT_NAME" => Value::EventName,
             "FILE" => Value::File,
             "OPERATOR" => Value::Operator,
             "OPTION" => Value::OptionName,
             "PATH" => Value::Path,
-            "VALUE" => Value::OptionValue,
             "SESSION" => Value::Literals(Session::into_enum_iter().map(|it| s!(it)).collect()),
+            "VALUE" => Value::OptionValue,
             _ => Value::Any,
         }
     })

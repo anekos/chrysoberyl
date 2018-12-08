@@ -194,19 +194,23 @@ fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
 
     let make = |value: &Val, option_name: Option<&&str>, result: &mut Vec<String>| {
         match *value {
-            Val::OptionName =>
-                result.extend_from_slice(&*definition.options),
-            Val::Literals(ref values) =>
-                result.extend_from_slice(&*values),
+            Val::Any =>
+                (),
             Val::Directory =>
                 get_candidates(&state.text, true, "", result),
+            Val::EventName =>
+                result.extend_from_slice(&*definition.event_names),
             Val::File | Val::Path =>
                 get_candidates(&state.text, false, "", result),
+            Val::Literals(ref values) =>
+                result.extend_from_slice(&*values),
             Val::Operator => {
                 if let Some(OptionValue::Enum(ref values)) = definition.option_values.get("mask-operator") {
                     result.extend_from_slice(values);
                 }
-            }
+            },
+            Val::OptionName =>
+                result.extend_from_slice(&*definition.options),
             Val::OptionValue => {
                 if_let_some!(option_name = option_name, ());
                 if let Some(value) = definition.option_values.get(*option_name) {
@@ -216,8 +220,7 @@ fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
                         OptionValue::StringOrFile => get_candidates(&state.text, false, "@", result),
                     }
                 }
-            }
-            _ => (),
+            },
         }
     };
 

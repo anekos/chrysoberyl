@@ -745,21 +745,23 @@ unsigned integer
 
 # Events
 
-- at-first
-- at-last
-- download-all
-- error
-- file-changed
-- idle
-- initialize
-- invalid-all
-- mapped-input
-- quit
-- resize-window
-- show-image-pre
-- show-image
-- spawn
-- void
+| Name           | Description                                                                          |
+| ----           | ------------                                                                         |
+| at-first       | After displaying first page                                                          |
+| at-last        | After displaying last page                                                           |
+| download-all   | After all download task is finished                                                  |
+| error          | After error occurs                                                                   |
+| file-changed   | Current image files are changed                                                      |
+| idle           | When the user doesn't operate for the time specified with `idle-time`                |
+| initialize     | After initializing chrysoberyl                                                       |
+| invalid-all    | All displayed images are invalid                                                     |
+| mapped-input   | After fire mapped input event. (You can see `$CHRY_MAPPED`, `$CHRY_X` and `$CHRY_Y`) |
+| quit           | Quit                                                                                 |
+| resize-window  | After resize chrysoberyl window                                                      |
+| show-image-pre | Before image is shown                                                                |
+| show-image     | After image is shown                                                                 |
+| spawn          | After spawning chrysoberyl window                                                    |
+| void           | Void                                                                                 |
 
 # Filter Expression
 

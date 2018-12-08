@@ -29,6 +29,7 @@ pub enum Value {
 pub enum Argument {
     Flag(Vec<String>, Option<Value>),
     Arg(Value),
+    Dots,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -177,7 +178,7 @@ fn any() -> Parser<char, ()> {
 fn definition() -> Parser<char, (Vec<String>, Vec<Argument>)> {
     let value = maybe_optional(value);
     let p1 = operations();
-    let p2 = flag() | value.map(Argument::Arg) | literals();
+    let p2 = dots() | flag() | value.map(Argument::Arg) | literals();
 
     p1 + (spaces1() * list(p2, spaces1())).opt().map(|it| it.unwrap_or_else(|| vec![]))
 }

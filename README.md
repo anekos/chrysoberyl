@@ -481,9 +481,9 @@ Add a URL to image/PDF/archive.
 - pdf
 
 
-## @queue <OPERATION>...
+## @queue [(--times|-t) <TIMES>]<OPERATION>...
 
-Queue the operation to processsing queue.
+Re-queue the operation to processsing queue.
 
 ## @quit
 

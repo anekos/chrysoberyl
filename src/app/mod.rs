@@ -325,8 +325,8 @@ impl App {
                     on_push_url(self, &mut updated, url, meta, force, show, entry_type),
                 Query(operation, caption) =>
                     on_query(self, &mut updated, operation, caption),
-                Queue(ref operation) =>
-                    on_queue(self, operation),
+                Queue(operation, times) =>
+                    on_queue(self, operation, times),
                 Random =>
                     on_random(self, &mut updated, len),
                 Record(minimum_move, position, key) =>

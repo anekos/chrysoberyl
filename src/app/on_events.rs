@@ -990,9 +990,13 @@ pub fn on_query(app: &mut App, updated: &mut Updated, operation: Vec<String>, ca
     Ok(())
 }
 
-pub fn on_queue(app: &mut App, op: &[String]) -> EventResult {
-    let op = Operation::parse_from_vec(op)?;
-    app.tx.send(op).unwrap();
+pub fn on_queue(app: &mut App, op: Vec<String>, times: usize) -> EventResult {
+    if times == 0 {
+        let op = Operation::parse_from_vec(&op)?;
+        app.tx.send(op).unwrap();
+    } else {
+        app.tx.send(Operation::Queue(op, times - 1)).unwrap();
+    }
     Ok(())
 }
 

@@ -110,7 +110,7 @@ pub enum Operation {
     PushSibling(bool, Option<Meta>, bool, bool), /* next?, meta, force, show */
     PushURL(String, Option<Meta>, bool, bool, Option<EntryType>), /* path, meta, force, show, entry_type */
     Query(Vec<String>, Option<String>), /* operation, caption */
-    Queue(Vec<String>),
+    Queue(Vec<String>, usize),
     Random,
     Record(usize, usize, entry::Key), /* minimum_move, index, key */
     RecordPre(Vec<String>, usize),
@@ -346,7 +346,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@push-previous" | "@push-prev" => parse_push_sibling(whole, false),
             "@push-url"                     => parse_push_url(whole),
             "@query"                        => parse_query(whole),
-            "@queue"                        => Ok(Operation::Queue(whole[1..].to_vec())),
+            "@queue"                        => parse_queue(whole),
             "@quit"                         => Ok(EventName::Quit.operation()),
             "@record"                       => parse_record_pre(whole),
             "@random" | "@rand"             => Ok(Random),
@@ -556,7 +556,7 @@ impl fmt::Debug for Operation {
             PushSibling(_, _, _, _) => "PushSibling",
             PushURL(_, _, _, _, _) => "PushURL",
             Query(_, _) => "Query",
-            Queue(_) => "Queue",
+            Queue(_, _) => "Queue",
             Random => "Random ",
             Record(_, _, _) => "Record",
             RecordPre(_, _) => "RecordPre",

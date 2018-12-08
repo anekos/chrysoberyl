@@ -940,6 +940,20 @@ pub fn parse_query(args: &[String]) -> Result<Operation, ParsingError> {
     })
 }
 
+pub fn parse_queue(args: &[String]) -> Result<Operation, ParsingError> {
+    let mut operation = vec![];
+    let mut times = 0;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut times).add_option(&["--times", "-t"], Store, "re-queue times");
+        ap.refer(&mut operation).add_argument("Operation", Collect, "Operation").required();
+        parse_args(&mut ap, args)
+    } .map(|_| {
+        Operation::Queue(operation, times)
+    })
+}
+
 pub fn parse_record_pre(args: &[String]) -> Result<Operation, ParsingError> {
     let mut operation = vec![];
     let mut minimum_move = 1;

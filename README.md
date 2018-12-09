@@ -506,7 +506,7 @@ Refresh something.
 If `--image` is given, clear the caches for currently viewing entries.
 
 
-## @reset-image
+## @remove-effects
 
 Remove any effects (cherenkov etc).
 

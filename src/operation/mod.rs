@@ -115,8 +115,8 @@ pub enum Operation {
     Record(usize, usize, entry::Key), /* minimum_move, index, key */
     RecordPre(Vec<String>, usize),
     Refresh(bool), /* image_cache */
+    RemoveEffects,
     ResetFocus,
-    ResetImage,
     ResetScrolls(bool), /* to_end */
     Save(PathBuf, Vec<Session>, bool), /* path, sessions, freeze */
     SearchText(Option<String>, bool, Color), /* text, backward */
@@ -351,7 +351,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@record"                       => parse_record_pre(whole),
             "@random" | "@rand"             => Ok(Random),
             "@refresh" | "@r"               => parse_refresh(whole),
-            "@reset-image"                  => Ok(ResetImage),
+            "@remove-effects"               => Ok(RemoveEffects),
             "@save"                         => parse_save(whole),
             "@scroll"                       => parse_scroll(whole),
             "@search"                       => parse_search(whole),
@@ -561,8 +561,8 @@ impl fmt::Debug for Operation {
             Record(_, _, _) => "Record",
             RecordPre(_, _) => "RecordPre",
             Refresh(_) => "Refresh",
+            RemoveEffects => "RemoveEffects ",
             ResetFocus => "ResetFocus",
-            ResetImage => "ResetImage ",
             ResetScrolls(_) => "ResetScrolls",
             Save(_, _, _) => "Save",
             SearchText(_, _, _) => "SearchText",

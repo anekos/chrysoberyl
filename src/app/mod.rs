@@ -335,10 +335,10 @@ impl App {
                     on_record_pre(self, &op, minimum_move, context),
                 Refresh(image) =>
                     on_refresh(self, &mut updated, image),
+                RemoveEffects =>
+                    on_remove_effects(self, &mut updated),
                 ResetFocus =>
                     on_reset_focus(self),
-                ResetImage =>
-                    on_reset_image(self, &mut updated),
                 ResetScrolls(to_end) =>
                     on_reset_scrolls(self, to_end),
                 Save(ref path, ref sources, freeze) =>

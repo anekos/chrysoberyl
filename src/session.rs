@@ -86,8 +86,6 @@ pub fn write_session(app: &App, session: Session, out: &mut String) {
             write_options(&app.states, &app.gui, true, out);
             write_entries(&app.entries, out);
             write_queue(&app.remote_cache.state, out);
-            write_mappings(&app.mapping, out);
-            write_switches(&app.user_switches, out);
             write_markers(&app.marker, out);
             write_paginator(app.current().map(|it| it.0), &app.paginator, out);
         },

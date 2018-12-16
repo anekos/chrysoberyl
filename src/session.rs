@@ -93,6 +93,7 @@ pub fn write_session(app: &App, session: Session, out: &mut String) {
         Switches => write_switches(&app.user_switches, out),
         All => {
             write_options(&app.states, &app.gui, false, out);
+            write_switches(&app.user_switches, out);
             write_entries(&app.entries, out);
             write_queue(&app.remote_cache.state, out);
             write_mappings(&app.mapping, out);

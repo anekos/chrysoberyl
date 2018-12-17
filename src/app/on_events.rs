@@ -904,6 +904,11 @@ pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: 
     push_buffered(app, updated, buffered)
 }
 
+pub fn on_push_message(app: &mut App, updated: &mut Updated, message: String, meta: Option<Meta>, show: bool) -> EventResult {
+    let buffered = app.sorting_buffer.push_with_reserve(QueuedOperation::PushMessage(message, meta, show));
+    push_buffered(app, updated, buffered)
+}
+
 pub fn on_push_memory(app: &mut App, updated: &mut Updated, buf: Vec<u8>, meta: Option<Meta>, show: bool) -> EventResult {
     let buffered = app.sorting_buffer.push_with_reserve(
         QueuedOperation::PushMemory(buf, meta, show));

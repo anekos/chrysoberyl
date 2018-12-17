@@ -315,6 +315,8 @@ impl App {
                     on_push_directory(self, &mut updated, file.expand(), meta, force),
                 PushImage(file, meta, force, show, expand_level) =>
                     on_push_image(self, &mut updated, file.expand(), meta, force, show, expand_level, None),
+                PushMessage(message, meta, show) =>
+                    on_push_message(self, &mut updated, message, meta, show),
                 PushMemory(buf, meta, show) =>
                     on_push_memory(self, &mut updated, buf, meta, show),
                 PushPdf(file, meta, force, show) =>

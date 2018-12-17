@@ -888,6 +888,20 @@ pub fn parse_push_image(args: &[String]) -> Result<Operation, ParsingError> {
     })
 }
 
+pub fn parse_push_message(args: &[String]) -> Result<Operation, ParsingError> {
+    let mut meta: Vec<MetaEntry> = vec![];
+    let mut message = s!("");
+    let mut show = false;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut meta).add_option(&["--meta", "-m"], Collect, "Meta data");
+        ap.refer(&mut show).add_option(&["--show", "-s"], StoreTrue, "Show this image after push");
+        ap.refer(&mut message).add_argument("Message", Store, "Message").required();
+        parse_args(&mut ap, args)
+    } .map(|_| Operation::PushMessage(message, new_opt_meta(meta), show))
+}
+
 pub fn parse_push_sibling(args: &[String], next: bool) -> Result<Operation, ParsingError> {
     let mut meta: Vec<MetaEntry> = vec![];
     let mut force = false;

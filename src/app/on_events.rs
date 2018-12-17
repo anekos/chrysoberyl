@@ -1537,6 +1537,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 HorizontalFlip => &mut app.states.drawing.horizontal_flip,
                 HorizontalViews => &mut app.states.view.cols,
                 IdleTime => &mut app.states.idle_time,
+                IgnoreFailures => &mut app.states.ignore_failures,
                 InitialPosition => &mut app.states.initial_position,
                 LogFile => &mut app.states.log_file,
                 MaskOperator => &mut app.states.drawing.mask_operator,
@@ -1616,6 +1617,8 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 updated.label = true,
             Freeze if freezed && !app.states.freezed =>
                 updated.image = true,
+            IgnoreFailures =>
+                app.remote_cache.set_ignore_failures(app.states.ignore_failures),
             StablePush =>
                 app.sorting_buffer.set_stability(app.states.stable_push),
             StatusBar => {

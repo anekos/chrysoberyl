@@ -162,6 +162,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, context: 
         HorizontalFlip => gen("horizontal-flip", &st.drawing.horizontal_flip, context),
         HorizontalViews => gen("horizontal-views", &st.view.cols, context),
         IdleTime => gend("idle-time", &st.idle_time, context),
+        IgnoreFailures => gen("ignore-failures", &b2s(st.ignore_failures), context),
         InitialPosition => gen("initial-position", &st.initial_position, context),
         LogFile => gen("log-file", &st.log_file, context),
         MaskOperator => gen("mask-operator", &st.drawing.mask_operator, context),

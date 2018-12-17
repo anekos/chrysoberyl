@@ -201,6 +201,7 @@ pub enum QueuedOperation {
     PushArchive(PathBuf, Option<Meta>, bool, bool, Option<String>), /* path, meta, force, show, remote-url */
     PushArchiveEntry(PathBuf, ArchiveEntry, Option<Meta>, bool, bool, Option<String>), /* path, archive-entry, meta, force, show, remote-url */
     PushDirectory(PathBuf, Option<Meta>, bool), /* path, meta, force */
+    PushMessage(String, Option<Meta>, bool), /* message, meta, show */
     PushImage(PathBuf, Option<Meta>, bool, bool, Option<u8>, Option<String>), /* path, meta, force, show, expand-level, remote-url */
     PushMemory(Vec<u8>, Option<Meta>, bool), /* memory */
     PushPdf(PathBuf, Option<Meta>, bool, bool, Option<String>), /* path, meta, force, show, remote-url */

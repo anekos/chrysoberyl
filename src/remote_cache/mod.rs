@@ -24,6 +24,7 @@ use events::EventName;
 use file_extension::get_entry_type_from_filename;
 use mapping;
 use operation::{Operation, QueuedOperation, Updated};
+use shorter::shorten_url;
 use sorting_buffer::SortingBuffer;
 
 pub mod curl_options;
@@ -171,7 +172,15 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                     let mut state = state.lock().unwrap();
                     state.fail += 1;
                     state.processing.remove(&request);
-                    buffer.skip(request.ticket);
+                    // FIXME
+                    let url = Url::parse(&request.url).expect("Invalid URL");
+                    buffer.push(
+                        request.ticket,
+                        QueuedOperation::PushMessage(
+                            format!("{} for {}", err, shorten_url(&url, 40)),
+                            request.meta,
+                            request.show));
+                    // buffer.skip(request.ticket);
                     app_tx.send(Operation::Pull).unwrap();
                     try_next(&app_tx, thread_id, &mut state);
                     log_status(&app_tx, &SP::Fail(thread_id, err, request.url), &state, buffer.len());

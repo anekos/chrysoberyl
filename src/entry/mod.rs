@@ -57,6 +57,7 @@ pub enum EntryContent {
     Archive(Arc<PathBuf>, ArchiveEntry),
     Pdf(Arc<PathBuf>, usize),
     Memory(Vec<u8>, String),
+    Message(String),
 }
 
 pub type Meta = Arc<Vec<MetaEntry>>;
@@ -82,6 +83,7 @@ pub enum EntryType {
     Image,
     Archive,
     Memory,
+    Message,
 }
 
 
@@ -161,6 +163,10 @@ impl EntryContent {
                 (EntryType::PDF,
                  url.unwrap_or_else(|| path_to_str(&**path).to_owned()),
                  index),
+            Message(ref message) =>
+                (EntryType::Message,
+                 o!(message),
+                 0),
         }
     }
 
@@ -172,7 +178,7 @@ impl EntryContent {
                 Some(path.to_path_buf()),
             Image(ref path) =>
                 Some(path.to_path_buf()),
-            Memory(_, _) =>
+            Memory(_, _) | Message(_) =>
                 None
         }
     }
@@ -497,6 +503,14 @@ impl EntryContainer {
         Ok(())
     }
 
+    pub fn push_message(&mut self, app_info: &AppInfo, message: String, meta: Option<Meta>) {
+        let serial = self.new_serial();
+        self.push_entry(
+            app_info,
+            Entry::new(serial, EntryContent::Message(message), meta, None),
+            true);
+    }
+
     fn is_duplicated(&self, entry: &Entry) -> bool {
         self.entries.contains(entry)
     }
@@ -506,7 +520,7 @@ impl EntryContainer {
 
         match (*entry).content {
             Image(ref path) => is_valid_image_filename(path),
-            Archive(_, _) | Pdf(_,  _) | Memory(_, _) => true, // FIXME archive
+            Archive(_, _) | Pdf(_,  _) | Memory(_, _) | Message(_) => true, // FIXME archive
         }
     }
 
@@ -622,6 +636,7 @@ impl fmt::Display for EntryType {
                 Image => "image",
                 Archive => "archive",
                 Memory => "memory",
+                Message => "message",
             };
 
         write!(f, "{}", result)
@@ -639,6 +654,8 @@ impl FromStr for EntryType {
                 Ok(EntryType::Archive),
             "pdf" | "p" | "portable-document-format" =>
                 Ok(EntryType::PDF),
+            "message" =>
+                Ok(EntryType::Message),
             _ =>
                 Err(format!("Invalid type: {}", src))
         }

@@ -48,6 +48,7 @@ impl EntryInfo {
             Archive(_, _) => "archive",
             Pdf(_, _) => "pdf",
             Memory(_, _) => "memory",
+            Message(_) => "message",
         };
 
         let name: String = match *content {
@@ -55,6 +56,7 @@ impl EntryInfo {
             Archive(_, ref entry) => entry.name.clone(),
             Memory(_, ref hash) => hash.clone(),
             Pdf(ref path, _) => o!(path_to_str(&**path)),
+            Message(ref message) => s!(message),
         };
 
         EntryInfo {
@@ -85,12 +87,13 @@ impl LazyEntryInfo {
             Image(ref path) => generate_static_image_size(path),
             Archive(_, ref entry) => generate_archive_image_size(&entry.content),
             Memory(ref content, _) => generate_archive_image_size(content),
-            Pdf(_, _) => None,
+            Pdf(_, _) | Message(_) => None,
         };
 
         let valid = match *content {
             Image(_) | Archive(_, _) | Memory(_, _) => size_anim.is_some(),
             Pdf(_, _) => true,
+            Message(_) => false,
         };
 
         let file_size = if let Memory(ref content, _) = *content {

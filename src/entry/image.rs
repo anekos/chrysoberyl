@@ -53,7 +53,9 @@ pub fn get_static_image_buffer(entry_content: &EntryContent, imaging: &Imaging) 
         Memory(ref content, _) =>
             make_scaled(content, &imaging),
         Pdf(ref path, index) =>
-            Ok(make_scaled_from_pdf(&**path, index, &imaging))
+            Ok(make_scaled_from_pdf(&**path, index, &imaging)),
+        Message(ref message) =>
+            Err(Box::new(ChryError::Standard(o!(message)))),
     }
 }
 
@@ -140,7 +142,7 @@ fn get_meta(entry_content: &EntryContent) -> Option<Result<GenericMetadata, imme
             Some(immeta::load_from_buf(&entry.content)),
         Memory(ref content, _) =>
             Some(immeta::load_from_buf(content)),
-        Pdf(_,  _) =>
+        Pdf(_,  _) | Message(_) =>
             None
     }
 }

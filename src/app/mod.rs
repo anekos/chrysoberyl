@@ -756,6 +756,9 @@ impl App {
                     envs.push((o!("type"), o!("pdf")));
                     envs.push((o!("file"), o!(path_to_str(&**pdf_file))));
                     envs.push((o!("archive_page"), s!(index + 1)));
+                },
+                Message(ref message) => {
+                    envs.push((o!("entry_message"), o!(message)));
                 }
             }
 

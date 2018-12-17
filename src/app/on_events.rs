@@ -784,6 +784,8 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) -> 
                 let png = PopplerDocument::new_from_file(&**path).nth_page(index).get_png_data(&file_operation.size);
                 file_operation.execute_with_buffer(png.as_ref(), &name)?
             },
+            Message(ref message) =>
+                Err(ChryError::Standard(o!(message)))?
         };
         let text = format!("{:?}", file_operation);
         puts_event!("operate_file", "status" => "ok", "operation" => text);
@@ -965,7 +967,7 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
                 find_sibling(path, next),
             Archive(ref path, _) | Pdf(ref path, _) =>
                 find_sibling(&*path, next),
-            Memory(_, _) =>
+            Memory(_, _) | Message(_) =>
                 None,
         }
     });
@@ -1799,6 +1801,12 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
                 for index in 0 .. pages {
                     app.entries.push_pdf_entry(&app_info, &pdf_path, index, meta.clone(), force, url.clone());
                 }
+            },
+            PushMessage(message, meta, show) => {
+                if show {
+                    show_target = Some(ShowTarget::Index(len))
+                }
+                app.entries.push_message(&app_info, message, meta);
             },
         }
 

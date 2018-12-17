@@ -303,6 +303,8 @@ fn write_entry(entry: &Entry, out: &mut String, previous: &mut Key) {
                 sprintln!(out, "@push-url --as archive{} {}", meta_args(&entry.meta), escape(url)),
             Pdf(_, _) if path_changed =>
                 sprintln!(out, "@push-url --as pdf{} {}", meta_args(&entry.meta), escape(url)),
+            Message(_) =>
+                panic!("WTF"),
             Archive(_, _) | Pdf(_, _) | Memory(_, _) =>
                 (),
         }
@@ -314,6 +316,8 @@ fn write_entry(entry: &Entry, out: &mut String, previous: &mut Key) {
                 sprintln!(out, "@push-archive{} {}", meta_args(&entry.meta), escape_pathbuf(&*path)),
             Pdf(ref path, _) if path_changed =>
                 sprintln!(out, "@push-pdf{} {}", meta_args(&entry.meta), escape_pathbuf(&*path)),
+            Message(ref message) =>
+                sprintln!(out, "@push-message{} {}", meta_args(&entry.meta), escape(message)),
             Archive(_, _) | Pdf(_, _) | Memory(_, _) =>
                 (),
         }
@@ -351,7 +355,7 @@ fn write_path(entry: &Entry, out: &mut String) {
                 out.push_str(&*url),
             Pdf(_, index) if index == 0 =>
                 out.push_str(&*url),
-            Archive(_, _) | Pdf(_, _) | Memory(_, _) =>
+            Archive(_, _) | Pdf(_, _) | Memory(_, _) | Message(_) =>
                 return,
         }
     } else {
@@ -362,7 +366,7 @@ fn write_path(entry: &Entry, out: &mut String) {
                 out.push_str(path_to_str(&**path)),
             Pdf(ref path, index) if index == 0 =>
                 out.push_str(path_to_str(&**path)),
-            Archive(_, _) | Pdf(_, _) | Memory(_, _) =>
+            Archive(_, _) | Pdf(_, _) | Memory(_, _) | Message(_) =>
                 return,
         }
     }

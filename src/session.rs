@@ -23,9 +23,7 @@ use state::{self, States, Filters};
 use timer::TimerManager;
 use util::path::path_to_str;
 use util::shell::{escape, escape_pathbuf};
-use util::string::join;
 use util::time::duration_to_seconds;
-
 
 
 
@@ -51,6 +49,11 @@ pub enum Session {
 pub enum WriteContext {
     Session,
     ENV
+}
+
+
+pub trait StatusText {
+    fn write_status_text(&self, &mut String);
 }
 
 
@@ -251,15 +254,9 @@ pub fn write_queue(state: &Arc<Mutex<::remote_cache::State>>, out: &mut String) 
 }
 
 pub fn write_status(app: &App, out: &mut String) {
-    let len: Vec<String> = app.cache.len().iter().map(|it| s!(it)).collect();
-    sprintln!(out, "cache={}", join(len.as_slice(), ','));
-    app.process_manager.each(|(pid, process)| {
-        sprint!(out, "process: pid={}", pid);
-        for it in &process.command_line {
-            sprint!(out, " {}", escape(it));
-        }
-        sprintln!(out, "");
-    });
+    app.cache.write_status_text(out);
+    app.process_manager.write_status_text(out);
+    app.remote_cache.write_status_text(out);
 }
 
 pub fn write_switches(switches: &UserSwitchManager, out: &mut String) {

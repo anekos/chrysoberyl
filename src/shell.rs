@@ -11,6 +11,8 @@ use chainer;
 use errors::ChryError;
 use expandable::Expandable;
 use operation::{Operation, ReadAs};
+use session::StatusText;
+use util::shell::escape;
 use util::string::join;
 
 
@@ -51,11 +53,17 @@ impl ProcessManager {
         };
         call(self.entries.clone(), async, command_line, stdin, read_as, tx);
     }
+}
 
-    pub fn each<F>(&self, mut block: F) where F: FnMut((&u32, &Process)) -> () {
+impl StatusText for ProcessManager {
+    fn write_status_text(&self, out: &mut String) {
         let entries = self.entries.lock().unwrap();
-        for pair in &*entries {
-            block(pair)
+        for (pid, process) in &*entries {
+            sprint!(out, "process: pid={}", pid);
+            for it in &process.command_line {
+                sprint!(out, " {}", escape(it));
+            }
+            sprintln!(out, "");
         }
     }
 }

@@ -9,6 +9,7 @@ use cherenkov::{Cherenkoved, Modifier};
 use entry::image::Imaging;
 use entry::{Entry, Key, self};
 use image::ImageBuffer;
+use session::StatusText;
 
 
 
@@ -136,14 +137,6 @@ impl ImageCache {
         cherenkoved.generate_animation_gif(entry, imaging, length, path, on_complete)
     }
 
-    pub fn len(&self) -> Vec<usize> {
-        let mut result = vec![];
-        self.stages.each(|it| {
-            result.push(it.len());
-        });
-        result
-    }
-
     pub fn cherenkov1(&mut self, entry: &Entry, imaging: &Imaging, modifier: Modifier) {
         let mut cherenkoved = self.cherenkoved.lock().unwrap();
         cherenkoved.cherenkov1(entry, imaging, modifier)
@@ -184,5 +177,13 @@ impl ImageCache {
         self.stages.get_or_update(imaging.clone(), move |_| {
             Stage { cache: Cache::new(limit), fetching: Arc::new((Mutex::new(HashMap::new()), Condvar::new())) }
         })
+    }
+}
+
+impl StatusText for ImageCache {
+    fn write_status_text(&self, out: &mut String) {
+        sprint!(out, "cache=");
+        self.stages.each(|it| sprint!(out, "{}", it.len()));
+        sprintln!(out, "");
     }
 }

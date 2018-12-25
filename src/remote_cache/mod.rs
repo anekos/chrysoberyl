@@ -24,6 +24,7 @@ use events::EventName;
 use file_extension::get_entry_type_from_filename;
 use mapping;
 use operation::{Operation, QueuedOperation, Updated};
+use session::StatusText;
 use sorting_buffer::SortingBuffer;
 
 pub mod curl_options;
@@ -119,6 +120,21 @@ impl RemoteCache {
     pub fn update_curl_options(&self, options: CurlOptions) {
         let mut state = self.state.lock().unwrap();
         state.curl_options = options;
+    }
+}
+
+impl StatusText for RemoteCache {
+    fn write_status_text(&self, out: &mut String) {
+        self.sorting_buffer.current(|buffer, unstable_buffer, reserved, shipped| {
+            sprintln!(out, "reserved_ticket={}", reserved);
+            sprintln!(out, "shipped_ticket={}", shipped);
+            for item in buffer.values() {
+                sprintln!(out, "buffer={:?}", item);
+            }
+            for item in unstable_buffer {
+                sprintln!(out, "unstable_buffer={:?}", item);
+            }
+        });
     }
 }
 

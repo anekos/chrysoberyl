@@ -256,6 +256,7 @@ pub fn write_queue(state: &Arc<Mutex<::remote_cache::State>>, out: &mut String) 
 pub fn write_status(app: &App, out: &mut String) {
     app.cache.write_status_text(out);
     app.process_manager.write_status_text(out);
+    app.remote_cache.write_status_text(out);
 }
 
 pub fn write_switches(switches: &UserSwitchManager, out: &mut String) {

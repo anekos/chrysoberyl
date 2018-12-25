@@ -30,6 +30,14 @@ impl<T> SortingBuffer<T> {
         }
     }
 
+    pub fn current<F>(&self, f: F) where F: FnOnce(&HashMap<Ticket, Option<T>>, &[T], Ticket, Ticket) {
+        let buffer = self.buffer.lock().unwrap();
+        let unstable_buffer = self.unstable_buffer.lock().unwrap();
+        let reserved = self.reserved.load(Ordering::AcqRel);
+        let shipped = self.shipped.lock().unwrap();
+        f(&buffer, &unstable_buffer, reserved, *shipped);
+    }
+
     pub fn reserve(&mut self) -> Ticket {
         reserve_n(&self.reserved, 1)
     }

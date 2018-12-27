@@ -89,7 +89,7 @@
 @map input q            @quit
 @map input Escape       @count
 @map input c            @unclip
-@map input C            @reset-image
+@map input C            @remove-effects
 @map input u            @undo
 @map input colon        ; @push-count ; @set screen command-line ; @pop-count
 @map input i            @set screen log-view

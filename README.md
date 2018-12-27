@@ -456,7 +456,7 @@ Add a image.
 If `--expand` (or `--expand-recursive`) is given, add the images that the directory of `PATH` contains.
 
 
-## @push-next [--show|-s]
+## @push-next [--show|-s] [--clear|-c]
 
 Add a next file.
 
@@ -466,7 +466,7 @@ Add a next file.
 Add a PDF file.
 
 
-## (@push-previous|@push-prev) [--show|-s]
+## (@push-previous|@push-prev) [--show|-s] [--clear|-c]
 
 Add a previous file.
 

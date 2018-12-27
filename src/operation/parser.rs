@@ -892,15 +892,17 @@ pub fn parse_push_sibling(args: &[String], next: bool) -> Result<Operation, Pars
     let mut meta: Vec<MetaEntry> = vec![];
     let mut force = false;
     let mut show = false;
+    let mut clear = false;
 
     {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut meta).add_option(&["--meta", "-m"], Collect, "Meta data");
         ap.refer(&mut force).add_option(&["--force", "-f"], StoreTrue, "Meta data");
         ap.refer(&mut show).add_option(&["--show", "-s"], StoreTrue, "Show the found entry");
+        ap.refer(&mut clear).add_option(&["--clear", "-c"], StoreTrue, "Clear before push");
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::PushSibling(next, new_opt_meta(meta), force, show)
+        Operation::PushSibling(next, clear, new_opt_meta(meta), force, show)
     })
 }
 

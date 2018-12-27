@@ -319,8 +319,8 @@ impl App {
                     on_push_memory(self, &mut updated, buf, meta, show),
                 PushPdf(file, meta, force, show) =>
                     on_push_pdf(self, &mut updated, file.expand(), meta, force, show, None),
-                PushSibling(next, meta, force, show) =>
-                    on_push_sibling(self, &mut updated, next, meta, force, show),
+                PushSibling(next, clear, meta, force, show) =>
+                    on_push_sibling(self, &mut updated, next, clear, meta, force, show),
                 PushURL(url, meta, force, show, entry_type) =>
                     on_push_url(self, &mut updated, url, meta, force, show, entry_type),
                 Query(operation, caption) =>

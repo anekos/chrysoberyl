@@ -107,7 +107,7 @@ pub enum Operation {
     PushImage(Expandable, Option<Meta>, bool, bool, Option<u8>), /* path, meta, force, show, expand-level */
     PushMemory(Vec<u8>, Option<Meta>, bool), /* memory, meta, show */
     PushPdf(Expandable, Option<Meta>, bool, bool), /* path, meta, force, show */
-    PushSibling(bool, Option<Meta>, bool, bool), /* next?, meta, force, show */
+    PushSibling(bool, bool, Option<Meta>, bool, bool), /* next?, clear, meta, force, show */
     PushURL(String, Option<Meta>, bool, bool, Option<EntryType>), /* path, meta, force, show, entry_type */
     Query(Vec<String>, Option<String>), /* operation, caption */
     Queue(Vec<String>, usize),
@@ -553,7 +553,7 @@ impl fmt::Debug for Operation {
             PushImage(_, _, _, _, _) => "PushImage",
             PushMemory(_, _, _) => "PushMemory",
             PushPdf(_, _, _, _) => "PushPdf",
-            PushSibling(_, _, _, _) => "PushSibling",
+            PushSibling(_, _, _, _, _) => "PushSibling",
             PushURL(_, _, _, _, _) => "PushURL",
             Query(_, _) => "Query",
             Queue(_, _) => "Queue",

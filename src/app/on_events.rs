@@ -938,7 +938,7 @@ pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Op
     push_buffered(app, updated, buffered)
 }
 
-pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: Option<Meta>, force: bool, show: bool) -> EventResult {
+pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, clear: bool, meta: Option<Meta>, force: bool, show: bool) -> EventResult {
     fn find_sibling(base: &PathBuf, next: bool) -> Option<PathBuf> {
         base.parent().and_then(|dir| {
             dir.read_dir().ok().and_then(|dir| {
@@ -971,6 +971,9 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, meta: O
     });
 
     if let Some(found) = found {
+        if clear {
+            on_clear(app, updated)?;
+        }
         on_push_path(app, updated, &found, meta, force, show)?;
     }
     Ok(())

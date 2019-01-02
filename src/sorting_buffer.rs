@@ -19,7 +19,7 @@ pub struct SortingBuffer<T> {
 
 
 impl<T> SortingBuffer<T> {
-    #[cfg_attr(feature = "cargo-clippy", allow(mutex_atomic))]
+    #[allow(clippy::mutex_atomic)]
     pub fn new() -> SortingBuffer<T> {
         SortingBuffer {
             reserved: Arc::new(AtomicUsize::new(0)),

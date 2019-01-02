@@ -271,7 +271,7 @@ impl Region {
         (self.left - self.width() / 2.0, self.top - self.height() / 2.0)
     }
 
-    #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
+    #[allow(clippy::many_single_char_names)]
     pub fn contains(&self, x: i32, y: i32, width: i32, height: i32) -> bool {
         let (l, r, t, b) = self.absolute(width, height);
         (l <= x && x <= r && t <= y && y <= b)

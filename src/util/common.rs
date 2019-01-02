@@ -1,6 +1,5 @@
 
 
 
-pub fn mangle<T>(_: T) -> () {
-    ()
+pub fn mangle<T>(_: T) {
 }

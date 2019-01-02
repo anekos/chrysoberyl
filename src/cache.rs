@@ -58,7 +58,7 @@ impl<K, V> Cache<K, V> where K: Hash + Eq + Clone, V: Clone {
     #[allow(dead_code)]
     pub fn get(&self, key: &K) -> Option<V> {
         let mut entries = self.entries.lock().unwrap();
-        #[cfg_attr(feature = "cargo-clippy", allow(map_clone))]
+        #[allow(clippy::map_clone)]
         entries.get_mut(key).map(|it| it.clone())
     }
 

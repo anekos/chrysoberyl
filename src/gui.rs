@@ -741,8 +741,8 @@ impl Cell {
     fn reset_scroll(&self, position: Position, to_end: bool) {
         use self::Position::*;
 
-        if_let_some!(h_adj = self.window.get_hadjustment(), ());
-        if_let_some!(v_adj = self.window.get_vadjustment(), ());
+        if_let_some!(h_adj = self.window.get_hadjustment());
+        if_let_some!(v_adj = self.window.get_vadjustment());
 
         let (h_upper, v_upper) = (h_adj.get_upper(), v_adj.get_upper());
 
@@ -917,7 +917,7 @@ fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
     unsafe {
         let widget = &*(object as *const glib::Object as *const gtk::Widget);
 
-        if_let_some!(name = WidgetExt::get_name(widget), ());
+        if_let_some!(name = WidgetExt::get_name(widget));
 
         widget.set_can_focus(false);
 
@@ -1001,7 +1001,7 @@ fn reset_scroll(window: &ScrolledWindow, direction: Direction) {
 
     let f = |horizontal| {
         let adj = if horizontal { window.get_hadjustment() } else { window.get_vadjustment() };
-        if_let_some!(adj = adj, ());
+        if_let_some!(adj = adj);
 
         let value = match direction {
             Right | Down => 0.0,

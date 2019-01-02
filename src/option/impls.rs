@@ -216,7 +216,6 @@ impl OptionValue for AutoPaging {
     fn set(&mut self, value: &str) -> Result<(), ChryError> {
         value.parse().map(|value| {
             *self = value;
-            ()
         })
     }
 }
@@ -274,7 +273,6 @@ impl OptionValue for FitTo {
     fn set(&mut self, value: &str) -> Result<(), ChryError> {
         value.parse().map(|value| {
             *self = value;
-            ()
         })
     }
 
@@ -313,7 +311,6 @@ impl OptionValue for Position {
     fn set(&mut self, value: &str) -> Result<(), ChryError> {
         value.parse().map(|value| {
             *self = value;
-            ()
         })
     }
 }
@@ -323,7 +320,6 @@ impl OptionValue for Operator {
     fn set(&mut self, value: &str) -> Result<(), ChryError> {
         value.parse().map(|value| {
             *self = value;
-            ()
         })
     }
 
@@ -441,7 +437,6 @@ impl OptionValue for Alignment {
     fn set(&mut self, value: &str) -> Result<(), ChryError> {
         value.parse().map(|value| {
             *self = value;
-            ()
         })
     }
 }
@@ -461,7 +456,6 @@ impl OptionValue for Screen {
     fn set(&mut self, value: &str) -> Result<(), ChryError> {
         value.parse().map(|value| {
             *self = value;
-            ()
         })
     }
 }

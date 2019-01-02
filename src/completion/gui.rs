@@ -61,8 +61,8 @@ impl CompleterUI {
             it.show();
 
             it.get_selection().connect_changed(|selection| {
-                if_let_some!((model, iter) = selection.get_selected(), ());
-                if_let_some!(tree_view = selection.get_tree_view(), ());
+                if_let_some!((model, iter) = selection.get_selected());
+                if_let_some!(tree_view = selection.get_tree_view());
                 let path: Option<TreePath> = model.get_path(&iter);
                 tree_view.scroll_to_cell(path.as_ref(), None, false, 0.0, 0.0);
             })
@@ -212,7 +212,7 @@ fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
             Val::OptionName =>
                 result.extend_from_slice(&*definition.options),
             Val::OptionValue => {
-                if_let_some!(option_name = option_name, ());
+                if_let_some!(option_name = option_name);
                 if let Some(value) = definition.option_values.get(*option_name) {
                     match value {
                         OptionValue::Enum(values) => result.extend_from_slice(&*values),
@@ -325,10 +325,10 @@ fn next_iter(model: &ListStore, selection: &TreeSelection, reverse: bool) -> Opt
 fn select_next(tree_view: &TreeView, model: &ListStore, entry: &Entry, entry_buffer: &EntryBuffer, left: usize, right: usize, reverse: bool) {
     let len = right - left;
     let selection = tree_view.get_selection();
-    if_let_some!(iter = next_iter(model, &selection, reverse), ());
+    if_let_some!(iter = next_iter(model, &selection, reverse));
     selection.select_iter(&iter);
 
-    if_let_some!(value = model.get_value(&iter, 0).get::<String>(), ());
+    if_let_some!(value = model.get_value(&iter, 0).get::<String>());
 
     entry_buffer.delete_text(left as u16, Some(len as u16));
     entry_buffer.insert_text(left as u16 + 1, &value);

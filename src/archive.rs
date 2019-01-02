@@ -53,7 +53,7 @@ impl Hash for ArchiveEntry {
 }
 
 
-#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+#[allow(clippy::too_many_arguments)]
 pub fn fetch_entries(path: &PathBuf, meta: Option<Meta>, show: bool, encodings: &[EncodingRef], tx: Sender<Operation>, mut sorting_buffer: SortingBuffer<QueuedOperation>, force: bool, url: Option<String>) {
     let from_index: HashMap<usize, (usize, String)> = {
         #[derive(Clone, Debug)]

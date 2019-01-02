@@ -68,16 +68,16 @@ impl InputMapping {
     pub fn unregister(&mut self, keys: &[Key], region: &Option<Region>) {
         use self::Node::*;
 
-        if_let_some!((head, tail) = keys.split_first(), ());
+        if_let_some!((head, tail) = keys.split_first());
         let tail = tail.to_vec();
 
         let do_remove = {
-            if_let_some!(entry = self.table.get_mut(head), ());
+            if_let_some!(entry = self.table.get_mut(head));
             match *entry {
                 Sub(ref mut sub) if !tail.is_empty() =>
                     return sub.unregister(&tail, region),
                 Sub(_) =>
-                    return (),
+                    return,
                 Leaf(ref mut leaf_node) =>
                     leaf_node.unregister(region),
             }

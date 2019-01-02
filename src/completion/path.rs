@@ -28,8 +28,8 @@ pub fn get_candidates(path: &str, directory_only: bool, prefix: &str, result: &m
     };
 
     if_let_ok!(entries = entries, |_| ());
-    if_let_some!(home = home_dir(), ());
-    if_let_some!(home = home.to_str(), ());
+    if_let_some!(home = home_dir());
+    if_let_some!(home = home.to_str());
 
     for entry in entries {
         if let Ok(entry) = entry {

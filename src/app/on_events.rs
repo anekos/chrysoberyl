@@ -312,7 +312,7 @@ pub fn on_file_changed(app: &mut App, updated: &mut Updated, path: &Path) -> Eve
 }
 
 
-#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+#[allow(clippy::too_many_arguments)]
 pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Option<Region>, color: Color, operator: Option<Operator>, mask: bool, cell_index: usize, context: Option<OperationContext>) -> EventResult {
     use cherenkov::{Modifier, Che};
 
@@ -718,7 +718,7 @@ pub fn on_message(app: &mut App, updated: &mut Updated, message: Option<String>,
     Ok(())
 }
 
-#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+#[allow(clippy::too_many_arguments)]
 pub fn on_move_again(app: &mut App, updated: &mut Updated, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool, reverse: bool) -> EventResult {
     if (app.states.last_direction == state::Direction::Forward) ^ reverse {
         on_next(app, updated, count, ignore_views, move_by, wrap, false)
@@ -826,7 +826,7 @@ pub fn on_pre_fetch(app: &mut App, serial: u64) -> EventResult {
     Ok(())
 }
 
-#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+#[allow(clippy::too_many_arguments)]
 pub fn on_previous(app: &mut App, updated: &mut Updated, to_end: &mut bool, count: Option<usize>, ignore_views: bool, move_by: MoveBy, wrap: bool, remember: bool) -> EventResult {
     if remember {
         app.states.last_direction = state::Direction::Backward;
@@ -897,7 +897,7 @@ pub fn on_push_directory(app: &mut App, updated: &mut Updated, file: PathBuf, me
     push_buffered(app, updated, buffered)
 }
 
-#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+#[allow(clippy::too_many_arguments)]
 pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Option<Meta>, force: bool, show: bool, expand_level: Option<u8>, url: Option<String>) -> EventResult {
     let buffered = app.sorting_buffer.push_with_reserve(
         QueuedOperation::PushImage(file, meta, force, show, expand_level, url));
@@ -1084,7 +1084,7 @@ pub fn on_save(app: &mut App, path: &Path, sessions: &[Session], freeze: bool) -
     Ok(())
 }
 
-#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+#[allow(clippy::too_many_arguments)]
 pub fn on_scroll(app: &mut App, direction: Direction, scroll_size: f64, crush: bool, reset_at_end: bool, operation: &[String], reset_scrolls_1: Option<Direction>, context: Option<OperationContext>) -> EventResult {
     let saved = app.counter.clone();
     let scrolled = app.gui.scroll_views(direction, scroll_size, crush, app.counter.take(), reset_scrolls_1);
@@ -1216,7 +1216,7 @@ pub fn on_set_env(_: &mut App, name: &str, value: &Option<String>) -> EventResul
     Ok(())
 }
 
-#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+#[allow(clippy::too_many_arguments)]
 pub fn on_shell(app: &mut App, async: bool, read_as: ReadAs, search_path: bool, command_line: &[Expandable], sessions: &[Session], freeze: bool) -> EventResult {
     let stdin = if !sessions.is_empty() {
         Some(with_ouput_string!(out, write_sessions(app, sessions, freeze, out)))
@@ -1472,7 +1472,7 @@ pub fn on_unclip(app: &mut App, updated: &mut Updated) -> EventResult {
 
 pub fn on_undo(app: &mut App, updated: &mut Updated, count: Option<usize>) -> EventResult {
     // `counted` should be evaluated
-    #[cfg_attr(feature = "cargo-clippy", allow(or_fun_call))]
+    #[allow(clippy::or_fun_call)]
     let count = count.unwrap_or(app.counter.take());
 
     if let Some((ref entry, _)) = app.current() {

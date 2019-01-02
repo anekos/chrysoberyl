@@ -158,7 +158,7 @@ impl Cherenkoved {
     }
 
     pub fn reset(&mut self, entry: &Entry) {
-        if_let_some!(entry = self.cache.get_mut(&entry.key), ());
+        if_let_some!(entry = self.cache.get_mut(&entry.key));
         entry.reseed();
     }
 

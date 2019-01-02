@@ -82,7 +82,7 @@ impl Seed {
 }
 
 
-#[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
+#[allow(clippy::many_single_char_names)]
 pub fn nova_(nv: &Nova, modified: Modified) -> Modified {
 
     let pixbuf = modified.get_pixbuf();
@@ -98,7 +98,7 @@ pub fn nova_(nv: &Nova, modified: Modified) -> Modified {
     Modified::P(pixbuf)
 }
 
-#[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
+#[allow(clippy::many_single_char_names)]
 pub fn nova(nv: &Nova, pixels: &mut [u8], rowstride: i32, width: i32, height: i32) {
     let (cx, cy) = nv.center;
     let (cx, cy) = ((f64!(width) * cx) as i32, (f64!(height) * cy) as i32);
@@ -227,7 +227,7 @@ fn range_rand (rng: &mut StdRng, from: f64, to: f64) -> f64 {
     Uniform::new(from, to).sample(rng)
 }
 
-#[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
+#[allow(clippy::many_single_char_names)]
 fn rgb_to_hsv(rgb: TupleColor) -> TupleColor {
     let (r, g, b) = rgb;
     let max = max!(r, g, b);
@@ -266,7 +266,7 @@ static HRTBL: &'static [&'static [usize;3];6] = &[
     &[0, 1, 2]
 ];
 
-#[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
+#[allow(clippy::many_single_char_names)]
 fn hsv_to_rgb(hsv: TupleColor) -> SliceColor {
     let (h, s, v) = hsv;
 

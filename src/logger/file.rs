@@ -36,7 +36,6 @@ impl File {
 
         register(path).map(|tx| {
             self.current = Some((logger::register(tx), path.as_ref().to_path_buf()));
-            ()
         })
     }
 }

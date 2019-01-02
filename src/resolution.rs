@@ -8,7 +8,7 @@ pub fn from_vec(s: Vec<char>) -> Result<(i64, i64), ChryError> {
     from(&s)
 }
 
-#[cfg_attr(feature = "cargo-clippy", allow(decimal_literal_representation))]
+#[cfg_attr(feature = "cargo-clippy", allow(clippy::decimal_literal_representation))]
 pub fn from(s: &str) -> Result<(i64, i64), ChryError> {
     let ok = match s {
         "2K" => (2048, 1080),
@@ -66,7 +66,7 @@ pub fn from(s: &str) -> Result<(i64, i64), ChryError> {
     Ok(ok)
 }
 
-#[cfg_attr(feature = "cargo-clippy", allow(decimal_literal_representation))]
+#[cfg_attr(feature = "cargo-clippy", allow(clippy::decimal_literal_representation))]
 pub fn to(w: i64, h: i64) -> String {
     let result = match (w, h) {
         (1024, 600) => "WSVGA",

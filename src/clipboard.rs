@@ -31,7 +31,7 @@ pub fn get_operations(selection: ClipboardSelection, as_operation: bool, meta: O
 
     if let Some(text) = cb.wait_for_text() {
         let lines = text.lines();
-        return Ok(lines.into_iter().enumerate().flat_map(|(index, line)| {
+        return Ok(lines.enumerate().flat_map(|(index, line)| {
             if as_operation {
                 Operation::parse_fuzziness(line).map_err(|err| {
                     puts_error!(err, "operation" => o!(line), "at" => "clipboard/get_operations");

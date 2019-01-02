@@ -86,7 +86,7 @@ pub struct App {
 
 
 impl App {
-    pub fn new(mut initial: Initial) -> (App, Receiver<Operation>, Receiver<Operation>) {
+    pub fn build(mut initial: Initial) -> (App, Receiver<Operation>, Receiver<Operation>) {
         let (tx, rx) = channel();
         let (primary_tx, primary_rx) = channel();
 

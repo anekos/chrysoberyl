@@ -75,7 +75,7 @@ fn parse_arguments() -> (app::App, Receiver<Operation>, Receiver<Operation>) {
         exit(1);
     });
 
-    let (app, primary_rx, rx) = app::App::new(initial);
+    let (app, primary_rx, rx) = app::App::build(initial);
 
     (app, primary_rx, rx)
 }

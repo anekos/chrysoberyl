@@ -87,7 +87,7 @@ impl PopplerDocument {
 impl Drop for PopplerDocument {
     fn drop(&mut self) {
         unsafe {
-            #[cfg_attr(feature = "cargo-clippy", allow(transmute_ptr_to_ptr))]
+            #[allow(clippy::transmute_ptr_to_ptr)]
             let ptr = transmute::<*const sys::document_t, *mut GObject>(self.0);
             g_object_unref(ptr);
         }
@@ -95,7 +95,7 @@ impl Drop for PopplerDocument {
 }
 
 impl PopplerPage {
-    #[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
+    #[allow(clippy::many_single_char_names)]
     pub fn render(&self, context: &cairo::Context, link_color: Option<Color>) {
         #[cfg(feature = "poppler_lock")]
         let mut count = (*LOCK).lock().unwrap();
@@ -216,7 +216,7 @@ impl PopplerPage {
 impl Drop for PopplerPage {
     fn drop(&mut self) {
         unsafe {
-            #[cfg_attr(feature = "cargo-clippy", allow(transmute_ptr_to_ptr))]
+            #[allow(clippy::transmute_ptr_to_ptr)]
             let ptr = transmute::<*const sys::page_t, *mut GObject>(self.0);
             g_object_unref(ptr);
         }
@@ -238,7 +238,7 @@ impl File {
 impl Drop for File {
     fn drop(&mut self) {
         unsafe {
-            #[cfg_attr(feature = "cargo-clippy", allow(transmute_ptr_to_ptr))]
+            #[allow(clippy::transmute_ptr_to_ptr)]
             let ptr = transmute::<*const GFile, *mut GObject>(self.0);
             g_object_unref(ptr);
         }

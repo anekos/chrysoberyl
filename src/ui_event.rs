@@ -215,7 +215,7 @@ fn on_key_press(tx: &Sender<Operation>, key: Key, keyval: u32) {
 }
 
 fn on_button_release(tx: &Sender<Operation>, key: Key, x: f64, y: f64, pressed_at: &mut Option<(f64, f64)>, conf: &mut Conf) {
-    if_let_some!((px, py) = *pressed_at, ());
+    if_let_some!((px, py) = *pressed_at);
 
     if feq(x, px, 10.0) && feq(y, py, 10.0) {
         tx.send(
@@ -290,7 +290,7 @@ fn uri_to_path(uri: &str) -> Result<String, Box<Error>> {
         let path = CStr::from_ptr(c_path);
         let path = path.to_str()?.to_string();
 
-        #[cfg_attr(feature = "cargo-clippy", allow(transmute_ptr_to_ptr))]
+        #[allow(clippy::transmute_ptr_to_ptr)]
         let ptr = transmute::<*const GFile, *mut GObject>(g_file);
         g_object_unref(ptr);
         let ptr = c_path as *mut c_void;

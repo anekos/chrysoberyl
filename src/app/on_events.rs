@@ -784,6 +784,8 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) -> 
                 let png = PopplerDocument::new_from_file(&**path).nth_page(index).get_png_data(&file_operation.size);
                 file_operation.execute_with_buffer(png.as_ref(), &name)?
             },
+            Message(ref message) =>
+                Err(ChryError::Standard(o!(message)))?
         };
         let text = format!("{:?}", file_operation);
         puts_event!("operate_file", "status" => "ok", "operation" => text);
@@ -902,6 +904,11 @@ pub fn on_push_image(app: &mut App, updated: &mut Updated, file: PathBuf, meta: 
     push_buffered(app, updated, buffered)
 }
 
+pub fn on_push_message(app: &mut App, updated: &mut Updated, message: String, meta: Option<Meta>, show: bool) -> EventResult {
+    let buffered = app.sorting_buffer.push_with_reserve(QueuedOperation::PushMessage(message, meta, show));
+    push_buffered(app, updated, buffered)
+}
+
 pub fn on_push_memory(app: &mut App, updated: &mut Updated, buf: Vec<u8>, meta: Option<Meta>, show: bool) -> EventResult {
     let buffered = app.sorting_buffer.push_with_reserve(
         QueuedOperation::PushMemory(buf, meta, show));
@@ -965,7 +972,7 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, clear: 
                 find_sibling(path, next),
             Archive(ref path, _) | Pdf(ref path, _) =>
                 find_sibling(&*path, next),
-            Memory(_, _) =>
+            Memory(_, _) | Message(_) =>
                 None,
         }
     });
@@ -1533,6 +1540,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 HorizontalFlip => &mut app.states.drawing.horizontal_flip,
                 HorizontalViews => &mut app.states.view.cols,
                 IdleTime => &mut app.states.idle_time,
+                IgnoreFailures => &mut app.states.ignore_failures,
                 InitialPosition => &mut app.states.initial_position,
                 LogFile => &mut app.states.log_file,
                 MaskOperator => &mut app.states.drawing.mask_operator,
@@ -1612,6 +1620,8 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 updated.label = true,
             Freeze if freezed && !app.states.freezed =>
                 updated.image = true,
+            IgnoreFailures =>
+                app.remote_cache.set_ignore_failures(app.states.ignore_failures),
             StablePush =>
                 app.sorting_buffer.set_stability(app.states.stable_push),
             StatusBar => {
@@ -1802,6 +1812,12 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
                 for index in 0 .. pages {
                     app.entries.push_pdf_entry(&app_info, &pdf_path, index, meta.clone(), force, url.clone());
                 }
+            },
+            PushMessage(message, meta, show) => {
+                if show {
+                    show_target = Some(ShowTarget::Index(len))
+                }
+                app.entries.push_message(&app_info, message, meta);
             },
         }
 

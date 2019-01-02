@@ -25,6 +25,7 @@ use file_extension::get_entry_type_from_filename;
 use mapping;
 use operation::{Operation, QueuedOperation, Updated};
 use session::StatusText;
+use shorter::shorten_url;
 use sorting_buffer::SortingBuffer;
 
 pub mod curl_options;
@@ -72,6 +73,7 @@ enum Getter {
     Queue(String, PathBuf, Option<Meta>, bool, bool, Option<EntryType>), /* url, filepath, meta, force, show, entry_type */
     Done(usize, Request),
     Fail(usize, String, Request),
+    SetIgnoreFailures(bool),
 }
 
 // Status Paramter
@@ -121,6 +123,10 @@ impl RemoteCache {
         let mut state = self.state.lock().unwrap();
         state.curl_options = options;
     }
+
+    pub fn set_ignore_failures(&self, value: bool) {
+        self.main_tx.send(Getter::SetIgnoreFailures(value)).unwrap();
+    }
 }
 
 impl StatusText for RemoteCache {
@@ -154,9 +160,12 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
             log_status(&app_tx, &SP::Initial, &state, buffer.len());
         }
 
+        let mut ignore_failures = true;
 
         while let Ok(it) = main_rx.recv() {
             match it {
+                SetIgnoreFailures(value) =>
+                    ignore_failures = value,
                 Queue(url, cache_filepath, meta, force, show, entry_type) => {
                     let mut state = state.lock().unwrap();
                     let ticket = buffer.reserve();
@@ -187,7 +196,17 @@ fn main(max_threads: u8, app_tx: Sender<Operation>, mut buffer: SortingBuffer<Qu
                     let mut state = state.lock().unwrap();
                     state.fail += 1;
                     state.processing.remove(&request);
-                    buffer.skip(request.ticket);
+                    if ignore_failures {
+                        buffer.skip(request.ticket);
+                    } else {
+                        let url = Url::parse(&request.url).expect("Invalid URL");
+                        buffer.push(
+                            request.ticket,
+                            QueuedOperation::PushMessage(
+                                format!("{} for {}", err, shorten_url(&url, 40)),
+                                request.meta,
+                                request.show));
+                    }
                     app_tx.send(Operation::Pull).unwrap();
                     try_next(&app_tx, thread_id, &mut state);
                     log_status(&app_tx, &SP::Fail(thread_id, err, request.url), &state, buffer.len());

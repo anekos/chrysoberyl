@@ -39,6 +39,7 @@ iterable_enum!(PreDefinedOptionName =>
     HorizontalFlip,
     HorizontalViews,
     IdleTime,
+    IgnoreFailures,
     InitialPosition,
     LogFile,
     MaskOperator,
@@ -90,6 +91,7 @@ impl FromStr for PreDefinedOptionName {
             "horizontal-flip"                      => HorizontalFlip,
             "horizontal-views"                     => HorizontalViews,
             "idle-time"                            => IdleTime,
+            "ignore-failures" | "ignore-failure"   => IgnoreFailures,
             "initial-position"                     => InitialPosition,
             "log-file" | "log"                     => LogFile,
             "mask-operator"                        => MaskOperator,
@@ -129,7 +131,7 @@ impl PreDefinedOptionName {
         match *self {
             AbbrevLength | Animation | AutoReload | AutoPaging |
                 ColorLink |
-                FitTo | Freeze | HorizontalFlip | HorizontalViews | IdleTime | InitialPosition | LogFile | MaskOperator |
+                FitTo | Freeze | HorizontalFlip | HorizontalViews | IdleTime | IgnoreFailures | InitialPosition | LogFile | MaskOperator |
                 PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize | PreFetchStages |
                 Reverse | Rotation | Screen | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusFormat | EmptyStatusFormat | Style |
                 StdOut | UpdateCacheAccessTime | TimeToHidePointer | TitleFormat | VerticalFlip | VerticalViews | WatchFiles | HistoryFile => false,

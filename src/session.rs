@@ -165,6 +165,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, context: 
         HorizontalFlip => gen("horizontal-flip", &st.drawing.horizontal_flip, context),
         HorizontalViews => gen("horizontal-views", &st.view.cols, context),
         IdleTime => gend("idle-time", &st.idle_time, context),
+        IgnoreFailures => gen("ignore-failures", &b2s(st.ignore_failures), context),
         InitialPosition => gen("initial-position", &st.initial_position, context),
         LogFile => gen("log-file", &st.log_file, context),
         MaskOperator => gen("mask-operator", &st.drawing.mask_operator, context),
@@ -300,6 +301,8 @@ fn write_entry(entry: &Entry, out: &mut String, previous: &mut Key) {
                 sprintln!(out, "@push-url --as archive{} {}", meta_args(&entry.meta), escape(url)),
             Pdf(_, _) if path_changed =>
                 sprintln!(out, "@push-url --as pdf{} {}", meta_args(&entry.meta), escape(url)),
+            Message(_) =>
+                panic!("WTF"),
             Archive(_, _) | Pdf(_, _) | Memory(_, _) =>
                 (),
         }
@@ -311,6 +314,8 @@ fn write_entry(entry: &Entry, out: &mut String, previous: &mut Key) {
                 sprintln!(out, "@push-archive{} {}", meta_args(&entry.meta), escape_pathbuf(&*path)),
             Pdf(ref path, _) if path_changed =>
                 sprintln!(out, "@push-pdf{} {}", meta_args(&entry.meta), escape_pathbuf(&*path)),
+            Message(ref message) =>
+                sprintln!(out, "@push-message{} {}", meta_args(&entry.meta), escape(message)),
             Archive(_, _) | Pdf(_, _) | Memory(_, _) =>
                 (),
         }
@@ -348,7 +353,7 @@ fn write_path(entry: &Entry, out: &mut String) {
                 out.push_str(&*url),
             Pdf(_, index) if index == 0 =>
                 out.push_str(&*url),
-            Archive(_, _) | Pdf(_, _) | Memory(_, _) =>
+            Archive(_, _) | Pdf(_, _) | Memory(_, _) | Message(_) =>
                 return,
         }
     } else {
@@ -359,7 +364,7 @@ fn write_path(entry: &Entry, out: &mut String) {
                 out.push_str(path_to_str(&**path)),
             Pdf(ref path, index) if index == 0 =>
                 out.push_str(path_to_str(&**path)),
-            Archive(_, _) | Pdf(_, _) | Memory(_, _) =>
+            Archive(_, _) | Pdf(_, _) | Memory(_, _) | Message(_) =>
                 return,
         }
     }

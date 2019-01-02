@@ -460,6 +460,9 @@ If `--expand` (or `--expand-recursive`) is given, add the images that the direct
 
 Add a next file.
 
+## @push-message [--meta <KEY_VALUE>]... [--show|-s] <MESSAGE>
+
+Add a text message entry.
 
 ## @push-pdf [--show|-s]
 
@@ -669,6 +672,7 @@ e.g.
 | fit-to               | width/height/original/original-or-cell/cell/XXX%/WIDTHxHEIGHT | cell                                 |                                                                                                                  |
 | freeze               | boolean                      |                                | false                                | Freeze image                                                                                                     |
 | idle-time            | real number                                                   | 0.25                                 | Delay time for `idle` event                                                                                      |
+| ignore-failures      | boolean                                                       | true                                 | Remove the entries that failed to get from remote
 | history-file         | path                                                          | none                                 | STDIN input history file                                                                                         |
 | horizontal-flip      | boolean                                                       |                                      | Flip images horizontally                                                                                         |
 | horizontal-views     | unsigned integer                                              |                                      | Number of horizontal cells (1 or more)                                                                           |

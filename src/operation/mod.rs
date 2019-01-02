@@ -105,6 +105,7 @@ pub enum Operation {
     PushClipboard(ClipboardSelection, bool, Option<Meta>, bool, bool), /* selection, as_operation, meta, force, show */
     PushDirectory(Expandable, Option<Meta>, bool), /* path, meta, force */
     PushImage(Expandable, Option<Meta>, bool, bool, Option<u8>), /* path, meta, force, show, expand-level */
+    PushMessage(String, Option<Meta>, bool), /* message, meta, show */
     PushMemory(Vec<u8>, Option<Meta>, bool), /* memory, meta, show */
     PushPdf(Expandable, Option<Meta>, bool, bool), /* path, meta, force, show */
     PushSibling(bool, bool, Option<Meta>, bool, bool), /* next?, clear, meta, force, show */
@@ -201,6 +202,7 @@ pub enum QueuedOperation {
     PushArchive(PathBuf, Option<Meta>, bool, bool, Option<String>), /* path, meta, force, show, remote-url */
     PushArchiveEntry(PathBuf, ArchiveEntry, Option<Meta>, bool, bool, Option<String>), /* path, archive-entry, meta, force, show, remote-url */
     PushDirectory(PathBuf, Option<Meta>, bool), /* path, meta, force */
+    PushMessage(String, Option<Meta>, bool), /* message, meta, show */
     PushImage(PathBuf, Option<Meta>, bool, bool, Option<u8>, Option<String>), /* path, meta, force, show, expand-level, remote-url */
     PushMemory(Vec<u8>, Option<Meta>, bool), /* memory */
     PushPdf(PathBuf, Option<Meta>, bool, bool, Option<String>), /* path, meta, force, show, remote-url */
@@ -341,6 +343,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@push-clipboard"               => parse_push_clipboard(whole),
             "@push-directory" | "@push-dir" => parse_push(whole, |it, meta, force, _| PushDirectory(Expandable::new(it), meta, force)),
             "@push-image"                   => parse_push_image(whole),
+            "@push-message"                 => parse_push_message(whole),
             "@push-next"                    => parse_push_sibling(whole, true),
             "@push-pdf"                     => parse_push(whole, |it, meta, force, show| PushPdf(Expandable::new(it), meta, force, show)),
             "@push-previous" | "@push-prev" => parse_push_sibling(whole, false),
@@ -551,6 +554,7 @@ impl fmt::Debug for Operation {
             PushClipboard(_, _, _, _, _) => "PushClipboard",
             PushDirectory(_, _, _) => "PushDirectory",
             PushImage(_, _, _, _, _) => "PushImage",
+            PushMessage(_, _, _) => "PushMessage",
             PushMemory(_, _, _) => "PushMemory",
             PushPdf(_, _, _, _) => "PushPdf",
             PushSibling(_, _, _, _, _) => "PushSibling",

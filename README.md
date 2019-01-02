@@ -460,6 +460,9 @@ If `--expand` (or `--expand-recursive`) is given, add the images that the direct
 
 Add a next file.
 
+## @push-message [--meta <KEY_VALUE>]... [--show|-s] <MESSAGE>
+
+Add a text message entry.
 
 ## @push-pdf [--show|-s]
 

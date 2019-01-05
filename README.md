@@ -97,9 +97,22 @@ Backword history
 Change working directory.
 
 
-## @cherenkov [(--radius|-r) <RADIUS>] [(--random-hue|--hue|-h) <HUE>] [(--spokes|-s) <SPOKES>] [-x <X>] [-y <Y>] [(-c|--color) <CSS_COLOR>] [--seed|-S]
+## @cherenkov [(--radius|-r) <RADIUS>] [(--random-hue|--hue|-h) <HUE>] [(--spokes|-s) <SPOKES>] [-x <X>] [-y <Y>] [(-c|--color) <CSS_COLOR>] [--seed|-S <SEED>]
 
 Cherenkoves current image.
+
+- `<RADIUS>` → Radius (0 to 1.0)
+- `<HUE>` → 0 to 360
+- `<SPOKES>` → Number of spokes (1 or more)
+- `<X>` `<Y>` → Position (0 to 1.0)
+- `<CSS_COLOR>` → Color
+- `<SEED>` → The seed of random color generator
+
+## Color examples
+
+- red
+- #00FF00
+- random
 
 
 ## @cherenkov-reset

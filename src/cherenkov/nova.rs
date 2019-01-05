@@ -102,7 +102,8 @@ pub fn nova_(nv: &Nova, modified: Modified) -> Modified {
 pub fn nova(nv: &Nova, pixels: &mut [u8], rowstride: i32, width: i32, height: i32) {
     let (cx, cy) = nv.center;
     let (cx, cy) = ((f64!(width) * cx) as i32, (f64!(height) * cy) as i32);
-    let radius = clamp((f64!(width * width + height * height)).sqrt() * nv.radius, 0.000_000_01, 100.0);
+    let max_radius = (f64!(width * width + height * height)).sqrt();
+    let radius = clamp(max_radius * nv.radius, 0.000_000_01, max_radius);
 
     let (spokes, spoke_colors) = {
         let mut rng = nv.seed.rng();

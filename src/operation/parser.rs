@@ -1173,6 +1173,7 @@ pub fn parse_timer(args: &[String]) -> Result<Operation, ParsingError> {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut repeat)
             .add_option(&["--repeat", "-r"], StoreOption, "Repeat (0 means infinitely)")
+            .add_option(&["--once", "-1"], StoreConst(Some(1)), "Once")
             .add_option(&["--infinity", "-i"], StoreConst(None), "Repeat infinitely");
         ap.refer(&mut name)
             .add_option(&["--name", "-n"], StoreOption, "Name");

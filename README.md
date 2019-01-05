@@ -586,7 +586,7 @@ Shuffle entries.
 Sort entries.
 
 
-## @timer [(--name|-n) <NAME>] [(--repeat|-r) <TIME>] [--infinity|-i] [--async|-a] [--sync|-s] <INTERVAL_SEC> <OPERATION>...
+## @timer [(--name|-n) <NAME>] [(--repeat|-r) <TIME>] [--infinity|-i] [--once|-1] [--async|-a] [--sync|-s] <INTERVAL_SEC> <OPERATION>...
 
 Execute `OPERATION` repeatedly.
 

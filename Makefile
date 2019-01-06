@@ -37,4 +37,5 @@ benchmark-cherenkov:
 		@@cherenkov -x 0.4 -y 0.2 --color '#FF0000' --radius 0.1 --spokes 100 --random-hue 0 --seed cat \
 		@@cherenkov -x 0.2 -y 0.4 --color '#0000FF' --radius 0.1 --spokes 100 --random-hue 0 --seed cat \
 		@@cherenkov -x 0.4 -y 0.4 --color '#FFFF00' --radius 0.1 --spokes 100 --random-hue 0 --seed cat \
-		@@queue @shell timeit lap cherenkov
+		@@queue \; @shell --sync timeit lap cherenkov \; @quit
+	timeit show cherenkov

@@ -269,6 +269,19 @@ You can use `@fill` with mapping.
 @map region button-3 @fill --mask --filler circle --color red
 ```
 
+### REGION Format
+
+```
+<LEFT> 'x' <TOP> '-' <RIGHT> 'x' <BOTTOM>
+```
+
+examples
+
+```
+0.0x0.0-1.0x1.0
+0.5x0.5-0.8x0.8
+```
+
 
 
 ## @filter [(--dynamic|-d)] [(--static|-s)] <FILTER_EXPRESSION>

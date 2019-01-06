@@ -7,9 +7,9 @@ use std::str::FromStr;
 
 use gdk_pixbuf::{Pixbuf, PixbufExt};
 
-use resolution;
-use state::Drawing;
-use util::num::feq;
+use crate::resolution;
+use crate::state::Drawing;
+use crate::util::num::feq;
 
 
 

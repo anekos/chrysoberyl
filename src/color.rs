@@ -3,7 +3,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use css_color_parser::Color as CssColor;
-use errors::ChryError;
+use crate::errors::ChryError;
 use rand::{thread_rng, Rng};
 
 

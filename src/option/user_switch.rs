@@ -7,9 +7,9 @@ use std::sync::mpsc::Sender;
 
 use num::Integer;
 
-use operation::Operation;
-use option::*;
-use util::num::cycle_n;
+use crate::operation::Operation;
+use crate::option::*;
+use crate::util::num::cycle_n;
 
 
 

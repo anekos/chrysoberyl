@@ -13,34 +13,34 @@ use gtk::prelude::*;
 use libc;
 use rand::{self, ThreadRng};
 
-use command_line::Initial;
-use config;
-use constant;
-use counter::Counter;
-use entry::image::Imaging;
-use entry::{Entry, EntryContainer, EntryContent, Serial, Key};
-use error_channel;
-use events::EventName;
-use gui::{Gui, Screen};
-use history::History;
-use image_cache::ImageCache;
-use image_fetcher::ImageFetcher;
-use logger;
-use mapping::{Mapping, Mapped};
-use operation::option::PreDefinedOptionName;
-use operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy, Updated};
-use option::user_switch::UserSwitchManager;
-use paginator::values::Index;
-use paginator::{self, Paginator, Paging};
-use remote_cache::RemoteCache;
-use script;
-use shell::ProcessManager;
-use size::{Size, FitTo, Region};
-use sorting_buffer::SortingBuffer;
-use state::{AutoPaging, States, PreFetchState};
-use timer::TimerManager;
-use util::path::path_to_str;
-use watcher::Watcher;
+use crate::command_line::Initial;
+use crate::config;
+use crate::constant;
+use crate::counter::Counter;
+use crate::entry::image::Imaging;
+use crate::entry::{Entry, EntryContainer, EntryContent, Serial, Key};
+use crate::error_channel;
+use crate::events::EventName;
+use crate::gui::{Gui, Screen};
+use crate::history::History;
+use crate::image_cache::ImageCache;
+use crate::image_fetcher::ImageFetcher;
+use crate::logger;
+use crate::mapping::{Mapping, Mapped};
+use crate::operation::option::PreDefinedOptionName;
+use crate::operation::{Operation, QueuedOperation, OperationContext, MappingTarget, MoveBy, Updated};
+use crate::option::user_switch::UserSwitchManager;
+use crate::paginator::values::Index;
+use crate::paginator::{self, Paginator, Paging};
+use crate::remote_cache::RemoteCache;
+use crate::script;
+use crate::shell::ProcessManager;
+use crate::size::{Size, FitTo, Region};
+use crate::sorting_buffer::SortingBuffer;
+use crate::state::{AutoPaging, States, PreFetchState};
+use crate::timer::TimerManager;
+use crate::util::path::path_to_str;
+use crate::watcher::Watcher;
 
 mod error_loop_detector;
 mod on_events;
@@ -281,8 +281,8 @@ impl App {
                     on_message(self, &mut updated, message, keep),
                 MoveAgain(count, ignore_views, move_by, wrap, reverse) =>
                     on_move_again(self, &mut updated, &mut to_end, count, ignore_views, move_by, wrap, reverse),
-                Multi(ops, async) =>
-                    on_multi(self, ops, async, context),
+                Multi(ops, r#async) =>
+                    on_multi(self, ops, r#async, context),
                 Next(count, ignore_views, move_by, wrap, remember) =>
                     on_next(self, &mut updated, count, ignore_views, move_by, wrap, remember),
                 Nop =>
@@ -291,8 +291,8 @@ impl App {
                     on_operate_file(self, file_operation),
                 Page(page) =>
                     on_page(self, &mut updated, page),
-                PdfIndex(async, read_operations, search_path, ref command_line, fmt, ref separator) =>
-                    on_pdf_index(self, async, read_operations, search_path, command_line, fmt, separator.as_ref().map(String::as_str)),
+                PdfIndex(r#async, read_operations, search_path, ref command_line, fmt, ref separator) =>
+                    on_pdf_index(self, r#async, read_operations, search_path, command_line, fmt, separator.as_ref().map(String::as_str)),
                 PreFetch(pre_fetch_serial) =>
                     on_pre_fetch(self, pre_fetch_serial),
                 Previous(count, ignore_views, move_by, wrap, remember) =>
@@ -351,8 +351,8 @@ impl App {
                     on_set_env(self, &name, &value.map(|it| it.to_string())),
                 Scroll(direction, scroll_size, crush, reset_at_end, ref operation, reset_scrolls_1) =>
                     on_scroll(self, direction, scroll_size, crush, reset_at_end, operation, reset_scrolls_1, context),
-                Shell(async, read_as, search_path, ref command_line, ref stdin_sources, freeze) =>
-                    on_shell(self, async, read_as, search_path, command_line, stdin_sources, freeze),
+                Shell(r#async, read_as, search_path, ref command_line, ref stdin_sources, freeze) =>
+                    on_shell(self, r#async, read_as, search_path, command_line, stdin_sources, freeze),
                 ShellFilter(ref command_line, search_path) =>
                     on_shell_filter(self, command_line, search_path),
                 Show(count, ignore_views, move_by, _) =>
@@ -367,8 +367,8 @@ impl App {
                     on_sorter(self, &mut updated, fix_current, command, reverse),
                 TellRegion(left, top, right, bottom, button) =>
                     on_tell_region(self, left, top, right, bottom, &button),
-                Timer(name, op, interval, repeat, async) =>
-                    on_timer(self, name, op, interval, repeat, async),
+                Timer(name, op, interval, repeat, r#async) =>
+                    on_timer(self, name, op, interval, repeat, r#async),
                 UIAction(action_type) =>
                     on_ui_action(self, action_type),
                 Unchain(ref target) =>
@@ -461,7 +461,7 @@ impl App {
 
         if updated.image || updated.image_options || updated.size {
             self.fire_event(&EventName::ShowImagePre);
-            let (showed, original_image_size, fit_image_size) = time!("show_image" => self.show_image(to_end, updated.target_regions.clone()));
+            let (showed, original_image_size, fit_image_size) = timeit!("show_image" => self.show_image(to_end, updated.target_regions.clone()));
             self.on_image_updated(original_image_size, fit_image_size);
             self.update_watcher();
             if showed {
@@ -511,8 +511,8 @@ impl App {
     }
 
     pub fn update_env_for_option(&self, option_name: &PreDefinedOptionName) {
-        use session::{generate_option_value, WriteContext};
-        use constant::OPTION_VARIABLE_PREFIX;
+        use crate::session::{generate_option_value, WriteContext};
+        use crate::constant::OPTION_VARIABLE_PREFIX;
 
         let (name, value) = generate_option_value(option_name, &self.states, WriteContext::ENV);
         env::set_var(format!("{}{}", OPTION_VARIABLE_PREFIX, name), value.unwrap_or_else(||  o!("")));
@@ -720,7 +720,7 @@ impl App {
     }
 
     fn on_image_updated(&mut self, original_image_size: Option<Size>, fit_image_size: Option<Size>) {
-        use entry::EntryContent::*;
+        use crate::entry::EntryContent::*;
 
         let mut envs: Vec<(String, String)> = vec![];
         let mut envs_sub: Vec<(String, String)> = vec![];

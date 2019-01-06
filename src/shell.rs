@@ -7,13 +7,13 @@ use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::thread::spawn;
 
-use chainer;
-use errors::ChryError;
-use expandable::Expandable;
-use operation::{Operation, ReadAs};
-use session::StatusText;
-use util::shell::escape;
-use util::string::join;
+use crate::chainer;
+use crate::errors::ChryError;
+use crate::expandable::Expandable;
+use crate::operation::{Operation, ReadAs};
+use crate::session::StatusText;
+use crate::util::shell::escape;
+use crate::util::string::join;
 
 
 
@@ -45,13 +45,13 @@ impl ProcessManager {
         }
     }
 
-    pub fn call(&mut self, async: bool, command_line: &[String], stdin: Option<String>, read_as: ReadAs) {
+    pub fn call(&mut self, r#async: bool, command_line: &[String], stdin: Option<String>, read_as: ReadAs) {
         let tx = if read_as != ReadAs::Ignore {
             Some(self.tx.clone())
         } else {
             None
         };
-        call(self.entries.clone(), async, command_line, stdin, read_as, tx);
+        call(self.entries.clone(), r#async, command_line, stdin, read_as, tx);
     }
 }
 
@@ -90,10 +90,10 @@ impl  Finalizer {
 }
 
 
-fn call(entries: Entries, async: bool, command_line: &[String], stdin: Option<String>, read_as: ReadAs, tx: Option<Sender<Operation>>) {
-    let envs = if async { Some(get_envs()) } else { None };
+fn call(entries: Entries, r#async: bool, command_line: &[String], stdin: Option<String>, read_as: ReadAs, tx: Option<Sender<Operation>>) {
+    let envs = if r#async { Some(get_envs()) } else { None };
 
-    if async {
+    if r#async {
         let command_line = command_line.to_vec();
         spawn(move || run(entries, tx, envs, &command_line, stdin, read_as));
     } else {

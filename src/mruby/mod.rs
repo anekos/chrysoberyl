@@ -9,8 +9,8 @@ use mrusty::{Mruby, MrubyImpl, Value, MrubyFile};
 use regex::{Regex, Captures};
 use xml;
 
-use app::info::AppInfo;
-use constant;
+use crate::app::info::AppInfo;
+use crate::constant;
 
 
 

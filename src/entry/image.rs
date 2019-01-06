@@ -10,14 +10,14 @@ use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
 
-use entry::EntryContent;
-use errors::ChryError;
-use gtk_utils::{new_pixbuf_from_surface, context_flip, context_rotate};
-use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
-use poppler::PopplerDocument;
-use size::Size;
-use state::Drawing;
-use util::path::path_to_str;
+use crate::entry::EntryContent;
+use crate::errors::ChryError;
+use crate::gtk_utils::{new_pixbuf_from_surface, context_flip, context_rotate};
+use crate::image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
+use crate::poppler::PopplerDocument;
+use crate::size::Size;
+use crate::state::Drawing;
+use crate::util::path::path_to_str;
 
 
 

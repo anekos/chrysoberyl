@@ -1,7 +1,7 @@
 
 use std::collections::HashMap;
 
-use events::EventName;
+use crate::events::EventName;
 
 
 

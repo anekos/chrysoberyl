@@ -20,15 +20,15 @@ use self::gio_sys::{g_file_new_for_uri, g_file_get_path, GFile};
 use self::glib_sys::g_free;
 use self::gobject_sys::{GObject, g_object_unref};
 
-use events::EventName;
-use expandable::Expandable;
-use gui::{Gui, DropItemType, Screen};
-use key::Key;
-use lazy_sender::LazySender;
-use mapping::Mapped;
-use operation::Operation;
-use size::CoordPx;
-use util::num::feq;
+use crate::events::EventName;
+use crate::expandable::Expandable;
+use crate::gui::{Gui, DropItemType, Screen};
+use crate::key::Key;
+use crate::lazy_sender::LazySender;
+use crate::mapping::Mapped;
+use crate::operation::Operation;
+use crate::size::CoordPx;
+use crate::util::num::feq;
 
 
 
@@ -137,7 +137,7 @@ fn register(gui: &Gui, skip: usize, app_tx: &Sender<Operation>) -> Sender<Event>
 
 fn main(app_tx: &Sender<Operation>, rx: &Receiver<Event>, skip: usize) {
     use self::Event::*;
-    use gui::{Screen as S};
+    use crate::gui::{Screen as S};
 
     let mut on_configure_sender = LazySender::new(app_tx.clone(), Duration::from_millis(50));
     let mut on_motion_sender = LazySender::new(app_tx.clone(), Duration::from_millis(1000));
@@ -193,7 +193,7 @@ fn main(app_tx: &Sender<Operation>, rx: &Receiver<Event>, skip: usize) {
 }
 
 fn entry_on_ui(tx: &Sender<Operation>, key: &Key) {
-    use operation::UIActionType::*;
+    use crate::operation::UIActionType::*;
 
     let action_type = match key.as_str() {
         "Return" => SendOperation,
@@ -227,9 +227,9 @@ fn on_button_release(tx: &Sender<Operation>, key: Key, x: f64, y: f64, pressed_a
 }
 
 fn on_button_release_on_user_ui(tx: &Sender<Operation>) {
-    use operation::option::OptionName::PreDefined;
-    use operation::option::OptionUpdater::Unset;
-    use operation::option::PreDefinedOptionName::Screen;
+    use crate::operation::option::OptionName::PreDefined;
+    use crate::operation::option::OptionUpdater::Unset;
+    use crate::operation::option::PreDefinedOptionName::Screen;
 
     tx.send(
         Operation::UpdateOption(PreDefined(Screen), Unset)).unwrap();

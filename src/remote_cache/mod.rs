@@ -16,17 +16,17 @@ use md5;
 use time;
 use url::Url;
 
-use app_path;
-use constant::env_name;
-use entry::{Meta, EntryType};
-use errors::ChryError;
-use events::EventName;
-use file_extension::get_entry_type_from_filename;
-use mapping;
-use operation::{Operation, QueuedOperation, Updated};
-use session::StatusText;
-use shorter::shorten_url;
-use sorting_buffer::SortingBuffer;
+use crate::app_path;
+use crate::constant::env_name;
+use crate::entry::{Meta, EntryType};
+use crate::errors::ChryError;
+use crate::events::EventName;
+use crate::file_extension::get_entry_type_from_filename;
+use crate::mapping;
+use crate::operation::{Operation, QueuedOperation, Updated};
+use crate::session::StatusText;
+use crate::shorter::shorten_url;
+use crate::sorting_buffer::SortingBuffer;
 
 pub mod curl_options;
 
@@ -352,7 +352,7 @@ fn log_status(app_tx: &Sender<Operation>, sp: &SP, state: &State, buffers: usize
 
 
 fn update_atime<T: AsRef<Path>>(path: &T) -> Result<(), ChryError> {
-    let meta = try!(fs::metadata(path));
+    let meta = r#try!(fs::metadata(path));
     let ts = time::now().to_timespec();
     let mtime = FileTime::from_last_modification_time(&meta);
     let atime = FileTime::from_unix_time(ts.sec, ts.nsec as u32);

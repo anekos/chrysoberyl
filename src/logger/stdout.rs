@@ -6,11 +6,11 @@ use std::thread::spawn;
 
 use num::Integer;
 
-use errors::ChryError;
-use logger;
-use option::OptionValue;
+use crate::errors::ChryError;
+use crate::logger;
+use crate::option::OptionValue;
 
-use option::common;
+use crate::option::common;
 
 
 

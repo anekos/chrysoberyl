@@ -4,12 +4,12 @@ use std::error::Error;
 use std::path::Path;
 use std::sync::{Arc, Mutex, Condvar};
 
-use cache::Cache;
-use cherenkov::{Cherenkoved, Modifier};
-use entry::image::Imaging;
-use entry::{Entry, Key, self};
-use image::ImageBuffer;
-use session::StatusText;
+use crate::cache::Cache;
+use crate::cherenkov::{Cherenkoved, Modifier};
+use crate::entry::image::Imaging;
+use crate::entry::{Entry, Key, self};
+use crate::image::ImageBuffer;
+use crate::session::StatusText;
 
 
 

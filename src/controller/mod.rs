@@ -3,8 +3,8 @@ use std::error::Error;
 use std::io::{BufReader, BufRead, Read};
 use std::sync::mpsc::Sender;
 
-use expandable::Expandable;
-use operation::Operation;
+use crate::expandable::Expandable;
+use crate::operation::Operation;
 
 pub mod fifo;
 pub mod file;

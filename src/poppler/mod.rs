@@ -18,10 +18,10 @@ use self::glib_sys::g_list_free;
 use self::gio_sys::{g_file_new_for_path, GFile};
 use self::gobject_sys::{GObject, g_object_unref};
 
-use color::Color;
-use gtk_utils::{new_pixbuf_from_surface, context_rotate};
-use size::{Size, Region};
-use state::Drawing;
+use crate::color::Color;
+use crate::gtk_utils::{new_pixbuf_from_surface, context_rotate};
+use crate::size::{Size, Region};
+use crate::state::Drawing;
 
 mod sys;
 mod util;
@@ -56,7 +56,7 @@ impl PopplerDocument {
     pub fn new_from_file<T: AsRef<Path>>(filepath: T) -> PopplerDocument {
         let raw = unsafe {
             let file = File::new(filepath);
-            time!("poppler/new_from_file" => sys::poppler_document_new_from_gfile(file.0, null(), null(), null_mut()))
+            timeit!("poppler/new_from_file" => sys::poppler_document_new_from_gfile(file.0, null(), null(), null_mut()))
         };
         PopplerDocument(raw)
     }
@@ -69,7 +69,7 @@ impl PopplerDocument {
 
     pub fn nth_page(&self, index: usize) -> PopplerPage {
         let page = unsafe {
-            time!("nth_page" => sys::poppler_document_get_page(self.0, index as c_int))
+            timeit!("nth_page" => sys::poppler_document_get_page(self.0, index as c_int))
         };
         PopplerPage(page)
     }

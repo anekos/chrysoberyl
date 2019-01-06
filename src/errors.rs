@@ -18,7 +18,7 @@ macro_rules! chry_error {
     };
     ($message:expr $(,$args:expr)*) => {
         {
-            use errors::ChryError;
+            use crate::errors::ChryError;
             ChryError::Standard(format!($message, $($args),*))
         }
     }

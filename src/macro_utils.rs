@@ -93,11 +93,11 @@ macro_rules! through {
     }
 }
 
-macro_rules! time {
+macro_rules! timeit {
     ($name:expr => $body:expr) => {
         {
             use std::time::Instant;
-            use util::time::duration_to_string;
+            use crate::util::time::duration_to_string;
 
             let t = Instant::now();
             let result = $body;

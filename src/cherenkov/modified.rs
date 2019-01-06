@@ -3,8 +3,8 @@ use cairo::{ImageSurface, Context, Format};
 use gdk::prelude::ContextExt;
 use gdk_pixbuf::{Pixbuf, PixbufExt};
 
-use gtk_utils::new_pixbuf_from_surface;
-use size::Size;
+use crate::gtk_utils::new_pixbuf_from_surface;
+use crate::size::Size;
 
 
 

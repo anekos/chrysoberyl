@@ -6,11 +6,11 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Sender, channel};
 use std::thread::spawn;
 
-use errors::ChryError;
-use logger;
-use option::OptionValue;
-use shellexpand_wrapper as sh;
-use util::path::path_to_str;
+use crate::errors::ChryError;
+use crate::logger;
+use crate::option::OptionValue;
+use crate::shellexpand_wrapper as sh;
+use crate::util::path::path_to_str;
 
 
 

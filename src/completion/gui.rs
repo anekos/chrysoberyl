@@ -7,12 +7,12 @@ use glib::Type;
 use gtk::prelude::*;
 use gtk::{CellRendererText, EditableExt, Entry, EntryBuffer, ListStore, ScrolledWindow, TreeIter, TreePath, TreeSelection, TreeView, TreeViewColumn, Value};
 
-use completion::definition::{Definition, Argument, Value as Val, OptionValue};
-use completion::path::get_candidates;
-use key::Key;
-use util::string::substr;
+use crate::completion::definition::{Definition, Argument, Value as Val, OptionValue};
+use crate::completion::path::get_candidates;
+use crate::key::Key;
+use crate::util::string::substr;
 
-use completion::history::History;
+use crate::completion::history::History;
 
 
 

@@ -1,6 +1,6 @@
 
-use paginator::*;
-use paginator::values::*;
+use crate::paginator::*;
+use crate::paginator::values::*;
 
 
 

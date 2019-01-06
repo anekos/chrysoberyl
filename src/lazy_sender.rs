@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use std::thread::{sleep, spawn};
 use std::time::{Duration, Instant};
 
-use operation::Operation;
+use crate::operation::Operation;
 
 
 

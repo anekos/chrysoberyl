@@ -7,7 +7,7 @@ use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimation, Colorspace, PixbufLoader, P
 use glib;
 use immeta;
 
-use size::Size;
+use crate::size::Size;
 
 
 

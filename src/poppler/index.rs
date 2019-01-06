@@ -2,8 +2,8 @@
 use std::default::Default;
 use std::str::FromStr;
 
-use poppler::sys;
-use poppler::util;
+use crate::poppler::sys;
+use crate::poppler::util;
 
 
 

@@ -6,15 +6,15 @@ use std::time::Duration;
 use cairo;
 use num::Integer;
 
-use cherenkov::Operator;
-use color::Color;
-use gui::{Position, Screen};
-use option::*;
-use resolution;
-use size::FitTo;
-use state::{Alignment, AutoPaging};
+use crate::cherenkov::Operator;
+use crate::color::Color;
+use crate::gui::{Position, Screen};
+use crate::option::*;
+use crate::resolution;
+use crate::size::FitTo;
+use crate::state::{Alignment, AutoPaging};
 
-use option::common;
+use crate::option::common;
 
 
 

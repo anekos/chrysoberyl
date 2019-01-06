@@ -6,7 +6,7 @@ use std::thread;
 use std::time::Duration;
 
 use notify::{self, Watcher as W, DebouncedEvent, RecursiveMode};
-use operation::Operation;
+use crate::operation::Operation;
 
 
 

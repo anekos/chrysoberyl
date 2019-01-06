@@ -4,9 +4,9 @@ use std::path::Path;
 use std::sync::mpsc::Sender;
 use std::thread::spawn;
 
-use operation::Operation;
+use crate::operation::Operation;
 
-use controller::process_lines;
+use crate::controller::process_lines;
 
 
 

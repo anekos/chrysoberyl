@@ -8,7 +8,7 @@ use gdk_pixbuf::Pixbuf;
 use glib::translate::*;
 use glib::translate::ToGlibPtr;
 
-use size::Size;
+use crate::size::Size;
 
 
 

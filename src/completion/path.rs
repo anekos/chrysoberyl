@@ -3,7 +3,7 @@ use std::env::current_dir;
 
 use dirs::home_dir;
 
-use shellexpand_wrapper as sh;
+use crate::shellexpand_wrapper as sh;
 
 
 

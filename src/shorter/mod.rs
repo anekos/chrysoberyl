@@ -5,8 +5,8 @@ use dirs::home_dir;
 use tldextract::{TldExtractor, TldOption};
 use url::Url;
 
-use util::path::path_to_string;
-use app_path;
+use crate::util::path::path_to_string;
+use crate::app_path;
 
 #[cfg(test)] mod test;
 

@@ -197,7 +197,7 @@ impl<T: Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
     pub fn filter(&mut self, info: &U, index_before_filter: Option<usize>) -> Option<usize> {
         if let Some(ref mut static_pred) = self.static_pred {
             let mut new_originals = vec![];
-            for mut entry in &mut self.original.iter_mut() {
+            for entry in &mut self.original.iter_mut() {
                 if (static_pred)(entry, info) {
                     new_originals.push(Arc::clone(entry));
                 }
@@ -215,7 +215,7 @@ impl<T: Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
 
         if let Some(ref mut dynamic_pred) = self.dynamic_pred {
             self.filtered = vec![];
-            for (index, mut entry) in &mut self.original.iter_mut().enumerate() {
+            for (index, entry) in &mut self.original.iter_mut().enumerate() {
                 if dynamic_pred(entry, info) {
                      self.filtered.push(Arc::clone(entry));
 

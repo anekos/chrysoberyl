@@ -1522,6 +1522,16 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
     let freezed = app.states.freezed;
 
     {
+        let do_update_fix_to = match *updater {
+            Increment(_) | Decrement(_) if *option_name == PreDefined(FitTo) => {
+                match app.states.drawing.fit_to {
+                    size::FitTo::Scale(_) => false,
+                    _ => true,
+                }
+            },
+            _ => false,
+        };
+
         let value: &mut OptionValue = match *option_name {
             PreDefined(ref option_name) => match *option_name {
                 AbbrevLength => &mut app.states.abbrev_length,
@@ -1579,17 +1589,9 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
         };
 
 
-        match *updater {
-            Increment(_) | Decrement(_) if *option_name == PreDefined(FitTo) => {
-                match app.states.drawing.fit_to {
-                    size::FitTo::Scale(_) =>
-                        (),
-                    _ =>
-                        value.set(&format!("{}%", (app.current_base_scale.unwrap_or(1.0) * 100.0) as usize)).unwrap(),
-                };
-            },
-            _ => (),
-        };
+        if do_update_fix_to {
+            value.set(&format!("{}%", (app.current_base_scale.unwrap_or(1.0) * 100.00) as usize)).unwrap();
+        }
 
         match *updater {
             Cycle(ref reverse, ref candidates) => value.cycle(*reverse, app.counter.take(), candidates)?,

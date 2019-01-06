@@ -167,7 +167,7 @@ impl Cherenkoved {
 
         modifiers.extend_from_slice(new_modifiers);
 
-        if_let_ok!(image_buffer = time!("re_cherenkov" => re_cherenkov(&entry.content, imaging, &modifiers)), |_| ());
+        if_let_ok!(image_buffer = timeit!("re_cherenkov" => re_cherenkov(&entry.content, imaging, &modifiers)), |_| ());
 
         self.cache.insert(
             entry.key.clone(),

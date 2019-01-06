@@ -461,7 +461,7 @@ impl App {
 
         if updated.image || updated.image_options || updated.size {
             self.fire_event(&EventName::ShowImagePre);
-            let (showed, original_image_size, fit_image_size) = time!("show_image" => self.show_image(to_end, updated.target_regions.clone()));
+            let (showed, original_image_size, fit_image_size) = timeit!("show_image" => self.show_image(to_end, updated.target_regions.clone()));
             self.on_image_updated(original_image_size, fit_image_size);
             self.update_watcher();
             if showed {

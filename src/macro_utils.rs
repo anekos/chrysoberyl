@@ -93,7 +93,7 @@ macro_rules! through {
     }
 }
 
-macro_rules! time {
+macro_rules! timeit {
     ($name:expr => $body:expr) => {
         {
             use std::time::Instant;

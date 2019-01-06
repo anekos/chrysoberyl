@@ -156,6 +156,7 @@ pub struct CherenkovParameter {
     pub radius: f64,
     pub random_hue: f64,
     pub seed: Seed,
+    pub threads: Option<u8>,
     pub x: Option<f64>,
     pub y: Option<f64>,
 }

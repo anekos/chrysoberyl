@@ -120,11 +120,12 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
                     search_highlight: false,
                     che: Che::Nova(Nova {
                         center: (x, y),
+                        color: parameter.color,
                         n_spokes: parameter.n_spokes,
                         radius: parameter.radius,
                         random_hue: parameter.random_hue,
-                        color: parameter.color,
                         seed: parameter.seed.clone(),
+                        threads: parameter.threads,
                     })
                 });
             updated.image = true;

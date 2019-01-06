@@ -50,6 +50,7 @@ pub struct Nova {
     pub radius: f64,
     pub random_hue: f64,
     pub seed: Seed,
+    pub threads: Option<u8>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -128,11 +129,11 @@ pub fn nova(nv: &Nova, pixels: &mut [u8], rowstride: i32, width: i32, height: i3
         (spokes, spoke_colors)
     };
 
-    let threads = num_cpus::get();
+    let threads = nv.threads.unwrap_or_else(|| num_cpus::get() as u8);
     trace!("cherenkov: threads={}", threads);
 
     let mut lines: Vec<(usize, &mut [u8])> = pixels.chunks_mut(rowstride as usize).enumerate().collect();
-    let chunks: Vec<&mut [(usize, &mut [u8])]> = lines.chunks_mut(height as usize / threads).collect();
+    let chunks: Vec<&mut [(usize, &mut [u8])]> = lines.chunks_mut(height as usize / threads as usize).collect();
 
     crossbeam::scope(|scope| {
         let mut handles = vec![];

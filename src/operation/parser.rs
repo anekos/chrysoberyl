@@ -133,6 +133,7 @@ pub fn parse_cherenkov(args: &[String]) -> Result<Operation, ParsingError> {
     let mut radius = 0.1;
     let mut random_hue = 0.0;
     let mut n_spokes = 50;
+    let mut threads = None;
     let mut x = None;
     let mut y = None;
     let mut color: Color = "random".parse().unwrap();
@@ -147,13 +148,14 @@ pub fn parse_cherenkov(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut y).add_option(&["-y"], StoreOption, "Y");
         ap.refer(&mut color).add_option(&["-c", "--color"], Store, "CSS Color");
         ap.refer(&mut seed).add_option(&["-S", "--seed"], StoreOption, "Seed for random number generator");
+        ap.refer(&mut threads).add_option(&["-t", "--threads", "--thread"], StoreOption, "Number of threads");
         parse_args(&mut ap, args)
     } .and_then(|_| {
         if n_spokes == 0 {
             return Err(ParsingError::InvalidArgument(o!("--spokes must be larger than 0")));
         }
         let seed = Seed::new(&seed);
-        let op = Operation::Cherenkov(CherenkovParameter { radius, color, n_spokes, random_hue, seed, x, y });
+        let op = Operation::Cherenkov(CherenkovParameter { radius, color, n_spokes, random_hue, seed, threads, x, y });
         Ok(Operation::WithMessage(Some(o!("Cherenkoving")), Box::new(op)))
     })
 }

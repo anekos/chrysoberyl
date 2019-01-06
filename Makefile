@@ -39,3 +39,16 @@ benchmark-cherenkov:
 		@@cherenkov -x 0.4 -y 0.4 --color '#FFFF00' --radius 0.1 --spokes 100 --random-hue 0 --seed cat \
 		@@queue \; @shell --sync timeit lap cherenkov \; @quit
 	timeit show cherenkov
+
+benchmark-cherenkov-single:
+	cargo run --release \
+		@@set fit-to original \
+		@@set fit-to 5000% \
+		@@push-image test-files/cell.png \
+		@@shell timeit start cherenkov \
+		@@cherenkov -x 0.2 -y 0.2 --color '#00FF00' --radius 0.1 --spokes 100 --random-hue 0 --seed cat --threads 1 \
+		@@cherenkov -x 0.4 -y 0.2 --color '#FF0000' --radius 0.1 --spokes 100 --random-hue 0 --seed cat --threads 1 \
+		@@cherenkov -x 0.2 -y 0.4 --color '#0000FF' --radius 0.1 --spokes 100 --random-hue 0 --seed cat --threads 1 \
+		@@cherenkov -x 0.4 -y 0.4 --color '#FFFF00' --radius 0.1 --spokes 100 --random-hue 0 --seed cat --threads 1 \
+		@@queue \; @shell --sync timeit lap cherenkov \; @quit
+	timeit show cherenkov

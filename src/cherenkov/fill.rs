@@ -3,11 +3,11 @@ use std::f64::consts::PI;
 
 use cairo::{Context, ImageSurface, Format};
 
-use color::Color;
-use size::Region;
+use crate::color::Color;
+use crate::size::Region;
 
-use cherenkov::Operator;
-use cherenkov::modified::Modified;
+use crate::cherenkov::Operator;
+use crate::cherenkov::modified::Modified;
 
 
 

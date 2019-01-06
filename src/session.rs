@@ -6,24 +6,24 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use app::App;
-use color::Color;
-use constant;
-use entry::filter::expression::Expr as FilterExpr;
-use entry::filter::writer::write as write_expr;
-use entry::{Entry, EntryContainer, EntryType, Key, Meta};
-use gui::{self, Gui};
-use mapping::{Mapping, input_mapping as imap, region_mapping as rmap, event_mapping as emap, operation_mapping as omap};
-use operation::option::PreDefinedOptionName;
-use option::common::{bool_to_str as b2s};
-use option::user_switch::{UserSwitch, UserSwitchManager};
-use paginator::Paginator;
-use size::FitTo;
-use state::{self, States, Filters};
-use timer::TimerManager;
-use util::path::path_to_str;
-use util::shell::{escape, escape_pathbuf};
-use util::time::duration_to_seconds;
+use crate::app::App;
+use crate::color::Color;
+use crate::constant;
+use crate::entry::filter::expression::Expr as FilterExpr;
+use crate::entry::filter::writer::write as write_expr;
+use crate::entry::{Entry, EntryContainer, EntryType, Key, Meta};
+use crate::gui::{self, Gui};
+use crate::mapping::{Mapping, input_mapping as imap, region_mapping as rmap, event_mapping as emap, operation_mapping as omap};
+use crate::operation::option::PreDefinedOptionName;
+use crate::option::common::{bool_to_str as b2s};
+use crate::option::user_switch::{UserSwitch, UserSwitchManager};
+use crate::paginator::Paginator;
+use crate::size::FitTo;
+use crate::state::{self, States, Filters};
+use crate::timer::TimerManager;
+use crate::util::path::path_to_str;
+use crate::util::shell::{escape, escape_pathbuf};
+use crate::util::time::duration_to_seconds;
 
 
 
@@ -53,7 +53,7 @@ pub enum WriteContext {
 
 
 pub trait StatusText {
-    fn write_status_text(&self, &mut String);
+    fn write_status_text(&self, _: &mut String);
 }
 
 
@@ -230,8 +230,8 @@ pub fn write_options(st: &States, gui: &Gui, reading: bool, out: &mut String) {
     }
 }
 
-pub fn write_queue(state: &Arc<Mutex<::remote_cache::State>>, out: &mut String) {
-    use entry::EntryType::*;
+pub fn write_queue(state: &Arc<Mutex<crate::remote_cache::State>>, out: &mut String) {
+    use crate::entry::EntryType::*;
 
     let state = state.lock().unwrap();
     let requests = state.requests();
@@ -288,7 +288,7 @@ pub fn write_entries(entries: &EntryContainer, out: &mut String) {
 }
 
 fn write_entry(entry: &Entry, out: &mut String, previous: &mut Key) {
-    use entry::EntryContent::*;
+    use crate::entry::EntryContent::*;
 
     let path_changed = previous.1 != entry.key.1;
 
@@ -343,7 +343,7 @@ pub fn write_paths(entries: &EntryContainer, out: &mut String) {
 }
 
 fn write_path(entry: &Entry, out: &mut String) {
-    use entry::EntryContent::*;
+    use crate::entry::EntryContent::*;
 
     if let Some(ref url) = entry.url {
         match entry.content {
@@ -523,7 +523,7 @@ pub fn write_timers(timers: &TimerManager, out: &mut String) {
 
 impl fmt::Display for FitTo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use size::FitTo::*;
+        use crate::size::FitTo::*;
 
         let result =
             match *self {
@@ -559,7 +559,7 @@ impl fmt::Display for state::Alignment {
 
 impl fmt::Display for gui::Screen {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use gui::Screen::*;
+        use crate::gui::Screen::*;
 
         let result =
             match *self {

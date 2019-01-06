@@ -1,8 +1,8 @@
 
 use std::collections::{VecDeque, HashMap};
 
-use key::{Key, key_sequence_to_string};
-use size::{CoordPx, Region};
+use crate::key::{Key, key_sequence_to_string};
+use crate::size::{CoordPx, Region};
 
 
 

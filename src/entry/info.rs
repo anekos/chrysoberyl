@@ -5,10 +5,10 @@ use std::time::SystemTime;
 
 use immeta;
 
-use entry::EntryContent;
-use lazy::Lazy;
-use size::Size;
-use util::path::path_to_str;
+use crate::entry::EntryContent;
+use crate::lazy::Lazy;
+use crate::size::Size;
+use crate::util::path::path_to_str;
 
 
 
@@ -79,7 +79,7 @@ impl EntryInfo {
 
 impl LazyEntryInfo {
     pub fn new(content: &EntryContent) -> LazyEntryInfo {
-        use entry::EntryContent::*;
+        use crate::entry::EntryContent::*;
 
         info!("LazyEntryInfo::new");
 

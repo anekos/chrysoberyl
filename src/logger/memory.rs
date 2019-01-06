@@ -4,7 +4,7 @@ use std::sync::mpsc::{Sender, channel};
 use std::sync::{Arc, Mutex};
 use std::thread::spawn;
 
-use logger;
+use crate::logger;
 
 
 

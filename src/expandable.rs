@@ -4,10 +4,10 @@ use std::path::{PathBuf, Path};
 use std::str::FromStr;
 use std::string::ToString;
 
-use shellexpand_wrapper as sh;
+use crate::shellexpand_wrapper as sh;
 
-use app_path;
-use util::path::path_to_string;
+use crate::app_path;
+use crate::util::path::path_to_string;
 
 
 

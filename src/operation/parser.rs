@@ -6,22 +6,22 @@ use std::time::Duration;
 
 use argparse::{ArgumentParser, Collect, Store, StoreConst, StoreTrue, StoreFalse, StoreOption, List};
 
-use chainer;
-use cherenkov::fill::Shape;
-use cherenkov::nova::Seed;
-use color::Color;
-use entry::filter::expression::Expr as FilterExpr;
-use entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
-use expandable::Expandable;
-use filer::{IfExist, FileOperation};
-use key::{Key, new_key_sequence};
-use mapping::{Mapped, MappedType};
-use shellexpand_wrapper as sh;
-use size::{CoordPx, Size};
-use util::string::join;
+use crate::chainer;
+use crate::cherenkov::fill::Shape;
+use crate::cherenkov::nova::Seed;
+use crate::color::Color;
+use crate::entry::filter::expression::Expr as FilterExpr;
+use crate::entry::{Meta, MetaEntry, SearchKey, new_opt_meta};
+use crate::expandable::Expandable;
+use crate::filer::{IfExist, FileOperation};
+use crate::key::{Key, new_key_sequence};
+use crate::mapping::{Mapped, MappedType};
+use crate::shellexpand_wrapper as sh;
+use crate::size::{CoordPx, Size};
+use crate::util::string::join;
 
-use operation::*;
-use operation::option::*;
+use crate::operation::*;
+use crate::operation::option::*;
 
 
 
@@ -255,7 +255,7 @@ where F: FnOnce(Expandable) -> controller::Source {
 }
 
 pub fn parse_controller_socket(args: &[String]) -> Result<Operation, ParsingError> {
-    use controller::Source;
+    use crate::controller::Source;
 
     let mut path = o!("");
     let mut as_binary = false;
@@ -384,7 +384,7 @@ pub fn parse_fill(args: &[String]) -> Result<Operation, ParsingError> {
         type Err = ParsingError;
 
         fn from_str(src: &str) -> Result<Self, ParsingError> {
-            use cherenkov::fill::Shape::*;
+            use crate::cherenkov::fill::Shape::*;
 
             match src {
                 "rectangle" | "rect" | "r" => Ok(Rectangle),
@@ -688,22 +688,22 @@ pub fn parse_message(args: &[String]) -> Result<Operation, ParsingError> {
 pub fn parse_multi(args: &[String]) -> Result<Operation, ParsingError> {
     let mut separator = "".to_owned();
     let mut commands: Vec<String> = vec![];
-    let mut async = true;
+    let mut r#async = true;
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut async)
+        ap.refer(&mut r#async)
             .add_option(&["--async", "-a"], StoreTrue, "Async")
             .add_option(&["--sync", "-s"], StoreFalse, "Sync");
         ap.refer(&mut separator).add_argument("separator", Store, "Commands separator").required();
         ap.refer(&mut commands).add_argument("arguments", List, "Commands");
         parse_args(&mut ap, args)
     } .and_then(|_| {
-        parse_multi_args(&commands, &separator, async)
+        parse_multi_args(&commands, &separator, r#async)
     })
 }
 
-pub fn parse_multi_args(xs: &[String], separator: &str, async: bool) -> Result<Operation, ParsingError> {
+pub fn parse_multi_args(xs: &[String], separator: &str, r#async: bool) -> Result<Operation, ParsingError> {
     let mut ops: Vec<Vec<String>> = vec![];
     let mut buffer: Vec<String> = vec![];
 
@@ -729,7 +729,7 @@ pub fn parse_multi_args(xs: &[String], separator: &str, async: bool) -> Result<O
         }
     }
 
-    Ok(Operation::Multi(result, async))
+    Ok(Operation::Multi(result, r#async))
 }
 
 pub fn parse_option_cycle(args: &[String]) -> Result<Operation, ParsingError> {
@@ -787,9 +787,9 @@ pub fn parse_page(args: &[String]) -> Result<Operation, ParsingError> {
 }
 
 pub fn parse_pdf_index(args: &[String]) -> Result<Operation, ParsingError> {
-    use poppler::index::Format;
+    use crate::poppler::index::Format;
 
-    let mut async = true;
+    let mut r#async = true;
     let mut read_operations = true;
     let mut search_path = false;
     let mut command_line: Vec<String> = vec![];
@@ -798,7 +798,7 @@ pub fn parse_pdf_index(args: &[String]) -> Result<Operation, ParsingError> {
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut async)
+        ap.refer(&mut r#async)
             .add_option(&["--async", "-a"], StoreTrue, "Async (Non-blocking)")
             .add_option(&["--sync", "-s"], StoreFalse, "Sync (Blocking)");
         ap.refer(&mut search_path).add_option(&["--search-path", "-p"], StoreTrue, SEARCH_PATH_DESC);
@@ -813,7 +813,7 @@ pub fn parse_pdf_index(args: &[String]) -> Result<Operation, ParsingError> {
         parse_args(&mut ap, args)
     } .and_then(|_| {
         let command_line = command_line.into_iter().map(Expandable::new).collect();
-        Ok(Operation::PdfIndex(async, read_operations, search_path, command_line, fmt, fmt_separator))
+        Ok(Operation::PdfIndex(r#async, read_operations, search_path, command_line, fmt, fmt_separator))
     })
 }
 
@@ -1016,7 +1016,7 @@ pub fn parse_save(args: &[String]) -> Result<Operation, ParsingError> {
 }
 
 pub fn parse_set_env(args: &[String]) -> Result<Operation, ParsingError> {
-    use constant::*;
+    use crate::constant::*;
 
     let mut name = o!("");
     let mut value: Option<String> = None;
@@ -1074,7 +1074,7 @@ pub fn parse_search(args: &[String]) -> Result<Operation, ParsingError> {
 }
 
 pub fn parse_shell(args: &[String]) -> Result<Operation, ParsingError> {
-    let mut async = true;
+    let mut r#async = true;
     let mut read_as = ReadAs::Ignore;
     let mut search_path = false;
     let mut command_line: Vec<String> = vec![];
@@ -1083,7 +1083,7 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, ParsingError> {
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut async)
+        ap.refer(&mut r#async)
             .add_option(&["--async", "-a"], StoreTrue, "Async (Non-blocking)")
             .add_option(&["--sync", "-s"], StoreFalse, "Sync (Blocking)");
         ap.refer(&mut sessions).add_option(&["--session", "-S"], Collect, "Sessions");
@@ -1097,7 +1097,7 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, ParsingError> {
         parse_args(&mut ap, args)
     } .and_then(|_| {
         let command_line = command_line.into_iter().map(Expandable::new).collect();
-        Ok(Operation::Shell(async, read_as, search_path, command_line, sessions, freeze))
+        Ok(Operation::Shell(r#async, read_as, search_path, command_line, sessions, freeze))
     })
 }
 
@@ -1167,7 +1167,7 @@ pub fn parse_timer(args: &[String]) -> Result<Operation, ParsingError> {
     let mut name = None;
     let mut op = Vec::<String>::new();
     let mut repeat = Some(1);
-    let mut async = false;
+    let mut r#async = false;
 
     {
         let mut ap = ArgumentParser::new();
@@ -1177,14 +1177,14 @@ pub fn parse_timer(args: &[String]) -> Result<Operation, ParsingError> {
             .add_option(&["--infinity", "-i"], StoreConst(None), "Repeat infinitely");
         ap.refer(&mut name)
             .add_option(&["--name", "-n"], StoreOption, "Name");
-        ap.refer(&mut async)
+        ap.refer(&mut r#async)
             .add_option(&["--async", "-a"], StoreTrue, "Async")
             .add_option(&["--sync", "-s"], StoreFalse, "Sync");
         ap.refer(&mut interval_seconds).add_argument("interval", Store, "Interval").required();
         ap.refer(&mut op).add_argument("operation", Collect, "Operation").required();
         parse_args(&mut ap, args)
     } .map(|_| {
-        Operation::Timer(name, op, Duration::from_millis((interval_seconds * 1000.0) as u64), repeat, async)
+        Operation::Timer(name, op, Duration::from_millis((interval_seconds * 1000.0) as u64), repeat, r#async)
     })
 }
 

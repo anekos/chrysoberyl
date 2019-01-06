@@ -15,40 +15,40 @@ use gtk::prelude::*;
 use natord;
 use rand::distributions::{Distribution, Uniform};
 
-use archive;
-use chainer;
-use cherenkov::Operator;
-use cherenkov::fill::Shape;
-use clipboard;
-use color::Color;
-use command_line;
-use config::DEFAULT_CONFIG;
-use controller;
-use editor;
-use entry::filter::expression::Expr as FilterExpr;
-use entry::{self, Meta, SearchKey, Entry, EntryContent, EntryType};
-use errors::ChryError;
-use events::EventName;
-use expandable::{Expandable, expand_all};
-use file_extension::get_entry_type_from_filename;
-use filer;
-use gui::Direction;
-use key::Key;
-use logger;
-use operation::option::{OptionName, OptionUpdater};
-use operation::{ClipboardSelection, MappingTarget, MoveBy, Operation, OperationContext, self, ReadAs, SortKey, UIActionType};
-use option::user_switch::DummySwtich;
-use poppler::{PopplerDocument, self};
-use script;
-use session::{Session, write_sessions};
-use shell_filter;
-use shellexpand_wrapper as sh;
-use state;
-use util::num::range_contains;
-use util::path::{path_to_str, path_to_string};
-use util::string::prefixed_lines;
+use crate::archive;
+use crate::chainer;
+use crate::cherenkov::Operator;
+use crate::cherenkov::fill::Shape;
+use crate::clipboard;
+use crate::color::Color;
+use crate::command_line;
+use crate::config::DEFAULT_CONFIG;
+use crate::controller;
+use crate::editor;
+use crate::entry::filter::expression::Expr as FilterExpr;
+use crate::entry::{self, Meta, SearchKey, Entry, EntryContent, EntryType};
+use crate::errors::ChryError;
+use crate::events::EventName;
+use crate::expandable::{Expandable, expand_all};
+use crate::file_extension::get_entry_type_from_filename;
+use crate::filer;
+use crate::gui::Direction;
+use crate::key::Key;
+use crate::logger;
+use crate::operation::option::{OptionName, OptionUpdater};
+use crate::operation::{ClipboardSelection, MappingTarget, MoveBy, Operation, OperationContext, self, ReadAs, SortKey, UIActionType};
+use crate::option::user_switch::DummySwtich;
+use crate::poppler::{PopplerDocument, self};
+use crate::script;
+use crate::session::{Session, write_sessions};
+use crate::shell_filter;
+use crate::shellexpand_wrapper as sh;
+use crate::state;
+use crate::util::num::range_contains;
+use crate::util::path::{path_to_str, path_to_string};
+use crate::util::string::prefixed_lines;
 
-use app::*;
+use crate::app::*;
 
 
 type EventResult = Result<(), Box<Error>>;
@@ -57,12 +57,12 @@ type EventResult = Result<(), Box<Error>>;
 pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName, context: &HashMap<String, String>) -> EventResult {
     use self::EventName::*;
 
-    let async = match *event_name {
+    let r#async = match *event_name {
         Spawn => true,
         _ => false,
     };
 
-    trace!("on_app_event: event={}, async={}", event_name, async);
+    trace!("on_app_event: event={}, async={}", event_name, r#async);
 
     match *event_name {
         ResizeWindow => on_window_resized(app, updated)?,
@@ -72,7 +72,7 @@ pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName
     }
 
     let op = Operation::Fire(Mapped::Event(event_name.clone()));
-    if async {
+    if r#async {
         app.tx.send(op).unwrap();
     } else {
         for (k, v) in context {
@@ -101,8 +101,8 @@ pub fn on_change_directory(path: &Expandable) -> EventResult {
 }
 
 pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation::CherenkovParameter, context: Option<OperationContext>) -> EventResult {
-    use cherenkov::{Che, Modifier};
-    use cherenkov::nova::Nova;
+    use crate::cherenkov::{Che, Modifier};
+    use crate::cherenkov::nova::Nova;
 
     let context_coord = context.map(|it| it.mapped).and_then(|it| if let Mapped::Input(coord, _) = it { Some(coord) } else { None });
 
@@ -314,7 +314,7 @@ pub fn on_file_changed(app: &mut App, updated: &mut Updated, path: &Path) -> Eve
 
 #[allow(clippy::too_many_arguments)]
 pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Option<Region>, color: Color, operator: Option<Operator>, mask: bool, cell_index: usize, context: Option<OperationContext>) -> EventResult {
-    use cherenkov::{Modifier, Che};
+    use crate::cherenkov::{Modifier, Che};
 
     let (region, cell_index) = extract_region_from_context(context)
         .or_else(|| region.map(|it| (it, cell_index)))
@@ -493,7 +493,7 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
         Ok(())
     }
 
-    use command_line::{Entry as CLE};
+    use crate::command_line::{Entry as CLE};
 
     app.reset_view();
 
@@ -615,7 +615,7 @@ pub fn on_lazy_draw(app: &mut App, updated: &mut Updated, to_end: &mut bool, ser
 }
 
 pub fn on_link_action(app: &mut App, updated: &mut Updated, operation: &[String], context: Option<OperationContext>) -> EventResult {
-    use entry::EntryContent::*;
+    use crate::entry::EntryContent::*;
 
     let mut clicked = None;
     if let Some(&Mapped::Input(ref coord, _)) = context.as_ref().map(|it| &it.mapped) {
@@ -671,7 +671,7 @@ pub fn on_make_visibles(app: &mut App, regions: &[Option<Region>]) -> EventResul
 }
 
 pub fn on_map(app: &mut App, target: MappingTarget, remain: Option<usize>, operation: Vec<String>) -> EventResult {
-    use app::MappingTarget::*;
+    use crate::app::MappingTarget::*;
 
     // puts_event!("map", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
     match target {
@@ -727,13 +727,13 @@ pub fn on_move_again(app: &mut App, updated: &mut Updated, to_end: &mut bool, co
     }
 }
 
-pub fn on_multi(app: &mut App, mut operations: VecDeque<Operation>, async: bool, context: Option<OperationContext>) -> EventResult {
-    if async {
+pub fn on_multi(app: &mut App, mut operations: VecDeque<Operation>, r#async: bool, context: Option<OperationContext>) -> EventResult {
+    if r#async {
         if let Some(op) = operations.pop_front() {
             app.operate(op, context);
         }
         if !operations.is_empty() {
-            app.tx.send(Operation::Multi(operations, async))?;
+            app.tx.send(Operation::Multi(operations, r#async))?;
         }
     } else {
         for op in operations {
@@ -765,8 +765,8 @@ pub fn on_next(app: &mut App, updated: &mut Updated, count: Option<usize>, ignor
 }
 
 pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) -> EventResult {
-    use entry::EntryContent::*;
-    use archive::ArchiveEntry;
+    use crate::entry::EntryContent::*;
+    use crate::archive::ArchiveEntry;
 
     if let Some((entry, _)) = app.current() {
         match entry.content {
@@ -800,13 +800,13 @@ pub fn on_page(app: &mut App, updated: &mut Updated, page: usize) -> EventResult
     Ok(())
 }
 
-pub fn on_pdf_index(app: &mut App, async: bool, read_operations: bool, search_path: bool, command_line: &[Expandable], fmt: poppler::index::Format, separator: Option<&str>) -> EventResult {
+pub fn on_pdf_index(app: &mut App, r#async: bool, read_operations: bool, search_path: bool, command_line: &[Expandable], fmt: poppler::index::Format, separator: Option<&str>) -> EventResult {
     if_let_some!((entry, _) = app.current(), Ok(()));
     if let EntryContent::Pdf(ref path, _) = entry.content {
         let mut stdin = o!("");
         PopplerDocument::new_from_file(&**path).index().write(fmt, separator, &mut stdin);
         let read_as = if read_operations { ReadAs::Operations } else { ReadAs::Ignore };
-        app.process_manager.call(async, &expand_all(command_line, search_path, &app.states.path_list), Some(stdin), read_as);
+        app.process_manager.call(r#async, &expand_all(command_line, search_path, &app.states.path_list), Some(stdin), read_as);
         Ok(())
     } else {
         Err(Box::new(ChryError::Fixed("current entry is not PDF")))
@@ -964,7 +964,7 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, clear: 
         })
     }
 
-    use entry::EntryContent::*;
+    use crate::entry::EntryContent::*;
 
     let found = app.current().and_then(|(entry, _)| {
         match entry.content {
@@ -1105,7 +1105,7 @@ pub fn on_scroll(app: &mut App, direction: Direction, scroll_size: f64, crush: b
 }
 
 pub fn on_search_text(app: &mut App, updated: &mut Updated, text: Option<String>, backward: bool, color: Color) -> EventResult {
-    use cherenkov::{Che, Modifier};
+    use crate::cherenkov::{Che, Modifier};
 
     fn opt_range_contains(range: &Option<Range<usize>>, index: usize, if_none: bool) -> bool {
         range.as_ref().map(|it| range_contains(it, &index)).unwrap_or(if_none)
@@ -1217,7 +1217,7 @@ pub fn on_set_env(_: &mut App, name: &str, value: &Option<String>) -> EventResul
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn on_shell(app: &mut App, async: bool, read_as: ReadAs, search_path: bool, command_line: &[Expandable], sessions: &[Session], freeze: bool) -> EventResult {
+pub fn on_shell(app: &mut App, r#async: bool, read_as: ReadAs, search_path: bool, command_line: &[Expandable], sessions: &[Session], freeze: bool) -> EventResult {
     let stdin = if !sessions.is_empty() {
         Some(with_ouput_string!(out, write_sessions(app, sessions, freeze, out)))
     } else {
@@ -1225,7 +1225,7 @@ pub fn on_shell(app: &mut App, async: bool, read_as: ReadAs, search_path: bool, 
     };
 
     app.update_counter_env(true);
-    app.process_manager.call(async, &expand_all(command_line, search_path, &app.states.path_list), stdin, read_as);
+    app.process_manager.call(r#async, &expand_all(command_line, search_path, &app.states.path_list), stdin, read_as);
     Ok(())
 }
 
@@ -1431,8 +1431,8 @@ pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f6
     Ok(())
 }
 
-pub fn on_timer(app: &mut App, name: Option<String>, op: Vec<String>, interval: Duration, repeat: Option<usize>, async: bool) -> EventResult {
-    app.timers.register(name, op, interval, repeat, async)
+pub fn on_timer(app: &mut App, name: Option<String>, op: Vec<String>, interval: Duration, repeat: Option<usize>, r#async: bool) -> EventResult {
+    app.timers.register(name, op, interval, repeat, r#async)
 }
 
 pub fn on_unchain(target: &chainer::Target) -> EventResult {
@@ -1442,7 +1442,7 @@ pub fn on_unchain(target: &chainer::Target) -> EventResult {
 
 pub fn on_ui_action(app: &mut App, action_type: UIActionType) -> EventResult {
     use self::UIActionType::*;
-    use gui::Screen::*;
+    use crate::gui::Screen::*;
 
     let mut result = Ok(());
 
@@ -1483,7 +1483,7 @@ pub fn on_undo(app: &mut App, updated: &mut Updated, count: Option<usize>) -> Ev
 }
 
 pub fn on_unmap(app: &mut App, target: &MappingTarget) -> EventResult {
-    use app::MappingTarget::*;
+    use crate::app::MappingTarget::*;
 
     // puts_event!("unmap", "target" => format!("{:?}", target), "operation" => format!("{:?}", operation));
     match *target {
@@ -1512,11 +1512,11 @@ pub fn on_unmark(app: &mut App, target: &Option<String>) -> EventResult {
 }
 
 pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &OptionName, updater: &OptionUpdater) -> EventResult {
-    use option::OptionValue;
-    use operation::option::OptionName::*;
-    use operation::option::OptionUpdater::*;
-    use operation::option::PreDefinedOptionName::*;
-    use size;
+    use crate::option::OptionValue;
+    use crate::operation::option::OptionName::*;
+    use crate::operation::option::OptionUpdater::*;
+    use crate::operation::option::PreDefinedOptionName::*;
+    use crate::size;
 
     let mut dummy_switch = DummySwtich::new();
     let freezed = app.states.freezed;
@@ -1668,7 +1668,7 @@ pub fn on_user(_: &mut App, data: &[(String, String)]) -> EventResult {
 }
 
 pub fn on_views(app: &mut App, updated: &mut Updated, cols: Option<usize>, rows: Option<usize>, ignore_views: bool) -> EventResult {
-    use operation::option::PreDefinedOptionName::*;
+    use crate::operation::option::PreDefinedOptionName::*;
 
     if let Some(cols) = cols {
         app.states.view.cols = cols;
@@ -1682,7 +1682,7 @@ pub fn on_views(app: &mut App, updated: &mut Updated, cols: Option<usize>, rows:
 }
 
 pub fn on_views_fellow(app: &mut App, updated: &mut Updated, for_rows: bool, ignore_views: bool) -> EventResult {
-    use operation::option::PreDefinedOptionName::*;
+    use crate::operation::option::PreDefinedOptionName::*;
 
     let count = app.counter.take();
     if for_rows {
@@ -1775,7 +1775,7 @@ fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>
         Url(String),
     }
 
-    use operation::QueuedOperation::*;
+    use crate::operation::QueuedOperation::*;
 
     let before_len = app.entries.len();
     let app_info = app.app_info();

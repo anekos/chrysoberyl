@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use std::path::PathBuf;
 
 use shell_escape;
-use util::path::path_to_str;
+use crate::util::path::path_to_str;
 
 
 

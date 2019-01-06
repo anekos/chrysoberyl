@@ -5,7 +5,7 @@ use std::default::Default;
 
 use gdk::{self, EventButton, EventKey, EventScroll, ScrollDirection, ModifierType};
 
-use errors::ChryError;
+use crate::errors::ChryError;
 
 
 

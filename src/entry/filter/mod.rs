@@ -1,11 +1,11 @@
 
 use globset::GlobMatcher;
 
-use app::info::AppInfo;
-use entry::info::EntryInfo;
-use entry::{Entry, EntryContent};
-use resolution;
-use size::Size;
+use crate::app::info::AppInfo;
+use crate::entry::info::EntryInfo;
+use crate::entry::{Entry, EntryContent};
+use crate::resolution;
+use crate::size::Size;
 
 pub mod expression;
 pub mod parser;

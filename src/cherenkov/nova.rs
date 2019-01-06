@@ -29,10 +29,10 @@ use num_cpus;
 use rand::distributions::{Distribution, Uniform};
 use rand::{Rng, RngCore, SeedableRng, self, StdRng};
 
-use color::Color;
-use util::num::feq;
+use crate::color::Color;
+use crate::util::num::feq;
 
-use cherenkov::modified::Modified;
+use crate::cherenkov::modified::Modified;
 
 
 

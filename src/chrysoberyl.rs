@@ -8,10 +8,10 @@ use std::time::{Duration, Instant};
 use env_logger;
 use gtk;
 
-use app;
-use command_line;
-use events::EventName;
-use operation::Operation;
+use crate::app;
+use crate::command_line;
+use crate::events::EventName;
+use crate::operation::Operation;
 
 
 

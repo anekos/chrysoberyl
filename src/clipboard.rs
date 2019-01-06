@@ -7,10 +7,10 @@ use gdk::prelude::ContextExt;
 use gdk_pixbuf::{Pixbuf, PixbufExt};
 use gtk::{Clipboard, ClipboardExt};
 
-use entry::Meta;
-use errors::ChryError;
-use expandable::Expandable;
-use operation::{Operation, ClipboardSelection};
+use crate::entry::Meta;
+use crate::errors::ChryError;
+use crate::expandable::Expandable;
+use crate::operation::{Operation, ClipboardSelection};
 
 
 

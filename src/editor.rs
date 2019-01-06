@@ -9,8 +9,8 @@ use std::sync::mpsc:: Sender;
 use cmdline_parser::Parser;
 use mkstemp::TempFile;
 
-use expandable::Expandable;
-use operation::Operation;
+use crate::expandable::Expandable;
+use crate::operation::Operation;
 
 
 

@@ -4,8 +4,8 @@ use std::process::{Command, Stdio};
 use std::sync::mpsc::{Sender, channel};
 use std::thread::spawn;
 
-use logger;
-use operation::Operation;
+use crate::logger;
+use crate::operation::Operation;
 
 
 

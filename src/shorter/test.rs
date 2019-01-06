@@ -1,7 +1,7 @@
 
 use dirs::home_dir;
 
-use shorter::*;
+use crate::shorter::*;
 
 
 

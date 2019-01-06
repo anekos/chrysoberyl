@@ -2,9 +2,9 @@
 use std::fmt;
 use std::str::FromStr;
 
-use events::EventName;
-use key::Key;
-use size::{Region, CoordPx};
+use crate::events::EventName;
+use crate::key::Key;
+use crate::size::{Region, CoordPx};
 
 pub mod event_mapping;
 pub mod input_mapping;

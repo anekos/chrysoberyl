@@ -2,7 +2,7 @@
 macro_rules! puts {
     ( $($name:expr => $value:expr),* ) => {
         {
-            use logger;
+            use crate::logger;
             logger::puts(&[
                 $( ($name.to_owned(), $value.to_owned()) ),*
             ])

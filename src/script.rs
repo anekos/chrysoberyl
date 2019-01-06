@@ -4,11 +4,11 @@ use std::io:: Read;
 use std::path::Path;
 use std::sync::mpsc::Sender;
 
-use app_path::PathList;
-use config::DEFAULT_CONFIG;
-use errors::ChryError;
-use joiner::Joiner;
-use operation::Operation;
+use crate::app_path::PathList;
+use crate::config::DEFAULT_CONFIG;
+use crate::errors::ChryError;
+use crate::joiner::Joiner;
+use crate::operation::Operation;
 
 
 

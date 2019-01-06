@@ -5,9 +5,9 @@ use globset;
 use pom::parser::*;
 use pom::{Parser, TextInput};
 
-use entry::filter::expression::*;
-use entry::filter::resolution;
-use util::pom::from_vec_char;
+use crate::entry::filter::expression::*;
+use crate::entry::filter::resolution;
+use crate::util::pom::from_vec_char;
 
 
 
@@ -223,8 +223,8 @@ fn expr() -> Parser<char, Expr> {
 
 #[cfg(test)]#[test]
 fn test_parser() {
-    use session::write_filter;
-    use util::shell::escape;
+    use crate::session::write_filter;
+    use crate::util::shell::escape;
 
     fn assert_parse(src: &str) {
         assert_eq!(

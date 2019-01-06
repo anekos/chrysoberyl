@@ -7,10 +7,10 @@ use std::thread::spawn;
 
 use num_cpus;
 
-use entry::image::Imaging;
-use entry::{Entry, Key, self};
-use image::ImageBuffer;
-use image_cache::ImageCache;
+use crate::entry::image::Imaging;
+use crate::entry::{Entry, Key, self};
+use crate::image::ImageBuffer;
+use crate::image_cache::ImageCache;
 
 
 

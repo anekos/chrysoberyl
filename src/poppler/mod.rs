@@ -18,10 +18,10 @@ use self::glib_sys::g_list_free;
 use self::gio_sys::{g_file_new_for_path, GFile};
 use self::gobject_sys::{GObject, g_object_unref};
 
-use color::Color;
-use gtk_utils::{new_pixbuf_from_surface, context_rotate};
-use size::{Size, Region};
-use state::Drawing;
+use crate::color::Color;
+use crate::gtk_utils::{new_pixbuf_from_surface, context_rotate};
+use crate::size::{Size, Region};
+use crate::state::Drawing;
 
 mod sys;
 mod util;

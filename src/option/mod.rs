@@ -1,5 +1,5 @@
 
-use errors::ChryError;
+use crate::errors::ChryError;
 
 pub mod common;
 pub mod impls;

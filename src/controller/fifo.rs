@@ -8,11 +8,11 @@ use std::thread::spawn;
 
 use libc;
 
-use chainer;
-use errors::ChryError;
-use operation::Operation;
+use crate::chainer;
+use crate::errors::ChryError;
+use crate::operation::Operation;
 
-use controller::process_lines;
+use crate::controller::process_lines;
 
 
 

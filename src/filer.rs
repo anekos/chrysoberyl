@@ -4,9 +4,9 @@ use std::fs::{self, File, create_dir_all};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use errors::*;
-use size::Size;
-use util::common::mangle;
+use crate::errors::*;
+use crate::size::Size;
+use crate::util::common::mangle;
 
 
 #[derive(Clone, Debug, PartialEq, Copy)]

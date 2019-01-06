@@ -10,8 +10,8 @@ use std::time::Duration;
 use uuid::Uuid;
 use uuid_to_pokemon::uuid_to_pokemon;
 
-use operation::Operation;
-use errors::ChryError;
+use crate::operation::Operation;
+use crate::errors::ChryError;
 
 
 
@@ -44,9 +44,9 @@ impl TimerManager {
         }
     }
 
-    pub fn register(&mut self, name: Option<String>, op: Vec<String>, interval: Duration, repeat: Option<usize>, async: bool) -> Result<(), Box<Error>> {
+    pub fn register(&mut self, name: Option<String>, op: Vec<String>, interval: Duration, repeat: Option<usize>, r#async: bool) -> Result<(), Box<Error>> {
         let name = name.unwrap_or_else(new_name);
-        let timer = Timer::build(name.clone(), op, self.app_tx.clone(), interval, repeat, async)?;
+        let timer = Timer::build(name.clone(), op, self.app_tx.clone(), interval, repeat, r#async)?;
         if let Some(old) = self.table.insert(name, timer) {
             if old.is_live() {
                 old.tx.send(TimerOperation::Kill).unwrap();
@@ -74,7 +74,7 @@ impl TimerManager {
 
 
 impl Timer {
-    pub fn build(name: String, operation: Vec<String>, app_tx: Sender<Operation>, interval: Duration, repeat: Option<usize>, async: bool) -> Result<Timer, Box<Error>> {
+    pub fn build(name: String, operation: Vec<String>, app_tx: Sender<Operation>, interval: Duration, repeat: Option<usize>, r#async: bool) -> Result<Timer, Box<Error>> {
         let (tx, rx) = channel();
         let live = Arc::new(AtomicBool::new(true));
 
@@ -99,7 +99,7 @@ impl Timer {
                         if repeat == Some(0) {
                             break;
                         }
-                        if async {
+                        if r#async {
                             sleep_and_fire(interval, &tx);
                         } else {
                             app_tx.send(Operation::WakeupTimer(name.clone())).unwrap();

@@ -15,14 +15,14 @@ use std::sync::Arc;
 use natord;
 use url::Url;
 
-use app::info::AppInfo;
-use archive::ArchiveEntry;
-use entry::filter::expression::Expr as FilterExpr;
-use errors::ChryError;
-use file_extension::{is_valid_image_filename};
-use filterable_vec::{FilterableVec, Pred};
-use shorter::*;
-use util::path::path_to_str;
+use crate::app::info::AppInfo;
+use crate::archive::ArchiveEntry;
+use crate::entry::filter::expression::Expr as FilterExpr;
+use crate::errors::ChryError;
+use crate::file_extension::{is_valid_image_filename};
+use crate::filterable_vec::{FilterableVec, Pred};
+use crate::shorter::*;
+use crate::util::path::path_to_str;
 
 pub mod image;
 pub mod filter;

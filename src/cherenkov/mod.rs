@@ -11,14 +11,14 @@ use cairo::{Context, Format, ImageSurface, Pattern, self, SurfacePattern};
 use gdk::prelude::ContextExt;
 use gdk_pixbuf::{Pixbuf, PixbufExt};
 
-use color::Color;
-use entry::image::Imaging;
-use entry::{Entry, EntryContent, Key, self};
-use errors::ChryError;
-use gtk_utils::new_pixbuf_from_surface;
-use image::{ImageBuffer, StaticImageBuffer};
-use size::{Size, Region};
-use state::Drawing;
+use crate::color::Color;
+use crate::entry::image::Imaging;
+use crate::entry::{Entry, EntryContent, Key, self};
+use crate::errors::ChryError;
+use crate::gtk_utils::new_pixbuf_from_surface;
+use crate::image::{ImageBuffer, StaticImageBuffer};
+use crate::size::{Size, Region};
+use crate::state::Drawing;
 
 pub mod fill;
 pub mod modified;
@@ -73,7 +73,7 @@ impl Cherenkoved {
     where F: FnOnce() + Send + 'static {
         use gif;
         use gif::SetParameter;
-        use image::ImageBuffer::Static;
+        use crate::image::ImageBuffer::Static;
         use gdk_pixbuf::PixbufExt;
         use std::fs::File;
 

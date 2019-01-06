@@ -1,10 +1,10 @@
 
 use std::ffi::CStr;
 
-use poppler::sys;
+use crate::poppler::sys;
 
-use errors::ChryError;
-use size::{Size, Region};
+use crate::errors::ChryError;
+use crate::size::{Size, Region};
 
 
 

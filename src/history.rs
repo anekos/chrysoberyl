@@ -1,5 +1,5 @@
 
-use entry::Key;
+use crate::entry::Key;
 
 
 

@@ -1,7 +1,7 @@
 
 use std::path::Path;
 
-use entry::EntryType;
+use crate::entry::EntryType;
 
 
 

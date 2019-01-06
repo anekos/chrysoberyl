@@ -13,10 +13,10 @@ use libarchive::reader::Builder;
 use libarchive::reader::Reader;
 use natord;
 
-use entry::Meta;
-use file_extension::is_valid_image_filename;
-use operation::{Operation, QueuedOperation};
-use sorting_buffer::SortingBuffer;
+use crate::entry::Meta;
+use crate::file_extension::is_valid_image_filename;
+use crate::operation::{Operation, QueuedOperation};
+use crate::sorting_buffer::SortingBuffer;
 
 
 

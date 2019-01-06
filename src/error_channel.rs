@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread::spawn;
 
-use operation::Operation;
+use crate::operation::Operation;
 
 
 
@@ -24,7 +24,7 @@ lazy_static! {
 macro_rules! puts_error {
     ( $err:expr $(,$name:expr => $value:expr)* ) => {
         {
-            use error_channel;
+            use crate::error_channel;
             let message = s!($err);
             error_channel::push(message.clone());
             puts!("event" => "error", "message" => message $(, $name => $value)*)

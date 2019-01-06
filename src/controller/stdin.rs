@@ -8,10 +8,10 @@ use std::thread::spawn;
 use atty;
 use readline;
 
-use controller::process;
-use joiner::Joiner;
-use operation::Operation;
-use util;
+use crate::controller::process;
+use crate::joiner::Joiner;
+use crate::operation::Operation;
+use crate::util;
 
 
 

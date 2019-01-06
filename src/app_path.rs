@@ -6,10 +6,10 @@ use std::path::{PathBuf, Path};
 
 use app_dirs::*;
 
-use errors::ChryError;
-use option::OptionValue;
-use shellexpand_wrapper as sh;
-use util::path::path_to_str;
+use crate::errors::ChryError;
+use crate::option::OptionValue;
+use crate::shellexpand_wrapper as sh;
+use crate::util::path::path_to_str;
 
 
 

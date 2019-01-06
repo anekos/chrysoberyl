@@ -9,19 +9,19 @@ use std::time::Duration;
 use cairo;
 use gtk;
 
-use app_path::{PathList, cache_dir};
-use cherenkov::Operator;
-use color::Color;
-use entry::SearchKey;
-use entry::filter::expression::Expr as FilterExpr;
-use errors::ChryError;
-use expandable::Expandable;
-use gui::{Position, Screen, Views};
-use logger;
-use option::OptionValue;
-use remote_cache::curl_options::CurlOptions;
-use size::{FitTo, Region};
-use util::string::remove_linebreaks;
+use crate::app_path::{PathList, cache_dir};
+use crate::cherenkov::Operator;
+use crate::color::Color;
+use crate::entry::SearchKey;
+use crate::entry::filter::expression::Expr as FilterExpr;
+use crate::errors::ChryError;
+use crate::expandable::Expandable;
+use crate::gui::{Position, Screen, Views};
+use crate::logger;
+use crate::option::OptionValue;
+use crate::remote_cache::curl_options::CurlOptions;
+use crate::size::{FitTo, Region};
+use crate::util::string::remove_linebreaks;
 
 
 
@@ -193,7 +193,7 @@ impl AutoPaging {
 
 impl fmt::Display for AutoPaging {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use state::AutoPaging::*;
+        use crate::state::AutoPaging::*;
         let result =
             match *self {
                 DoNot => "no",
@@ -267,8 +267,8 @@ macro_rules! gen_format {
 
         impl $t {
             pub fn generate(&self) -> String {
-                use mruby::MRubyEnv;
-                use shellexpand_wrapper as sh;
+                use crate::mruby::MRubyEnv;
+                use crate::shellexpand_wrapper as sh;
 
                 match *self {
                     $t::Script(_, ref script) => {

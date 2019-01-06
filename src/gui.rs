@@ -17,16 +17,16 @@ use glib;
 use gtk::prelude::*;
 use gtk::{Adjustment, Align, Builder, Button, ComboBoxText, ComboBoxTextExt, CssProvider, CssProviderExt, Entry, EventBox, Grid, Image, Label, Layout, Overlay, RadioButton, Scale, ScrolledWindow, self, Stack, Switch, StyleContext, TextBuffer, TextView, Widget, WidgetExt, Window};
 
-use completion::gui::CompleterUI;
-use constant;
-use errors::*;
-use events::EventName;
-use image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
-use operation::Operation;
-use size::{Coord, CoordPx, FitTo, Region, Size};
-use state::{Drawing, Style};
-use ui_event::UIEvent;
-use util::num::feq;
+use crate::completion::gui::CompleterUI;
+use crate::constant;
+use crate::errors::*;
+use crate::events::EventName;
+use crate::image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
+use crate::operation::Operation;
+use crate::size::{Coord, CoordPx, FitTo, Region, Size};
+use crate::state::{Drawing, Style};
+use crate::ui_event::UIEvent;
+use crate::util::num::feq;
 
 
 
@@ -466,8 +466,8 @@ impl Gui {
     }
 
     fn update_user_ui(&mut self, app_tx: &Sender<Operation>) -> Result<(), BoxedError> {
-        use util::file;
-        use mruby::MRubyEnv;
+        use crate::util::file;
+        use crate::mruby::MRubyEnv;
 
         if_let_some!(path = self.user_ui_file.as_ref(), Err(Box::new(ChryError::Fixed("Option `user_ui` is empty."))));
 
@@ -716,7 +716,7 @@ impl Cell {
     }
 
     fn draw_pixbuf(&self, pixbuf: &Pixbuf, cell_size: Size, fit_to: &FitTo) {
-        use size::FitTo::*;
+        use crate::size::FitTo::*;
 
         self.image.set_from_pixbuf(Some(pixbuf));
         let image_size = Size::new(pixbuf.get_width(), pixbuf.get_height());
@@ -885,7 +885,7 @@ impl Views {
 
 
 fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
-    use key::Key;
+    use crate::key::Key;
 
     fn send_event(app_tx: &Sender<Operation>, name: &str, value: Option<String>) {
         let name = format!("ui-{}", name);

@@ -146,7 +146,7 @@ pub fn nova(nv: &Nova, pixels: &mut [u8], rowstride: i32, width: i32, height: i3
                         let v = f64!(y - cy) / radius;
                         let l = (u * u + v * v).sqrt();
 
-                        let t = (u.atan2(v) / (2.0 * PI) + 0.51) * nv.n_spokes as f64;
+                        let t = (v.atan2(u) / (2.0 * PI) + 0.51) * nv.n_spokes as f64;
                         let i = t.floor() as usize;
                         let t = t - i as f64;
                         let i = i % nv.n_spokes;

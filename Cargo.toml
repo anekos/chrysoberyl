@@ -52,7 +52,6 @@ lru-cache = "*"
 maplit = "*"
 marksman_escape = "*"
 md5 = "*"
-mkstemp-rs = "*"
 mrusty = "*"
 natord = "*"
 notify = "*"
@@ -72,6 +71,9 @@ url = "*"
 uuid = { version = "0.5", features = ["v4"] }
 uuid_to_pokemon = "*"
 xml-rs = "*"
+
+[target.'cfg(target_os="linux")'.dependencies]
+mkstemp-rs = "*"
 
 # https://github.com/gtk-rs/gtk/blob/master/Cargo.toml
 [dependencies.gtk]

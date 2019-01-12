@@ -7,7 +7,7 @@ use std::process::Command;
 use std::sync::mpsc:: Sender;
 
 use cmdline_parser::Parser;
-use mkstemp::TempFile;
+#[cfg(all(target_os="linux"))] use mkstemp::TempFile;
 
 use crate::expandable::Expandable;
 use crate::operation::Operation;

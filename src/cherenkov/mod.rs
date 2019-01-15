@@ -126,6 +126,63 @@ impl Cherenkoved {
         Ok(())
     }
 
+    pub fn generate_animation_png<T: AsRef<Path>>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T) -> Result<(), Box<Error>> {
+        use tiny_apng::apng;
+        use crate::image::ImageBuffer::Static;
+        use gdk_pixbuf::PixbufExt;
+        use std::fs::File;
+
+        fn generate(mut file: File, mut cache_entry: CacheEntry, entry_content: &EntryContent, imaging: &Imaging, size: Size, length: u8) -> Result<(), Box<Error>> {
+            let (width, height) = (size.width as u32, size.height as u32);
+
+            let color = apng::Color { palette: false, grayscale: false, alpha_channel: false };
+            let meta = apng::Meta { width, height, color, bit_depth: 8, frames: u32::from(length) };
+
+            let mut encoder = apng::encoder::Encoder::new(&mut file, &meta)?;
+
+            cache_entry.image = None;
+            for _ in 0 .. length {
+                let mut cache_entry = cache_entry.clone();
+                cache_entry.reseed();
+                if let Static(buffer) = get_image_buffer(&mut cache_entry, &entry_content, &imaging)? {
+                    let pixbuf = buffer.get_pixbuf();
+                    let channels = pixbuf.get_n_channels();
+                    let row_stride = pixbuf.get_rowstride();
+
+                    if channels == 4 {
+                        let pixels: &mut [u8] = unsafe { pixbuf.get_pixels() };
+                        encoder.write_frame(&pixels, row_stride as usize)?;
+                    } else {
+                        return Err(ChryError::Fixed("Invalid channels"))?;
+                    }
+                }
+            }
+
+            encoder.finish()?;
+
+            puts_event!("cherenkov/generate_animation_png/done");
+            Ok(())
+        }
+
+        if_let_some!(cache_entry = self.cache.get(&entry.key).cloned(), Err(ChryError::Fixed("Not cherenkoved"))?);
+        let size = {
+            if_let_some!(image = cache_entry.image.as_ref(), Err(ChryError::Fixed("Not cherenkoved"))?);;
+            image.get_fit_size()
+        };
+
+        let imaging = imaging.clone();
+        let entry_content = entry.content.clone();
+        let file = File::create(path.as_ref())?;
+
+        spawn(move || {
+            if let Err(err) = generate(file, cache_entry, &entry_content, &imaging, size, length) {
+                puts_error!(err, "at" => "cherenkoved/generate_animation_png");
+            }
+        });
+
+        Ok(())
+    }
+
     pub fn remove(&mut self, key: &Key) {
         self.cache.remove(key);
     }

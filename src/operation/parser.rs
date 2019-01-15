@@ -129,6 +129,20 @@ pub fn parse_move_again(args: &[String]) -> Result<Operation, ParsingError> {
     })
 }
 
+pub fn parse_apng(args: &[String]) -> Result<Operation, ParsingError> {
+    let mut path: String = o!("");
+    let mut length = 4;
+
+    {
+        let mut ap = ArgumentParser::new();
+        ap.refer(&mut length).add_option(&["--length", "-l"], Store, "Animation length");
+        ap.refer(&mut path).add_argument("path", Store, "Save to").required();
+        parse_args(&mut ap, args)
+    } .and_then(|_| {
+        Ok(Operation::Apng(sh::expand_to_pathbuf(&path), length))
+    })
+}
+
 pub fn parse_cherenkov(args: &[String]) -> Result<Operation, ParsingError> {
     let mut radius = 0.1;
     let mut random_hue = 0.0;

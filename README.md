@@ -88,6 +88,11 @@ $ chrysoberyl --print-path
 You can use below commands on STDIN of chrysoberyl.
 
 
+## @apng [(--length|-l) <LENGTH>] <PATH>
+
+Generate animated PNG.
+
+
 ## @backword
 
 Backword history

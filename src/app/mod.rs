@@ -187,6 +187,8 @@ impl App {
 
         {
             let operated = match operation {
+                Apng(ref path, length) =>
+                    on_apng(self, path, length),
                 AppEvent(ref event_name, ref context) =>
                     on_app_event(self, &mut updated, event_name, context),
                 Backward =>

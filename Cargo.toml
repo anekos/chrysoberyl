@@ -73,6 +73,10 @@ uuid = { version = "0.5", features = ["v4"] }
 uuid_to_pokemon = "*"
 xml-rs = "*"
 
+[dependencies.tiny-apng]
+git = "https://github.com/anekos/tiny-apng"
+rev = "3043c1e7367b52f050ea468b75d9d6bee1641345"
+
 # https://github.com/gtk-rs/gtk/blob/master/Cargo.toml
 [dependencies.gtk]
 version = "^0.5"

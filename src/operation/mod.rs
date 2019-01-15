@@ -40,6 +40,7 @@ use self::option::{OptionName, OptionUpdater};
 
 #[derive(Clone)]
 pub enum Operation {
+    Apng(PathBuf, u8), /* path, length */
     AppEvent(EventName, HashMap<String, String>),
     Backward,
     Chain(chainer::Target),
@@ -276,6 +277,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
 
         match name {
             ";"                             => parse_multi_args(args, ";", true),
+            "@apng"                         => parse_apng(whole),
             "@backward" | "@back"           => Ok(Backward),
             "@cd" | "@chdir" | "@change-directory"
                                             => parse_command1(whole, Operation::ChangeDirectory),
@@ -491,6 +493,7 @@ impl fmt::Debug for Operation {
         use self::Operation::*;
 
         let s = match *self {
+            Apng(_, _) => "Apng",
             AppEvent(ref ev, _) => return write!(f, "AppEvent({:?})", ev),
             Backward => "Backward",
             Chain(_) => "Chain",

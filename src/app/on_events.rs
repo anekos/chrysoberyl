@@ -88,6 +88,12 @@ pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName
     Ok(())
 }
 
+pub fn on_apng(app: &mut App, path: &PathBuf, length: u8) -> EventResult {
+    if_let_some!((entry, _) = app.current(), Ok(()));
+    let imaging = app.get_imaging();
+    app.cache.generate_animation_png(&entry, &imaging, length, path)
+}
+
 pub fn on_chain(target: chainer::Target) -> EventResult {
     chainer::register(target);
     Ok(())

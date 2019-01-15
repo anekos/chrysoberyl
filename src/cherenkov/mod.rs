@@ -135,7 +135,7 @@ impl Cherenkoved {
         fn generate(mut file: File, mut cache_entry: CacheEntry, entry_content: &EntryContent, imaging: &Imaging, size: Size, length: u8) -> Result<(), Box<Error>> {
             let (width, height) = (size.width as u32, size.height as u32);
 
-            let color = apng::Color { palette: false, grayscale: false, alpha_channel: false };
+            let color = apng::Color { palette: false, grayscale: false, alpha_channel: true };
             let meta = apng::Meta { width, height, color, bit_depth: 8, frames: u32::from(length) };
 
             let mut encoder = apng::encoder::Encoder::new(&mut file, &meta)?;

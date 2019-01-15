@@ -75,7 +75,7 @@ xml-rs = "*"
 
 [dependencies.tiny-apng]
 git = "https://github.com/anekos/tiny-apng"
-rev = "3043c1e7367b52f050ea468b75d9d6bee1641345"
+rev = "cdc0141d4116e778a14f2c585689d776d808bd43"
 
 # https://github.com/gtk-rs/gtk/blob/master/Cargo.toml
 [dependencies.gtk]

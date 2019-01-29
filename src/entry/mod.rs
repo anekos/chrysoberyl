@@ -1,7 +1,6 @@
 
 use std::cmp::{PartialEq, PartialOrd, Ord, Ordering};
 use std::collections::HashSet;
-use std::error;
 use std::fmt;
 use std::fs::File;
 use std::hash::{Hash, Hasher};
@@ -15,10 +14,10 @@ use std::sync::Arc;
 use natord;
 use url::Url;
 
+use crate::errors::{AppResultU, ErrorKind};
 use crate::app::info::AppInfo;
 use crate::archive::ArchiveEntry;
 use crate::entry::filter::expression::Expr as FilterExpr;
-use crate::errors::ChryError;
 use crate::file_extension::{is_valid_image_filename};
 use crate::filterable_vec::{FilterableVec, Pred};
 use crate::shorter::*;
@@ -441,7 +440,7 @@ impl EntryContainer {
         self.entries.iter().position(|it| it.serial == serial)
     }
 
-    pub fn push_memory(&mut self, app_info: &AppInfo, content: Vec<u8>, meta: Option<Meta>, force: bool, url: Option<String>) -> Result<(), Box<error::Error>> {
+    pub fn push_memory(&mut self, app_info: &AppInfo, content: Vec<u8>, meta: Option<Meta>, force: bool, url: Option<String>) -> AppResultU {
         use sha2::{Sha256, Digest};
 
         let mut hasher = Sha256::default();
@@ -461,7 +460,7 @@ impl EntryContainer {
         Ok(())
     }
 
-    pub fn push_image(&mut self, app_info: &AppInfo, file: &PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) -> Result<(), Box<error::Error>> {
+    pub fn push_image(&mut self, app_info: &AppInfo, file: &PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) -> AppResultU {
         use std::os::unix::fs::FileTypeExt;
 
         if let Ok(metadata) = file.metadata() {
@@ -473,7 +472,7 @@ impl EntryContainer {
             }
         }
 
-        let file = file.canonicalize().map_err(|_| ChryError::File("Could not canonicalize", d!(file)))?;
+        let file = file.canonicalize().map_err(|_| ErrorKind::File("Could not canonicalize", d!(file)))?;
 
         if let Some(expand_level) = expand_level {
             if let Some(dir) = file.parent() {
@@ -492,7 +491,7 @@ impl EntryContainer {
         Ok(())
     }
 
-    pub fn push_directory(&mut self, app_info: &AppInfo, dir: &PathBuf, meta: &Option<Meta>, force: bool) -> Result<(), Box<error::Error>> {
+    pub fn push_directory(&mut self, app_info: &AppInfo, dir: &PathBuf, meta: &Option<Meta>, force: bool) ->AppResultU {
         through!([expanded = expand(dir, <u8>::max_value())] {
             let mut expanded = expanded;
             expanded.sort_by(|a, b| natord::compare(path_to_str(a), path_to_str(b)));

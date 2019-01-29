@@ -19,7 +19,7 @@ use crate::controller;
 use crate::entry::filter::expression::Expr as FilterExpr;
 use crate::entry::{Meta, EntryType};
 use crate::entry;
-use crate::errors::ChryError;
+use crate::errors::{AppResult, Error as AppError, ErrorKind};
 use crate::events::EventName;
 use crate::expandable::Expandable;
 use crate::filer;
@@ -251,9 +251,9 @@ pub enum ClipboardSelection {
 
 
 impl FromStr for Operation {
-    type Err = ChryError;
+    type Err = AppError;
 
-    fn from_str(src: &str) -> Result<Self, ChryError> {
+    fn from_str(src: &str) -> AppResult<Self> {
         Operation::parse(src)
     }
 }
@@ -402,18 +402,18 @@ fn _parse_from_str(s: &str) -> Result<Operation, ParsingError> {
 
 
 impl Operation {
-    pub fn parse_from_vec(whole: &[String]) -> Result<Operation, ChryError> {
-        _parse_from_vec(whole).map_err(ChryError::from)
+    pub fn parse_from_vec(whole: &[String]) -> AppResult<Operation> {
+        _parse_from_vec(whole).map_err(AppError::from)
     }
 
-    pub fn parse(s: &str) -> Result<Operation, ChryError> {
-        _parse_from_str(s).map_err(ChryError::from)
+    pub fn parse(s: &str) -> AppResult<Operation> {
+        _parse_from_str(s).map_err(AppError::from)
     }
 
-    pub fn parse_fuzziness(s: &str) -> Result<Operation, ChryError> {
+    pub fn parse_fuzziness(s: &str) -> AppResult<Operation> {
         match _parse_from_str(s) {
             Err(ParsingError::NotOperation(_)) => Ok(Operation::Push(Expandable::new(o!(s)), None, false, false)),
-            Err(err) => Err(ChryError::from(err)),
+            Err(err) => Err(AppError::from(err)),
             Ok(op) => Ok(op)
         }
     }
@@ -465,9 +465,9 @@ impl error::Error for ParsingError {
     }
 }
 
-impl From<ParsingError> for ChryError {
+impl From<ParsingError> for ErrorKind {
     fn from(error: ParsingError) -> Self {
-        ChryError::Parse(s!(error))
+        ErrorKind::Parse(s!(error))
     }
 }
 

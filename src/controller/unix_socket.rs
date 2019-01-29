@@ -1,5 +1,4 @@
 
-use std::error::Error;
 use std::io::Read;
 use std::os::unix::net::UnixListener;
 use std::path::Path;
@@ -7,13 +6,13 @@ use std::sync::mpsc::Sender;
 use std::thread::spawn;
 
 use crate::chainer;
+use crate::controller::process;
+use crate::errors::AppResultU;
 use crate::operation::Operation;
 
-use crate::controller::process;
 
 
-
-pub fn register<T: AsRef<Path>>(tx: Sender<Operation>, path: T) -> Result<(), Box<Error>> {
+pub fn register<T: AsRef<Path>>(tx: Sender<Operation>, path: T) -> AppResultU {
     let listener = UnixListener::bind(path.as_ref())?;
 
     chainer::register(chainer::Target::File(path.as_ref().to_path_buf()));
@@ -34,7 +33,7 @@ pub fn register<T: AsRef<Path>>(tx: Sender<Operation>, path: T) -> Result<(), Bo
     Ok(())
 }
 
-pub fn register_as_binary<T: AsRef<Path>>(tx: Sender<Operation>, path: T) -> Result<(), Box<Error>> {
+pub fn register_as_binary<T: AsRef<Path>>(tx: Sender<Operation>, path: T) -> AppResultU {
     let listener = UnixListener::bind(path.as_ref())?;
 
     chainer::register(chainer::Target::File(path.as_ref().to_path_buf()));

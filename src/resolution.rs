@@ -1,15 +1,15 @@
 
-use crate::errors::ChryError;
+use crate::errors::{AppResult, ErrorKind};
 
 
 
-pub fn from_vec(s: Vec<char>) -> Result<(i64, i64), ChryError> {
+pub fn from_vec(s: Vec<char>) -> AppResult<(i64, i64)> {
     let s: String = s.into_iter().collect();
     from(&s)
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(clippy::decimal_literal_representation))]
-pub fn from(s: &str) -> Result<(i64, i64), ChryError> {
+pub fn from(s: &str) -> AppResult<(i64, i64)> {
     let ok = match s {
         "2K" => (2048, 1080),
         "4K" => (3840, 2160),
@@ -61,7 +61,7 @@ pub fn from(s: &str) -> Result<(i64, i64), ChryError> {
         "XGA+" => (1152, 864),
         "nHD" => (640, 360),
         "qHD" => (960, 540),
-        _ => return Err(ChryError::InvalidValue(o!(s)))
+        _ => return Err(ErrorKind::InvalidValue(o!(s)))?
     };
     Ok(ok)
 }

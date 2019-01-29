@@ -1,5 +1,4 @@
 
-use std::error;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -11,7 +10,7 @@ use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
 
 use crate::entry::EntryContent;
-use crate::errors::ChryError;
+use crate::errors::{AppResult, ErrorKind};
 use crate::gtk_utils::{new_pixbuf_from_surface, context_flip, context_rotate};
 use crate::image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use crate::poppler::PopplerDocument;
@@ -33,7 +32,7 @@ impl Imaging {
     }
 }
 
-pub fn get_image_buffer(entry_content: &EntryContent, imaging: &Imaging) -> Result<ImageBuffer, Box<error::Error>> {
+pub fn get_image_buffer(entry_content: &EntryContent, imaging: &Imaging) -> AppResult<ImageBuffer> {
     if imaging.drawing.animation && is_animation(entry_content) {
         Ok(get_animation_buffer(entry_content).map(ImageBuffer::Animation)?)
     } else {
@@ -42,7 +41,7 @@ pub fn get_image_buffer(entry_content: &EntryContent, imaging: &Imaging) -> Resu
 }
 
 
-pub fn get_static_image_buffer(entry_content: &EntryContent, imaging: &Imaging) -> Result<StaticImageBuffer, Box<error::Error>> {
+pub fn get_static_image_buffer(entry_content: &EntryContent, imaging: &Imaging) -> AppResult<StaticImageBuffer> {
     use self::EntryContent::*;
 
     match *entry_content {
@@ -55,12 +54,12 @@ pub fn get_static_image_buffer(entry_content: &EntryContent, imaging: &Imaging) 
         Pdf(ref path, index) =>
             Ok(make_scaled_from_pdf(&**path, index, &imaging)),
         Message(ref message) =>
-            Err(Box::new(ChryError::Standard(o!(message)))),
+            Err(ErrorKind::Standard(o!(message)))?,
     }
 }
 
 
-pub fn get_animation_buffer(entry_content: &EntryContent) -> Result<AnimationBuffer, Box<error::Error>> {
+pub fn get_animation_buffer(entry_content: &EntryContent) -> AppResult<AnimationBuffer> {
     use self::EntryContent::*;
 
     match *entry_content {
@@ -68,7 +67,7 @@ pub fn get_animation_buffer(entry_content: &EntryContent) -> Result<AnimationBuf
             Ok(AnimationBuffer::new_from_file(path)?),
         Archive(_, ref entry) =>
             Ok(AnimationBuffer::new_from_slice(&*entry.content)),
-        _ => Err(Box::new(ChryError::Fixed("Not implemented: get_animation_buffer"))),
+        _ => Err(ErrorKind::Fixed("Not implemented: get_animation_buffer"))?,
     }
 }
 
@@ -86,15 +85,15 @@ fn is_animation(entry_content: &EntryContent) -> bool {
     false
 }
 
-fn make_scaled(buffer: &[u8], imaging: &Imaging) -> Result<StaticImageBuffer, Box<error::Error>> {
+fn make_scaled(buffer: &[u8], imaging: &Imaging) -> AppResult<StaticImageBuffer> {
     let loader = PixbufLoader::new();
     loader.write(buffer)?;
 
     if loader.close().is_err() {
-        return Err(Box::new(ChryError::Fixed("Invalid image data")))
+        return Err(ErrorKind::Fixed("Invalid image data"))?
     }
 
-    let source = loader.get_pixbuf().ok_or_else(|| Box::new(ChryError::Fixed("Invalid image")))?;
+    let source = loader.get_pixbuf().ok_or_else(|| ErrorKind::Fixed("Invalid image"))?;
     let original = Size::from_pixbuf(&source);
     let (scale, fitted, clipped_region) = original.rotate(imaging.drawing.rotation).fit_with_clipping(imaging.cell_size, &imaging.drawing);
 
@@ -117,7 +116,7 @@ fn make_scaled(buffer: &[u8], imaging: &Imaging) -> Result<StaticImageBuffer, Bo
     Ok(StaticImageBuffer::new_from_pixbuf(&result, Some(original)))
 }
 
-fn make_scaled_from_file(path: &str, imaging: &Imaging) -> Result<StaticImageBuffer, Box<error::Error>> {
+fn make_scaled_from_file(path: &str, imaging: &Imaging) -> AppResult<StaticImageBuffer> {
     let mut file = File::open(path)?;
     let mut buffer: Vec<u8> = vec![];
     let _ = file.read_to_end(&mut buffer)?;

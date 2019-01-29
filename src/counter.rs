@@ -1,5 +1,5 @@
 
-use crate::errors::ChryError;
+use crate::errors::{AppResultU, Error as AppError, ErrorKind};
 
 
 
@@ -25,12 +25,12 @@ impl Counter {
         self.value.unwrap_or(1)
     }
 
-    pub fn pop(&mut self) -> Result<(), ChryError> {
+    pub fn pop(&mut self) -> AppResultU {
         if let Some(item) = self.stack.pop() {
             self.value = item;
             Ok(())
         } else {
-            Err(ChryError::Fixed("Empty stack"))
+            Err(AppError::from(ErrorKind::Fixed("Empty stack")))
         }
     }
 

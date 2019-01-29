@@ -1,12 +1,12 @@
 
 use std::cmp::{Ord, Ordering};
 use std::collections::{hash_map, HashMap};
-use std::error::Error;
 use std::slice;
 use std::sync::mpsc::Sender;
 
 use num::Integer;
 
+use crate::errors::{AppResult, AppResultU, Error as AppError, ErrorKind};
 use crate::operation::Operation;
 use crate::option::*;
 use crate::util::num::cycle_n;
@@ -32,7 +32,7 @@ pub struct UserSwitchManager {
 }
 
 
-const OVERFLOW: Result<(), ChryError> = Err(ChryError::Fixed("Overflow"));
+const OVERFLOW: ErrorKind = ErrorKind::Fixed("Overflow");
 
 
 impl UserSwitchManager {
@@ -44,7 +44,7 @@ impl UserSwitchManager {
         }
     }
 
-    pub fn register(&mut self, name: String, values: Vec<Vec<String>>) -> Result<Operation, Box<Error>> {
+    pub fn register(&mut self, name: String, values: Vec<Vec<String>>) -> AppResult<Operation> {
         let switch = UserSwitch::new(self.app_tx.clone(), self.serial, values);
         let result = switch.current_operation()?;
         self.table.insert(name, switch);
@@ -83,7 +83,7 @@ impl PartialEq for UserSwitch {
 }
 
 impl OptionValue for UserSwitch {
-    fn cycle(&mut self, reverse: bool, n: usize, _: &[String]) -> Result<(), ChryError> {
+    fn cycle(&mut self, reverse: bool, n: usize, _: &[String]) -> AppResultU {
         let new_value = cycle_n(self.value, self.values.len(), reverse, n);
         if new_value != self.value {
             self.value = new_value;
@@ -92,40 +92,40 @@ impl OptionValue for UserSwitch {
         Ok(())
     }
 
-    fn decrement(&mut self, delta: usize) -> Result<(), ChryError> {
-        if_let_some!(new_value = self.value.checked_sub(delta), OVERFLOW);
+    fn decrement(&mut self, delta: usize) -> AppResultU {
+        if_let_some!(new_value = self.value.checked_sub(delta), Err(OVERFLOW)?);
         self.value = new_value;
         self.send()
     }
 
-    fn disable(&mut self) -> Result<(), ChryError> {
+    fn disable(&mut self) -> AppResultU {
         self.unset()
     }
 
-    fn enable(&mut self) -> Result<(), ChryError> {
+    fn enable(&mut self) -> AppResultU {
         self.set("1")
     }
 
-    fn increment(&mut self, delta: usize) -> Result<(), ChryError> {
-        if_let_some!(new_value = self.value.checked_add(delta), OVERFLOW);
+    fn increment(&mut self, delta: usize) -> AppResultU {
+        if_let_some!(new_value = self.value.checked_add(delta), Err(OVERFLOW)?);
         if new_value < self.values.len() {
             self.value = new_value;
             self.send()
         } else {
-            OVERFLOW
+            Err(OVERFLOW)?
         }
     }
 
-    fn is_enabled(&self) -> Result<bool, ChryError> {
+    fn is_enabled(&self) -> AppResult<bool> {
         Ok(self.value == 1)
     }
 
-    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+    fn set(&mut self, value: &str) -> AppResultU {
         value.parse()
-            .map_err(|it| ChryError::Standard(format!("Invalid value: {} ({})", value, it)))
+            .map_err(|it| AppError::from(ErrorKind::Standard(format!("Invalid value: {} ({})", value, it))))
             .and_then(|value: usize| {
                 if value == 0 {
-                    Err(ChryError::Fixed("Zero is invalid"))
+                    Err(ErrorKind::Fixed("Zero is invalid"))?
                 } else if value <= self.values.len() {
                     if self.value != value {
                         self.value = value - 1;
@@ -133,12 +133,13 @@ impl OptionValue for UserSwitch {
                     }
                     Ok(())
                 } else {
-                    Err(ChryError::Fixed("Too large"))
+                    Err(ErrorKind::Fixed("Too large"))?
                 }
-            })
+            })?;
+        Ok(())
     }
 
-    fn set_from_count(&mut self, count: Option<usize>) -> Result<(), ChryError> {
+    fn set_from_count(&mut self, count: Option<usize>) -> AppResultU {
         if let Some(count) = count {
             self.set(&format!("{}", count - 1))
         } else {
@@ -146,11 +147,11 @@ impl OptionValue for UserSwitch {
         }
     }
 
-    fn toggle(&mut self) -> Result<(), ChryError> {
+    fn toggle(&mut self) -> AppResultU {
         self.cycle(false, 1, &[])
     }
 
-    fn unset(&mut self) -> Result<(), ChryError> {
+    fn unset(&mut self) -> AppResultU {
         self.value = 0;
         self.send()
     }
@@ -170,7 +171,7 @@ impl UserSwitch {
         self.values[self.value].clone()
     }
 
-    pub fn current_operation(&self) -> Result<Operation, ChryError> {
+    pub fn current_operation(&self) -> AppResult<Operation> {
         Operation::parse_from_vec(&self.current())
     }
 
@@ -182,7 +183,7 @@ impl UserSwitch {
         self.values.iter()
     }
 
-    pub fn send(&self) -> Result<(), ChryError> {
+    pub fn send(&self) -> AppResultU {
         Operation::parse_from_vec(&self.current()).map(|op| {
             self.app_tx.send(op).unwrap()
         })
@@ -201,11 +202,11 @@ impl DummySwtich {
 }
 
 impl OptionValue for DummySwtich {
-    fn toggle(&mut self) -> Result<(), ChryError> {
-        Err(ChryError::InvalidValue(o!(self.name)))
+    fn toggle(&mut self) -> AppResultU {
+        Err(ErrorKind::InvalidValue(o!(self.name)))?
     }
 
-    fn cycle(&mut self, _: bool, n: usize, _: &[String]) -> Result<(), ChryError> {
+    fn cycle(&mut self, _: bool, n: usize, _: &[String]) -> AppResultU {
         if n.is_odd() {
             self.toggle()
         } else {

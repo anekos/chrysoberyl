@@ -6,7 +6,7 @@ use std::thread::spawn;
 
 use num::Integer;
 
-use crate::errors::ChryError;
+use crate::errors::{AppResult, AppResultU};
 use crate::logger;
 use crate::option::OptionValue;
 
@@ -43,21 +43,21 @@ impl StdOut {
 }
 
 impl OptionValue for StdOut {
-    fn is_enabled(&self) -> Result<bool, ChryError> {
+    fn is_enabled(&self) -> AppResult<bool> {
         Ok(self.current.is_some())
     }
 
-    fn enable(&mut self) -> Result<(), ChryError> {
+    fn enable(&mut self) -> AppResultU {
         self.register();
         Ok(())
     }
 
-    fn disable(&mut self) -> Result<(), ChryError> {
+    fn disable(&mut self) -> AppResultU {
         self.unregister();
         Ok(())
     }
 
-    fn cycle(&mut self, _: bool, n: usize, _: &[String]) -> Result<(), ChryError> {
+    fn cycle(&mut self, _: bool, n: usize, _: &[String]) -> AppResultU {
         if n.is_odd() {
             self.toggle()
         } else {
@@ -65,7 +65,7 @@ impl OptionValue for StdOut {
         }
     }
 
-    fn set(&mut self, path: &str) -> Result<(), ChryError> {
+    fn set(&mut self, path: &str) -> AppResultU {
         common::parse_bool(path).map(|value| {
             if value {
                 self.register();
@@ -75,7 +75,7 @@ impl OptionValue for StdOut {
         })
     }
 
-    fn unset(&mut self) -> Result<(), ChryError> {
+    fn unset(&mut self) -> AppResultU {
         self.unregister();
         Ok(())
     }

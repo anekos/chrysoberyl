@@ -14,7 +14,7 @@ use crate::cherenkov::Operator;
 use crate::color::Color;
 use crate::entry::SearchKey;
 use crate::entry::filter::expression::Expr as FilterExpr;
-use crate::errors::ChryError;
+use crate::errors::AppResultU;
 use crate::expandable::Expandable;
 use crate::gui::{Position, Screen, Views};
 use crate::logger;
@@ -220,7 +220,7 @@ macro_rules! gen_includable {
         }
 
         impl OptionValue for $t {
-            fn set(&mut self, value: &str) -> Result<(), ChryError> {
+            fn set(&mut self, value: &str) -> AppResultU {
                 if value.starts_with('@') {
                     let raw_path = &value[1..];
                     let path = Expandable::new(o!(raw_path));
@@ -234,7 +234,7 @@ macro_rules! gen_includable {
                 Ok(())
             }
 
-            fn unset(&mut self) -> Result<(), ChryError> {
+            fn unset(&mut self) -> AppResultU {
                 *self = $t::default();
                 Ok(())
             }

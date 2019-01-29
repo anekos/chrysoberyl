@@ -5,7 +5,7 @@ use std::default::Default;
 
 use gdk::{self, EventButton, EventKey, EventScroll, ScrollDirection, ModifierType};
 
-use crate::errors::ChryError;
+use crate::errors::{AppResult, Error as AppError};
 
 
 
@@ -38,9 +38,9 @@ impl fmt::Display for Key {
 }
 
 impl FromStr for Key {
-    type Err = ChryError;
+    type Err = AppError;
 
-    fn from_str(src: &str) -> Result<Self, ChryError> {
+    fn from_str(src: &str) -> AppResult<Self> {
         Ok(Key(o!(src)))
     }
 }

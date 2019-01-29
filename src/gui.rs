@@ -2,7 +2,6 @@
 use std::collections::VecDeque;
 use std::convert::Into;
 use std::default::Default;
-use std::error::Error;
 use std::fmt;
 use std::fs::File;
 use std::ops;
@@ -19,7 +18,7 @@ use gtk::{Adjustment, Align, Builder, Button, ComboBoxText, ComboBoxTextExt, Css
 
 use crate::completion::gui::CompleterUI;
 use crate::constant;
-use crate::errors::*;
+use crate::errors::{AppResult, AppResultU, Error as AppError, ErrorKind};
 use crate::events::EventName;
 use crate::image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use crate::operation::Operation;
@@ -291,7 +290,7 @@ impl Gui {
         }
     }
 
-    pub fn pop_operation_entry(&mut self) -> Result<Option<Operation>, Box<Error>> {
+    pub fn pop_operation_entry(&mut self) -> AppResult<Option<Operation>> {
         if_let_some!(result = self.operation_entry.get_text(), Ok(None));
         if result.is_empty() {
             return Ok(None);
@@ -328,9 +327,10 @@ impl Gui {
         self.grid_size.height as usize
     }
 
-    pub fn save<T: AsRef<Path>>(&self, path: &T, index: usize) -> Result<(), BoxedError> {
+    pub fn save<T: AsRef<Path>>(&self, path: &T, index: usize) -> AppResultU {
         let cell = self.cells(false).nth(index).ok_or("Out of index")?;
-        save_image(&cell.image, path)
+        save_image(&cell.image, path)?;
+        Ok(())
     }
 
     pub fn scroll_views(&self, direction: Direction, scroll_size: f64, crush: bool, count: usize, reset_scrolls_1: Option<Direction>) -> bool {
@@ -375,7 +375,7 @@ impl Gui {
         }
     }
 
-    pub fn change_screen(&mut self, screen: Screen, app_tx: &Sender<Operation>) -> Result<bool, BoxedError> {
+    pub fn change_screen(&mut self, screen: Screen, app_tx: &Sender<Operation>) -> AppResult<bool> {
         let current = self.get_screen();
         if current == screen {
             return Ok(false);
@@ -443,7 +443,7 @@ impl Gui {
         self.window.show();
     }
 
-    pub fn show_command_line(&mut self, initial: &str, app_tx: &Sender<Operation>) -> Result<(), BoxedError> {
+    pub fn show_command_line(&mut self, initial: &str, app_tx: &Sender<Operation>) -> AppResultU {
         use gtk::MovementStep;
 
         self.change_screen(Screen::CommandLine, app_tx)?;
@@ -465,11 +465,11 @@ impl Gui {
         self.completer.update_user_operations(operations);
     }
 
-    fn update_user_ui(&mut self, app_tx: &Sender<Operation>) -> Result<(), BoxedError> {
+    fn update_user_ui(&mut self, app_tx: &Sender<Operation>) -> AppResultU {
         use crate::util::file;
         use crate::mruby::MRubyEnv;
 
-        if_let_some!(path = self.user_ui_file.as_ref(), Err(Box::new(ChryError::Fixed("Option `user_ui` is empty."))));
+        if_let_some!(path = self.user_ui_file.as_ref(), Err(ErrorKind::Fixed("Option `user_ui` is empty."))?);
 
         if let Some(content) = self.user_box_content.as_ref() {
             self.user_box.remove(content);
@@ -493,7 +493,7 @@ impl Gui {
             return Ok(())
         }
 
-        Err(Box::new(ChryError::NotSupported("ID `user` not found")))
+        Err(ErrorKind::NotSupported("ID `user` not found"))?
     }
 
     fn create_images(&mut self, state: &Views) {
@@ -783,9 +783,9 @@ impl<'a> Iterator for CellIterator<'a> {
 
 
 impl FromStr for Direction {
-    type Err = ChryError;
+    type Err = AppError;
 
-    fn from_str(src: &str) -> Result<Direction, ChryError> {
+    fn from_str(src: &str) -> AppResult<Direction> {
         use self::Direction::*;
 
         match src {
@@ -798,7 +798,7 @@ impl FromStr for Direction {
             "up" | "u" =>
                 Ok(Up),
             _ =>
-                Err(ChryError::InvalidValue(o!(src))),
+                Err(ErrorKind::InvalidValue(o!(src)))?,
         }
     }
 }
@@ -833,9 +833,9 @@ impl ops::Not for Position {
 }
 
 impl FromStr for Position {
-    type Err = ChryError;
+    type Err = AppError;
 
-    fn from_str(src: &str) -> Result<Position, ChryError> {
+    fn from_str(src: &str) -> AppResult<Position> {
         use self::Position::*;
 
         match src {
@@ -848,7 +848,7 @@ impl FromStr for Position {
             "bottom-right" | "right-bottom" | "br" =>
                 Ok(BottomRight),
             _ =>
-                Err(ChryError::InvalidValue(o!(src))),
+                Err(ErrorKind::InvalidValue(o!(src)))?,
         }
     }
 }
@@ -982,7 +982,7 @@ fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
     }
 }
 
-fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), BoxedError> {
+fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> AppResultU {
     use gdk::prelude::ContextExt;
 
     let pixbuf = image.get_pixbuf().ok_or("No pixbuf")?;
@@ -992,7 +992,7 @@ fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> Result<(), BoxedError>
     context.set_source_pixbuf(&pixbuf, 0.0, 0.0);
     context.paint();
     let mut file = File::create(path)?;
-    surface.write_to_png(&mut file).map_err(ChryError::from)?;
+    surface.write_to_png(&mut file).map_err(AppError::from)?;
     Ok(())
 }
 

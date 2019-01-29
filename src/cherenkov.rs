@@ -126,7 +126,7 @@ impl Cherenkoved {
     }
 
     pub fn generate_animation_png<T: AsRef<Path>>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T) -> AppResultU {
-        use tiny_apng::apng;
+        use apng_encoder::apng;
         use crate::image::ImageBuffer::Static;
         use gdk_pixbuf::PixbufExt;
         use std::fs::File;
@@ -134,10 +134,10 @@ impl Cherenkoved {
         fn generate(mut file: File, mut cache_entry: CacheEntry, entry_content: &EntryContent, imaging: &Imaging, size: Size, length: u8) -> AppResultU {
             let (width, height) = (size.width as u32, size.height as u32);
 
-            let color = apng::Color { palette: false, grayscale: false, alpha_channel: true };
-            let meta = apng::Meta { width, height, color, bit_depth: 8, frames: u32::from(length) };
+            let color = apng::Color::RGBA(8);
+            let meta = apng::Meta { width, height, color, frames: u32::from(length), plays: None };
 
-            let mut encoder = apng::encoder::Encoder::new(&mut file, &meta)?;
+            let mut encoder = apng::encoder::Encoder::create(&mut file, meta)?;
 
             cache_entry.image = None;
             for _ in 0 .. length {
@@ -146,11 +146,11 @@ impl Cherenkoved {
                 if let Static(buffer) = get_image_buffer(&mut cache_entry, &entry_content, &imaging)? {
                     let pixbuf = buffer.get_pixbuf();
                     let channels = pixbuf.get_n_channels();
-                    let row_stride = pixbuf.get_rowstride();
+                    let row_stride = pixbuf.get_rowstride() as usize;
 
                     if channels == 4 {
                         let pixels: &mut [u8] = unsafe { pixbuf.get_pixels() };
-                        encoder.write_frame(&pixels, row_stride as usize)?;
+                        encoder.write_frame(&pixels, None, None, Some(row_stride))?;
                     } else {
                         return Err(ErrorKind::Fixed("Invalid channels"))?;
                     }

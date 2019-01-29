@@ -174,6 +174,8 @@ macro_rules! define_library_error {
     }
 }
 
+define_library_error!(apng_encoder::apng::errors::Error);
+define_library_error!(cairo::IoError);
 define_library_error!(css_color_parser::ColorParseError);
 define_library_error!(curl::Error);
 define_library_error!(glib::error::Error);
@@ -181,4 +183,3 @@ define_library_error!(mrusty::MrubyError);
 define_library_error!(std::env::VarError);
 define_library_error!(std::string::FromUtf8Error);
 define_library_error!(url::ParseError);
-define_library_error!(cairo::IoError);

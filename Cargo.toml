@@ -17,6 +17,7 @@ doc = false
 poppler_lock = []
 
 [dependencies]
+apng-encoder = "*"
 app_dirs = "*"
 argparse = "*"
 atty = "*"
@@ -61,7 +62,7 @@ num = "*"
 num_cpus = "*"
 onig = "*"
 pom = "1.0"
-rand = "*"
+rand = "0.5"
 rustyline = "*"
 regex = "*"
 sha2 = "*"
@@ -73,10 +74,6 @@ url = "*"
 uuid = { version = "0.5", features = ["v4"] }
 uuid_to_pokemon = "*"
 xml-rs = "*"
-
-[dependencies.tiny-apng]
-git = "https://github.com/anekos/tiny-apng"
-rev = "cdc0141d4116e778a14f2c585689d776d808bd43"
 
 # https://github.com/gtk-rs/gtk/blob/master/Cargo.toml
 [dependencies.gtk]

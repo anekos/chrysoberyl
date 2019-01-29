@@ -6,7 +6,7 @@ use std::path::{PathBuf, Path};
 
 use app_dirs::*;
 
-use crate::errors::ChryError;
+use crate::errors::AppResultU;
 use crate::option::OptionValue;
 use crate::shellexpand_wrapper as sh;
 use crate::util::path::path_to_str;
@@ -64,12 +64,12 @@ pub fn entry_history() -> PathBuf {
 
 
 impl OptionValue for PathList {
-    fn unset(&mut self) -> Result<(), ChryError> {
+    fn unset(&mut self) -> AppResultU {
         *self = PathList::default();
         Ok(())
     }
 
-    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+    fn set(&mut self, value: &str) -> AppResultU {
         self.entries = value.split(':').map(sh::expand_to_pathbuf).collect();
         Ok(())
     }

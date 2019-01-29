@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Sender, channel};
 use std::thread::spawn;
 
-use crate::errors::ChryError;
+use crate::errors::{AppResult, AppResultU};
 use crate::logger;
 use crate::option::OptionValue;
 use crate::shellexpand_wrapper as sh;
@@ -31,7 +31,7 @@ impl File {
         self.current = None;
     }
 
-    pub fn register<T: AsRef<Path>>(&mut self, path: &T) -> Result<(), ChryError> {
+    pub fn register<T: AsRef<Path>>(&mut self, path: &T) -> AppResultU {
         self.unregister();
 
         register(path).map(|tx| {
@@ -41,11 +41,11 @@ impl File {
 }
 
 impl OptionValue for File {
-    fn set(&mut self, path: &str) -> Result<(), ChryError> {
+    fn set(&mut self, path: &str) -> AppResultU {
         self.register(&sh::expand_to_pathbuf(path))
     }
 
-    fn unset(&mut self) -> Result<(), ChryError> {
+    fn unset(&mut self) -> AppResultU {
         self.unregister();
         Ok(())
     }
@@ -62,7 +62,7 @@ impl fmt::Display for File {
 }
 
 
-pub fn register<T: AsRef<Path>>(path: &T) -> Result<Sender<String>, ChryError> {
+pub fn register<T: AsRef<Path>>(path: &T) -> AppResult<Sender<String>> {
     if let Some(parent) = path.as_ref().parent() {
         create_dir_all(parent).unwrap();
     }

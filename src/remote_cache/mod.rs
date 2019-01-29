@@ -2,7 +2,6 @@
 use std::cmp::Ordering;
 use std::collections::{BTreeSet, VecDeque};
 use std::env;
-use std::error::Error;
 use std::fs::{self, File, create_dir_all};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
@@ -19,7 +18,7 @@ use url::Url;
 use crate::app_path;
 use crate::constant::env_name;
 use crate::entry::{Meta, EntryType};
-use crate::errors::ChryError;
+use crate::errors::{AppResult, AppResultU, ErrorKind};
 use crate::events::EventName;
 use crate::file_extension::get_entry_type_from_filename;
 use crate::mapping;
@@ -94,7 +93,7 @@ impl RemoteCache {
     }
 
     pub fn fetch(&mut self, url: String, meta: Option<Meta>, force: bool, show: bool, entry_type: Option<EntryType>) -> Vec<QueuedOperation> {
-        if_let_ok!(filepath = generate_temporary_filename(&url), |err: Box<Error>| {
+        if_let_ok!(filepath = generate_temporary_filename(&url), |err| {
             puts_error!(err, "at" => "generate_temporary_filename");
             vec![]
         });
@@ -238,7 +237,7 @@ fn processor(thread_id: usize, main_tx: Sender<Getter>) -> Sender<Request> {
     getter_tx
 }
 
-fn http_save<T: AsRef<Path>>(curl: &mut EasyCurl, url: &str, cache_filepath: &T) -> Result<(), Box<Error>> {
+fn http_save<T: AsRef<Path>>(curl: &mut EasyCurl, url: &str, cache_filepath: &T) -> AppResultU {
     let mut buf = vec![];
     curl_get(curl, url, &mut buf)?;
     File::create(cache_filepath).and_then(|file| {
@@ -248,7 +247,7 @@ fn http_save<T: AsRef<Path>>(curl: &mut EasyCurl, url: &str, cache_filepath: &T)
     Ok(())
 }
 
-fn curl_get(curl: &mut EasyCurl, url: &str, buf: &mut Vec<u8>) -> Result<(), Box<Error>> {
+fn curl_get(curl: &mut EasyCurl, url: &str, buf: &mut Vec<u8>) -> AppResultU {
     curl.url(url)?;
     let mut transfer = curl.transfer();
     transfer.write_function(|data| {
@@ -272,7 +271,7 @@ fn fix_path_segment(s: &str, last: bool) -> String {
     }
 }
 
-fn generate_temporary_filename(url: &str) -> Result<PathBuf, Box<Error>> {
+fn generate_temporary_filename(url: &str) -> AppResult<PathBuf> {
     let mut result = app_path::cache_dir("remote");
     let url = Url::parse(url)?;
     let host = url.host().ok_or_else(|| format!("URL does not have `host`: {}", url))?;
@@ -351,12 +350,13 @@ fn log_status(app_tx: &Sender<Operation>, sp: &SP, state: &State, buffers: usize
 }
 
 
-fn update_atime<T: AsRef<Path>>(path: &T) -> Result<(), ChryError> {
+fn update_atime<T: AsRef<Path>>(path: &T) -> AppResultU {
     let meta = r#try!(fs::metadata(path));
     let ts = time::now().to_timespec();
     let mtime = FileTime::from_last_modification_time(&meta);
     let atime = FileTime::from_unix_time(ts.sec, ts.nsec as u32);
-    set_file_times(path, atime, mtime).map_err(|it| ChryError::Standard(s!(it)))
+    set_file_times(path, atime, mtime).map_err(|it| ErrorKind::Standard(s!(it)))?;
+    Ok(())
 }
 
 

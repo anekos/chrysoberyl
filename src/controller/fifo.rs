@@ -9,7 +9,7 @@ use std::thread::spawn;
 use libc;
 
 use crate::chainer;
-use crate::errors::ChryError;
+use crate::errors::ErrorKind;
 use crate::operation::Operation;
 
 use crate::controller::process_lines;
@@ -40,6 +40,6 @@ pub fn register<T: AsRef<Path>>(tx: Sender<Operation>, path: &T) {
             process_lines(&tx, file, "input/fragile");
             puts_event!("input/fragile/close");
         }
-        puts_error!(ChryError::Fixed("Could not open file"), "at" => "fragile_controller", "for" => p!(&path));
+        puts_error!(ErrorKind::Fixed("Could not open file"), "at" => "fragile_controller", "for" => p!(&path));
     });
 }

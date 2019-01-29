@@ -8,6 +8,7 @@ use num::Integer;
 
 use crate::cherenkov::Operator;
 use crate::color::Color;
+use crate::errors::{AppResult, AppResultU, Error as AppError, ErrorKind};
 use crate::gui::{Position, Screen};
 use crate::option::*;
 use crate::resolution;
@@ -19,21 +20,21 @@ use crate::option::common;
 
 
 impl OptionValue for bool {
-    fn is_enabled(&self) -> Result<bool, ChryError> {
+    fn is_enabled(&self) -> AppResult<bool> {
         Ok(*self)
     }
 
-    fn enable(&mut self) -> Result<(), ChryError> {
+    fn enable(&mut self) -> AppResultU {
         *self = true;
         Ok(())
     }
 
-    fn disable(&mut self) -> Result<(), ChryError> {
+    fn disable(&mut self) -> AppResultU {
         *self = false;
         Ok(())
     }
 
-    fn cycle(&mut self, _: bool, n: usize, _: &[String]) -> Result<(), ChryError> {
+    fn cycle(&mut self, _: bool, n: usize, _: &[String]) -> AppResultU {
         if n.is_odd() {
             self.toggle()
         } else {
@@ -41,7 +42,7 @@ impl OptionValue for bool {
         }
     }
 
-    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+    fn set(&mut self, value: &str) -> AppResultU {
         common::parse_bool(value).map(|value| {
             *self = value;
         })
@@ -49,22 +50,23 @@ impl OptionValue for bool {
 }
 
 impl OptionValue for Option<PathBuf> {
-    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+    fn set(&mut self, value: &str) -> AppResultU {
         *self = Some(Path::new(value).to_path_buf());
         Ok(())
     }
 
-    fn unset(&mut self) -> Result<(), ChryError> {
+    fn unset(&mut self) -> AppResultU {
         *self = None;
         Ok(())
     }
 }
 
 impl OptionValue for Duration {
-    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+    fn set(&mut self, value: &str) -> AppResultU {
         value.parse().map(|value: f64| {
             *self = Duration::from_millis((value * 1000.0) as u64);
-        }).map_err(|it| ChryError::Standard(format!("Invalid value: {} ({})", value, it)))
+        }).map_err(|it| ErrorKind::Standard(format!("Invalid value: {} ({})", value, it)))?;
+        Ok(())
     }
 }
 
@@ -81,7 +83,7 @@ macro_rules! def_uint_cycle {
                     }
                     cs.push(v);
                 } else {
-                    return Err(ChryError::InvalidValue(o!(candidate)));
+                    return Err(ErrorKind::InvalidValue(o!(candidate)))?;
                 }
             }
             if set_first_value {
@@ -99,30 +101,31 @@ macro_rules! def_uint_cycle {
 macro_rules! def_uint {
     ($type:ty) => {
         impl OptionValue for $type {
-            fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> Result<(), ChryError> {
+            fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> AppResultU {
                 def_uint_cycle!($type, self, candidates, reverse, n);
                 Ok(())
             }
 
-            fn unset(&mut self) -> Result<(), ChryError> {
+            fn unset(&mut self) -> AppResultU {
                 *self = 0;
                 Ok(())
             }
 
-            fn set(&mut self, value: &str) -> Result<(), ChryError> {
+            fn set(&mut self, value: &str) -> AppResultU {
                 value.parse().map(|value| {
                     *self = value;
-                }).map_err(|it| ChryError::Standard(format!("Invalid value: {} ({})", value, it)))
+                }).map_err(|it| ErrorKind::Standard(format!("Invalid value: {} ({})", value, it)))?;
+                Ok(())
             }
 
-            fn increment(&mut self, delta: usize) -> Result<(), ChryError> {
-                if_let_some!(modified = self.checked_add(delta as $type), Err(ChryError::Fixed("Overflow")));
+            fn increment(&mut self, delta: usize) -> AppResultU {
+                if_let_some!(modified = self.checked_add(delta as $type), Err(ErrorKind::Fixed("Overflow"))?);
                 *self = modified;
                 Ok(())
             }
 
-            fn decrement(&mut self, delta: usize) -> Result<(), ChryError> {
-                if_let_some!(modified = self.checked_sub(delta as $type), Err(ChryError::Fixed("Overflow")));
+            fn decrement(&mut self, delta: usize) -> AppResultU {
+                if_let_some!(modified = self.checked_sub(delta as $type), Err(ErrorKind::Fixed("Overflow"))?);
                 *self = modified;
                 Ok(())
             }
@@ -133,33 +136,34 @@ macro_rules! def_uint {
 macro_rules! def_opt_uint {
     ($type:ty) => {
         impl OptionValue for Option<$type> {
-            fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> Result<(), ChryError> {
+            fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> AppResultU {
                 if_let_some!(v = self.as_mut(), Ok(()));
                 def_uint_cycle!($type, v, candidates, reverse, n);
                 Ok(())
             }
 
-            fn unset(&mut self) -> Result<(), ChryError> {
+            fn unset(&mut self) -> AppResultU {
                 *self = None;
                 Ok(())
             }
 
-            fn set(&mut self, value: &str) -> Result<(), ChryError> {
+            fn set(&mut self, value: &str) -> AppResultU {
                 value.parse().map(|value| {
                     *self = Some(value);
-                }).map_err(|it| ChryError::InvalidValue(s!(it)))
+                }).map_err(|it| ErrorKind::InvalidValue(s!(it)))?;
+                Ok(())
             }
 
-            fn increment(&mut self, delta: usize) -> Result<(), ChryError> {
+            fn increment(&mut self, delta: usize) -> AppResultU {
                 if_let_some!(current = *self, Ok(()));
-                if_let_some!(modified = current.checked_add(delta as $type), Err(ChryError::Fixed("Overflow")));
+                if_let_some!(modified = current.checked_add(delta as $type), Err(ErrorKind::Fixed("Overflow"))?);
                 *self = Some(modified);
                 Ok(())
             }
 
-            fn decrement(&mut self, delta: usize) -> Result<(), ChryError> {
+            fn decrement(&mut self, delta: usize) -> AppResultU {
                 if_let_some!(current = *self, Ok(()));
-                if_let_some!(modified = current.checked_sub(delta as $type), Err(ChryError::Fixed("Overflow")));
+                if_let_some!(modified = current.checked_sub(delta as $type), Err(ErrorKind::Fixed("Overflow"))?);
                 *self = Some(modified);
                 Ok(())
             }
@@ -175,9 +179,9 @@ def_uint!(u8);
 
 
 impl FromStr for AutoPaging {
-    type Err = ChryError;
+    type Err = AppError;
 
-    fn from_str(src: &str) -> Result<Self, ChryError> {
+    fn from_str(src: &str) -> AppResult<Self> {
         use self::AutoPaging::*;
 
         common::parse_bool(src).map(|it| {
@@ -186,7 +190,7 @@ impl FromStr for AutoPaging {
             let result = match src {
                 "always" | "a" => Always,
                 "smart" | "s" => Smart,
-                _ => return Err(ChryError::InvalidValue(o!(src)))
+                _ => return Err(ErrorKind::InvalidValue(o!(src)))?
             };
             Ok(result)
         })
@@ -194,26 +198,26 @@ impl FromStr for AutoPaging {
 }
 
 impl OptionValue for AutoPaging {
-    fn is_enabled(&self) -> Result<bool, ChryError> {
+    fn is_enabled(&self) -> AppResult<bool> {
         Ok(self.enabled())
     }
 
-    fn enable(&mut self) -> Result<(), ChryError> {
+    fn enable(&mut self) -> AppResultU {
         *self = AutoPaging::Always;
         Ok(())
     }
 
-    fn disable(&mut self) -> Result<(), ChryError> {
+    fn disable(&mut self) -> AppResultU {
         *self = AutoPaging::DoNot;
         Ok(())
     }
 
-    fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> Result<(), ChryError> {
+    fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> AppResultU {
         use self::AutoPaging::*;
         set_cycled(self, &[DoNot, Always, Smart], reverse, n, candidates)
     }
 
-    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+    fn set(&mut self, value: &str) -> AppResultU {
         value.parse().map(|value| {
             *self = value;
         })
@@ -227,7 +231,7 @@ impl OptionValue for Color {
     //     Ok(())
     // }
 
-    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+    fn set(&mut self, value: &str) -> AppResultU {
         value.parse().map(|value| {
             *self = value;
         })
@@ -236,9 +240,9 @@ impl OptionValue for Color {
 
 
 impl FromStr for FitTo {
-    type Err = ChryError;
+    type Err = AppError;
 
-    fn from_str(src: &str) -> Result<Self, ChryError> {
+    fn from_str(src: &str) -> AppResult<Self> {
         use self::FitTo::*;
 
         let result = match src {
@@ -262,7 +266,7 @@ impl FromStr for FitTo {
                         return Ok(Scale(scale))
                     }
                 }
-                return Err(ChryError::InvalidValue(o!(src)))
+                return Err(ErrorKind::InvalidValue(o!(src)))?
             }
         };
         Ok(result)
@@ -270,29 +274,29 @@ impl FromStr for FitTo {
 }
 
 impl OptionValue for FitTo {
-    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+    fn set(&mut self, value: &str) -> AppResultU {
         value.parse().map(|value| {
             *self = value;
         })
     }
 
-    fn set_from_count(&mut self, value: Option<usize>) -> Result<(), ChryError> {
+    fn set_from_count(&mut self, value: Option<usize>) -> AppResultU {
         self.set_scale(value.unwrap_or(100));
         Ok(())
     }
 
-    fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> Result<(), ChryError> {
+    fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> AppResultU {
         use self::FitTo::*;
         set_cycled(self, &[Cell, OriginalOrCell, Original, Width, Height], reverse, n, candidates)
     }
 
-    fn increment(&mut self, delta: usize) -> Result<(), ChryError> {
+    fn increment(&mut self, delta: usize) -> AppResultU {
         let value = get_scale(self).checked_add(delta).unwrap_or(<usize>::max_value());
         self.set_scale(value);
         Ok(())
     }
 
-    fn decrement(&mut self, delta: usize) -> Result<(), ChryError> {
+    fn decrement(&mut self, delta: usize) -> AppResultU {
         let value = get_scale(self).checked_sub(delta).unwrap_or(<usize>::min_value());
         self.set_scale(value);
         Ok(())
@@ -308,7 +312,7 @@ fn get_scale(fit_to: &FitTo) -> usize {
 
 
 impl OptionValue for Position {
-    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+    fn set(&mut self, value: &str) -> AppResultU {
         value.parse().map(|value| {
             *self = value;
         })
@@ -317,13 +321,13 @@ impl OptionValue for Position {
 
 
 impl OptionValue for Operator {
-    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+    fn set(&mut self, value: &str) -> AppResultU {
         value.parse().map(|value| {
             *self = value;
         })
     }
 
-    fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> Result<(), ChryError> {
+    fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> AppResultU {
         use self::cairo::Operator::*;
 
         set_cycled(self, &[
@@ -361,7 +365,7 @@ impl OptionValue for Operator {
 }
 
 
-pub fn set_cycled<T>(current: &mut T, order: &[T], reverse: bool, n: usize, candidates: &[String]) -> Result<(), ChryError>
+pub fn set_cycled<T>(current: &mut T, order: &[T], reverse: bool, n: usize, candidates: &[String]) -> AppResultU
 where T: PartialEq + Copy + FromStr {
     if candidates.is_empty() {
         *current = cycled(*current, order, reverse, n);
@@ -377,7 +381,7 @@ where T: PartialEq + Copy + FromStr {
             }
             cs.push(candidate);
         } else {
-            return Err(ChryError::InvalidValue(o!(candidate)));
+            return Err(AppError::from(ErrorKind::InvalidValue(o!(candidate))));
         }
     }
 
@@ -413,28 +417,28 @@ where T: PartialEq + Copy {
 
 
 impl FromStr for Alignment {
-    type Err = ChryError;
+    type Err = AppError;
 
-    fn from_str(src: &str) -> Result<Self, ChryError> {
+    fn from_str(src: &str) -> AppResult<Self> {
         use gtk::Align::*;
 
         let align = match src {
             "left" | "l" | "start" => Start,
             "right" | "r" | "end" => End,
             "center" | "c" => Center,
-            _ => return Err(ChryError::InvalidValue(o!(src))),
+            _ => return Err(ErrorKind::InvalidValue(o!(src)))?,
         };
         Ok(Alignment(align))
     }
 }
 
 impl OptionValue for Alignment {
-    fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> Result<(), ChryError> {
+    fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> AppResultU {
         use gtk::Align::*;
         set_cycled(self, &[Alignment(Start), Alignment(Center), Alignment(End)], reverse, n, candidates)
     }
 
-    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+    fn set(&mut self, value: &str) -> AppResultU {
         value.parse().map(|value| {
             *self = value;
         })
@@ -443,17 +447,17 @@ impl OptionValue for Alignment {
 
 
 impl OptionValue for Screen {
-    fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> Result<(), ChryError> {
+    fn cycle(&mut self, reverse: bool, n: usize, candidates: &[String]) -> AppResultU {
         use self::Screen::*;
         set_cycled(self, &[Main, CommandLine, LogView], reverse, n, candidates)
     }
 
-    fn unset(&mut self) -> Result<(), ChryError> {
+    fn unset(&mut self) -> AppResultU {
         *self = Screen::Main;
         Ok(())
     }
 
-    fn set(&mut self, value: &str) -> Result<(), ChryError> {
+    fn set(&mut self, value: &str) -> AppResultU {
         value.parse().map(|value| {
             *self = value;
         })
@@ -461,15 +465,15 @@ impl OptionValue for Screen {
 }
 
 impl FromStr for Screen {
-    type Err = ChryError;
+    type Err = AppError;
 
-    fn from_str(src: &str) -> Result<Self, ChryError> {
+    fn from_str(src: &str) -> AppResult<Self> {
         let screen = match src {
             "main" => Screen::Main,
             "log-view" => Screen::LogView,
             "command-line" => Screen::CommandLine,
             "ui" => Screen::UserUI,
-            _ => return Err(ChryError::InvalidValue(o!(src))),
+            _ => return Err(ErrorKind::InvalidValue(o!(src)))?,
         };
         Ok(screen)
     }

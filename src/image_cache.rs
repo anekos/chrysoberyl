@@ -1,6 +1,5 @@
 
 use std::collections::HashMap;
-use std::error::Error;
 use std::path::Path;
 use std::sync::{Arc, Mutex, Condvar};
 
@@ -8,6 +7,7 @@ use crate::cache::Cache;
 use crate::cherenkov::{Cherenkoved, Modifier};
 use crate::entry::image::Imaging;
 use crate::entry::{Entry, Key, self};
+use crate::errors::AppResultU;
 use crate::image::ImageBuffer;
 use crate::session::StatusText;
 
@@ -131,13 +131,13 @@ impl ImageCache {
         })
     }
 
-    pub fn generate_animation_gif<T: AsRef<Path>, F>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T, on_complete: F) -> Result<(), Box<Error>>
+    pub fn generate_animation_gif<T: AsRef<Path>, F>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T, on_complete: F) -> AppResultU
         where F: FnOnce() + Send + 'static {
         let cherenkoved = self.cherenkoved.lock().unwrap();
         cherenkoved.generate_animation_gif(entry, imaging, length, path, on_complete)
     }
 
-    pub fn generate_animation_png<T: AsRef<Path>>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T) -> Result<(), Box<Error>> {
+    pub fn generate_animation_png<T: AsRef<Path>>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T) -> AppResultU {
         let cherenkoved = self.cherenkoved.lock().unwrap();
         cherenkoved.generate_animation_png(entry, imaging, length, path)
     }

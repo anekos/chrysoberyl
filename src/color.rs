@@ -3,8 +3,9 @@ use std::fmt;
 use std::str::FromStr;
 
 use css_color_parser::Color as CssColor;
-use crate::errors::ChryError;
 use rand::{thread_rng, Rng};
+
+use crate::errors::{AppResult, Error as AppError};
 
 
 
@@ -59,12 +60,12 @@ impl Color {
 
 
 impl FromStr for Color {
-    type Err = ChryError;
+    type Err = AppError;
 
-    fn from_str(src: &str) -> Result<Color, ChryError> {
+    fn from_str(src: &str) -> AppResult<Color> {
         match src {
             "random" => Ok(Color::new_random()),
-            _ => src.parse().map_err(|it| ChryError::InvalidValue(s!(it))).map(Color::new_from_css_color)
+            _ => Ok(src.parse().map(Color::new_from_css_color)?)
         }
     }
 }

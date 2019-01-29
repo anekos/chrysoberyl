@@ -1,8 +1,8 @@
 
-use std::error::Error;
 use std::io::{BufReader, BufRead, Read};
 use std::sync::mpsc::Sender;
 
+use crate::errors::AppResultU;
 use crate::expandable::Expandable;
 use crate::operation::Operation;
 
@@ -20,7 +20,7 @@ pub enum Source {
 }
 
 
-pub fn register(tx: Sender<Operation>, source: Source) -> Result<(), Box<Error>> {
+pub fn register(tx: Sender<Operation>, source: Source) -> AppResultU {
     use self::Source::*;
 
     match source {

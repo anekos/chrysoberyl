@@ -1,13 +1,13 @@
 
-use crate::errors::ChryError;
+use crate::errors::{AppResult, Error as AppError, ErrorKind};
 
 
 
-pub fn parse_bool(value: &str) -> Result<bool, ChryError>{
+pub fn parse_bool(value: &str) -> AppResult<bool>{
     match value {
         "true" | "yes" | "on" | "1" => Ok(true),
         "false" | "no" | "off" | "0" => Ok(false),
-        _ => Err(ChryError::InvalidValue(o!(value)))
+        _ => Err(AppError::from(ErrorKind::InvalidValue(o!(value))))
     }
 }
 

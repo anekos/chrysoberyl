@@ -1,6 +1,5 @@
 
 use std::collections::HashMap;
-use std::error::Error;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::path::Path;
@@ -14,7 +13,7 @@ use gdk_pixbuf::{Pixbuf, PixbufExt};
 use crate::color::Color;
 use crate::entry::image::Imaging;
 use crate::entry::{Entry, EntryContent, Key, self};
-use crate::errors::ChryError;
+use crate::errors::{AppResult, AppResultU, Error as AppError, ErrorKind};
 use crate::gtk_utils::new_pixbuf_from_surface;
 use crate::image::{ImageBuffer, StaticImageBuffer};
 use crate::size::{Size, Region};
@@ -64,12 +63,12 @@ impl Cherenkoved {
         Cherenkoved { cache: HashMap::new() }
     }
 
-    pub fn get_image_buffer(&mut self, entry: &Entry, imaging: &Imaging) -> Option<Result<ImageBuffer, Box<Error>>> {
+    pub fn get_image_buffer(&mut self, entry: &Entry, imaging: &Imaging) -> Option<AppResult<ImageBuffer>> {
         if_let_some!(cache_entry = self.cache.get_mut(&entry.key), None);
         Some(get_image_buffer(cache_entry, &entry.content, imaging))
     }
 
-    pub fn generate_animation_gif<T: AsRef<Path>, F>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T, on_complete: F) -> Result<(), Box<Error>>
+    pub fn generate_animation_gif<T: AsRef<Path>, F>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T, on_complete: F) -> AppResultU
     where F: FnOnce() + Send + 'static {
         use gif;
         use gif::SetParameter;
@@ -77,7 +76,7 @@ impl Cherenkoved {
         use gdk_pixbuf::PixbufExt;
         use std::fs::File;
 
-        fn generate(mut file: File, mut cache_entry: CacheEntry, entry_content: &EntryContent, imaging: &Imaging, size: Size, length: u8) -> Result<(), Box<Error>> {
+        fn generate(mut file: File, mut cache_entry: CacheEntry, entry_content: &EntryContent, imaging: &Imaging, size: Size, length: u8) -> AppResultU {
             let (width, height) = (size.width as u16, size.height as u16);
 
             let mut encoder = gif::Encoder::new(&mut file, width, height, &[])?;
@@ -96,7 +95,7 @@ impl Cherenkoved {
                         let frame = gif::Frame::from_rgba(width, height, &mut *pixels);
                         encoder.write_frame(&frame)?;
                     } else {
-                        return Err(ChryError::Fixed("Invalid channels"))?;
+                        return Err(ErrorKind::Fixed("Invalid channels"))?;
                     }
                 }
             }
@@ -105,9 +104,9 @@ impl Cherenkoved {
             Ok(())
         }
 
-        if_let_some!(cache_entry = self.cache.get(&entry.key).cloned(), Err(ChryError::Fixed("Not cherenkoved"))?);
+        if_let_some!(cache_entry = self.cache.get(&entry.key).cloned(), Err(ErrorKind::Fixed("Not cherenkoved"))?);
         let size = {
-            if_let_some!(image = cache_entry.image.as_ref(), Err(ChryError::Fixed("Not cherenkoved"))?);;
+            if_let_some!(image = cache_entry.image.as_ref(), Err(ErrorKind::Fixed("Not cherenkoved"))?);;
             image.get_fit_size()
         };
 
@@ -126,13 +125,13 @@ impl Cherenkoved {
         Ok(())
     }
 
-    pub fn generate_animation_png<T: AsRef<Path>>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T) -> Result<(), Box<Error>> {
+    pub fn generate_animation_png<T: AsRef<Path>>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T) -> AppResultU {
         use tiny_apng::apng;
         use crate::image::ImageBuffer::Static;
         use gdk_pixbuf::PixbufExt;
         use std::fs::File;
 
-        fn generate(mut file: File, mut cache_entry: CacheEntry, entry_content: &EntryContent, imaging: &Imaging, size: Size, length: u8) -> Result<(), Box<Error>> {
+        fn generate(mut file: File, mut cache_entry: CacheEntry, entry_content: &EntryContent, imaging: &Imaging, size: Size, length: u8) -> AppResultU {
             let (width, height) = (size.width as u32, size.height as u32);
 
             let color = apng::Color { palette: false, grayscale: false, alpha_channel: true };
@@ -153,7 +152,7 @@ impl Cherenkoved {
                         let pixels: &mut [u8] = unsafe { pixbuf.get_pixels() };
                         encoder.write_frame(&pixels, row_stride as usize)?;
                     } else {
-                        return Err(ChryError::Fixed("Invalid channels"))?;
+                        return Err(ErrorKind::Fixed("Invalid channels"))?;
                     }
                 }
             }
@@ -164,9 +163,9 @@ impl Cherenkoved {
             Ok(())
         }
 
-        if_let_some!(cache_entry = self.cache.get(&entry.key).cloned(), Err(ChryError::Fixed("Not cherenkoved"))?);
+        if_let_some!(cache_entry = self.cache.get(&entry.key).cloned(), Err(ErrorKind::Fixed("Not cherenkoved"))?);
         let size = {
-            if_let_some!(image = cache_entry.image.as_ref(), Err(ChryError::Fixed("Not cherenkoved"))?);;
+            if_let_some!(image = cache_entry.image.as_ref(), Err(ErrorKind::Fixed("Not cherenkoved"))?);;
             image.get_fit_size()
         };
 
@@ -347,9 +346,9 @@ impl Hash for Operator {
 }
 
 impl FromStr for Operator {
-    type Err = ChryError;
+    type Err = AppError;
 
-    fn from_str(src: &str) -> Result<Self, ChryError> {
+    fn from_str(src: &str) -> AppResult<Self> {
         use self::cairo::Operator::*;
 
         let result = match src {
@@ -382,7 +381,7 @@ impl FromStr for Operator {
             "hsl-saturation" => HslSaturation,
             "hsl-color" => HslColor,
             "hsl-luminosity" => HslLuminosity,
-            _ => return Err(ChryError::InvalidValue(o!(src))),
+            _ => return Err(ErrorKind::InvalidValue(o!(src)))?,
         };
 
         Ok(Operator(result))
@@ -431,7 +430,7 @@ impl fmt::Display for Operator {
 }
 
 
-fn get_image_buffer(cache_entry: &mut CacheEntry, entry_content: &EntryContent, imaging: &Imaging) -> Result<ImageBuffer, Box<Error>> {
+fn get_image_buffer(cache_entry: &mut CacheEntry, entry_content: &EntryContent, imaging: &Imaging) -> AppResult<ImageBuffer> {
     if let Some(image) = cache_entry.get(imaging.cell_size, &imaging.drawing) {
         return Ok(ImageBuffer::Static(image))
     }
@@ -447,7 +446,7 @@ fn get_image_buffer(cache_entry: &mut CacheEntry, entry_content: &EntryContent, 
     Ok(ImageBuffer::Static(image))
 }
 
-fn re_cherenkov(entry_content: &EntryContent, imaging: &Imaging, modifiers: &[Modifier]) -> Result<StaticImageBuffer, Box<Error>> {
+fn re_cherenkov(entry_content: &EntryContent, imaging: &Imaging, modifiers: &[Modifier]) -> AppResult<StaticImageBuffer> {
     let image_buffer = entry::image::get_image_buffer(entry_content, imaging)?;
     if let ImageBuffer::Static(buf) = image_buffer {
         let mut mask = None;
@@ -466,7 +465,7 @@ fn re_cherenkov(entry_content: &EntryContent, imaging: &Imaging, modifiers: &[Mo
         };
         Ok(StaticImageBuffer::new_from_pixbuf(&pixbuf, buf.original_size))
     } else {
-        Err(Box::new(ChryError::Fixed("Not static image")))
+        Err(ErrorKind::Fixed("Not static image"))?
     }
 }
 

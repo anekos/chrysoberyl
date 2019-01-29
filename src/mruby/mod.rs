@@ -1,7 +1,6 @@
 
 use std::cell::RefCell;
 use std::env;
-use std::error;
 use std::rc::Rc;
 
 use marksman_escape::Escape;
@@ -11,6 +10,7 @@ use xml;
 
 use crate::app::info::AppInfo;
 use crate::constant;
+use crate::errors::AppResult;
 
 
 
@@ -20,13 +20,13 @@ pub struct MRubyEnv {
 
 
 impl MRubyEnv {
-    pub fn generate_string(source: &str) -> Result<String, Box<error::Error>> {
+    pub fn generate_string(source: &str) -> AppResult<String> {
         let instance = MRubyEnv::new();
         let result = instance.eval(source)?;
         Ok(o!(result.to_str()?))
     }
 
-    pub fn generate_string_from_template(source: &str) -> Result<String, Box<error::Error>> {
+    pub fn generate_string_from_template(source: &str) -> AppResult<String> {
         let instance = MRubyEnv::new();
         let re = Regex::new(r"\$\{(.*?)\}\$").unwrap();
 
@@ -90,13 +90,13 @@ impl MRubyEnv {
     }
 
 
-    pub fn eval(&self, source: &str) -> Result<Value, Box<error::Error>> {
+    pub fn eval(&self, source: &str) -> AppResult<Value> {
         let result = self.mruby.run(source);
         Ok(o!(result?))
     }
 
     #[allow(dead_code)]
-    pub fn eval_as_bool(&self, source: &str) -> Result<bool, Box<error::Error>> {
+    pub fn eval_as_bool(&self, source: &str) -> AppResult<bool> {
         let result = self.eval(source);
         let result = result?.to_bool()?;
         Ok(o!(result))
@@ -109,7 +109,7 @@ impl MRubyEnv {
     }
 }
 
-fn fetch_escaped_var(mruby: &Rc<RefCell<Mruby>>, name: &Value) -> Result<Value, Box<error::Error>> {
+fn fetch_escaped_var(mruby: &Rc<RefCell<Mruby>>, name: &Value) -> AppResult<Value> {
     let name = name.to_str()?;
     let name = constant::env_name(name);
     let value = env::var(name)?;

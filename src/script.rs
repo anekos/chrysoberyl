@@ -6,7 +6,7 @@ use std::sync::mpsc::Sender;
 
 use crate::app_path::PathList;
 use crate::config::DEFAULT_CONFIG;
-use crate::errors::ChryError;
+use crate::errors::ErrorKind;
 use crate::joiner::Joiner;
 use crate::operation::Operation;
 
@@ -23,7 +23,7 @@ pub fn load_from_file(tx: &Sender<Operation>, file: &Path, path_list: &PathList)
     let mut source = o!("");
     match File::open(file).and_then(|mut file| file.read_to_string(&mut source)) {
         Ok(_) => load_from_str(tx, &source, path_list),
-        Err(err) => puts_error!(ChryError::Standard(s!(err)), "at" => o!("on_load")),
+        Err(err) => puts_error!(ErrorKind::Standard(s!(err)), "at" => o!("on_load")),
     }
     puts_event!("script/close", "file" => p!(file));
 }
@@ -38,7 +38,7 @@ fn load_from_str(tx: &Sender<Operation>, source: &str, path_list: &PathList) {
                 Ok(op) =>
                     process(tx, op, path_list),
                 Err(err) =>
-                    puts_error!(ChryError::Standard(s!(err)), "at" => "script/line", "for" => o!(line)),
+                    puts_error!(ErrorKind::Standard(s!(err)), "at" => "script/line", "for" => o!(line)),
             }
         }
     }

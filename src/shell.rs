@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 use std::thread::spawn;
 
 use crate::chainer;
-use crate::errors::ChryError;
+use crate::errors::AppResultU;
 use crate::expandable::Expandable;
 use crate::operation::{Operation, ReadAs};
 use crate::session::StatusText;
@@ -128,7 +128,7 @@ fn run(entries: Entries, tx: Option<Sender<Operation>>, envs: Option<Envs>, comm
     finalizer.finalize();
 }
 
-fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<String>, read_as: ReadAs) -> Result<(), ChryError> {
+fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<String>, read_as: ReadAs) -> AppResultU {
     use std::io::Write;
 
     if let Some(stdin) = stdin {

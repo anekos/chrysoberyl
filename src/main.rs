@@ -40,7 +40,6 @@ extern crate num;
 extern crate num_cpus;
 extern crate pom;
 extern crate rand;
-extern crate readline;
 extern crate regex;
 extern crate sha2;
 extern crate shell_escape;

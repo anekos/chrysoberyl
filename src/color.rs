@@ -5,7 +5,7 @@ use std::str::FromStr;
 use css_color_parser::Color as CssColor;
 use rand::{thread_rng, Rng};
 
-use crate::errors::{AppResult, Error as AppError};
+use crate::errors::{AppResult, AppError};
 
 
 

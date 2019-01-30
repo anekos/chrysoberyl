@@ -86,7 +86,7 @@ fn destination_path(source: &PathBuf, destination_directory: &PathBuf, file_name
     path.push(file_name);
 
     match if_exist {
-        Fail if path.exists() => Err(chry_error!("File already exists: {:?}", path)),
+        Fail if path.exists() => Err(AppError::File("Already exists", d!(path))),
         Fail | Overwrite  => Ok(path),
         NewFileName => {
             let mut suffix = 0;

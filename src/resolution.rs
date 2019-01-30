@@ -1,5 +1,5 @@
 
-use crate::errors::{AppResult, ErrorKind};
+use crate::errors::{AppResult, AppError};
 
 
 
@@ -61,7 +61,7 @@ pub fn from(s: &str) -> AppResult<(i64, i64)> {
         "XGA+" => (1152, 864),
         "nHD" => (640, 360),
         "qHD" => (960, 540),
-        _ => return Err(ErrorKind::InvalidValue(o!(s)))?
+        _ => return Err(AppError::InvalidValue(o!(s)))?
     };
     Ok(ok)
 }

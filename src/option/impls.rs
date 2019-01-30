@@ -8,7 +8,7 @@ use num::Integer;
 
 use crate::cherenkov::Operator;
 use crate::color::Color;
-use crate::errors::{AppResult, AppResultU, Error as AppError, ErrorKind};
+use crate::errors::{AppResult, AppResultU, AppError};
 use crate::gui::{Position, Screen};
 use crate::option::*;
 use crate::resolution;
@@ -65,7 +65,7 @@ impl OptionValue for Duration {
     fn set(&mut self, value: &str) -> AppResultU {
         value.parse().map(|value: f64| {
             *self = Duration::from_millis((value * 1000.0) as u64);
-        }).map_err(|it| ErrorKind::Standard(format!("Invalid value: {} ({})", value, it)))?;
+        }).map_err(|it| AppError::InvalidValueWithReason(s!(value), s!(it)))?;
         Ok(())
     }
 }
@@ -83,7 +83,7 @@ macro_rules! def_uint_cycle {
                     }
                     cs.push(v);
                 } else {
-                    return Err(ErrorKind::InvalidValue(o!(candidate)))?;
+                    return Err(AppError::InvalidValue(o!(candidate)));
                 }
             }
             if set_first_value {
@@ -114,18 +114,18 @@ macro_rules! def_uint {
             fn set(&mut self, value: &str) -> AppResultU {
                 value.parse().map(|value| {
                     *self = value;
-                }).map_err(|it| ErrorKind::Standard(format!("Invalid value: {} ({})", value, it)))?;
+                }).map_err(|it| AppError::InvalidValueWithReason(s!(value), s!(it)))?;
                 Ok(())
             }
 
             fn increment(&mut self, delta: usize) -> AppResultU {
-                if_let_some!(modified = self.checked_add(delta as $type), Err(ErrorKind::Fixed("Overflow"))?);
+                if_let_some!(modified = self.checked_add(delta as $type), Err(AppError::Overflow));
                 *self = modified;
                 Ok(())
             }
 
             fn decrement(&mut self, delta: usize) -> AppResultU {
-                if_let_some!(modified = self.checked_sub(delta as $type), Err(ErrorKind::Fixed("Overflow"))?);
+                if_let_some!(modified = self.checked_sub(delta as $type), Err(AppError::Overflow));
                 *self = modified;
                 Ok(())
             }
@@ -150,20 +150,20 @@ macro_rules! def_opt_uint {
             fn set(&mut self, value: &str) -> AppResultU {
                 value.parse().map(|value| {
                     *self = Some(value);
-                }).map_err(|it| ErrorKind::InvalidValue(s!(it)))?;
+                }).map_err(|it| AppError::InvalidValue(s!(it)))?;
                 Ok(())
             }
 
             fn increment(&mut self, delta: usize) -> AppResultU {
                 if_let_some!(current = *self, Ok(()));
-                if_let_some!(modified = current.checked_add(delta as $type), Err(ErrorKind::Fixed("Overflow"))?);
+                if_let_some!(modified = current.checked_add(delta as $type), Err(AppError::Overflow));
                 *self = Some(modified);
                 Ok(())
             }
 
             fn decrement(&mut self, delta: usize) -> AppResultU {
                 if_let_some!(current = *self, Ok(()));
-                if_let_some!(modified = current.checked_sub(delta as $type), Err(ErrorKind::Fixed("Overflow"))?);
+                if_let_some!(modified = current.checked_sub(delta as $type), Err(AppError::Overflow));
                 *self = Some(modified);
                 Ok(())
             }
@@ -190,7 +190,7 @@ impl FromStr for AutoPaging {
             let result = match src {
                 "always" | "a" => Always,
                 "smart" | "s" => Smart,
-                _ => return Err(ErrorKind::InvalidValue(o!(src)))?
+                _ => return Err(AppError::InvalidValue(o!(src)))
             };
             Ok(result)
         })
@@ -266,7 +266,7 @@ impl FromStr for FitTo {
                         return Ok(Scale(scale))
                     }
                 }
-                return Err(ErrorKind::InvalidValue(o!(src)))?
+                return Err(AppError::InvalidValue(o!(src)))
             }
         };
         Ok(result)
@@ -381,7 +381,7 @@ where T: PartialEq + Copy + FromStr {
             }
             cs.push(candidate);
         } else {
-            return Err(AppError::from(ErrorKind::InvalidValue(o!(candidate))));
+            return Err(AppError::InvalidValue(o!(candidate)));
         }
     }
 
@@ -426,7 +426,7 @@ impl FromStr for Alignment {
             "left" | "l" | "start" => Start,
             "right" | "r" | "end" => End,
             "center" | "c" => Center,
-            _ => return Err(ErrorKind::InvalidValue(o!(src)))?,
+            _ => return Err(AppError::InvalidValue(o!(src))),
         };
         Ok(Alignment(align))
     }
@@ -473,7 +473,7 @@ impl FromStr for Screen {
             "log-view" => Screen::LogView,
             "command-line" => Screen::CommandLine,
             "ui" => Screen::UserUI,
-            _ => return Err(ErrorKind::InvalidValue(o!(src)))?,
+            _ => return Err(AppError::InvalidValue(o!(src))),
         };
         Ok(screen)
     }

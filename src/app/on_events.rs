@@ -26,7 +26,7 @@ use crate::controller;
 use crate::editor;
 use crate::entry::filter::expression::Expr as FilterExpr;
 use crate::entry::{self, Meta, SearchKey, Entry, EntryContent, EntryType};
-use crate::errors::{AppResultU, ErrorKind};
+use crate::errors::{AppResultU, AppError};
 use crate::events::EventName;
 use crate::expandable::{Expandable, expand_all};
 use crate::file_extension::get_entry_type_from_filename;
@@ -190,8 +190,8 @@ pub fn on_controller(app: &mut App, source: controller::Source) -> AppResultU {
 }
 
 pub fn on_copy_to_clipbaord(app: &mut App, selection: ClipboardSelection) -> AppResultU {
-    let cell = app.gui.cells(false).nth(0).ok_or(ErrorKind::Fixed("No image"))?;
-    let pixbuf = cell.image.get_pixbuf().ok_or(ErrorKind::Fixed("No static image"))?;
+    let cell = app.gui.cells(false).nth(0).ok_or(AppError::Fixed("No image"))?;
+    let pixbuf = cell.image.get_pixbuf().ok_or(AppError::Fixed("No static image"))?;
     clipboard::store(selection, &pixbuf);
     Ok(())
 }
@@ -384,7 +384,7 @@ pub fn on_fire(app: &mut App, mapped: &Mapped, context: Option<OperationContext>
     if_let_some!((operations, inputs) = app.mapping.matched(mapped, width, height, true), {
         match *mapped {
             Mapped::Event(_) => (),
-            Mapped::Operation(ref name, _) => return Err(ErrorKind::UndefinedOperation(o!(name)))?,
+            Mapped::Operation(ref name, _) => return Err(AppError::UndefinedOperation(o!(name))),
             _ => puts_event!("mapped", "type" => mapped.type_name(), "name" => s!(mapped)),
         }
         Ok(())
@@ -434,7 +434,7 @@ pub fn on_gif(app: &mut App, path: &PathBuf, length: u8, show: bool) -> AppResul
     if_let_some!((entry, _) = app.current(), Ok(()));
     let imaging = app.get_imaging();
     let tx = app.tx.clone();
-    let destination = path.to_str().map(|it| it.to_string()).ok_or(ErrorKind::Fixed("WTF"))?;
+    let destination = path.to_str().map(|it| it.to_string()).ok_or(AppError::Fixed("WTF"))?;
 
     app.cache.generate_animation_gif(&entry, &imaging, length, path, move || {
         if show {
@@ -462,7 +462,7 @@ pub fn on_histoy_go(app: &mut App, updated: &mut Updated, forward: bool) -> AppR
     if_let_some!((entry, _) = app.current(), Ok(()));
 
     loop {
-        if_let_some!(key = app.history.go(forward), Err(ErrorKind::Fixed("No history"))?);
+        if_let_some!(key = app.history.go(forward), Err(AppError::Fixed("No history")));
         if *key == entry.key {
             continue;
         }
@@ -558,7 +558,7 @@ pub fn on_input(app: &mut App, mapped: &[Mapped], context: &Option<OperationCont
 pub fn on_jump(app: &mut App, updated: &mut Updated, name: &str, load: bool) -> AppResultU {
     use self::EntryType::*;
 
-    let key = app.marker.get(name).ok_or(ErrorKind::Fixed("Mark not found"))?;
+    let key = app.marker.get(name).ok_or(AppError::Fixed("Mark not found"))?;
 
     if let Some(index) = app.entries.search(&SearchKey::from_key(key)) {
         if app.paginator.update_index(Index(index)) {
@@ -566,7 +566,7 @@ pub fn on_jump(app: &mut App, updated: &mut Updated, name: &str, load: bool) -> 
         }
         return Ok(());
     } else if !load {
-      return Err(ErrorKind::Fixed("Entry not found"))?
+      return Err(AppError::Fixed("Entry not found"))
     }
 
     let (ref entry_type, ref path, _) = *key;
@@ -575,7 +575,7 @@ pub fn on_jump(app: &mut App, updated: &mut Updated, name: &str, load: bool) -> 
         Image => Operation::PushImage(Expandable::new(path.clone()), None, false, true, None),
         Archive => Operation::PushArchive(Expandable::new(path.clone()), None, false, true),
         PDF => Operation::PushPdf(Expandable::new(path.clone()), None, false, true),
-        _ => return Err(ErrorKind::Fixed("Entry not found"))?,
+        _ => return Err(AppError::Fixed("Entry not found")),
     };
 
     app.tx.send(op).unwrap();
@@ -700,12 +700,12 @@ pub fn on_mark(app: &mut App, updated: &mut Updated, name: String, key: Option<(
             app.entries.search(&SearchKey { path: path.clone(), index: Some(index) }).and_then(|index| {
                 app.entries.nth(index).map(|it| it.key.0)
             })
-        }).ok_or_else(|| ErrorKind::Fixed("Entry not found"))?;
+        }).ok_or_else(|| AppError::Fixed("Entry not found"))?;
         app.marker.insert(name, (entry_type, path, index));
     } else if let Some((ref entry, _)) = app.current() {
         app.marker.insert(name, entry.key.clone());
     } else {
-        return Err(ErrorKind::Fixed("Entry is empty"))?;
+        return Err(AppError::Fixed("Entry is empty"));
     }
 
     updated.label = true;
@@ -789,7 +789,7 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) -> 
                 file_operation.execute_with_buffer(png.as_ref(), &name)?
             },
             Message(ref message) =>
-                Err(ErrorKind::Standard(o!(message)))?
+                Err(AppError::Standard(o!(message)))?
         };
         let text = format!("{:?}", file_operation);
         puts_event!("operate_file", "status" => "ok", "operation" => text);
@@ -813,7 +813,7 @@ pub fn on_pdf_index(app: &mut App, r#async: bool, read_operations: bool, search_
         app.process_manager.call(r#async, &expand_all(command_line, search_path, &app.states.path_list), Some(stdin), read_as);
         Ok(())
     } else {
-        Err(ErrorKind::Fixed("current entry is not PDF"))?
+        Err(AppError::Fixed("current entry is not PDF"))
     }
 }
 
@@ -1507,7 +1507,7 @@ pub fn on_unmark(app: &mut App, target: &Option<String>) -> AppResultU {
     match *target {
         Some(ref target) => {
             if app.marker.remove(target).is_none() {
-               return Err(ErrorKind::Fixed("Mark not found"))?
+               return Err(AppError::Fixed("Mark not found"))
             }
         },
         None => app.marker.clear(),

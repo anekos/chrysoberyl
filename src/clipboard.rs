@@ -6,7 +6,7 @@ use gdk_pixbuf::{Pixbuf, PixbufExt};
 use gtk::{Clipboard, ClipboardExt};
 
 use crate::entry::Meta;
-use crate::errors::{AppResult, ErrorKind};
+use crate::errors::{AppResult, AppError};
 use crate::expandable::Expandable;
 use crate::operation::{Operation, ClipboardSelection};
 
@@ -40,7 +40,7 @@ pub fn get_operations(selection: ClipboardSelection, as_operation: bool, meta: O
         }).collect());
     }
 
-    Err(ErrorKind::Fixed("Invalid clipboard"))?
+    Err(AppError::Fixed("Invalid clipboard"))
 }
 
 pub fn store(selection: ClipboardSelection, pixbuf: &Pixbuf) {

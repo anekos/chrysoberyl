@@ -1,5 +1,5 @@
 
-use crate::errors::{AppResult, Error as AppError, ErrorKind};
+use crate::errors::{AppResult, AppError};
 
 
 
@@ -7,7 +7,7 @@ pub fn parse_bool(value: &str) -> AppResult<bool>{
     match value {
         "true" | "yes" | "on" | "1" => Ok(true),
         "false" | "no" | "off" | "0" => Ok(false),
-        _ => Err(AppError::from(ErrorKind::InvalidValue(o!(value))))
+        _ => Err(AppError::InvalidValue(o!(value)))
     }
 }
 

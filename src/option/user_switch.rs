@@ -6,7 +6,7 @@ use std::sync::mpsc::Sender;
 
 use num::Integer;
 
-use crate::errors::{AppResult, AppResultU, Error as AppError, ErrorKind};
+use crate::errors::{AppResult, AppResultU, AppError};
 use crate::operation::Operation;
 use crate::option::*;
 use crate::util::num::cycle_n;
@@ -31,8 +31,6 @@ pub struct UserSwitchManager {
     table: HashMap<String, UserSwitch>,
 }
 
-
-const OVERFLOW: ErrorKind = ErrorKind::Fixed("Overflow");
 
 
 impl UserSwitchManager {
@@ -93,7 +91,7 @@ impl OptionValue for UserSwitch {
     }
 
     fn decrement(&mut self, delta: usize) -> AppResultU {
-        if_let_some!(new_value = self.value.checked_sub(delta), Err(OVERFLOW)?);
+        if_let_some!(new_value = self.value.checked_sub(delta), Err(AppError::Overflow));
         self.value = new_value;
         self.send()
     }
@@ -107,12 +105,12 @@ impl OptionValue for UserSwitch {
     }
 
     fn increment(&mut self, delta: usize) -> AppResultU {
-        if_let_some!(new_value = self.value.checked_add(delta), Err(OVERFLOW)?);
+        if_let_some!(new_value = self.value.checked_add(delta), Err(AppError::Overflow));
         if new_value < self.values.len() {
             self.value = new_value;
             self.send()
         } else {
-            Err(OVERFLOW)?
+            Err(AppError::Overflow)
         }
     }
 
@@ -122,10 +120,10 @@ impl OptionValue for UserSwitch {
 
     fn set(&mut self, value: &str) -> AppResultU {
         value.parse()
-            .map_err(|it| AppError::from(ErrorKind::Standard(format!("Invalid value: {} ({})", value, it))))
+            .map_err(|it| AppError::InvalidValueWithReason(s!(value), s!(it)))
             .and_then(|value: usize| {
                 if value == 0 {
-                    Err(ErrorKind::Fixed("Zero is invalid"))?
+                    Err(AppError::Fixed("Zero is invalid"))
                 } else if value <= self.values.len() {
                     if self.value != value {
                         self.value = value - 1;
@@ -133,7 +131,7 @@ impl OptionValue for UserSwitch {
                     }
                     Ok(())
                 } else {
-                    Err(ErrorKind::Fixed("Too large"))?
+                    Err(AppError::Fixed("Too large"))
                 }
             })?;
         Ok(())
@@ -203,7 +201,7 @@ impl DummySwtich {
 
 impl OptionValue for DummySwtich {
     fn toggle(&mut self) -> AppResultU {
-        Err(ErrorKind::InvalidValue(o!(self.name)))?
+        Err(AppError::InvalidValue(o!(self.name)))
     }
 
     fn cycle(&mut self, _: bool, n: usize, _: &[String]) -> AppResultU {

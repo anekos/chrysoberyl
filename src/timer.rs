@@ -9,7 +9,7 @@ use std::time::Duration;
 use uuid::Uuid;
 use uuid_to_pokemon::uuid_to_pokemon;
 
-use crate::errors::{AppResult, AppResultU};
+use crate::errors::{AppResult, AppResultU, AppError};
 use crate::operation::Operation;
 
 
@@ -61,7 +61,7 @@ impl TimerManager {
                 Ok(())
             }
             None => {
-                Err(chry_error!("timer `{}` is not found", name))
+                Err(AppError::TimerNotFound(s!(name)))
             }
         }
     }

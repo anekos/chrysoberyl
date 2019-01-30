@@ -1,6 +1,5 @@
 
 use std::collections::{HashMap, VecDeque};
-use std::error;
 use std::fmt;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -19,7 +18,7 @@ use crate::controller;
 use crate::entry::filter::expression::Expr as FilterExpr;
 use crate::entry::{Meta, EntryType};
 use crate::entry;
-use crate::errors::{AppResult, Error as AppError, ErrorKind};
+use crate::errors::{AppResult, AppError, ParsingError};
 use crate::events::EventName;
 use crate::expandable::Expandable;
 use crate::filer;
@@ -174,14 +173,6 @@ pub enum MappingTarget {
     Input(KeySequence, Option<Region>),
     Event(Option<EventName>, Option<String>),
     Region(Key),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum ParsingError {
-    NotOperation(String),
-    InvalidArgument(String),
-    Fixed(&'static str),
-    TooFewArguments,
 }
 
 #[derive(Clone, Debug, PartialEq, Copy)]
@@ -403,17 +394,17 @@ fn _parse_from_str(s: &str) -> Result<Operation, ParsingError> {
 
 impl Operation {
     pub fn parse_from_vec(whole: &[String]) -> AppResult<Operation> {
-        _parse_from_vec(whole).map_err(AppError::from)
+        Ok(_parse_from_vec(whole)?)
     }
 
     pub fn parse(s: &str) -> AppResult<Operation> {
-        _parse_from_str(s).map_err(AppError::from)
+        Ok(_parse_from_str(s)?)
     }
 
     pub fn parse_fuzziness(s: &str) -> AppResult<Operation> {
         match _parse_from_str(s) {
             Err(ParsingError::NotOperation(_)) => Ok(Operation::Push(Expandable::new(o!(s)), None, false, false)),
-            Err(err) => Err(AppError::from(err)),
+            Err(err) => Err(err)?,
             Ok(op) => Ok(op)
         }
     }
@@ -437,39 +428,6 @@ impl Operation {
     }
 }
 
-
-impl fmt::Display for ParsingError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::ParsingError::*;
-
-        match *self {
-            Fixed(err) =>
-                write!(f, "{}", err),
-            InvalidArgument(ref err) =>
-                write!(f, "Invalid argument: {}", err),
-            NotOperation(ref name) =>
-                write!(f, "Not operation: {}", name),
-            TooFewArguments =>
-                write!(f, "Too few arguments"),
-        }
-    }
-}
-
-impl error::Error for ParsingError {
-    fn description(&self) -> &str {
-        "Parsing error"
-    }
-
-    fn cause(&self) -> Option<&error::Error> {
-        None
-    }
-}
-
-impl From<ParsingError> for ErrorKind {
-    fn from(error: ParsingError) -> Self {
-        ErrorKind::Parse(s!(error))
-    }
-}
 
 impl Default for ClipboardSelection {
     fn default() -> Self {

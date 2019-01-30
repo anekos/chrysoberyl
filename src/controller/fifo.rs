@@ -9,7 +9,7 @@ use std::thread::spawn;
 use libc;
 
 use crate::chainer;
-use crate::errors::ErrorKind;
+use crate::errors::AppError;
 use crate::operation::Operation;
 
 use crate::controller::process_lines;
@@ -25,7 +25,7 @@ pub fn register<T: AsRef<Path>>(tx: Sender<Operation>, path: &T) {
 
     if res != 0 {
         puts_error!(
-            chry_error!("Could not mkfifo {:?} {}", path.as_ref(), io::Error::last_os_error().raw_os_error().unwrap()),
+            AppError::Standard(format!("Could not mkfifo {:?} {}", path.as_ref(), io::Error::last_os_error().raw_os_error().unwrap())),
             "at" => "fragile_controller",
             "for" => d!(path.as_ref()));
         return
@@ -40,6 +40,6 @@ pub fn register<T: AsRef<Path>>(tx: Sender<Operation>, path: &T) {
             process_lines(&tx, file, "input/fragile");
             puts_event!("input/fragile/close");
         }
-        puts_error!(ErrorKind::Fixed("Could not open file"), "at" => "fragile_controller", "for" => p!(&path));
+        puts_error!(AppError::Fixed("Could not open file"), "at" => "fragile_controller", "for" => p!(&path));
     });
 }

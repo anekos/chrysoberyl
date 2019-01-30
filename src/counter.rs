@@ -1,5 +1,5 @@
 
-use crate::errors::{AppResultU, Error as AppError, ErrorKind};
+use crate::errors::{AppResultU, AppError};
 
 
 
@@ -30,7 +30,7 @@ impl Counter {
             self.value = item;
             Ok(())
         } else {
-            Err(AppError::from(ErrorKind::Fixed("Empty stack")))
+            Err(AppError::Fixed("Empty stack"))?
         }
     }
 

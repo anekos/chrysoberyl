@@ -18,7 +18,7 @@ use gtk::{Adjustment, Align, Builder, Button, ComboBoxText, ComboBoxTextExt, Css
 
 use crate::completion::gui::CompleterUI;
 use crate::constant;
-use crate::errors::{AppResult, AppResultU, Error as AppError, ErrorKind};
+use crate::errors::{AppResult, AppResultU, AppError};
 use crate::events::EventName;
 use crate::image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use crate::operation::Operation;
@@ -469,7 +469,7 @@ impl Gui {
         use crate::util::file;
         use crate::mruby::MRubyEnv;
 
-        if_let_some!(path = self.user_ui_file.as_ref(), Err(ErrorKind::Fixed("Option `user_ui` is empty."))?);
+        if_let_some!(path = self.user_ui_file.as_ref(), Err(AppError::Fixed("Option `user_ui` is empty.")));
 
         if let Some(content) = self.user_box_content.as_ref() {
             self.user_box.remove(content);
@@ -493,7 +493,7 @@ impl Gui {
             return Ok(())
         }
 
-        Err(ErrorKind::NotSupported("ID `user` not found"))?
+        Err(AppError::NotSupported("ID `user` not found"))
     }
 
     fn create_images(&mut self, state: &Views) {
@@ -798,7 +798,7 @@ impl FromStr for Direction {
             "up" | "u" =>
                 Ok(Up),
             _ =>
-                Err(ErrorKind::InvalidValue(o!(src)))?,
+                Err(AppError::InvalidValue(o!(src))),
         }
     }
 }
@@ -848,7 +848,7 @@ impl FromStr for Position {
             "bottom-right" | "right-bottom" | "br" =>
                 Ok(BottomRight),
             _ =>
-                Err(ErrorKind::InvalidValue(o!(src)))?,
+                Err(AppError::InvalidValue(o!(src))),
         }
     }
 }

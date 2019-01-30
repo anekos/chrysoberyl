@@ -18,7 +18,7 @@ use url::Url;
 use crate::app_path;
 use crate::constant::env_name;
 use crate::entry::{Meta, EntryType};
-use crate::errors::{AppResult, AppResultU, ErrorKind};
+use crate::errors::{AppResult, AppResultU, AppError};
 use crate::events::EventName;
 use crate::file_extension::get_entry_type_from_filename;
 use crate::mapping;
@@ -355,7 +355,7 @@ fn update_atime<T: AsRef<Path>>(path: &T) -> AppResultU {
     let ts = time::now().to_timespec();
     let mtime = FileTime::from_last_modification_time(&meta);
     let atime = FileTime::from_unix_time(ts.sec, ts.nsec as u32);
-    set_file_times(path, atime, mtime).map_err(|it| ErrorKind::Standard(s!(it)))?;
+    set_file_times(path, atime, mtime).map_err(|it| AppError::Standard(s!(it)))?;
     Ok(())
 }
 

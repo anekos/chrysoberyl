@@ -14,7 +14,7 @@ use std::sync::Arc;
 use natord;
 use url::Url;
 
-use crate::errors::{AppResultU, ErrorKind};
+use crate::errors::AppResultU;
 use crate::app::info::AppInfo;
 use crate::archive::ArchiveEntry;
 use crate::entry::filter::expression::Expr as FilterExpr;
@@ -472,7 +472,7 @@ impl EntryContainer {
             }
         }
 
-        let file = file.canonicalize().map_err(|_| ErrorKind::File("Could not canonicalize", d!(file)))?;
+        let file = file.canonicalize()?;
 
         if let Some(expand_level) = expand_level {
             if let Some(dir) = file.parent() {

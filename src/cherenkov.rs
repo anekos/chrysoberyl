@@ -13,7 +13,7 @@ use gdk_pixbuf::{Pixbuf, PixbufExt};
 use crate::color::Color;
 use crate::entry::image::Imaging;
 use crate::entry::{Entry, EntryContent, Key, self};
-use crate::errors::{AppResult, AppResultU, Error as AppError, ErrorKind};
+use crate::errors::{AppResult, AppResultU, AppError};
 use crate::gtk_utils::new_pixbuf_from_surface;
 use crate::image::{ImageBuffer, StaticImageBuffer};
 use crate::size::{Size, Region};
@@ -95,7 +95,7 @@ impl Cherenkoved {
                         let frame = gif::Frame::from_rgba(width, height, &mut *pixels);
                         encoder.write_frame(&frame)?;
                     } else {
-                        return Err(ErrorKind::Fixed("Invalid channels"))?;
+                        return Err(AppError::Fixed("Invalid channels"));
                     }
                 }
             }
@@ -104,9 +104,9 @@ impl Cherenkoved {
             Ok(())
         }
 
-        if_let_some!(cache_entry = self.cache.get(&entry.key).cloned(), Err(ErrorKind::Fixed("Not cherenkoved"))?);
+        if_let_some!(cache_entry = self.cache.get(&entry.key).cloned(), Err(AppError::Fixed("Not cherenkoved")));
         let size = {
-            if_let_some!(image = cache_entry.image.as_ref(), Err(ErrorKind::Fixed("Not cherenkoved"))?);;
+            if_let_some!(image = cache_entry.image.as_ref(), Err(AppError::Fixed("Not cherenkoved")));;
             image.get_fit_size()
         };
 
@@ -152,7 +152,7 @@ impl Cherenkoved {
                         let pixels: &mut [u8] = unsafe { pixbuf.get_pixels() };
                         encoder.write_frame(&pixels, None, None, Some(row_stride))?;
                     } else {
-                        return Err(ErrorKind::Fixed("Invalid channels"))?;
+                        return Err(AppError::Fixed("Invalid channels"));
                     }
                 }
             }
@@ -163,9 +163,9 @@ impl Cherenkoved {
             Ok(())
         }
 
-        if_let_some!(cache_entry = self.cache.get(&entry.key).cloned(), Err(ErrorKind::Fixed("Not cherenkoved"))?);
+        if_let_some!(cache_entry = self.cache.get(&entry.key).cloned(), Err(AppError::Fixed("Not cherenkoved")));
         let size = {
-            if_let_some!(image = cache_entry.image.as_ref(), Err(ErrorKind::Fixed("Not cherenkoved"))?);;
+            if_let_some!(image = cache_entry.image.as_ref(), Err(AppError::Fixed("Not cherenkoved")));;
             image.get_fit_size()
         };
 
@@ -381,7 +381,7 @@ impl FromStr for Operator {
             "hsl-saturation" => HslSaturation,
             "hsl-color" => HslColor,
             "hsl-luminosity" => HslLuminosity,
-            _ => return Err(ErrorKind::InvalidValue(o!(src)))?,
+            _ => return Err(AppError::InvalidValue(o!(src))),
         };
 
         Ok(Operator(result))
@@ -465,7 +465,7 @@ fn re_cherenkov(entry_content: &EntryContent, imaging: &Imaging, modifiers: &[Mo
         };
         Ok(StaticImageBuffer::new_from_pixbuf(&pixbuf, buf.original_size))
     } else {
-        Err(ErrorKind::Fixed("Not static image"))?
+        Err(AppError::Fixed("Not static image"))
     }
 }
 

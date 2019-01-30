@@ -10,7 +10,7 @@ use immeta::markers::Gif;
 use immeta::{self, GenericMetadata};
 
 use crate::entry::EntryContent;
-use crate::errors::{AppResult, ErrorKind};
+use crate::errors::{AppResult, AppError};
 use crate::gtk_utils::{new_pixbuf_from_surface, context_flip, context_rotate};
 use crate::image::{ImageBuffer, StaticImageBuffer, AnimationBuffer};
 use crate::poppler::PopplerDocument;
@@ -54,7 +54,7 @@ pub fn get_static_image_buffer(entry_content: &EntryContent, imaging: &Imaging) 
         Pdf(ref path, index) =>
             Ok(make_scaled_from_pdf(&**path, index, &imaging)),
         Message(ref message) =>
-            Err(ErrorKind::Standard(o!(message)))?,
+            Err(AppError::Standard(o!(message))),
     }
 }
 
@@ -67,7 +67,7 @@ pub fn get_animation_buffer(entry_content: &EntryContent) -> AppResult<Animation
             Ok(AnimationBuffer::new_from_file(path)?),
         Archive(_, ref entry) =>
             Ok(AnimationBuffer::new_from_slice(&*entry.content)),
-        _ => Err(ErrorKind::Fixed("Not implemented: get_animation_buffer"))?,
+        _ => Err(AppError::Fixed("Not implemented: get_animation_buffer")),
     }
 }
 
@@ -90,10 +90,10 @@ fn make_scaled(buffer: &[u8], imaging: &Imaging) -> AppResult<StaticImageBuffer>
     loader.write(buffer)?;
 
     if loader.close().is_err() {
-        return Err(ErrorKind::Fixed("Invalid image data"))?
+        return Err(AppError::Fixed("Invalid image data"))
     }
 
-    let source = loader.get_pixbuf().ok_or_else(|| ErrorKind::Fixed("Invalid image"))?;
+    let source = loader.get_pixbuf().ok_or_else(|| AppError::Fixed("Invalid image"))?;
     let original = Size::from_pixbuf(&source);
     let (scale, fitted, clipped_region) = original.rotate(imaging.drawing.rotation).fit_with_clipping(imaging.cell_size, &imaging.drawing);
 

@@ -3,7 +3,7 @@ use std::ffi::CStr;
 
 use crate::poppler::sys;
 
-use crate::errors::ErrorKind;
+use crate::errors::AppError;
 use crate::size::{Size, Region};
 
 
@@ -41,7 +41,7 @@ pub fn extract_action(action: *const sys::action_t) -> Option<Action> {
             None
         } else {
             CStr::from_ptr(title).to_str().map(|title| o!(title)).map_err(|err| {
-                puts_error!(ErrorKind::Standard(s!(err)), "at" => "poppler/extract_action")
+                puts_error!(AppError::Standard(s!(err)), "at" => "poppler/extract_action")
             }).ok()
         };
 

@@ -1326,6 +1326,8 @@ impl FromStr for Session {
                 Ok(Session::Markers),
             "timers" | "t" =>
                 Ok(Session::Timers),
+            "switches" | "sw" =>
+                Ok(Session::Switches),
             "all" | "a" =>
                 Ok(Session::All),
             _ =>

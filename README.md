@@ -212,15 +212,20 @@ Redraw image.
 
 ### SESSION
 
-- options
+- all
 - entries
-- paths
-- position
-- mappings
 - envs
 - filter
-- reading
-- all
+- mappings
+- markers
+- options
+- paths
+- position
+- queue
+- reading (options + entries + queue + markers + position)
+- switches
+
+
 
 
 ## @enable <OPTION>

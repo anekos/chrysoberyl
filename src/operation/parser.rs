@@ -1312,7 +1312,7 @@ impl FromStr for Session {
                 Ok(Session::Paths),
             "position" | "pos" | "p" =>
                 Ok(Session::Position),
-            "mappings" | "map" | "m" =>
+            "mappings" | "mapping" | "map" | "m" =>
                 Ok(Session::Mappings),
             "envs" | "env" | "E" =>
                 Ok(Session::Envs),
@@ -1322,11 +1322,11 @@ impl FromStr for Session {
                 Ok(Session::Reading),
             "status" | "stat" | "s" =>
                 Ok(Session::Status),
-            "markers" | "marks" =>
+            "markers" | "marker" | "marks" =>
                 Ok(Session::Markers),
-            "timers" | "t" =>
+            "timers" | "timer" | "t" =>
                 Ok(Session::Timers),
-            "switches" | "sw" =>
+            "switches" | "switch" | "sw" =>
                 Ok(Session::Switches),
             "all" | "a" =>
                 Ok(Session::All),

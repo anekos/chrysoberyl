@@ -513,10 +513,11 @@ impl App {
     }
 
     pub fn update_env_for_option(&self, option_name: &PreDefinedOptionName) {
-        use crate::session::{generate_option_value, WriteContext};
+        use crate::session::generate_option_value;
         use crate::constant::OPTION_VARIABLE_PREFIX;
 
-        let (name, value) = generate_option_value(option_name, &self.states, WriteContext::ENV);
+        let (name, value) = generate_option_value(option_name, &self.states);
+        let name = name.replace("-", "_").to_uppercase();
         env::set_var(format!("{}{}", OPTION_VARIABLE_PREFIX, name), value.unwrap_or_else(||  o!("")));
     }
 

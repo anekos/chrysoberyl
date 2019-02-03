@@ -7,7 +7,6 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use crate::app::App;
-use crate::color::Color;
 use crate::constant;
 use crate::entry::filter::expression::Expr as FilterExpr;
 use crate::entry::filter::writer::write as write_expr;
@@ -44,13 +43,6 @@ pub enum Session {
     Timers,
     All,
 }
-
-#[derive(Clone, Debug, Copy)]
-pub enum WriteContext {
-    Session,
-    ENV
-}
-
 
 pub trait StatusText {
     fn write_status_text(&self, _: &mut String);
@@ -111,88 +103,70 @@ pub fn write_session(app: &App, session: Session, out: &mut String) {
     }
 }
 
-pub fn generate_option_value(name: &PreDefinedOptionName, st: &States, context: WriteContext) -> (String, Option<String>) {
+pub fn generate_option_value(name: &PreDefinedOptionName, st: &States) -> (String, Option<String>) {
     use self::PreDefinedOptionName::*;
 
-    let esc = |s: &str| {
-        match context {
-            WriteContext::ENV => o!(s),
-            WriteContext::Session => escape(s),
-        }
-    };
-
-    let c2s = |c: &Color| {
-        esc(&format!("{}", c))
-    };
-
-    fn gen_name(name: &str, context: WriteContext) -> String {
-        match context {
-            WriteContext::Session => o!(name),
-            WriteContext::ENV => name.replace("-", "_").to_uppercase()
-        }
+    fn gen<T: fmt::Display + Sized>(name: &str, value: &T) -> (String, Option<String>) {
+        (o!(name), Some(s!(value)))
     }
 
-    fn gen<T: fmt::Display + Sized>(name: &str, value: &T, context: WriteContext) -> (String, Option<String>) {
-        (gen_name(name, context), Some(s!(value)))
+    fn gend(name: &str, value: &Duration) -> (String, Option<String>) {
+        (o!(name), Some(s!(duration_to_seconds(value))))
     }
 
-    fn gend(name: &str, value: &Duration, context: WriteContext) -> (String, Option<String>) {
-        (gen_name(name, context), Some(s!(duration_to_seconds(value))))
+    fn geno<T: fmt::Display + Sized>(name: &str, value: &Option<T>) -> (String, Option<String>) {
+        (o!(name), value.as_ref().map(|it| s!(it)))
     }
 
-    fn geno<T: fmt::Display + Sized>(name: &str, value: &Option<T>, context: WriteContext) -> (String, Option<String>) {
-        (gen_name(name, context), value.as_ref().map(|it| s!(it)))
-    }
-
-    fn genp(name: &str, value: &Option<PathBuf>, context: WriteContext) -> (String, Option<String>) {
+    fn genp(name: &str, value: &Option<PathBuf>) -> (String, Option<String>) {
         if_let_some!(value = value.as_ref().and_then(|it| it.to_str()), (o!(name), None));
-        (gen_name(name, context), Some(o!(value)))
+        (o!(name), Some(o!(value)))
     }
 
     match *name {
-        AbbrevLength => gen("abbrev-length", &st.abbrev_length, context),
-        Animation => gen("animation", &b2s(st.drawing.animation), context),
-        AutoReload => gen("auto-reload", &b2s(st.auto_reload), context),
-        AutoPaging => gen("auto-paging", &st.auto_paging, context),
-        ColorLink => gen("link-color", &c2s(&st.drawing.link_color), context),
-        CurlConnectTimeout => geno("curl-connect-timeout", &st.curl_options.connect_timeout, context),
-        CurlFollowLocation => gen("curl-follow-location", &b2s(st.curl_options.follow_location), context),
-        CurlLowSpeedLimit => geno("curl-low-speed-limit", &st.curl_options.low_speed_limit, context),
-        CurlLowSpeedTime => geno("curl-low-speed-time", &st.curl_options.low_speed_time, context),
-        CurlTimeout => geno("curl-timeout", &st.curl_options.connect_timeout, context),
-        FitTo => gen("fit-to", &st.drawing.fit_to, context),
-        Freeze => gen("freeze", &b2s(st.freezed), context),
-        HistoryFile => genp("history-file", &st.history_file, context),
-        HorizontalFlip => gen("horizontal-flip", &st.drawing.horizontal_flip, context),
-        HorizontalViews => gen("horizontal-views", &st.view.cols, context),
-        IdleTime => gend("idle-time", &st.idle_time, context),
-        IgnoreFailures => gen("ignore-failures", &b2s(st.ignore_failures), context),
-        InitialPosition => gen("initial-position", &st.initial_position, context),
-        LogFile => gen("log-file", &st.log_file, context),
-        MaskOperator => gen("mask-operator", &st.drawing.mask_operator, context),
-        PathList => gen("path", &st.path_list, context),
-        PreFetchEnabled => gen("pre-render", &b2s(st.pre_fetch.enabled), context),
-        PreFetchLimit => gen("pre-render-limit", &st.pre_fetch.limit_of_items, context),
-        PreFetchPageSize => gen("pre-render-pages", &st.pre_fetch.page_size, context),
-        PreFetchStages => gen("pre-render-stages", &st.pre_fetch.cache_stages, context),
-        Reverse => gen("reverse", &b2s(st.reverse), context),
-        Rotation => gen("rotation", &st.drawing.rotation, context),
-        Screen => gen("screen", &st.screen, context),
-        SkipResizeWindow => gen("skip-resize-window", &st.skip_resize_window, context),
-        StablePush => gen("stable-push", &b2s(st.stable_push), context),
-        StatusBar => gen("status-bar", &b2s(st.status_bar), context),
-        StatusBarAlign => gen("status-bar-align", &st.status_bar_align, context),
-        StatusBarHeight => geno("status-bar-height", &st.status_bar_height, context),
-        StatusFormat => gen("status-format", &st.status_format, context),
-        StdOut => gen("stdout", &st.stdout, context),
-        Style => gen("style", &st.style, context),
-        EmptyStatusFormat => gen("empty-status-format", &st.empty_status_format, context),
-        TimeToHidePointer => geno("pointer", &st.time_to_hide_pointer, context),
-        TitleFormat => gen("title-format", &st.title_format, context),
-        UpdateCacheAccessTime => gen("update-cache-atime", &b2s(st.update_cache_atime), context),
-        VerticalFlip => gen("vertical-flip", &st.drawing.vertical_flip, context),
-        VerticalViews => gen("vertical-views", &st.view.rows, context),
-        WatchFiles => gen("watch-files", &b2s(st.watch_files), context),
+        AbbrevLength => gen("abbrev-length", &st.abbrev_length),
+        Animation => gen("animation", &b2s(st.drawing.animation)),
+        AutoReload => gen("auto-reload", &b2s(st.auto_reload)),
+        AutoPaging => gen("auto-paging", &st.auto_paging),
+        ColorLink => gen("link-color", &st.drawing.link_color),
+        CurlConnectTimeout => geno("curl-connect-timeout", &st.curl_options.connect_timeout),
+        CurlFollowLocation => gen("curl-follow-location", &b2s(st.curl_options.follow_location)),
+        CurlLowSpeedLimit => geno("curl-low-speed-limit", &st.curl_options.low_speed_limit),
+        CurlLowSpeedTime => geno("curl-low-speed-time", &st.curl_options.low_speed_time),
+        CurlTimeout => geno("curl-timeout", &st.curl_options.connect_timeout),
+        FitTo => gen("fit-to", &st.drawing.fit_to),
+        Freeze => gen("freeze", &b2s(st.freezed)),
+        HistoryFile => genp("history-file", &st.history_file),
+        HorizontalFlip => gen("horizontal-flip", &st.drawing.horizontal_flip),
+        HorizontalViews => gen("horizontal-views", &st.view.cols),
+        IdleTime => gend("idle-time", &st.idle_time),
+        IgnoreFailures => gen("ignore-failures", &b2s(st.ignore_failures)),
+        InitialPosition => gen("initial-position", &st.initial_position),
+        LogFile => gen("log-file", &st.log_file),
+        MaskOperator => gen("mask-operator", &st.drawing.mask_operator),
+        PathList => gen("path", &st.path_list),
+        PreFetchEnabled => gen("pre-render", &b2s(st.pre_fetch.enabled)),
+        PreFetchLimit => gen("pre-render-limit", &st.pre_fetch.limit_of_items),
+        PreFetchPageSize => gen("pre-render-pages", &st.pre_fetch.page_size),
+        PreFetchStages => gen("pre-render-stages", &st.pre_fetch.cache_stages),
+        Reverse => gen("reverse", &b2s(st.reverse)),
+        Rotation => gen("rotation", &st.drawing.rotation),
+        Screen => gen("screen", &st.screen),
+        SkipResizeWindow => gen("skip-resize-window", &st.skip_resize_window),
+        StablePush => gen("stable-push", &b2s(st.stable_push)),
+        StatusBar => gen("status-bar", &b2s(st.status_bar)),
+        StatusBarAlign => gen("status-bar-align", &st.status_bar_align),
+        StatusBarHeight => geno("status-bar-height", &st.status_bar_height),
+        StatusFormat => gen("status-format", &st.status_format),
+        StdOut => gen("stdout", &st.stdout),
+        Style => gen("style", &st.style),
+        EmptyStatusFormat => gen("empty-status-format", &st.empty_status_format),
+        TimeToHidePointer => geno("pointer", &st.time_to_hide_pointer),
+        TitleFormat => gen("title-format", &st.title_format),
+        UpdateCacheAccessTime => gen("update-cache-atime", &b2s(st.update_cache_atime)),
+        VerticalFlip => gen("vertical-flip", &st.drawing.vertical_flip),
+        VerticalViews => gen("vertical-views", &st.view.rows),
+        WatchFiles => gen("watch-files", &b2s(st.watch_files)),
     }
 }
 
@@ -200,9 +174,9 @@ pub fn write_options(st: &States, gui: &Gui, reading: bool, out: &mut String) {
     use self::PreDefinedOptionName::*;
 
     let write = |out: &mut String, name: &PreDefinedOptionName| {
-        let (name, value) = generate_option_value(name, st, WriteContext::Session);
+        let (name, value) = generate_option_value(name, st);
         if let Some(value) = value {
-            sprintln!(out, "@set {} {}", name, value);
+            sprintln!(out, "@set {} {}", name, escape(&value));
         } else {
             sprintln!(out, "@unset {}", name);
         }

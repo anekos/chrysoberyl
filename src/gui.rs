@@ -73,8 +73,9 @@ struct CellInner {
 pub struct Cell {
     pub error_text: Label,
     pub image: Image,
-    pub window: ScrolledWindow,
+    pub leaf_page: Image,
     pub stack: Stack,
+    pub window: ScrolledWindow,
 }
 
 pub struct CellIterator<'a> {
@@ -520,6 +521,11 @@ impl Gui {
                     it.show();
                 });
 
+                let leaf_page = tap!(it = Image::new_from_pixbuf(None), {
+                    WidgetExt::set_name(&it, "leaf-page");
+                    it.show();
+                });
+
                 let error_text = tap!(it = Label::new(None), {
                     WidgetExt::set_name(&it, "error-text");
                     it.set_text("ERROR LABEL");
@@ -529,12 +535,13 @@ impl Gui {
                 let stack = tap!(it = Stack::new(), {
                     it.add_named(&image, "image");
                     it.add_named(&error_text, "error-text");
+                    it.add_named(&leaf_page, "leaf-page");
                     it.show();
                     scrolled.add(&it);
                 });
 
                 self.grid.attach(&scrolled, col as i32, row as i32, 1, 1);
-                self.cells.push(Cell { image, window: scrolled, error_text, stack });
+                self.cells.push(Cell { image, error_text, leaf_page , stack, window: scrolled });
             }
         }
 
@@ -594,6 +601,7 @@ impl Cell {
     pub fn draw(&self, image_buffer: &ImageBuffer, cell_size: Size, fit_to: &FitTo) -> Option<f64> {
         self.window.set_size_request(cell_size.width, cell_size.height);
         self.error_text.hide();
+        self.leaf_page.hide();
         self.image.show();
         self.stack.set_visible_child_name("image");
 
@@ -610,11 +618,14 @@ impl Cell {
     pub fn hide(&self) {
         self.error_text.hide();
         self.image.set_from_pixbuf(None);
+        self.leaf_page.show();
+        self.stack.set_visible_child_name("leaf-page");
     }
 
     pub fn show_error(&self, text: &str, cell_size: Size) {
         self.window.set_size_request(cell_size.width, cell_size.height);
         self.image.hide();
+        self.leaf_page.hide();
         self.error_text.set_text(text);
         self.error_text.show();
         self.stack.set_visible_child_name("error-text");

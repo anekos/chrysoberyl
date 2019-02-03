@@ -1316,7 +1316,7 @@ impl FromStr for Session {
                 Ok(Session::Mappings),
             "envs" | "env" | "E" =>
                 Ok(Session::Envs),
-            "filter" | "f" =>
+            "filter" | "filters" | "f" =>
                 Ok(Session::Filter),
             "reading" | "read" | "r" =>
                 Ok(Session::Reading),

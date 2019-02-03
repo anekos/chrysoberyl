@@ -86,6 +86,7 @@ pub fn write_session(app: &App, session: Session, out: &mut String) {
         Filter => write_filters(&app.states.last_filter, out),
         Timers => write_timers(&app.timers, out),
         Reading => {
+            write_filters(&app.states.last_filter, out);
             write_options(&app.states, &app.gui, true, out);
             write_entries(&app.entries, out);
             write_queue(&app.remote_cache.state, out);

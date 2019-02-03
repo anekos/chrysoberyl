@@ -222,7 +222,7 @@ Redraw image.
 - paths
 - position
 - queue
-- reading (options + entries + queue + markers + position)
+- reading (filter + options + entries + queue + markers + position)
 - switches
 
 

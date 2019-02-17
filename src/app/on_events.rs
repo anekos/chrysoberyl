@@ -883,8 +883,7 @@ pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<
 }
 
 pub fn on_push_archive(app: &mut App, path: &PathBuf, meta: Option<Meta>, force: bool, show: bool, url: Option<String>) -> AppResultU {
-    archive::fetch_entries(path, meta, show, &app.encodings, app.tx.clone(), app.sorting_buffer.clone(), force, url);
-    Ok(())
+    archive::fetch_entries(path, meta, show, &app.encodings, app.tx.clone(), app.sorting_buffer.clone(), force, url)
 }
 
 pub fn on_push_clipboard(app: &mut App, selection: ClipboardSelection, as_operation: bool, meta: Option<Meta>, force: bool, show: bool) -> AppResultU {

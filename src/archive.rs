@@ -17,6 +17,7 @@ use crate::entry::Meta;
 use crate::file_extension::is_valid_image_filename;
 use crate::operation::{Operation, QueuedOperation};
 use crate::sorting_buffer::SortingBuffer;
+use crate::errors::AppResultU;
 
 
 
@@ -54,7 +55,7 @@ impl Hash for ArchiveEntry {
 
 
 #[allow(clippy::too_many_arguments)]
-pub fn fetch_entries(path: &PathBuf, meta: Option<Meta>, show: bool, encodings: &[EncodingRef], tx: Sender<Operation>, mut sorting_buffer: SortingBuffer<QueuedOperation>, force: bool, url: Option<String>) {
+pub fn fetch_entries(path: &PathBuf, meta: Option<Meta>, show: bool, encodings: &[EncodingRef], tx: Sender<Operation>, mut sorting_buffer: SortingBuffer<QueuedOperation>, force: bool, url: Option<String>) -> AppResultU {
     let from_index: HashMap<usize, (usize, String)> = {
         #[derive(Clone, Debug)]
         struct IndexWithName {
@@ -89,7 +90,7 @@ pub fn fetch_entries(path: &PathBuf, meta: Option<Meta>, show: bool, encodings: 
             builder.support_format(ReadFormat::All).ok();
             builder.support_filter(ReadFilter::All).ok();
 
-            let mut reader = builder.open_file(&path).unwrap();
+            let mut reader = builder.open_file(&path)?;
             let mut index = 0;
 
             while let Some(entry) = reader.next_header() {
@@ -167,6 +168,8 @@ pub fn fetch_entries(path: &PathBuf, meta: Option<Meta>, show: bool, encodings: 
 
         tx.send(Operation::Pull).unwrap();
     }));
+
+    Ok(())
 }
 
 

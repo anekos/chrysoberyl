@@ -386,7 +386,7 @@ Key/Mouse mapping.
 See STDOUT of chrysoberyl for `INPUT`.
 
 
-### @map event [--once|o] [(--repeat|-r) <TIMES>] <EVENT_NAME> <OPERATION>
+### @map event [--once|o] [(--repeat|-r) <TIMES>] [(--group|-g) <GROUP>] <EVENT_NAME> <OPERATION>
 
 When `EVENT_NAME` is fired, execute `OPERATION`
 
@@ -644,6 +644,9 @@ If the result of `FILTER_EXPRESSION` evaluation is false, execute the operation.
 
 Unmap the `@map`ped.
 
+### @unmap event [(--group|-g) <GROUP>] [<EVENT_NAME>]
+
+Unmap a event
 
 ## @unset <OPTION>
 

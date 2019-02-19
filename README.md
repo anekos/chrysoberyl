@@ -102,7 +102,7 @@ Backword history
 Change working directory.
 
 
-## @cherenkov [(--radius|-r) <RADIUS>] [(--random-hue|--hue|-h) <HUE>] [(--spokes|-s) <SPOKES>] [-x <X>] [-y <Y>] [(-c|--color) <CSS_COLOR>] [--seed|-S <SEED>]
+## @cherenkov [(--radius|-r) <RADIUS>] [(--random-hue|--hue|-h) <HUE>] [(--spokes|-s) <SPOKES>] [-x <X>] [-y <Y>] [(-c|--color) <CSS_COLOR>] [--seed|-S <SEED>] [--detect-eyes|-d]
 
 Cherenkoves current image.
 
@@ -112,6 +112,8 @@ Cherenkoves current image.
 - `<X>` `<Y>` → Position (0 to 1.0)
 - `<CSS_COLOR>` → Color
 - `<SEED>` → The seed of random color generator
+
+if you use `--detect-eyes`, set ENV `AWS_XXX` for [Amazon Rekognition](https://aws.amazon.com/rekognition/).
 
 ## Color examples
 

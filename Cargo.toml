@@ -71,8 +71,8 @@ shellexpand = "*"
 time = "*"
 tldextract = "*"
 url = "*"
-uuid = { version = "0.5", features = ["v4"] }
-uuid_to_pokemon = "*"
+uuid = {version = "0.7", features = ["v4"]}
+uuid_to_pokemon = "0.3"
 xml-rs = "*"
 
 # https://github.com/gtk-rs/gtk/blob/master/Cargo.toml

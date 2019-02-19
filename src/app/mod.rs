@@ -221,6 +221,8 @@ impl App {
                     on_define_switch(self, name, values, context),
                 Delete(expr) =>
                     on_delete(self, &mut updated, *expr),
+                DetectEyes(parameter) =>
+                    on_detect_eyes(self, parameter),
                 Draw =>
                     ok!(updated.image = true),
                 Editor(editor_command, files, sessions, comment_out, freeze) =>

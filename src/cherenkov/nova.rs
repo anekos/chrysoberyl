@@ -61,7 +61,7 @@ pub struct Seed {
 
 
 impl Seed {
-    pub fn new(text: &Option<String>) -> Self {
+    pub fn new(text: Option<&str>) -> Self {
         let mut value = [0;32];
         if let Some(ref text) = text {
             for (i, b) in text.as_bytes().iter().enumerate() {

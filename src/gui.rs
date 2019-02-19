@@ -328,9 +328,15 @@ impl Gui {
         self.grid_size.height as usize
     }
 
-    pub fn save<T: AsRef<Path>>(&self, path: &T, index: usize) -> AppResultU {
+    pub fn save<T: std::io::Write>(&self, out: &mut T, index: usize) -> AppResultU {
         let cell = self.cells(false).nth(index).ok_or("Out of index")?;
-        save_image(&cell.image, path)?;
+        save_image(&cell.image, out)?;
+        Ok(())
+    }
+
+    pub fn save_to_file<T: AsRef<Path>>(&self, path: &T, index: usize) -> AppResultU {
+        let mut file = File::create(path)?;
+        self.save(&mut file, index)?;
         Ok(())
     }
 
@@ -993,7 +999,7 @@ fn attach_ui_event(app_tx: &Sender<Operation>, object: &glib::Object) {
     }
 }
 
-fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> AppResultU {
+fn save_image<T: std::io::Write>(image: &Image, out: &mut T) -> AppResultU {
     use gdk::prelude::ContextExt;
 
     let pixbuf = image.get_pixbuf().ok_or("No pixbuf")?;
@@ -1002,8 +1008,7 @@ fn save_image<T: AsRef<Path>>(image: &Image, path: &T) -> AppResultU {
     let context = Context::new(&surface);
     context.set_source_pixbuf(&pixbuf, 0.0, 0.0);
     context.paint();
-    let mut file = File::create(path)?;
-    surface.write_to_png(&mut file).map_err(AppError::from)?;
+    surface.write_to_png(out).map_err(AppError::from)?;
     Ok(())
 }
 

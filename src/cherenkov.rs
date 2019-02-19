@@ -19,6 +19,7 @@ use crate::image::{ImageBuffer, StaticImageBuffer};
 use crate::size::{Size, Region};
 use crate::state::Drawing;
 
+pub mod eye_detector;
 pub mod fill;
 pub mod modified;
 pub mod nova;

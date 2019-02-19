@@ -144,32 +144,39 @@ pub fn parse_apng(args: &[String]) -> Result<Operation, ParsingError> {
 }
 
 pub fn parse_cherenkov(args: &[String]) -> Result<Operation, ParsingError> {
-    let mut radius = 0.1;
-    let mut random_hue = 0.0;
-    let mut n_spokes = 50;
-    let mut threads = None;
-    let mut x = None;
-    let mut y = None;
-    let mut color: Color = "random".parse().unwrap();
-    let mut seed = None;
+    let mut p = CherenkovParameter {
+        radius: 0.1,
+        random_hue: 0.0,
+        n_spokes: 50,
+        threads: None,
+        x: None,
+        y: None,
+        color: "random".parse().unwrap(),
+        seed: Seed::new(None),
+    };
+    let mut detect_eyes = false;
 
     {
         let mut ap = ArgumentParser::new();
-        ap.refer(&mut radius).add_option(&["--radius", "-r"], Store, "Radius");
-        ap.refer(&mut random_hue).add_option(&["--random-hue", "-h", "--hue"], Store, "Random Hue");
-        ap.refer(&mut n_spokes).add_option(&["--spokes", "-s"], Store, "Number of spokes");
-        ap.refer(&mut x).add_option(&["-x"], StoreOption, "X");
-        ap.refer(&mut y).add_option(&["-y"], StoreOption, "Y");
-        ap.refer(&mut color).add_option(&["-c", "--color"], Store, "CSS Color");
-        ap.refer(&mut seed).add_option(&["-S", "--seed"], StoreOption, "Seed for random number generator");
-        ap.refer(&mut threads).add_option(&["-t", "--threads", "--thread"], StoreOption, "Number of threads");
+        ap.refer(&mut p.radius).add_option(&["--radius", "-r"], Store, "Radius");
+        ap.refer(&mut p.random_hue).add_option(&["--random-hue", "-h", "--hue"], Store, "Random Hue");
+        ap.refer(&mut p.n_spokes).add_option(&["--spokes", "-s"], Store, "Number of spokes");
+        ap.refer(&mut p.x).add_option(&["-x"], StoreOption, "X");
+        ap.refer(&mut p.y).add_option(&["-y"], StoreOption, "Y");
+        ap.refer(&mut p.color).add_option(&["-c", "--color"], Store, "CSS Color");
+        ap.refer(&mut p.seed).add_option(&["-S", "--seed"], Store, "Seed for random number generator");
+        ap.refer(&mut p.threads).add_option(&["-t", "--threads", "--thread"], StoreOption, "Number of threads");
+        ap.refer(&mut detect_eyes).add_option(&["-d", "--detect-eyes"], StoreTrue, "Detect eyes");
         parse_args(&mut ap, args)
     } .and_then(|_| {
-        if n_spokes == 0 {
+        if p.n_spokes == 0 {
             return Err(ParsingError::InvalidArgument(o!("--spokes must be larger than 0")));
         }
-        let seed = Seed::new(&seed);
-        let op = Operation::Cherenkov(CherenkovParameter { radius, color, n_spokes, random_hue, seed, threads, x, y });
+        let op = if detect_eyes {
+            Operation::DetectEyes(p)
+        } else {
+            Operation::Cherenkov(p)
+        };
         Ok(Operation::WithMessage(Some(o!("Cherenkoving")), Box::new(op)))
     })
 }
@@ -1349,5 +1356,13 @@ impl FromStr for MetaEntry {
                 MetaEntry::new_without_value(o!(src))
             }
         })
+    }
+}
+
+impl FromStr for Seed {
+    type Err = &'static str;
+
+    fn from_str(src: &str) -> Result<Self, Self::Err> {
+        Ok(Seed::new(Some(src)))
     }
 }

@@ -56,6 +56,7 @@ pub enum Operation {
     CountDigit(u8),
     DefineUserSwitch(String, Vec<Vec<String>>),
     Delete(Box<entry::filter::expression::Expr>),
+    DetectEyes(CherenkovParameter),
     Draw,
     Editor(Vec<Expandable>, Vec<Expandable>, Vec<Session>, bool, bool), /* editor_command, options, session, comment_out, freeze */
     Error(String),
@@ -91,22 +92,21 @@ pub enum Operation {
     Next(Option<usize>, bool, MoveBy, bool, bool), /* count, ignore_views, move_by, wrap, forget */
     Nop,
     OperateFile(filer::FileOperation),
-    UIAction(UIActionType),
     Page(usize),
     PdfIndex(bool, bool, bool, Vec<Expandable>, poppler::index::Format, Option<String>), /* async, read_operations, search_path, ... */
-    PreFetch(u64),
-    Previous(Option<usize>, bool, MoveBy, bool, bool), /* count, ignore_views, move_by, wrap, forget */
     Pointer(bool),
     PopCount,
+    PreFetch(u64),
+    Previous(Option<usize>, bool, MoveBy, bool, bool), /* count, ignore_views, move_by, wrap, forget */
     Pull,
     Push(Expandable, Option<Meta>, bool, bool), /* path, meta, force, show */
-    PushCount,
     PushArchive(Expandable, Option<Meta>, bool, bool), /* path, meta, force, show */
     PushClipboard(ClipboardSelection, bool, Option<Meta>, bool, bool), /* selection, as_operation, meta, force, show */
+    PushCount,
     PushDirectory(Expandable, Option<Meta>, bool), /* path, meta, force */
     PushImage(Expandable, Option<Meta>, bool, bool, Option<u8>), /* path, meta, force, show, expand-level */
-    PushMessage(String, Option<Meta>, bool), /* message, meta, show */
     PushMemory(Vec<u8>, Option<Meta>, bool), /* memory, meta, show */
+    PushMessage(String, Option<Meta>, bool), /* message, meta, show */
     PushPdf(Expandable, Option<Meta>, bool, bool), /* path, meta, force, show */
     PushSibling(bool, bool, Option<Meta>, bool, bool), /* next?, clear, meta, force, show */
     PushURL(String, Option<Meta>, bool, bool, Option<EntryType>), /* path, meta, force, show, entry_type */
@@ -118,6 +118,7 @@ pub enum Operation {
     Refresh(bool), /* image_cache */
     RemoveEffects,
     ResetFocus,
+    UIAction(UIActionType),
     ResetScrolls(bool), /* to_end */
     Save(PathBuf, Vec<Session>, bool), /* path, sessions, freeze */
     SearchText(Option<String>, bool, Color), /* text, backward */
@@ -468,16 +469,17 @@ impl fmt::Debug for Operation {
             CountDigit(_) => "CountDigit",
             DefineUserSwitch(_, _) => "DefineUserSwitch",
             Delete(_) => "delete",
+            DetectEyes(_) => "DetectEyes",
             Draw => "Draw ",
             Editor(_, _, _, _, _) => "Editor",
             Error(ref error) => return write!(f, "Error({:?})", error),
             Eval(_) => "Eval",
             Expand(_, _) => "Expand",
-            Fire(_) => "Fire",
-            First(_, _, _, _) => "First",
             FileChanged(_) => "FileChanged",
             Fill(_, _, _, _, _, _) => "Fill",
             Filter(_, _) => "Filter",
+            Fire(_) => "Fire",
+            First(_, _, _, _) => "First",
             FlushBuffer => "FlushBuffer",
             FlyLeaves(_) => "FlyLeaves",
             Forward => "Forward",

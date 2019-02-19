@@ -35,7 +35,7 @@ use crate::gui::Direction;
 use crate::key::Key;
 use crate::logger;
 use crate::operation::option::{OptionName, OptionUpdater};
-use crate::operation::{ClipboardSelection, MappingTarget, MoveBy, Operation, OperationContext, self, ReadAs, SortKey, UIActionType};
+use crate::operation::{CherenkovParameter, ClipboardSelection, MappingTarget, MoveBy, Operation, OperationContext, ReadAs, self, SortKey, UIActionType};
 use crate::option::user_switch::DummySwtich;
 use crate::poppler::{PopplerDocument, self};
 use crate::script;
@@ -233,6 +233,14 @@ pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) -> AppR
     updated.message = true;
     Ok(())
 }
+
+pub fn on_detect_eyes(app: &mut App, parameter: CherenkovParameter) -> AppResultU {
+    let mut image = vec![];
+    app.gui.save(&mut image, 0)?;
+    crate::cherenkov::eye_detector::detect_eyes(app.tx.clone(), parameter, image);
+    Ok(())
+}
+
 
 pub fn on_editor(app: &mut App, editor_command: Vec<Expandable>, files: &[Expandable], sessions: &[Session], comment_out: bool, freeze: bool) -> AppResultU {
     let tx = app.tx.clone();
@@ -1739,7 +1747,7 @@ pub fn on_with_message(app: &mut App, updated: &mut Updated, message: Option<Str
 
 pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) -> AppResultU {
     let count = index.unwrap_or_else(|| app.counter.take()) - 1;
-    app.gui.save(path, count)?;
+    app.gui.save_to_file(path, count)?;
     Ok(())
 }
 

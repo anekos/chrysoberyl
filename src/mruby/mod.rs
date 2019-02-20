@@ -4,7 +4,7 @@ use std::env;
 use std::rc::Rc;
 
 use marksman_escape::Escape;
-use mrusty::{Mruby, MrubyImpl, Value, MrubyFile};
+use mrusty::{defines, mrfn, Mruby, mruby_class, mruby_defines, MrubyFile, MrubyImpl, mrusty_class, Value};
 use regex::{Regex, Captures};
 use xml;
 

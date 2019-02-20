@@ -11,7 +11,9 @@ use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread;
 use std::time::Duration;
 
+use closet::clone_army;
 use enum_primitive::FromPrimitive;
+use enum_primitive;
 use gdk::ScrollDirection;
 use gtk::prelude::*;
 use gtk::{Inhibit, SelectionData};

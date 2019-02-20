@@ -101,7 +101,7 @@ macro_rules! timeit {
 
             let t = Instant::now();
             let result = $body;
-            info!("{}/time: {}", $name, duration_to_string(&t.elapsed()));
+            log::info!("{}/time: {}", $name, duration_to_string(&t.elapsed()));
             result
         }
     }

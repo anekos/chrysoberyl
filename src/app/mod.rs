@@ -11,6 +11,7 @@ use std::time::Duration;
 use encoding::types::EncodingRef;
 use gtk::prelude::*;
 use libc;
+use log::trace;
 use rand::{self, ThreadRng};
 
 use crate::command_line::Initial;

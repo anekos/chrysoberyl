@@ -9,6 +9,7 @@ use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel, Sender};
 use std::thread::spawn;
 
+use closet::clone_army;
 use curl::easy::Easy as EasyCurl;
 use filetime::{FileTime, set_file_times};
 use md5;

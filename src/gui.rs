@@ -10,11 +10,14 @@ use std::str::FromStr;
 use std::sync::mpsc::Sender;
 
 use cairo::{Context, ImageSurface, Format};
+use closet::clone_army;
+use enum_primitive::*;
 use gdk::{Cursor, CursorType, Display, DisplayExt, EventMask, WindowExt};
 use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimationExt};
 use glib;
 use gtk::prelude::*;
 use gtk::{Adjustment, Align, Builder, Button, ComboBoxText, ComboBoxTextExt, CssProvider, CssProviderExt, Entry, EventBox, Grid, Image, Label, Layout, Overlay, RadioButton, Scale, ScrolledWindow, self, Stack, Switch, StyleContext, TextBuffer, TextView, Widget, WidgetExt, Window};
+use maplit::{convert_args, hashmap};
 
 use crate::completion::gui::CompleterUI;
 use crate::constant;

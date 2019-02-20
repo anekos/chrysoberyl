@@ -7,6 +7,7 @@ use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use std::thread::spawn;
 
+use closet::clone_army;
 use encoding::types::EncodingRef;
 use libarchive::archive::{ReadFilter, ReadFormat, Entry, FileType};
 use libarchive::reader::Builder;

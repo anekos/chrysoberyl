@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 
 use env_logger;
 use gtk;
+use log::info;
 
 use crate::app;
 use crate::command_line;

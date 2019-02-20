@@ -23,8 +23,10 @@
 
 use std::f64::consts::PI;
 
+use closet::clone_army;
 use crossbeam;
 use gdk_pixbuf::PixbufExt;
+use log::trace;
 use num_cpus;
 use rand::distributions::{Distribution, Uniform};
 use rand::{Rng, RngCore, SeedableRng, self, StdRng};

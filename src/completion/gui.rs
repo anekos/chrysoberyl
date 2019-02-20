@@ -3,9 +3,11 @@ use std::collections::HashSet;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use closet::clone_army;
 use glib::Type;
 use gtk::prelude::*;
 use gtk::{CellRendererText, EditableExt, Entry, EntryBuffer, ListStore, ScrolledWindow, TreeIter, TreePath, TreeSelection, TreeView, TreeViewColumn, Value};
+use maplit::hashset;
 
 use crate::completion::definition::{Definition, Argument, Value as Val, OptionValue};
 use crate::completion::path::get_candidates;

@@ -6,6 +6,7 @@ use std::sync::mpsc::{Sender, channel};
 use std::thread::{spawn, sleep};
 use std::time::Duration;
 
+use closet::clone_army;
 use uuid::Uuid;
 use uuid_to_pokemon::uuid_to_pokemon;
 

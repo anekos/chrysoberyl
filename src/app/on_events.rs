@@ -11,6 +11,8 @@ use std::thread::spawn;
 use std::time::Duration;
 
 use gtk::prelude::*;
+use log::trace;
+use maplit::{convert_args, hashmap};
 use natord;
 use rand::distributions::{Distribution, Uniform};
 

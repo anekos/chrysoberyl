@@ -4,6 +4,7 @@ use std::path::Path;
 use std::time::SystemTime;
 
 use immeta;
+use log::info;
 
 use crate::entry::EntryContent;
 use crate::lazy::Lazy;

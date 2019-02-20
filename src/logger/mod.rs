@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 
+use lazy_static::lazy_static;
 use shell_escape::escape;
 
 pub mod file;

@@ -6,6 +6,8 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use enum_iterator_derive::IntoEnumIterator;
+
 use crate::app::App;
 use crate::constant;
 use crate::entry::filter::expression::Expr as FilterExpr;

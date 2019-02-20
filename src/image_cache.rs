@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, Mutex, Condvar};
 
+use log::trace;
+
 use crate::cache::Cache;
 use crate::cherenkov::{Cherenkoved, Modifier};
 use crate::entry::image::Imaging;

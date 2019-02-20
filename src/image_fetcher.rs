@@ -5,6 +5,8 @@ use std::sync::Arc;
 use std::sync::mpsc::{channel, Sender};
 use std::thread::spawn;
 
+use closet::clone_army;
+use log::info;
 use num_cpus;
 
 use crate::entry::image::Imaging;

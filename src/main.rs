@@ -1,11 +1,4 @@
 
-#[macro_use] extern crate closet;
-#[macro_use] extern crate enum_iterator_derive;
-#[macro_use] extern crate enum_primitive;
-#[macro_use] extern crate lazy_static;
-#[macro_use] extern crate log;
-#[macro_use] extern crate maplit;
-#[macro_use] extern crate mrusty;
 
 #[macro_use] mod macro_utils;
 #[macro_use] mod logger;

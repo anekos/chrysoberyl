@@ -4,6 +4,8 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread::spawn;
 
+use lazy_static::lazy_static;
+
 use crate::operation::Operation;
 
 

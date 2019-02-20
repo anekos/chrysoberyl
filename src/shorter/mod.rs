@@ -2,6 +2,7 @@
 use std::path::{PathBuf, Path};
 
 use dirs::home_dir;
+use lazy_static::lazy_static;
 use tldextract::{TldExtractor, TldOption};
 use url::Url;
 

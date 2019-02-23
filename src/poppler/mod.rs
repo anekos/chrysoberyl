@@ -9,13 +9,15 @@ use std::mem::transmute;
 use std::path::Path;
 use std::ptr::{null, null_mut};
 
+#[cfg(feature = "poppler_lock")] use lazy_static::lazy_static;
+#[cfg(feature = "poppler_lock")] use log::trace;
 use cairo::{Context, ImageSurface, Format};
 use cairo;
 use gdk_pixbuf::Pixbuf;
 use glib::translate::ToGlibPtr;
 use libc::{c_int, c_double};
-use self::glib_sys::g_list_free;
 use self::gio_sys::{g_file_new_for_path, GFile};
+use self::glib_sys::g_list_free;
 use self::gobject_sys::{GObject, g_object_unref};
 
 use crate::color::Color;

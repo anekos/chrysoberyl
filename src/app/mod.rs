@@ -572,13 +572,13 @@ impl App {
         trace!("send_lazy_draw: delay={:?}", delay);
 
         if let Some(delay) = delay {
-            let tx = self.secondary_tx.clone();
+            let tx = self.primary_tx.clone();
             spawn(move || {
                 sleep(Duration::from_millis(delay));
                 tx.send(op).unwrap();
             });
         } else {
-            self.secondary_tx.send(op).unwrap();
+            self.primary_tx.send(op).unwrap();
         }
     }
 

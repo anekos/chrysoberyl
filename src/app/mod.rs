@@ -64,9 +64,9 @@ pub struct App {
     pub process_manager: ProcessManager,
     pub query_operation: Option<Vec<String>>,
     pub remote_cache: RemoteCache,
+    pub secondary_tx: Sender<Operation>,
     pub states: States,
     pub timers: TimerManager,
-    pub secondary_tx: Sender<Operation>,
     pub user_switches: UserSwitchManager,
     counter: Counter,
     current_base_scale: Option<f64>, // Scale of first scaled image

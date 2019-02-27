@@ -72,7 +72,7 @@ pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName
 
     let op = Operation::Fire(Mapped::Event(event_name.clone()));
     if r#async {
-        app.tx.send(op).unwrap();
+        app.secondary_tx.send(op).unwrap();
     } else {
         for (k, v) in context {
             env::set_var(constant::env_name(k), v);
@@ -187,7 +187,7 @@ pub fn on_clip(app: &mut App, updated: &mut Updated, inner: Region, context: Opt
 }
 
 pub fn on_controller(app: &mut App, source: controller::Source) -> AppResultU {
-    controller::register(app.tx.clone(), source)?;
+    controller::register(app.secondary_tx.clone(), source)?;
     Ok(())
 }
 
@@ -239,13 +239,13 @@ pub fn on_delete(app: &mut App, updated: &mut Updated, expr: FilterExpr) -> AppR
 pub fn on_detect_eyes(app: &mut App, parameter: CherenkovParameter) -> AppResultU {
     let mut image = vec![];
     app.gui.save(&mut image, 0)?;
-    crate::cherenkov::eye_detector::detect_eyes(app.tx.clone(), parameter, image);
+    crate::cherenkov::eye_detector::detect_eyes(app.secondary_tx.clone(), parameter, image);
     Ok(())
 }
 
 
 pub fn on_editor(app: &mut App, editor_command: Vec<Expandable>, files: &[Expandable], sessions: &[Session], comment_out: bool, freeze: bool) -> AppResultU {
-    let tx = app.tx.clone();
+    let tx = app.secondary_tx.clone();
     let source = with_ouput_string!(out, {
         for file in files {
             let mut file = File::open(file.expand())?;
@@ -443,7 +443,7 @@ pub fn on_fly_leaves(app: &mut App, updated: &mut Updated, n: usize) -> AppResul
 pub fn on_gif(app: &mut App, path: &PathBuf, length: u8, show: bool) -> AppResultU {
     if_let_some!((entry, _) = app.current(), Ok(()));
     let imaging = app.get_imaging();
-    let tx = app.tx.clone();
+    let tx = app.secondary_tx.clone();
     let destination = path.to_str().map(|it| it.to_string()).ok_or(AppError::Fixed("WTF"))?;
 
     app.cache.generate_animation_gif(&entry, &imaging, length, path, move || {
@@ -493,15 +493,15 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
                 on_events::on_push(app, updated, file.clone(), None, false, false)?;
             }
             CLE::Controller(source) => {
-                controller::register(app.tx.clone(), source)?;
+                controller::register(app.secondary_tx.clone(), source)?;
             },
             CLE::Expand(file, recursive) => {
                 on_events::on_push(app, updated, file.clone(), None, false, false)?;
-                app.tx.send(Operation::Expand(recursive, Some(Path::new(&file).to_path_buf()))).unwrap();
+                app.secondary_tx.send(Operation::Expand(recursive, Some(Path::new(&file).to_path_buf()))).unwrap();
             },
             CLE::Operation(op) => {
                 let op = Operation::parse_from_vec(&op)?;
-                app.tx.send(op).unwrap()
+                app.secondary_tx.send(op).unwrap()
             }
         }
         Ok(())
@@ -525,26 +525,26 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
     }
 
     if stdin_as_binary {
-        controller::stdin::register_as_binary(app.tx.clone());
+        controller::stdin::register_as_binary(app.secondary_tx.clone());
     } else {
-        controller::stdin::register(app.tx.clone(), app.states.history_file.clone());
+        controller::stdin::register(app.secondary_tx.clone(), app.states.history_file.clone());
     }
 
     if shuffle {
         let fix = first_path.map(|it| Path::new(&it).is_file()).unwrap_or(false);
-        app.tx.send(Operation::Shuffle(fix)).unwrap();
+        app.secondary_tx.send(Operation::Shuffle(fix)).unwrap();
     }
 
     app.initialize_envs_for_options();
     app.update_paginator_condition();
 
-    app.tx.send(EventName::Initialize.operation()).unwrap();
+    app.secondary_tx.send(EventName::Initialize.operation()).unwrap();
     Ok(())
 }
 
 
 pub fn on_initialized(app: &mut App) -> AppResultU {
-    app.tx.send(Operation::UpdateUI).unwrap();
+    app.secondary_tx.send(Operation::UpdateUI).unwrap();
 
     app.gui.register_ui_events(app.states.skip_resize_window, app.states.time_to_hide_pointer, &app.primary_tx);
     app.update_style();
@@ -588,7 +588,7 @@ pub fn on_jump(app: &mut App, updated: &mut Updated, name: &str, load: bool) -> 
         _ => return Err(AppError::Fixed("Entry not found")),
     };
 
-    app.tx.send(op).unwrap();
+    app.secondary_tx.send(op).unwrap();
     Ok(())
 }
 
@@ -664,12 +664,12 @@ pub fn on_link_action(app: &mut App, updated: &mut Updated, operation: &[String]
 
 pub fn on_load(app: &mut App, file: &Expandable, search_path: bool) -> AppResultU {
     let path = if search_path { file.search_path(&app.states.path_list) } else { file.expand() };
-    script::load_from_file(&app.tx, &path, &app.states.path_list);
+    script::load_from_file(&app.secondary_tx, &path, &app.states.path_list);
     Ok(())
 }
 
 pub fn on_load_default(app: &mut App) -> AppResultU {
-    script::load(&app.tx, DEFAULT_CONFIG, &app.states.path_list);
+    script::load(&app.secondary_tx, DEFAULT_CONFIG, &app.states.path_list);
     Ok(())
 }
 
@@ -747,7 +747,7 @@ pub fn on_multi(app: &mut App, mut operations: VecDeque<Operation>, r#async: boo
             app.operate(op, context);
         }
         if !operations.is_empty() {
-            app.tx.send(Operation::Multi(operations, r#async))?;
+            app.secondary_tx.send(Operation::Multi(operations, r#async))?;
         }
     } else {
         for op in operations {
@@ -885,7 +885,7 @@ pub fn on_push_count(app: &mut App) -> AppResultU {
 
 pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<Meta>, force: bool, show: bool) -> AppResultU {
     if is_url(&path) {
-        app.tx.send(Operation::PushURL(path, meta, force, show, None))?;
+        app.secondary_tx.send(Operation::PushURL(path, meta, force, show, None))?;
         return Ok(())
     }
 
@@ -893,13 +893,13 @@ pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<
 }
 
 pub fn on_push_archive(app: &mut App, path: &PathBuf, meta: Option<Meta>, force: bool, show: bool, url: Option<String>) -> AppResultU {
-    archive::fetch_entries(path, meta, show, &app.encodings, app.tx.clone(), app.sorting_buffer.clone(), force, url)
+    archive::fetch_entries(path, meta, show, &app.encodings, app.secondary_tx.clone(), app.sorting_buffer.clone(), force, url)
 }
 
 pub fn on_push_clipboard(app: &mut App, selection: ClipboardSelection, as_operation: bool, meta: Option<Meta>, force: bool, show: bool) -> AppResultU {
     let ops = clipboard::get_operations(selection, as_operation, meta, force, show)?;
     for op in ops {
-        app.tx.send(op).unwrap();
+        app.secondary_tx.send(op).unwrap();
     }
     Ok(())
 }
@@ -1016,9 +1016,9 @@ pub fn on_query(app: &mut App, updated: &mut Updated, operation: Vec<String>, ca
 pub fn on_queue(app: &mut App, op: Vec<String>, times: usize) -> AppResultU {
     if times == 0 {
         let op = Operation::parse_from_vec(&op)?;
-        app.tx.send(op).unwrap();
+        app.secondary_tx.send(op).unwrap();
     } else {
-        app.tx.send(Operation::Queue(op, times - 1)).unwrap();
+        app.secondary_tx.send(Operation::Queue(op, times - 1)).unwrap();
     }
     Ok(())
 }
@@ -1050,7 +1050,7 @@ pub fn on_record(app: &mut App, minimum_move: usize, before: usize, key: entry::
 
 pub fn on_record_pre(app: &mut App, operation: &[String], minimum_move: usize, context: Option<OperationContext>) -> AppResultU {
     if let Some((entry, index)) = app.current() {
-        app.tx.send(Operation::Record(minimum_move, index, entry.key.clone())).unwrap();
+        app.secondary_tx.send(Operation::Record(minimum_move, index, entry.key.clone())).unwrap();
     }
 
     let op = Operation::parse_from_vec(operation)?;
@@ -1244,7 +1244,7 @@ pub fn on_shell(app: &mut App, r#async: bool, read_as: ReadAs, search_path: bool
 
 pub fn on_shell_filter(app: &mut App, command_line: &[Expandable], search_path: bool) -> AppResultU {
     app.update_counter_env(true);
-    shell_filter::start(expand_all(command_line, search_path, &app.states.path_list), app.tx.clone());
+    shell_filter::start(expand_all(command_line, search_path, &app.states.path_list), app.secondary_tx.clone());
     Ok(())
 }
 
@@ -1262,7 +1262,7 @@ pub fn on_show(app: &mut App, updated: &mut Updated, count: Option<usize>, ignor
 }
 
 pub fn on_show_command_line(app: &mut App, initial: &str) -> AppResultU {
-    app.gui.show_command_line(initial, &app.tx)
+    app.gui.show_command_line(initial, &app.secondary_tx)
 }
 
 pub fn on_shuffle(app: &mut App, updated: &mut Updated, fix_current: bool) -> AppResultU {
@@ -1437,7 +1437,7 @@ pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f6
                     (right - f64!(x1)) / w,
                     (bottom - f64!(y1)) / h);
                 let op = Operation::Fire(Mapped::Region(region, button.clone(), index));
-                app.tx.send(op).unwrap();
+                app.secondary_tx.send(op).unwrap();
             }
         }
     }
@@ -1463,7 +1463,7 @@ pub fn on_ui_action(app: &mut App, action_type: UIActionType) -> AppResultU {
         SendOperation => {
             result = app.gui.pop_operation_entry().map(|op| {
                 if let Some(op) = op {
-                    app.tx.send(op).unwrap();
+                    app.secondary_tx.send(op).unwrap();
                 }
             });
             app.states.screen = Main;
@@ -1738,11 +1738,11 @@ pub fn on_window_resized(app: &mut App, updated: &mut Updated) -> AppResultU {
 pub fn on_with_message(app: &mut App, updated: &mut Updated, message: Option<String>, op: Operation, context: Option<OperationContext>) -> AppResultU {
     updated.message = true;
     app.update_message(message, false);
-    app.tx.send(Operation::UpdateUI)?;
+    app.secondary_tx.send(Operation::UpdateUI)?;
     if let Some(context) = context {
-        app.tx.send(Operation::Context(context, Box::new(op)))?;
+        app.secondary_tx.send(Operation::Context(context, Box::new(op)))?;
     } else {
-        app.tx.send(op)?;
+        app.secondary_tx.send(op)?;
     }
     Ok(())
 }

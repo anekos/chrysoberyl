@@ -66,7 +66,7 @@ pub struct App {
     pub remote_cache: RemoteCache,
     pub states: States,
     pub timers: TimerManager,
-    pub tx: Sender<Operation>,
+    pub secondary_tx: Sender<Operation>,
     pub user_switches: UserSwitchManager,
     counter: Counter,
     current_base_scale: Option<f64>, // Scale of first scaled image
@@ -88,8 +88,8 @@ pub struct App {
 
 impl App {
     pub fn build(mut initial: Initial) -> (App, Receiver<Operation>, Receiver<Operation>) {
-        let (tx, rx) = channel();
         let (primary_tx, primary_rx) = channel();
+        let (secondary_tx, secondary_rx) = channel();
 
         let mut states = States::default();
 
@@ -137,26 +137,26 @@ impl App {
             paginator: Paginator::new(),
             pre_fetch_serial: 0,
             primary_tx,
-            process_manager: ProcessManager::new(tx.clone()),
+            process_manager: ProcessManager::new(secondary_tx.clone()),
             query_operation: None,
-            remote_cache: RemoteCache::new(initial.curl_threads, tx.clone(), sorting_buffer.clone()),
+            remote_cache: RemoteCache::new(initial.curl_threads, secondary_tx.clone(), sorting_buffer.clone()),
             rng: rand::thread_rng(),
             search_text: None,
+            secondary_tx: secondary_tx.clone(),
             sorting_buffer,
             states,
-            timers: TimerManager::new(tx.clone()),
-            tx: tx.clone(),
-            user_switches: UserSwitchManager::new(tx.clone()),
-            watcher: Watcher::new(tx.clone()),
+            timers: TimerManager::new(secondary_tx.clone()),
+            user_switches: UserSwitchManager::new(secondary_tx.clone()),
+            watcher: Watcher::new(secondary_tx.clone()),
         };
 
         if initial.load_config {
-            script::load(&app.tx, &config::get_config_source(initial.config_file.as_ref()), &app.states.path_list);
+            script::load(&app.secondary_tx, &config::get_config_source(initial.config_file.as_ref()), &app.states.path_list);
         }
-        app.tx.send(Operation::InitialProcess(initial.entries, initial.shuffle, initial.stdin_as_binary)).unwrap();
-        error_channel::register(app.tx.clone());
+        app.secondary_tx.send(Operation::InitialProcess(initial.entries, initial.shuffle, initial.stdin_as_binary)).unwrap();
+        error_channel::register(app.secondary_tx.clone());
 
-        (app, primary_rx, rx)
+        (app, primary_rx, secondary_rx)
     }
 
     pub fn fire_event_with_env(&mut self, event_name: &EventName, env: HashMap<String, String>) {
@@ -165,7 +165,7 @@ impl App {
         let op = event_name.operation_with_env(env);
 
         match *event_name {
-            Initialize => self.tx.send(op).unwrap(),
+            Initialize => self.secondary_tx.send(op).unwrap(),
             _ => self.operate(op, None),
         }
     }
@@ -572,13 +572,13 @@ impl App {
         trace!("send_lazy_draw: delay={:?}", delay);
 
         if let Some(delay) = delay {
-            let tx = self.tx.clone();
+            let tx = self.secondary_tx.clone();
             spawn(move || {
                 sleep(Duration::from_millis(delay));
                 tx.send(op).unwrap();
             });
         } else {
-            self.tx.send(op).unwrap();
+            self.secondary_tx.send(op).unwrap();
         }
     }
 
@@ -657,19 +657,19 @@ impl App {
         self.current_base_scale = base_scale;
 
         if self.states.drawing.fit_to.is_scrollable() {
-            self.tx.send(Operation::UpdateUI).unwrap();
+            self.secondary_tx.send(Operation::UpdateUI).unwrap();
             let op = if let Some(target_regions) = target_regions {
                 Operation::MakeVisibles(target_regions)
             } else {
                 Operation::ResetScrolls(to_end)
             };
-            self.tx.send(op).unwrap();
+            self.secondary_tx.send(op).unwrap();
         }
 
         if self.states.pre_fetch.enabled {
             self.pre_fetch_serial += 1;
             let pre_fetch_serial = self.pre_fetch_serial;
-            let tx = self.tx.clone();
+            let tx = self.secondary_tx.clone();
             spawn(move || {
                 sleep(Duration::from_millis(200));
                 tx.send(Operation::PreFetch(pre_fetch_serial)).unwrap();
@@ -877,7 +877,7 @@ impl App {
     fn update_ui_visibility(&mut self) {
         self.gui.set_status_bar_visibility(self.states.status_bar);
 
-        match self.gui.change_screen(self.states.screen, &self.tx) {
+        match self.gui.change_screen(self.states.screen, &self.secondary_tx) {
             Ok(changed) if !changed => return,
             Ok(_) => (),
             Err(err) => {

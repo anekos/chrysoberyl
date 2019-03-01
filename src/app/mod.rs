@@ -875,7 +875,7 @@ impl App {
     }
 
     fn update_ui_visibility(&mut self) {
-        self.gui.set_status_bar_visibility(self.states.status_bar);
+        self.gui.set_status_bar_visibility(self.states.status_bar, self.states.status_bar_overlay);
 
         match self.gui.change_screen(self.states.screen, &self.secondary_tx) {
             Ok(changed) if !changed => return,

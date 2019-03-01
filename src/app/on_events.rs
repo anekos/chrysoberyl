@@ -1580,6 +1580,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 StatusBar => &mut app.states.status_bar,
                 StatusBarAlign => &mut app.states.status_bar_align,
                 StatusBarHeight => &mut app.states.status_bar_height,
+                StatusBarOverlay => &mut app.states.status_bar_overlay,
                 StatusFormat => &mut app.states.status_format,
                 StdOut => &mut app.states.stdout,
                 Style => &mut app.states.style,
@@ -1639,7 +1640,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 app.remote_cache.set_ignore_failures(app.states.ignore_failures),
             StablePush =>
                 app.sorting_buffer.set_stability(app.states.stable_push),
-            StatusBar => {
+            StatusBar | StatusBarOverlay => {
                 app.update_ui_visibility();
                 updated.size = true;
             },

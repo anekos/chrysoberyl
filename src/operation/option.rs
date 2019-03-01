@@ -56,6 +56,7 @@ iterable_enum!(PreDefinedOptionName =>
     StatusBar,
     StatusBarAlign,
     StatusBarHeight,
+    StatusBarOverlay,
     StatusFormat,
     StdOut,
     Style,
@@ -107,6 +108,7 @@ impl FromStr for PreDefinedOptionName {
             "status-bar" | "status"                => StatusBar,
             "status-bar-align" | "status-align"    => StatusBarAlign,
             "status-bar-height" | "status-height"  => StatusBarHeight,
+            "status-bar-overlay" | "status-overlay"=> StatusBarOverlay,
             "status-format"                        => StatusFormat,
             "style"                                => Style,
             "stdout"                               => StdOut,
@@ -133,7 +135,7 @@ impl PreDefinedOptionName {
                 ColorLink |
                 FitTo | Freeze | HorizontalFlip | HorizontalViews | IdleTime | IgnoreFailures | InitialPosition | LogFile | MaskOperator |
                 PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize | PreFetchStages |
-                Reverse | Rotation | Screen | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusFormat | EmptyStatusFormat | Style |
+                Reverse | Rotation | Screen | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusBarOverlay | StatusFormat | EmptyStatusFormat | Style |
                 StdOut | UpdateCacheAccessTime | TimeToHidePointer | TitleFormat | VerticalFlip | VerticalViews | WatchFiles | HistoryFile => false,
             CurlConnectTimeout | CurlFollowLocation | CurlLowSpeedLimit | CurlLowSpeedTime | CurlTimeout => true,
         }

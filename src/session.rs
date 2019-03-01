@@ -159,6 +159,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States) -> (Strin
         StatusBar => gen("status-bar", &b2s(st.status_bar)),
         StatusBarAlign => gen("status-bar-align", &st.status_bar_align),
         StatusBarHeight => geno("status-bar-height", &st.status_bar_height),
+        StatusBarOverlay => gen("status-bar-overlay", &b2s(st.status_bar_overlay)),
         StatusFormat => gen("status-format", &st.status_format),
         StdOut => gen("stdout", &st.stdout),
         Style => gen("style", &st.style),

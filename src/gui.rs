@@ -58,6 +58,8 @@ pub struct Gui {
     log_box: ScrolledWindow,
     log_buffer: TextBuffer,
     operation_box: gtk::Box,
+    overlaid_label: Label,
+    overlaid_status_bar: gtk::Box,
     status_bar: Layout,
     status_bar_inner: gtk::Box,
     ui_event: Option<UIEvent>,
@@ -148,6 +150,15 @@ impl Gui {
             it.set_halign(Align::Center);
         });
 
+        let status_bar_inner = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
+            WidgetExt::set_name(&it, "status-bar");
+            it.pack_end(&label, true, true, 0);
+        });
+
+        let status_bar = tap!(it = Layout::new(None, None), {
+            WidgetExt::set_name(&it, "status-bar-layout");
+            it.add(&status_bar_inner);
+        });
         let hidden_label = Label::new("HIDDEN");
 
         let hidden_bar_inner = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
@@ -159,14 +170,19 @@ impl Gui {
             it.add(&hidden_bar_inner);
         });
 
-        let status_bar_inner = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
-            WidgetExt::set_name(&it, "status-bar");
-            it.pack_end(&label, true, true, 0);
+        let overlaid_label = tap!(it = Label::new(None), {
+            WidgetExt::set_name(&it, "overlaid-status-text");
+            it.set_halign(Align::Center);
         });
 
-        let status_bar = tap!(it = Layout::new(None, None), {
-            WidgetExt::set_name(&it, "status-bar-layout");
-            it.add(&status_bar_inner);
+        let overlaid_status_bar = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
+            WidgetExt::set_name(&it, "overlaid-status-bar");
+            it.pack_end(&overlaid_label, false, true, 0);
+        });
+
+        let overlaid_status_box = tap!(it = gtk::Box::new(Orientation::Vertical, 0), {
+            WidgetExt::set_name(&it, "overlaid-status-box");
+            it.pack_end(&overlaid_status_bar, false, true, 0);
         });
 
         let operation_entry = tap!(it = Entry::new(), {
@@ -208,6 +224,7 @@ impl Gui {
             it.add_overlay(&vbox);
             it.add_overlay(&hidden_bar);
             it.add_overlay(&operation_box);
+            it.add_overlay(&overlaid_status_box);
             it.add_overlay(&user_box);
             it.show_all();
             it.add_overlay(&log_box);
@@ -243,6 +260,8 @@ impl Gui {
             log_view,
             operation_box,
             operation_entry,
+            overlaid_label,
+            overlaid_status_bar,
             overlay,
             status_bar,
             status_bar_inner,
@@ -438,14 +457,22 @@ impl Gui {
 
     pub fn set_status_bar_markup(&self, markup: &str) {
         self.label.set_markup(markup);
+        self.overlaid_label.set_markup(markup);
         self.hidden_label.set_markup(markup);
     }
 
-    pub fn set_status_bar_visibility(&self, visibility: bool) {
+    pub fn set_status_bar_visibility(&self, visibility: bool, overlay: bool) {
         if visibility {
-            self.status_bar.show_all();
+            if overlay {
+                self.status_bar.hide();
+                self.overlaid_status_bar.show_all();
+            } else {
+                self.status_bar.show_all();
+                self.overlaid_status_bar.hide();
+            }
         } else {
             self.status_bar.hide();
+            self.overlaid_status_bar.hide();
         }
     }
 

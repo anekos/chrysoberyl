@@ -54,6 +54,7 @@
 @map input t,p          @toggle auto-paging
 @map input t,r          @toggle reverse
 @map input t,s          @toggle status-bar
+@map input t,O          @toggle status-bar-overlay
 @map input t,v          @toggle vertical-flip
 @map input t,w          @toggle auto-reload
 

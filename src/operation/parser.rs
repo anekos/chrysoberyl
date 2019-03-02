@@ -856,8 +856,13 @@ where T: Fn(String, Option<Meta>, bool, bool) -> Operation {
         parse_args(&mut ap, args)
     } .map(|_| {
         let meta = new_opt_meta(meta);
-        let ops = paths.into_iter().map(|it| op(it, meta.clone(), force, show)).collect();
-        Operation::Multi(ops, false)
+        if paths.len() == 1 {
+            let path = paths.remove(0);
+            op(path, meta, force, show)
+        } else {
+            let ops = paths.into_iter().map(|it| op(it, meta.clone(), force, show)).collect();
+            Operation::Multi(ops, false)
+        }
     })
 }
 

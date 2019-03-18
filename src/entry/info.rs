@@ -3,7 +3,6 @@ use std::fs::metadata;
 use std::path::Path;
 use std::time::SystemTime;
 
-use immeta;
 use log::info;
 
 use crate::entry::EntryContent;
@@ -119,25 +118,15 @@ impl LazyEntryInfo {
 
 
 fn generate_static_image_size(path: &Path) -> Option<(Size, bool)> {
-    let img = immeta::load_from_file(path).ok();
+    let img = image_meta::load_from_file(path).ok();
     img.map(|img| {
-        let dim = img.dimensions();
-        (Size::new(dim.width as i32, dim.height as i32), is_animated(&img))
+        (Size::from(&img.dimensions), img.is_animation())
     })
 }
 
 fn generate_archive_image_size(buf: &[u8]) -> Option<(Size, bool)> {
-    let img = immeta::load_from_buf(buf).ok();
+    let img = image_meta::load_from_buf(buf).ok();
     img.map(|img| {
-        let dim = img.dimensions();
-        (Size::new(dim.width as i32, dim.height as i32), is_animated(&img))
+        (Size::from(&img.dimensions), img.is_animation())
     })
-}
-
-fn is_animated(meta: &immeta::GenericMetadata) -> bool {
-    if let Some(gif) = meta.as_ref::<immeta::markers::Gif>() {
-        gif.is_animated()
-    } else {
-        false
-    }
 }

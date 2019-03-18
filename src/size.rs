@@ -6,6 +6,7 @@ use std::ops::Add;
 use std::str::FromStr;
 
 use gdk_pixbuf::{Pixbuf, PixbufExt};
+use image_meta::Dimensions;
 
 use crate::resolution;
 use crate::state::Drawing;
@@ -364,6 +365,12 @@ impl FitTo {
 
     pub fn set_scale(&mut self, value: usize) {
         *self = FitTo::Scale(clamp!(MINIMUM_SCALE, value, MAXIMUM_SCALE));
+    }
+}
+
+impl From<&Dimensions> for Size {
+    fn from(dims: &Dimensions) -> Self {
+        Size::new(dims.width as i32, dims.height as i32)
     }
 }
 

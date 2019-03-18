@@ -44,7 +44,6 @@ glib = "*"
 glib-sys = "*"
 globset = "*"
 gobject-sys = "*"
-immeta = "*"
 lazy_static = "*"
 libarchive = "*"
 libarchive3-sys = "*"
@@ -76,6 +75,10 @@ url = "*"
 uuid = {version = "0.7", features = ["v4"]}
 uuid_to_pokemon = "0.3"
 xml-rs = "*"
+
+[dependencies.image-meta]
+git = "https://github.com/anekos/image-meta"
+rev = "0338360a124ee881a6221501851809aa36af6553"
 
 # https://github.com/gtk-rs/gtk/blob/master/Cargo.toml
 [dependencies.gtk]

@@ -5,7 +5,6 @@ use std::path::Path;
 
 use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimation, Colorspace, PixbufLoader, PixbufLoaderExt};
 use glib;
-use immeta;
 
 use crate::size::Size;
 
@@ -111,10 +110,7 @@ impl AnimationBuffer {
         })
     }
 
-    pub fn get_original_size(&self) -> Result<Size, immeta::Error> {
-        immeta::load_from_buf(&self.source).map(|img| {
-            let dim = img.dimensions();
-            Size::new(dim.width as i32, dim.height as i32)
-        })
+    pub fn get_original_size(&self) -> Result<Size, image_meta::ImageError> {
+        image_meta::load_from_buf(&self.source).map(|img| Size::from(&img.dimensions))
     }
 }

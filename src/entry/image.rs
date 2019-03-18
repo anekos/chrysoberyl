@@ -6,8 +6,7 @@ use std::path::Path;
 use cairo::{Context, ImageSurface, Format};
 use gdk::prelude::ContextExt;
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
-use immeta::markers::Gif;
-use immeta::{self, GenericMetadata};
+use image_meta::{ImageMeta, self};
 
 use crate::entry::EntryContent;
 use crate::errors::{AppResult, AppError};
@@ -75,11 +74,7 @@ pub fn get_animation_buffer(entry_content: &EntryContent) -> AppResult<Animation
 fn is_animation(entry_content: &EntryContent) -> bool {
     if let Some(img) = get_meta(entry_content) {
         if let Ok(img) = img {
-            if let Ok(gif) = img.into::<Gif>() {
-                if gif.is_animated() {
-                    return true
-                }
-            }
+            return img.is_animation()
         }
     }
     false
@@ -131,16 +126,16 @@ fn make_scaled_from_pdf<T: AsRef<Path>>(pdf_path: &T, index: usize, imaging: &Im
     StaticImageBuffer::new_from_pixbuf(&pixbuf, Some(size))
 }
 
-fn get_meta(entry_content: &EntryContent) -> Option<Result<GenericMetadata, immeta::Error>> {
+fn get_meta(entry_content: &EntryContent) -> Option<Result<ImageMeta, image_meta::ImageError>> {
     use self::EntryContent::*;
 
     match *entry_content {
         Image(ref path) =>
-            Some(immeta::load_from_file(&path)),
+            Some(image_meta::load_from_file(&path)),
         Archive(_, ref entry) =>
-            Some(immeta::load_from_buf(&entry.content)),
+            Some(image_meta::load_from_buf(&entry.content)),
         Memory(ref content, _) =>
-            Some(immeta::load_from_buf(content)),
+            Some(image_meta::load_from_buf(content)),
         Pdf(_,  _) | Message(_) =>
             None
     }

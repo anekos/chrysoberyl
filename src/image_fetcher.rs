@@ -6,7 +6,7 @@ use std::sync::mpsc::{channel, Sender};
 use std::thread::spawn;
 
 use closet::clone_army;
-use log::info;
+use log::{info, trace};
 use num_cpus;
 
 use crate::entry::image::Imaging;
@@ -102,6 +102,7 @@ fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mut Ve
 
 fn fetch(tx: Sender<FetcherOperation>, entry: Arc<Entry>, imaging: Imaging) {
     spawn(move || {
+        trace!("image_fetcher/get_image_buffer: key={:?}", &(*entry).key);
         let image_buffer = entry::image::get_image_buffer(&(*entry).content, &imaging).map_err(|it| s!(it));
         tx.send(FetcherOperation::Done(entry.key.clone(), imaging, image_buffer)).unwrap();
     });

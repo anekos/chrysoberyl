@@ -128,6 +128,7 @@ impl ImageCache {
             }
 
             stage.cache.get_or_update(entry.key.clone(), move |_| {
+                trace!("image_cache/get_image_buffer/get_image_buffer: key={:?}", entry.key);
                 entry::image::get_image_buffer(&entry.content, imaging).map_err(|it| s!(it))
             })
         })

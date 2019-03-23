@@ -1,7 +1,7 @@
 
 use std::collections::{HashSet, HashMap, VecDeque};
 use std::env;
-use std::ops::Range;
+use std::ops::{Range, RangeInclusive};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::mpsc::{channel, Sender, Receiver};
@@ -483,7 +483,7 @@ impl App {
         self.current_with(0)
     }
 
-    pub fn current_with(&self, delta: usize) -> Option<(Arc<Entry>, usize)> {
+    pub fn current_with(&self, delta: isize) -> Option<(Arc<Entry>, usize)> {
         self.paginator.current_index_with(delta).and_then(|index| {
             self.entries.nth(index).map(|it| (it, index))
         })
@@ -504,7 +504,7 @@ impl App {
     pub fn current_non_fly_leave(&self) -> Option<(Arc<Entry>, usize, usize)> {
         let len = self.gui.len();
         for delta in 0..len {
-            if let Some((entry, index)) = self.current_with(delta) {
+            if let Some((entry, index)) = self.current_with(delta as isize) {
                 return Some((entry, index, len - delta));
             }
         }
@@ -596,11 +596,31 @@ impl App {
         }
     }
 
-    fn pre_fetch(&mut self, imaging: Imaging, range: Range<usize>) {
-        let len = self.gui.len();
+    fn pre_fetch(&mut self, imaging: Imaging, range: RangeInclusive<isize>) {
+        let len = self.gui.len() as isize;
         let mut entries = VecDeque::new();
 
+        let reverse = self.states.last_direction == crate::state::Direction::Backward;
+
+        let mut range: Vec<isize> = range.collect();
+        range.sort_by(|a, b| {
+            let (aa, ba) = (a.abs(), b.abs());
+            if aa == ba {
+                if reverse {
+                    a.cmp(b)
+                } else {
+                    b.cmp(a)
+                }
+            } else {
+                aa.cmp(&ba)
+            }
+        });
+
         for n in range {
+            if n == 0 {
+                continue;
+            }
+
             for index in 0..len {
                 let index = index + len * n;
                 if let Some((entry, _)) = self.current_with(index) {
@@ -622,16 +642,12 @@ impl App {
 
         self.cancel_lazy_draw();
 
-        if self.states.pre_fetch.enabled {
-            self.pre_fetch(imaging.clone(), 0..1);
-        }
-
         let mut invalid_all = true;
         let mut showed = false;
         let mut base_scale = None;
 
         for (index, cell) in self.gui.cells(self.states.reverse).enumerate() {
-            if let Some((entry, _)) = self.current_with(index) {
+            if let Some((entry, _)) = self.current_with(index as isize) {
                 let image_buffer = self.cache.get_image_buffer(&entry, &imaging);
                 match image_buffer {
                     Ok(image_buffer) => {
@@ -914,7 +930,7 @@ impl App {
         let mut targets = HashSet::new();
 
         for delta in 0..len {
-            if let Some((entry, _)) = self.current_with(delta) {
+            if let Some((entry, _)) = self.current_with(delta as isize) {
                 if let EntryContent::Image(ref path) = entry.content {
                     targets.insert(path.to_path_buf());
                 }

@@ -114,7 +114,7 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
     let imaging = app.get_imaging();
 
     for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
-        if let Some((entry, _)) = app.current_with(index) {
+        if let Some((entry, _)) = app.current_with(index as isize) {
             let coord = context_coord.and_then(|it| cell.get_position_on_image(&it, &app.states.drawing));
             let x = if let Some(it) = parameter.x.or_else(|| coord.as_ref().map(|it| it.x)) { it } else { continue };
             let y = if let Some(it) = parameter.y.or_else(|| coord.as_ref().map(|it| it.y)) { it } else { continue };
@@ -145,7 +145,7 @@ pub fn on_cherenkov(app: &mut App, updated: &mut Updated, parameter: &operation:
 
 pub fn on_cherenkov_reset(app: &mut App, updated: &mut Updated) -> AppResultU {
     for (index, _) in app.gui.cells(app.states.reverse).enumerate() {
-        if let Some((ref entry, _)) = app.current_with(index) {
+        if let Some((ref entry, _)) = app.current_with(index as isize) {
             app.cache.cherenkov_reset(entry);
             updated.image_options = true;
         }
@@ -168,7 +168,7 @@ pub fn on_clear(app: &mut App, updated: &mut Updated) -> AppResultU {
 pub fn on_clear_cache_entry(app: &mut App, updated: &mut Updated, key: &entry::Key) -> AppResultU {
     app.cache.clear_each_entry(key);
     for (index, _) in app.gui.cells(app.states.reverse).enumerate() {
-        if let Some((ref entry, _)) = app.current_with(index) {
+        if let Some((ref entry, _)) = app.current_with(index as isize) {
             if entry.key == *key {
                 updated.image = true;
                 break;
@@ -313,7 +313,7 @@ pub fn on_file_changed(app: &mut App, updated: &mut Updated, path: &Path) -> App
     let len = app.gui.len();
     let imaging = app.get_imaging();
     for delta in 0..len {
-        if let Some((entry, _)) = app.current_with(delta) {
+        if let Some((entry, _)) = app.current_with(delta as isize) {
             if let EntryContent::Image(ref entry_path) = entry.content {
                 if entry_path == path {
                     app.cache.clear_entry(&imaging, &entry.key);
@@ -334,7 +334,7 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Optio
         .or_else(|| region.map(|it| (it, cell_index)))
         .unwrap_or_else(|| (Region::full(), cell_index));
 
-    if let Some((entry, _)) = app.current_with(cell_index) {
+    if let Some((entry, _)) = app.current_with(cell_index as isize) {
         let imaging = app.get_imaging();
         app.cache.cherenkov1(
             &entry,
@@ -634,7 +634,7 @@ pub fn on_link_action(app: &mut App, updated: &mut Updated, operation: &[String]
     let mut clicked = None;
     if let Some(&Mapped::Input(ref coord, _)) = context.as_ref().map(|it| &it.mapped) {
         for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
-            if let Some((entry, _)) = app.current_with(index) {
+            if let Some((entry, _)) = app.current_with(index as isize) {
                 if let Some(coord) = cell.get_position_on_image(coord, &app.states.drawing) {
                     if let Pdf(ref path, index) = entry.content  {
                         let page = PopplerDocument::new_from_file(&**path).nth_page(index);
@@ -834,7 +834,8 @@ pub fn on_pre_fetch(app: &mut App, serial: u64) -> AppResultU {
 
         if app.pre_fetch_serial == serial {
             let imaging = app.get_imaging();
-            app.pre_fetch(imaging, 1..pre_fetch.page_size);
+            let size = pre_fetch.page_size as isize;
+            app.pre_fetch(imaging, -size ..= size);
         }
     }
     Ok(())
@@ -1063,7 +1064,7 @@ pub fn on_refresh(app: &mut App, updated: &mut Updated, image: bool) -> AppResul
         let len = app.gui.len();
         let imaging = app.get_imaging();
         for index in 0..len {
-            if let Some((entry, _)) = app.current_with(index) {
+            if let Some((entry, _)) = app.current_with(index as isize) {
                 app.cache.clear_entry(&imaging, &entry.key);
                 updated.image = true;
             }
@@ -1419,7 +1420,7 @@ pub fn on_spawn(app: &mut App) -> AppResultU {
 pub fn on_tell_region(app: &mut App, left: f64, top: f64, right: f64, bottom: f64, button: &Key) -> AppResultU {
     let (mx, my) = (left as i32, top as i32);
     for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
-        if app.current_with(index).is_some() {
+        if app.current_with(index as isize).is_some() {
             let (x1, y1, w, h) = {
                 let (cx, cy, cw, ch) = cell.get_top_left();
                 if let Some((iw, ih)) = cell.get_image_size() {

@@ -7,6 +7,7 @@ use cairo::{Context, ImageSurface, Format};
 use gdk::prelude::ContextExt;
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use image_meta::{ImageMeta, self};
+use log::trace;
 
 use crate::entry::EntryContent;
 use crate::errors::{AppResult, AppError};
@@ -32,6 +33,7 @@ impl Imaging {
 }
 
 pub fn get_image_buffer(entry_content: &EntryContent, imaging: &Imaging) -> AppResult<ImageBuffer> {
+    trace!("entry/image/get_image_buffer");
     if imaging.drawing.animation && is_animation(entry_content) {
         Ok(get_animation_buffer(entry_content).map(ImageBuffer::Animation)?)
     } else {

@@ -77,8 +77,12 @@ impl Paginator {
         self.current_index_with(0)
     }
 
-    pub fn current_index_with(&self, delta: usize) -> Option<usize> {
-        if let Some(index) = self.position().and_then(|position| (position + delta).to_index(self.fly_leaves)) {
+    pub fn current_index_with(&self, delta: isize) -> Option<usize> {
+        let new_index = self.position()
+            .and_then(|position| position.checked_add(delta))
+            .and_then(|position| position.to_index(self.fly_leaves));
+
+        if let Some(index) = new_index {
             if index.0 < self.len {
                 return Some(index.0);
             }

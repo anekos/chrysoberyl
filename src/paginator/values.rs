@@ -80,6 +80,10 @@ impl ops::Sub<usize> for Level {
 
 
 impl Position {
+    pub fn checked_add(self, rhs: isize) -> Option<Self> {
+        ((self.0 as isize).checked_add(rhs)).map(|it| Position(it as usize))
+    }
+
     pub fn to_index(self, fly_leaves: FlyLeaves) -> Option<Index> {
         if self.0 < fly_leaves.0 {
             None

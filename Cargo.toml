@@ -78,7 +78,7 @@ xml-rs = "*"
 
 [dependencies.image-meta]
 git = "https://github.com/anekos/image-meta"
-rev = "0338360a124ee881a6221501851809aa36af6553"
+rev = "c78dedb80dc29d7ed984a14303d99ece62f505f2"
 
 # https://github.com/gtk-rs/gtk/blob/master/Cargo.toml
 [dependencies.gtk]

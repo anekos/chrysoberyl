@@ -321,7 +321,7 @@ impl Gui {
         self.operation_entry.set_text("");
         let op = Operation::parse_fuzziness(&result);
         self.completer.push_history(result);
-        Ok(Some(op?))
+        op.map(Some)
     }
 
     pub fn refresh_status_bar_width(&self) {

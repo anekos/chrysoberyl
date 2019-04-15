@@ -1,4 +1,5 @@
 
+use std::convert::AsRef;
 use std::ffi::OsStr;
 use std::fs::{self, File, create_dir_all};
 use std::io::Write;
@@ -76,7 +77,7 @@ impl FileOperation {
 fn destination_path(source: &PathBuf, destination_directory: &PathBuf, file_name: &Option<String>, if_exist: IfExist) -> AppResult<PathBuf> {
     use self::IfExist::*;
 
-    let file_name = file_name.as_ref().map(|it| it.as_ref()).unwrap_or_else(|| source.file_name().unwrap());
+    let file_name = file_name.as_ref().map(AsRef::as_ref).unwrap_or_else(|| source.file_name().unwrap());
     let mut path = destination_directory.clone();
 
     if !path.exists() {

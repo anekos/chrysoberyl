@@ -1,4 +1,5 @@
 
+use std::borrow::ToOwned;
 use std::ffi::CStr;
 
 use crate::poppler::sys;
@@ -40,7 +41,7 @@ pub fn extract_action(action: *const sys::action_t) -> Option<Action> {
         let title = if title.is_null() {
             None
         } else {
-            CStr::from_ptr(title).to_str().map(|title| o!(title)).map_err(|err| {
+            CStr::from_ptr(title).to_str().map(ToOwned::to_owned).map_err(|err| {
                 puts_error!(AppError::Standard(s!(err)), "at" => "poppler/extract_action")
             }).ok()
         };

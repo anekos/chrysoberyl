@@ -1,5 +1,6 @@
 
-use std::fs::metadata;
+use std::borrow::ToOwned;
+use std::fs::{metadata, Metadata};
 use std::path::Path;
 use std::time::SystemTime;
 
@@ -41,7 +42,7 @@ impl EntryInfo {
     pub fn new(content: &EntryContent, path: &str, archive_page: usize) -> EntryInfo {
         use self::EntryContent::*;
 
-        let extension = Path::new(path).extension().and_then(|it| it.to_str().map(|it| it.to_owned()));
+        let extension = Path::new(path).extension().and_then(|it| it.to_str().map(ToOwned::to_owned));
 
         let entry_type: &'static str = match *content {
             Image(_) => "image",
@@ -108,7 +109,7 @@ impl LazyEntryInfo {
             accessed: file_meta.as_ref().and_then(|it| it.accessed().ok()),
             created: file_meta.as_ref().and_then(|it| it.created().ok()),
             dimensions: size_anim.map(|it| it.0),
-            file_size: file_size.or_else(|| file_meta.as_ref().map(|it| it.len())),
+            file_size: file_size.or_else(|| file_meta.as_ref().map(Metadata::len)),
             is_animated: size_anim.map(|it| it.1).unwrap_or(false),
             modified: file_meta.as_ref().and_then(|it| it.modified().ok()),
             valid,

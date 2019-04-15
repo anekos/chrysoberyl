@@ -1,4 +1,5 @@
 
+use std::borrow::ToOwned;
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -107,7 +108,7 @@ impl Definition {
                                 option_values.insert(o!(name), OptionValue::Boolean); // Fake value, replace with real value afterwards.
                             }
                             values => {
-                                let values: Vec<String> = values.split('/').map(|it| o!(it)).collect();
+                                let values: Vec<String> = values.split('/').map(ToOwned::to_owned).collect();
                                 if !values.is_empty() {
                                     option_values.insert(o!(name), OptionValue::Enum(values));
                                 }

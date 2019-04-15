@@ -1,6 +1,7 @@
 
 use std::cmp::{PartialEq, PartialOrd, Ord, Ordering};
 use std::collections::HashSet;
+use std::ffi::OsStr;
 use std::fmt;
 use std::fs::File;
 use std::hash::{Hash, Hasher};
@@ -554,8 +555,8 @@ impl Entry {
         use self::EntryContent::*;
 
         fn gen<T: AsRef<Path>>(filename: &T, index: usize, fixed_ext: Option<&str>) -> String {
-            let stem = filename.as_ref().file_stem().and_then(|it| it.to_str()).unwrap();
-            let ext = fixed_ext.unwrap_or_else(|| filename.as_ref().extension().and_then(|it| it.to_str()).unwrap());
+            let stem = filename.as_ref().file_stem().and_then(OsStr::to_str).unwrap();
+            let ext = fixed_ext.unwrap_or_else(|| filename.as_ref().extension().and_then(OsStr::to_str).unwrap());
             format!("{}.{:04}.{}", stem, index + 1, ext)
         }
 

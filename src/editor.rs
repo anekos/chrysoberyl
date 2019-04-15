@@ -4,6 +4,7 @@ use std::fs::{File, remove_file};
 use std::io::Write;
 use std::io::{BufReader, BufRead};
 use std::process::Command;
+use std::string::ToString;
 use std::sync::mpsc:: Sender;
 
 use cmdline_parser::Parser;
@@ -27,7 +28,7 @@ pub fn start_edit(tx: &Sender<Operation>, editor_command: &[Expandable], default
         let command_line: Vec<String> = if editor_command.is_empty() {
             env::var("EDITOR").map(|editor| Parser::new(&editor).map(|(_, it)| it).collect()).unwrap_or_else(|_| vec![o!("gvim"), o!("--nofork")])
         } else {
-            editor_command.iter().map(|it| it.to_string()).collect()
+            editor_command.iter().map(ToString::to_string).collect()
         };
         let (name, args) = command_line.split_first().unwrap();
         (name.clone(), args.to_vec())

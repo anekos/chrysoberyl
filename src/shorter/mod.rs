@@ -78,5 +78,5 @@ fn pop_front<T: AsRef<Path>>(path: &T) -> Option<PathBuf> {
 
 
 fn len<T: AsRef<Path>>(path: &T) -> usize {
-    path.as_ref().to_str().map(|it| it.len()).unwrap_or(0)
+    path.as_ref().to_str().map(str::len).unwrap_or(0)
 }

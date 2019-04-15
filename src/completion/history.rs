@@ -1,4 +1,6 @@
 
+use std::convert::AsRef;
+
 use crate::app_path;
 use crate::util::file::{read_lines, write_line};
 
@@ -66,7 +68,7 @@ impl History {
     }
 
     fn nth(&self, n: usize) -> Option<&str> {
-        self.items.get(self.items.len() - n - 1).map(|it| it.as_ref())
+        self.items.get(self.items.len() - n - 1).map(AsRef::as_ref)
     }
 
 }

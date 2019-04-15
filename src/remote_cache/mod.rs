@@ -2,11 +2,12 @@
 use std::cmp::Ordering;
 use std::collections::{BTreeSet, VecDeque};
 use std::env;
+use std::ffi::OsStr;
 use std::fs::{self, File, create_dir_all};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{channel, Sender};
+use std::sync::{Arc, Mutex};
 use std::thread::spawn;
 
 use closet::clone_army;
@@ -262,7 +263,7 @@ fn curl_get(curl: &mut EasyCurl, url: &str, buf: &mut Vec<u8>) -> AppResultU {
 fn fix_path_segment(s: &str, last: bool) -> String {
     if s.len() > 32 {
         if last {
-            let ext = Path::new(s).extension().and_then(|it| it.to_str()).unwrap_or("");
+            let ext = Path::new(s).extension().and_then(OsStr::to_str).unwrap_or("");
             format!("{:x}.{}", md5::compute(s.as_bytes()), ext)
         } else {
             format!("{:x}", md5::compute(s.as_bytes()))

@@ -1,4 +1,5 @@
 
+use std::convert::AsRef;
 use std::error::Error;
 use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::{Read, Write};
@@ -13,7 +14,7 @@ pub static DEFAULT_CONFIG: &'static str = include_str!("static/default.chry");
 
 pub fn get_config_source<T: AsRef<Path>>(path: Option<&T>) -> String {
     let default = app_path::config_file();
-    let path = path.map(|it| it.as_ref()).unwrap_or_else(|| default.as_path());
+    let path = path.map(AsRef::as_ref).unwrap_or_else(|| default.as_path());
     read_config(&path).map_err(|err| puts_error!(err, "file" => p!(path))).unwrap_or_else(|_| {
         let _ = create_default(); // Ignore any errors
         o!(DEFAULT_CONFIG)

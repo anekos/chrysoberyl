@@ -58,8 +58,7 @@ impl<K, V> Cache<K, V> where K: Hash + Eq + Clone, V: Clone {
     #[allow(dead_code)]
     pub fn get(&self, key: &K) -> Option<V> {
         let mut entries = self.entries.lock().unwrap();
-        #[allow(clippy::map_clone)]
-        entries.get_mut(key).map(|it| it.clone())
+        entries.get_mut(key).cloned()
     }
 
     pub fn get_or_update<F>(&self, key: K, updater: F) -> V

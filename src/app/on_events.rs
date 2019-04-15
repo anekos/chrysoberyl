@@ -6,6 +6,8 @@ use std::io::{Write, Read};
 use std::mem::swap;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::result::Result;
+use std::string::ToString;
 use std::sync::Arc;
 use std::thread::spawn;
 use std::time::Duration;
@@ -444,7 +446,7 @@ pub fn on_gif(app: &mut App, path: &PathBuf, length: u8, show: bool) -> AppResul
     if_let_some!((entry, _) = app.current(), Ok(()));
     let imaging = app.get_imaging();
     let tx = app.secondary_tx.clone();
-    let destination = path.to_str().map(|it| it.to_string()).ok_or(AppError::Fixed("WTF"))?;
+    let destination = path.to_str().map(ToString::to_string).ok_or(AppError::Fixed("WTF"))?;
 
     app.cache.generate_animation_gif(&entry, &imaging, length, path, move || {
         if show {
@@ -963,7 +965,7 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, clear: 
     fn find_sibling(base: &PathBuf, next: bool) -> Option<PathBuf> {
         base.parent().and_then(|dir| {
             dir.read_dir().ok().and_then(|dir| {
-                let mut entries: Vec<PathBuf> = dir.filter_map(|it| it.ok()).filter(|it| it.file_type().map(|it| it.is_file()).unwrap_or(false)).map(|it| it.path()).collect();
+                let mut entries: Vec<PathBuf> = dir.filter_map(Result::ok).filter(|it| it.file_type().map(|it| it.is_file()).unwrap_or(false)).map(|it| it.path()).collect();
                 entries.sort_by(|a, b| natord::compare(path_to_str(a), path_to_str(b)));
                 entries.iter().position(|it| it == base).and_then(|found| {
                     if next {

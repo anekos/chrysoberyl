@@ -14,7 +14,6 @@ use crate::util;
 
 
 pub fn register(tx: Sender<Operation>, mut history_file: Option<PathBuf>) {
-    use std::io;
     use std::io::BufRead;
 
     let mut readline = Editor::<()>::new();

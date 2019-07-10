@@ -71,10 +71,8 @@ impl Cherenkoved {
 
     pub fn generate_animation_gif<T: AsRef<Path>, F>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T, on_complete: F) -> AppResultU
     where F: FnOnce() + Send + 'static {
-        use gif;
         use gif::SetParameter;
         use crate::image::ImageBuffer::Static;
-        use gdk_pixbuf::PixbufExt;
         use std::fs::File;
 
         fn generate(mut file: File, mut cache_entry: CacheEntry, entry_content: &EntryContent, imaging: &Imaging, size: Size, length: u8) -> AppResultU {
@@ -129,7 +127,6 @@ impl Cherenkoved {
     pub fn generate_animation_png<T: AsRef<Path>>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T) -> AppResultU {
         use apng_encoder::apng;
         use crate::image::ImageBuffer::Static;
-        use gdk_pixbuf::PixbufExt;
         use std::fs::File;
 
         fn generate(mut file: File, mut cache_entry: CacheEntry, entry_content: &EntryContent, imaging: &Imaging, size: Size, length: u8) -> AppResultU {

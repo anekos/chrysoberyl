@@ -285,6 +285,16 @@ impl Region {
         let b = (f64!(height) * self.bottom) as i32;
         (l, r, t, b)
     }
+
+    pub fn clipped(&self, clipping: &Region) -> Region {
+        let (hp, vp) = (clipping.width(), clipping.height());
+        Region {
+            left: (self.left - clipping.left) / hp,
+            top: (self.top - clipping.top) / vp,
+            right: 1.0 - (clipping.right - self.right) / hp,
+            bottom: 1.0 - (clipping.bottom - self.bottom) / vp,
+        }
+    }
 }
 
 

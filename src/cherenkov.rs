@@ -451,7 +451,7 @@ fn re_cherenkov(entry_content: &EntryContent, imaging: &Imaging, modifiers: &[Mo
         let mut modified = Modified::P(buf.get_pixbuf());
         for modifier in modifiers {
             let modifier = modifier.fix(&buf.original_size, &imaging.drawing);
-            let (_modified, _mask) = cherenkov_pixbuf(modified, mask, &modifier.che);
+            let (_modified, _mask) = cherenkov_pixbuf(modified, mask, &modifier.che, &imaging.drawing.clipping);
             modified = _modified;
             mask = _mask;
         }
@@ -467,13 +467,13 @@ fn re_cherenkov(entry_content: &EntryContent, imaging: &Imaging, modifiers: &[Mo
     }
 }
 
-fn cherenkov_pixbuf(modified: Modified, mask_surface: Option<ImageSurface>, che: &Che) -> (Modified, Option<ImageSurface>) {
+fn cherenkov_pixbuf(modified: Modified, mask_surface: Option<ImageSurface>, che: &Che, clipping: &Option<Region>) -> (Modified, Option<ImageSurface>) {
     match *che {
         Che::Nova(ref che) => (nova::nova_(che, modified), mask_surface),
         Che::Fill(shape, ref region, color, operator, false) =>
-            (fill::fill(shape, region, color, operator, modified), mask_surface),
+            (fill::fill(modified, fill::Parameter { che: region, clipping, color, operator, shape }), mask_surface),
         Che::Fill(shape, ref region, color, operator, true) => {
-            let mask_surface =  fill::mask(mask_surface, shape, region, color, operator, &modified);
+            let mask_surface =  fill::mask(mask_surface, &modified, fill::Parameter { clipping, color, operator, che: region, shape });
             (modified, Some(mask_surface))
         }
     }

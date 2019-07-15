@@ -77,7 +77,7 @@ pub fn mask(surface: Option<ImageSurface>, modified: &Modified, p: Parameter) ->
 }
 
 #[allow(clippy::many_single_char_names)]
-fn context_fill<'a>(p: ContextParamater) {
+fn context_fill(p: ContextParamater) {
     let (r, g, b, a) = p.color.tupled4();
     p.context.set_source_rgba(r, g, b, a);
 

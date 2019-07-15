@@ -332,9 +332,13 @@ pub fn on_file_changed(app: &mut App, updated: &mut Updated, path: &Path) -> App
 pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Option<Region>, color: Color, operator: Option<Operator>, mask: bool, cell_index: usize, context: Option<OperationContext>) -> AppResultU {
     use crate::cherenkov::{Modifier, Che};
 
-    let (region, cell_index) = extract_region_from_context(context)
+    let (mut region, cell_index) = extract_region_from_context(context)
         .or_else(|| region.map(|it| (it, cell_index)))
         .unwrap_or_else(|| (Region::full(), cell_index));
+
+    if let Some(clipping) = app.states.drawing.clipping {
+        region = region.unclipped(&clipping);
+    }
 
     if let Some((entry, _)) = app.current_with(cell_index as isize) {
         let imaging = app.get_imaging();

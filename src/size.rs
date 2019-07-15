@@ -295,6 +295,16 @@ impl Region {
             bottom: 1.0 - (clipping.bottom - self.bottom) / vp,
         }
     }
+
+    pub fn unclipped(&self, clipping: &Region) -> Region {
+        let (hp, vp) = (clipping.width(), clipping.height());
+        Region {
+            left: clipping.left + self.left * hp,
+            top: clipping.top + self.top * vp,
+            right: clipping.left + self.right * hp,
+            bottom: clipping.top + self.bottom * vp,
+        }
+    }
 }
 
 

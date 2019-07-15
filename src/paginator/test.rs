@@ -104,12 +104,11 @@ fn test_index_with_sight_size() {
 
 #[test]
 fn test_increase_level() {
-    /**
-     *  00      00
-     *  01     <01>
-     *  02      02
-     *  03  +1  03
-     */
+
+    // 00      00
+    // 01     <01>
+    // 02      02
+    // 03  +1  03
     assert_pg!(
         increase_level,
         [fly_leaves: 0, len: 4, level: None, sight_size: 1],
@@ -117,12 +116,10 @@ fn test_increase_level() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     * <00>01 02 03       00 01 02 03
-     *  04 05 06 07      <04>05 06 07
-     *  08 09 10 11       08 09 10 11
-     *  12 13 14     +1   12 13 14
-     */
+    // <00>01 02 03       00 01 02 03
+    //  04 05 06 07      <04>05 06 07
+    //  08 09 10 11       08 09 10 11
+    //  12 13 14     +1   12 13 14
     assert_pg!(
         increase_level,
         [fly_leaves: 0, len: 15, level: Some(0), sight_size: 4],
@@ -130,12 +127,10 @@ fn test_increase_level() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     *  00 01 02 03       00 01 02 03
-     * <04>05 06 07       04 05 06 07
-     *  08 09 10 11      <08>09 10 11
-     *  12 13 14     +1   12 13 14
-     */
+    //  00 01 02 03       00 01 02 03
+    // <04>05 06 07       04 05 06 07
+    //  08 09 10 11      <08>09 10 11
+    //  12 13 14     +1   12 13 14
     assert_pg!(
         increase_level,
         [fly_leaves: 0, len: 15, level: Some(1), sight_size: 4],
@@ -143,12 +138,10 @@ fn test_increase_level() {
         true,
         [fly_leaves: 0, level: Some(2)]);
 
-    /**
-     * <00>     00
-     *  01      01
-     *  02      02
-     *  03  +3 <03>
-     */
+    // <00>     00
+    //  01      01
+    //  02      02
+    //  03  +3 <03>
     assert_pg!(
         increase_level,
         [fly_leaves: 0, len: 4, level: Some(0), sight_size: 1],
@@ -156,12 +149,10 @@ fn test_increase_level() {
         true,
         [fly_leaves: 0, level: Some(3)]);
 
-    /**
-     * <00>01 02 03       00 01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09 10 11       08 09 10 11
-     *  12 13 14     +3  <12>13 14
-     */
+    // <00>01 02 03       00 01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09 10 11       08 09 10 11
+    //  12 13 14     +3  <12>13 14
     assert_pg!(
         increase_level,
         [fly_leaves: 0, len: 15, level: Some(0), sight_size: 4],
@@ -169,12 +160,10 @@ fn test_increase_level() {
         true,
         [fly_leaves: 0, level: Some(3)]);
 
-    /**
-     * <00>     00
-     *  01      01
-     *  02      02
-     *  03  +8 <03>
-     */
+    // <00>     00
+    //  01      01
+    //  02      02
+    //  03  +8 <03>
     assert_pg!(
         increase_level,
         [fly_leaves: 0, len: 4, level: Some(0), sight_size: 1],
@@ -182,12 +171,10 @@ fn test_increase_level() {
         true,
         [fly_leaves: 0, level: Some(3)]);
 
-    /**
-     * <00>01 02 03       00 01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09 10 11       08 09 10 11
-     *  12 13 14     +8  <12>13 14
-     */
+    // <00>01 02 03       00 01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09 10 11       08 09 10 11
+    //  12 13 14     +8  <12>13 14
     assert_pg!(
         increase_level,
         [fly_leaves: 0, len: 15, level: Some(0), sight_size: 4],
@@ -195,12 +182,10 @@ fn test_increase_level() {
         true,
         [fly_leaves: 0, level: Some(3)]);
 
-    /**
-     * <XX>XX XX 00       XX XX XX 00
-     *  01 02 03 04       01 02 03 04
-     *  05 06 07 08       05 06 07 08
-     *  09 10 11     +3  <09>10 11
-     */
+    // <XX>XX XX 00       XX XX XX 00
+    //  01 02 03 04       01 02 03 04
+    //  05 06 07 08       05 06 07 08
+    //  09 10 11     +3  <09>10 11
     assert_pg!(
         increase_level,
         [fly_leaves: 3, len: 12, level: Some(0), sight_size: 4],
@@ -208,14 +193,12 @@ fn test_increase_level() {
         true,
         [fly_leaves: 3, level: Some(3)]);
 
-    /**
-     * wrap
-     *
-     * <00>     00
-     *  01      01
-     *  02      02
-     *  03  +3 <03>
-     */
+    // wrap
+    //
+    // <00>     00
+    //  01      01
+    //  02      02
+    //  03  +3 <03>
     assert_pg!(
         increase_level,
         [fly_leaves: 0, len: 4, level: Some(0), sight_size: 1],
@@ -223,14 +206,12 @@ fn test_increase_level() {
         true,
         [fly_leaves: 0, level: Some(3)]);
 
-    /**
-     * wrap
-     *
-     * <00>01 02 03       00 01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09 10 11       08 09 10 11
-     *  12 13 14     +3  <12>13 14
-     */
+    // wrap
+    //
+    // <00>01 02 03       00 01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09 10 11       08 09 10 11
+    //  12 13 14     +3  <12>13 14
     assert_pg!(
         increase_level,
         [fly_leaves: 0, len: 15, level: Some(0), sight_size: 4],
@@ -238,14 +219,12 @@ fn test_increase_level() {
         true,
         [fly_leaves: 0, level: Some(3)]);
 
-    /**
-     * wrap
-     *
-     * <00>    <00>
-     *  01      01
-     *  02      02
-     *  03  +4  03
-     */
+    // wrap
+    //
+    // <00>    <00>
+    //  01      01
+    //  02      02
+    //  03  +4  03
     assert_pg!(
         increase_level,
         [fly_leaves: 0, len: 4, level: Some(0), sight_size: 1],
@@ -253,14 +232,12 @@ fn test_increase_level() {
         false,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * wrap
-     *
-     * <00>01 02 03      <00>01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09 10 11       08 09 10 11
-     *  12 13 14     +4   12 13 14
-     */
+    // wrap
+    //
+    // <00>01 02 03      <00>01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09 10 11       08 09 10 11
+    //  12 13 14     +4   12 13 14
     assert_pg!(
         increase_level,
         [fly_leaves: 0, len: 15, level: Some(0), sight_size: 4],
@@ -268,14 +245,12 @@ fn test_increase_level() {
         false,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * wrap
-     *
-     * <00>01 02 03       00 01 02 03
-     *  04 05 06 07      <04>05 06 07
-     *  08 09 10 11       08 09 10 11
-     *  12 13 14     +5   12 13 14
-     */
+    // wrap
+    //
+    // <00>01 02 03       00 01 02 03
+    //  04 05 06 07      <04>05 06 07
+    //  08 09 10 11       08 09 10 11
+    //  12 13 14     +5   12 13 14
     assert_pg!(
         increase_level,
         [fly_leaves: 0, len: 15, level: Some(0), sight_size: 4],
@@ -283,14 +258,12 @@ fn test_increase_level() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     * wrap
-     *
-     * <XX>XX XX 00      <XX>XX XX 00
-     *  01 02 03 04       01 02 03 04
-     *  05 06 07 08       05 06 07 08
-     *  09 10 11     +4   09 10 11
-     */
+    // wrap
+    //
+    // <XX>XX XX 00      <XX>XX XX 00
+    //  01 02 03 04       01 02 03 04
+    //  05 06 07 08       05 06 07 08
+    //  09 10 11     +4   09 10 11
     assert_pg!(
         increase_level,
         [fly_leaves: 3, len: 12, level: Some(0), sight_size: 4],
@@ -301,12 +274,11 @@ fn test_increase_level() {
 
 #[test]
 fn test_decrease_level() {
-    /**
-     *  00     <00>
-     *  01      01 
-     *  02      02
-     *  03  -1  03
-     */
+
+    // 00     <00>
+    // 01      01
+    // 02      02
+    // 03  -1  03
     assert_pg!(
         decrease_level,
         [fly_leaves: 0, len: 4, level: None, sight_size: 1],
@@ -314,12 +286,10 @@ fn test_decrease_level() {
         true,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     *  00 01 02 03      <00>01 02 03
-     * <04>05 06 07       04 05 06 07
-     *  08 09 10 11       08 09 10 11
-     *  12 13 14     -1   12 13 14
-     */
+    //  00 01 02 03      <00>01 02 03
+    // <04>05 06 07       04 05 06 07
+    //  08 09 10 11       08 09 10 11
+    //  12 13 14     -1   12 13 14
     assert_pg!(
         decrease_level,
         [fly_leaves: 0, len: 15, level: Some(1), sight_size: 4],
@@ -327,12 +297,10 @@ fn test_decrease_level() {
         true,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     *  00 01 02 03       00 01 02 03
-     *  04 05 06 07      <04>05 06 07
-     * <08>09 10 11       08 09 10 11
-     *  12 13 14     +1   12 13 14
-     */
+    //  00 01 02 03       00 01 02 03
+    //  04 05 06 07      <04>05 06 07
+    // <08>09 10 11       08 09 10 11
+    //  12 13 14     +1   12 13 14
     assert_pg!(
         decrease_level,
         [fly_leaves: 0, len: 15, level: Some(2), sight_size: 4],
@@ -340,12 +308,10 @@ fn test_decrease_level() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     *  00     <00>
-     *  01      01
-     *  02      02
-     * <03> +3  03 
-     */
+    //  00     <00>
+    //  01      01
+    //  02      02
+    // <03> +3  03
     assert_pg!(
         decrease_level,
         [fly_leaves: 0, len: 4, level: Some(3), sight_size: 1],
@@ -353,12 +319,10 @@ fn test_decrease_level() {
         true,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     *  00 01 02 03      <00>01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09 10 11       08 09 10 11
-     * <12>13 14     -3   12 13 14
-     */
+    //  00 01 02 03      <00>01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09 10 11       08 09 10 11
+    // <12>13 14     -3   12 13 14
     assert_pg!(
         decrease_level,
         [fly_leaves: 0, len: 15, level: Some(3), sight_size: 4],
@@ -366,12 +330,10 @@ fn test_decrease_level() {
         true,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     *  00     <00>
-     *  01      01
-     *  02      02
-     * <03> +8  03
-     */
+    //  00     <00>
+    //  01      01
+    //  02      02
+    // <03> +8  03
     assert_pg!(
         decrease_level,
         [fly_leaves: 0, len: 4, level: Some(3), sight_size: 1],
@@ -379,12 +341,10 @@ fn test_decrease_level() {
         true,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     *  00 01 02 03      <00>01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09 10 11       08 09 10 11
-     * <12>13 14     +8   12 13 14
-     */
+    //  00 01 02 03      <00>01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09 10 11       08 09 10 11
+    // <12>13 14     +8   12 13 14
     assert_pg!(
         decrease_level,
         [fly_leaves: 0, len: 15, level: Some(3), sight_size: 4],
@@ -392,12 +352,10 @@ fn test_decrease_level() {
         true,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     *  XX XX XX 00      <XX>XX XX 00
-     *  01 02 03 04       01 02 03 04
-     *  05 06 07 08       05 06 07 08
-     * <09>10 11     +3   09 10 11
-     */
+    //  XX XX XX 00      <XX>XX XX 00
+    //  01 02 03 04       01 02 03 04
+    //  05 06 07 08       05 06 07 08
+    // <09>10 11     +3   09 10 11
     assert_pg!(
         decrease_level,
         [fly_leaves: 3, len: 12, level: Some(3), sight_size: 4],
@@ -405,14 +363,12 @@ fn test_decrease_level() {
         true,
         [fly_leaves: 3, level: Some(0)]);
 
-    /**
-     * wrap
-     *
-     *  00     <00>
-     *  01      01
-     *  02      02
-     * <03> +3  03 
-     */
+    // wrap
+    //
+    //  00     <00>
+    //  01      01
+    //  02      02
+    // <03> +3  03
     assert_pg!(
         decrease_level,
         [fly_leaves: 0, len: 4, level: Some(3), sight_size: 1],
@@ -420,14 +376,12 @@ fn test_decrease_level() {
         true,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * wrap
-     *
-     *  00 01 02 03      <00>01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09 10 11       08 09 10 11
-     * <12>13 14     +3   12 13 14
-     */
+    // wrap
+    //
+    //  00 01 02 03      <00>01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09 10 11       08 09 10 11
+    // <12>13 14     +3   12 13 14
     assert_pg!(
         decrease_level,
         [fly_leaves: 0, len: 15, level: Some(3), sight_size: 4],
@@ -435,14 +389,12 @@ fn test_decrease_level() {
         true,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * wrap
-     *
-     * <00>     00
-     *  01     <01>
-     *  02      02
-     *  03  +3  03
-     */
+    // wrap
+    //
+    // <00>     00
+    //  01     <01>
+    //  02      02
+    //  03  +3  03
     assert_pg!(
         decrease_level,
         [fly_leaves: 0, len: 4, level: Some(0), sight_size: 1],
@@ -450,14 +402,12 @@ fn test_decrease_level() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     * wrap
-     *
-     * <00>    <00>
-     *  01      01
-     *  02      02
-     *  03  +4  03
-     */
+    // wrap
+    //
+    // <00>    <00>
+    //  01      01
+    //  02      02
+    //  03  +4  03
     assert_pg!(
         decrease_level,
         [fly_leaves: 0, len: 4, level: Some(0), sight_size: 1],
@@ -465,14 +415,12 @@ fn test_decrease_level() {
         false,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * wrap
-     *
-     * <00>01 02 03      <00>01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09 10 11       08 09 10 11
-     *  12 13 14     +4   12 13 14
-     */
+    // wrap
+    //
+    // <00>01 02 03      <00>01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09 10 11       08 09 10 11
+    //  12 13 14     +4   12 13 14
     assert_pg!(
         decrease_level,
         [fly_leaves: 0, len: 15, level: Some(0), sight_size: 4],
@@ -480,14 +428,12 @@ fn test_decrease_level() {
         false,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * wrap
-     *
-     * <00>01 02 03       00 01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09 10 11       08 09 10 11
-     *  12 13 14     +5  <12>13 14
-     */
+    // wrap
+    //
+    // <00>01 02 03       00 01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09 10 11       08 09 10 11
+    //  12 13 14     +5  <12>13 14
     assert_pg!(
         decrease_level,
         [fly_leaves: 0, len: 15, level: Some(0), sight_size: 4],
@@ -495,14 +441,12 @@ fn test_decrease_level() {
         true,
         [fly_leaves: 0, level: Some(3)]);
 
-    /**
-     * wrap
-     *
-     * <XX>XX XX 00      <XX>XX XX 00
-     *  01 02 03 04       01 02 03 04
-     *  05 06 07 08       05 06 07 08
-     *  09 10 11     +4   09 10 11
-     */
+    // wrap
+    //
+    // <XX>XX XX 00      <XX>XX XX 00
+    //  01 02 03 04       01 02 03 04
+    //  05 06 07 08       05 06 07 08
+    //  09 10 11     +4   09 10 11
     assert_pg!(
         decrease_level,
         [fly_leaves: 3, len: 12, level: Some(0), sight_size: 4],
@@ -514,9 +458,7 @@ fn test_decrease_level() {
 
 #[test]
 fn test_next() {
-    /**
-     * empty container
-     */
+    // empty container
     assert_pg_mv!(
         next,
         [fly_leaves: 0, len: 0, level: None, sight_size: 1],
@@ -524,9 +466,7 @@ fn test_next() {
         false,
         [fly_leaves: 0, level: None]);
 
-    /**
-     * empty container
-     */
+    // empty container
     assert_pg_mv!(
         next,
         [fly_leaves: 0, len: 0, level: None, sight_size: 4],
@@ -534,9 +474,7 @@ fn test_next() {
         false,
         [fly_leaves: 0, level: None]);
 
-    /**
-     * empty container
-     */
+    // empty container
     assert_pg_mv!(
         next,
         [fly_leaves: 0, len: 0, level: None, sight_size: 4],
@@ -544,11 +482,9 @@ fn test_next() {
         false,
         [fly_leaves: 0, level: None]);
 
-    /**
-     * <00>     00
-     *  01     <01>
-     *  02  +1  02
-     */
+    // <00>     00
+    //  01     <01>
+    //  02  +1  02
     assert_pg_mv!(
         next,
         [fly_leaves: 0, len: 3, level: Some(0), sight_size: 1],
@@ -556,15 +492,13 @@ fn test_next() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     * <00>     00
-     *  01      01
-     *  02      02
-     *  03      03
-     *  04     <04>
-     *  05      05
-     *  06  +1  06
-     */
+    // <00>     00
+    //  01      01
+    //  02      02
+    //  03      03
+    //  04     <04>
+    //  05      05
+    //  06  +1  06
     assert_pg_mv!(
         next,
         [fly_leaves: 0, len: 7, level: Some(0), sight_size: 1],
@@ -572,15 +506,13 @@ fn test_next() {
         true,
         [fly_leaves: 0, level: Some(4)]);
 
-    /**
-     * <00>     00
-     *  01      01
-     *  02      02
-     *  03      03
-     *  04     <04>
-     *  05      05
-     *  06  +6  06
-     */
+    // <00>     00
+    //  01      01
+    //  02      02
+    //  03      03
+    //  04     <04>
+    //  05      05
+    //  06  +6  06
     assert_pg_mv!(
         next,
         [fly_leaves: 0, len: 7, level: Some(0), sight_size: 1],
@@ -588,12 +520,10 @@ fn test_next() {
         true,
         [fly_leaves: 0, level: Some(6)]);
 
-    /**
-     * <00>     00
-     *  01      01
-     *  02      02
-     *  03  +3 <03>
-     */
+    // <00>     00
+    //  01      01
+    //  02      02
+    //  03  +3 <03>
     assert_pg_mv!(
         next,
         [fly_leaves: 0, len: 4, level: Some(0), sight_size: 1],
@@ -601,12 +531,10 @@ fn test_next() {
         true,
         [fly_leaves: 0, level: Some(3)]);
 
-    /**
-     * <00>     00
-     *  01      01
-     *  02      02
-     *  03  +4 <03>
-     */
+    // <00>     00
+    //  01      01
+    //  02      02
+    //  03  +4 <03>
     assert_pg_mv!(
         next,
         [fly_leaves: 0, len: 4, level: Some(0), sight_size: 1],
@@ -614,12 +542,10 @@ fn test_next() {
         true,
         [fly_leaves: 0, level: Some(3)]);
 
-    /**
-     * <00>     00
-     *  01      01
-     *  02      02
-     *  03  +9 <03>
-     */
+    // <00>     00
+    //  01      01
+    //  02      02
+    //  03  +9 <03>
     assert_pg_mv!(
         next,
         [fly_leaves: 0, len: 4, level: Some(0), sight_size: 1],
@@ -627,12 +553,10 @@ fn test_next() {
         true,
         [fly_leaves: 0, level: Some(3)]);
 
-    /**
-     *  XX XX 00 01      XX XX 00 01
-     * <02>03 04 05      02 03 04 05
-     *  06 07 08 09     <06>07 08 09
-     *  10 11 12 13  +1  10 11 12 13
-     */
+    //  XX XX 00 01      XX XX 00 01
+    // <02>03 04 05      02 03 04 05
+    //  06 07 08 09     <06>07 08 09
+    //  10 11 12 13  +1  10 11 12 13
     assert_pg_mv!(
         next,
         [fly_leaves: 2, len: 14, level: Some(1), sight_size: 4],
@@ -640,12 +564,10 @@ fn test_next() {
         true,
         [fly_leaves: 2, level: Some(2)]);
 
-    /**
-     *  XX XX 00 01      XX XX 00 01
-     * <02>03 04 05      02 03 04 05
-     *  06 07 08 09      06 07 08 09
-     *  10 11 12 13  +2 <10>11 12 13
-     */
+    //  XX XX 00 01      XX XX 00 01
+    // <02>03 04 05      02 03 04 05
+    //  06 07 08 09      06 07 08 09
+    //  10 11 12 13  +2 <10>11 12 13
     assert_pg_mv!(
         next,
         [fly_leaves: 2, len: 14, level: Some(1), sight_size: 4],
@@ -653,12 +575,10 @@ fn test_next() {
         true,
         [fly_leaves: 2, level: Some(3)]);
 
-    /**
-     *  XX XX 00 01      XX XX 00 01
-     * <02>03 04 05      02 03 04 05
-     *  06 07 08 09      06 07 08 09
-     *  10 11 12 13  +3 <10>11 12 13
-     */
+    //  XX XX 00 01      XX XX 00 01
+    // <02>03 04 05      02 03 04 05
+    //  06 07 08 09      06 07 08 09
+    //  10 11 12 13  +3 <10>11 12 13
     assert_pg_mv!(
         next,
         [fly_leaves: 2, len: 14, level: Some(1), sight_size: 4],
@@ -666,14 +586,12 @@ fn test_next() {
         true,
         [fly_leaves: 2, level: Some(3)]);
 
-    /**
-     * ignore_sight
-     *
-     *  XX XX 00 01      XX 00 01 02
-     * <02>03 04 05      03 04 05 06
-     *  06 07 08 09     <07>08 09 10
-     *  10 11 12 13  +5  11 12 13
-     */
+    // ignore_sight
+    //
+    //  XX XX 00 01      XX 00 01 02
+    // <02>03 04 05      03 04 05 06
+    //  06 07 08 09     <07>08 09 10
+    //  10 11 12 13  +5  11 12 13
     assert_pg_mv!(
         next,
         [fly_leaves: 2, len: 14, level: Some(1), sight_size: 4],
@@ -681,14 +599,12 @@ fn test_next() {
         true,
         [fly_leaves: 1, level: Some(2)]);
 
-    /**
-     * ignore_sight
-     *
-     *  XX XX 00 01       XX XX 00 01
-     * <02>03 04 05       02 03 04 05
-     *  06 07 08 09       06 07 08 09
-     *  10 11 12 13  +8  <10>11 12 13
-     */
+    // ignore_sight
+    //
+    //  XX XX 00 01       XX XX 00 01
+    // <02>03 04 05       02 03 04 05
+    //  06 07 08 09       06 07 08 09
+    //  10 11 12 13  +8  <10>11 12 13
     assert_pg_mv!(
         next,
         [fly_leaves: 2, len: 14, level: Some(1), sight_size: 4],
@@ -696,15 +612,13 @@ fn test_next() {
         true,
         [fly_leaves: 2, level: Some(3)]);
 
-    /**
-     * ignore_sight
-     *
-     *  XX XX 00 01 02       XX XX XX 00 01
-     * <03>04 05 06 07       02 03 04 05 06
-     *  08 09 10 11 12       07 08 09 10 11 
-     *  13 14 15 16 17      <12>13 14 15 16
-     *  18              +9   17 18
-     */
+    // ignore_sight
+    //
+    //  XX XX 00 01 02       XX XX XX 00 01
+    // <03>04 05 06 07       02 03 04 05 06
+    //  08 09 10 11 12       07 08 09 10 11
+    //  13 14 15 16 17      <12>13 14 15 16
+    //  18              +9   17 18
     assert_pg_mv!(
         next,
         [fly_leaves: 2, len: 19, level: Some(1), sight_size: 5],
@@ -712,15 +626,13 @@ fn test_next() {
         true,
         [fly_leaves: 3, level: Some(3)]);
 
-    /**
-     * ignore_sight
-     *
-     *  XX XX 00 01 02        XX XX XX 00 01
-     * <03>04 05 06 07        02 03 04 05 06
-     *  08 09 10 11 12        07 08 09 10 11 
-     *  13 14 15 16 17        12 13 14 15 16
-     *  18              +14  <17>18
-     */
+    // ignore_sight
+    //
+    //  XX XX 00 01 02        XX XX XX 00 01
+    // <03>04 05 06 07        02 03 04 05 06
+    //  08 09 10 11 12        07 08 09 10 11
+    //  13 14 15 16 17        12 13 14 15 16
+    //  18              +14  <17>18
     assert_pg_mv!(
         next,
         [fly_leaves: 2, len: 19, level: Some(1), sight_size: 5],
@@ -728,15 +640,13 @@ fn test_next() {
         true,
         [fly_leaves: 3, level: Some(4)]);
 
-    /**
-     * ignore_sight
-     *
-     *  XX XX 00 01        XX XX XX 00
-     * <02>03 04 05        01 02 03 04
-     *  06 07 08 09        05 06 07 08
-     *  10 11 12 13        09 10 11 12
-     *               +11  <13>
-     */
+    // ignore_sight
+    //
+    //  XX XX 00 01        XX XX XX 00
+    // <02>03 04 05        01 02 03 04
+    //  06 07 08 09        05 06 07 08
+    //  10 11 12 13        09 10 11 12
+    //               +11  <13>
     assert_pg_mv!(
         next,
         [fly_leaves: 2, len: 14, level: Some(1), sight_size: 4],
@@ -744,15 +654,13 @@ fn test_next() {
         true,
         [fly_leaves: 3, level: Some(4)]);
 
-    /**
-     * ignore_sight
-     *
-     *  XX XX 00 01        XX XX XX 00
-     * <02>03 04 05        01 02 03 04
-     *  06 07 08 09        05 06 07 08
-     *  10 11 12 13        09 10 11 12
-     *  14           +11  <13>14
-     */
+    // ignore_sight
+    //
+    //  XX XX 00 01        XX XX XX 00
+    // <02>03 04 05        01 02 03 04
+    //  06 07 08 09        05 06 07 08
+    //  10 11 12 13        09 10 11 12
+    //  14           +11  <13>14
     assert_pg_mv!(
         next,
         [fly_leaves: 2, len: 14, level: Some(1), sight_size: 4],
@@ -760,15 +668,13 @@ fn test_next() {
         true,
         [fly_leaves: 3, level: Some(4)]);
 
-    /**
-     * ignore_sight
-     *
-     *  XX XX 00 01        XX XX XX 00
-     * <02>03 04 05        01 02 03 04
-     *  06 07 08 09        05 06 07 08
-     *  10 11 12 13        09 10 11 12
-     *               +20  <13>
-     */
+    // ignore_sight
+    //
+    //  XX XX 00 01        XX XX XX 00
+    // <02>03 04 05        01 02 03 04
+    //  06 07 08 09        05 06 07 08
+    //  10 11 12 13        09 10 11 12
+    //               +20  <13>
     assert_pg_mv!(
         next,
         [fly_leaves: 2, len: 14, level: Some(1), sight_size: 4],
@@ -776,13 +682,11 @@ fn test_next() {
         true,
         [fly_leaves: 3, level: Some(4)]);
 
-    /**
-     * ignore_sight
-     *
-     * <00>01 02 03       XX XX XX 00
-     *  04 05 06 07      <01>02 03 04
-     *               +1   05 06 07
-     */
+    // ignore_sight
+    //
+    // <00>01 02 03       XX XX XX 00
+    //  04 05 06 07      <01>02 03 04
+    //               +1   05 06 07
     assert_pg_mv!(
         next,
         [fly_leaves: 0, len: 8, level: Some(0), sight_size: 4],
@@ -790,13 +694,11 @@ fn test_next() {
         true,
         [fly_leaves: 3, level: Some(1)]);
 
-    /**
-     * ignore_sight
-     *
-     *                    XX XX XX 00
-     *  00 01 02 03       01 02 03 04
-     * <04>05 06 07  +1  <05>06 07
-     */
+    // ignore_sight
+    //
+    //                    XX XX XX 00
+    //  00 01 02 03       01 02 03 04
+    // <04>05 06 07  +1  <05>06 07
     assert_pg_mv!(
         next,
         [fly_leaves: 0, len: 10, level: Some(1), sight_size: 4],
@@ -804,13 +706,11 @@ fn test_next() {
         true,
         [fly_leaves: 3, level: Some(2)]);
 
-    /**
-     * ignore_sight
-     *
-     *  XX XX 00 01       XX 00 01 02
-     * <02>03 04 05      <03>04 05 06
-     *  06 07 08 09  +1   07 08 09
-     */
+    // ignore_sight
+    //
+    //  XX XX 00 01       XX 00 01 02
+    // <02>03 04 05      <03>04 05 06
+    //  06 07 08 09  +1   07 08 09
     assert_pg_mv!(
         next,
         [fly_leaves: 2, len: 10, level: Some(1), sight_size: 4],
@@ -818,13 +718,11 @@ fn test_next() {
         true,
         [fly_leaves: 1, level: Some(1)]);
 
-    /**
-     * ignore_sight
-     *
-     *  XX XX XX 00       XX XX 00 01
-     *  01 02 03 04       02 03 04 05
-     * <05>06 07 08  +1  <06>07 08
-     */
+    // ignore_sight
+    //
+    //  XX XX XX 00       XX XX 00 01
+    //  01 02 03 04       02 03 04 05
+    // <05>06 07 08  +1  <06>07 08
     assert_pg_mv!(
         next,
         [fly_leaves: 3, len: 9, level: Some(2), sight_size: 4],
@@ -832,13 +730,11 @@ fn test_next() {
         true,
         [fly_leaves: 2, level: Some(2)]);
 
-    /**
-     * ignore_sight
-     *
-     *  XX XX XX 00       00 01 02 03
-     *  01 02 03 04       04 05 06 07
-     * <05>06 07 08  +3  <08>
-     */
+    // ignore_sight
+    //
+    //  XX XX XX 00       00 01 02 03
+    //  01 02 03 04       04 05 06 07
+    // <05>06 07 08  +3  <08>
     assert_pg_mv!(
         next,
         [fly_leaves: 3, len: 9, level: Some(2), sight_size: 4],
@@ -846,14 +742,12 @@ fn test_next() {
         true,
         [fly_leaves: 0, level: Some(2)]);
 
-    /**
-     * ignore_sight
-     *
-     *  XX XX XX 00       XX XX XX 00
-     *  01 02 03 04       01 02 03 04
-     * <05>06 07 08  +4   05 06 07 08
-     *  09 10            <09>10 11
-     */
+    // ignore_sight
+    //
+    //  XX XX XX 00       XX XX XX 00
+    //  01 02 03 04       01 02 03 04
+    // <05>06 07 08  +4   05 06 07 08
+    //  09 10            <09>10 11
     assert_pg_mv!(
         next,
         [fly_leaves: 3, len: 12, level: Some(2), sight_size: 4],
@@ -861,13 +755,11 @@ fn test_next() {
         true,
         [fly_leaves: 3, level: Some(3)]);
 
-    /**
-     * ignore_sight
-     *
-     *  XX XX XX 00       XX XX XX 00
-     *  01 02 03 04       01 02 03 04
-     * <05>          +1  <05>
-     */
+    // ignore_sight
+    //
+    //  XX XX XX 00       XX XX XX 00
+    //  01 02 03 04       01 02 03 04
+    // <05>          +1  <05>
     assert_pg_mv!(
         next,
         [fly_leaves: 3, len: 6, level: Some(2), sight_size: 4],
@@ -875,13 +767,11 @@ fn test_next() {
         false,
         [fly_leaves: 3, level: Some(2)]);
 
-    /**
-     * wrap
-     *
-     *  <00>       00
-     *   01       <01>
-     *   02   +1   02
-     */
+    // wrap
+    //
+    //  <00>       00
+    //   01       <01>
+    //   02   +1   02
     assert_pg_mv!(
         next,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 1],
@@ -889,13 +779,11 @@ fn test_next() {
         false,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * wrap
-     *
-     *   00       <00>
-     *   01        01
-     *  <02>  +1   02
-     */
+    // wrap
+    //
+    //   00       <00>
+    //   01        01
+    //  <02>  +1   02
     assert_pg_mv!(
         next,
         [fly_leaves: 0, len: 3, level: Some(2), sight_size: 1],
@@ -903,13 +791,11 @@ fn test_next() {
         true,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * wrap
-     *
-     *  00 01 02 03      <00>01 02 03
-     *  04 05 06 07       04 05 06 07
-     * <08>09 10 11  +1   08 09 10 11
-     */
+    // wrap
+    //
+    //  00 01 02 03      <00>01 02 03
+    //  04 05 06 07       04 05 06 07
+    // <08>09 10 11  +1   08 09 10 11
     assert_pg_mv!(
         next,
         [fly_leaves: 0, len: 12, level: Some(2), sight_size: 4],
@@ -917,13 +803,11 @@ fn test_next() {
         true,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * wrap
-     *
-     *  00 01 02 03       00 01 02 03
-     *  04 05 06 07      <04>05 06 07
-     * <08>09 10 11  +2   08 09 10 11
-     */
+    // wrap
+    //
+    //  00 01 02 03       00 01 02 03
+    //  04 05 06 07      <04>05 06 07
+    // <08>09 10 11  +2   08 09 10 11
     assert_pg_mv!(
         next,
         [fly_leaves: 0, len: 12, level: Some(2), sight_size: 4],
@@ -931,13 +815,11 @@ fn test_next() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     * wrap
-     *
-     *  00 01 02 03      <00>01 02 03
-     *  04 05 06 07       04 05 06 07
-     * <08>09        +1   08 09
-     */
+    // wrap
+    //
+    //  00 01 02 03      <00>01 02 03
+    //  04 05 06 07       04 05 06 07
+    // <08>09        +1   08 09
     assert_pg_mv!(
         next,
         [fly_leaves: 0, len: 10, level: Some(2), sight_size: 4],
@@ -945,13 +827,11 @@ fn test_next() {
         true,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * initial
-     *
-     *   00        00
-     *   01       <01>
-     *   02   +1   02
-     */
+    // initial
+    //
+    //   00        00
+    //   01       <01>
+    //   02   +1   02
     assert_pg_mv!(
         next,
         [fly_leaves: 0, len: 3, level: None, sight_size: 1],
@@ -962,11 +842,9 @@ fn test_next() {
 
 #[test]
 fn test_previous() {
-    /**
-     *  00        00
-     *  01       <01>
-     * <02>  -1   02
-     */
+    //  00        00
+    //  01       <01>
+    // <02>  -1   02
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 3, level: Some(2), sight_size: 1],
@@ -974,11 +852,9 @@ fn test_previous() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     *  00       <00>
-     *  01        01
-     * <02>  -2   02
-     */
+    //  00       <00>
+    //  01        01
+    // <02>  -2   02
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 3, level: Some(2), sight_size: 1],
@@ -986,12 +862,10 @@ fn test_previous() {
         true,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     *  00       <00>
-     *  01        01
-     *  02        02
-     * <03>  -4   03
-     */
+    //  00       <00>
+    //  01        01
+    //  02        02
+    // <03>  -4   03
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 4, level: Some(3), sight_size: 1],
@@ -999,11 +873,9 @@ fn test_previous() {
         true,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     *  00 01 02 03       <00>01 02 03
-     *  04 05 06 07        04 05 06 07
-     * <08>09        -3    08 09
-     */
+    //  00 01 02 03       <00>01 02 03
+    //  04 05 06 07        04 05 06 07
+    // <08>09        -3    08 09
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 10, level: Some(2), sight_size: 1],
@@ -1011,11 +883,9 @@ fn test_previous() {
         true,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     *  00 01 02 03       00 01 02 03
-     *  04 05 06 07      <04>05 06 07
-     * <08>09        -1   08 09
-     */
+    //  00 01 02 03       00 01 02 03
+    //  04 05 06 07      <04>05 06 07
+    // <08>09        -1   08 09
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 10, level: Some(2), sight_size: 4],
@@ -1023,11 +893,9 @@ fn test_previous() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     *  00 01 02 03      <00>01 02 03
-     *  04 05 06 07       04 05 06 07
-     * <08>09        -2   08 09
-     */
+    //  00 01 02 03      <00>01 02 03
+    //  04 05 06 07       04 05 06 07
+    // <08>09        -2   08 09
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 10, level: Some(2), sight_size: 4],
@@ -1035,11 +903,9 @@ fn test_previous() {
         true,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     *  00 01 02 03       00 01 02 03
-     *  04 05 06 07      <04>05 06 07
-     * <08>09        -3   08 09
-     */
+    //  00 01 02 03       00 01 02 03
+    //  04 05 06 07      <04>05 06 07
+    // <08>09        -3   08 09
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 10, level: Some(2), sight_size: 4],
@@ -1047,13 +913,11 @@ fn test_previous() {
         true,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * ignore_sight
-     *
-     *  00 01 02 03       XX XX 00 01
-     *  04 05 06 07       02 03 04 05
-     * <08>09        -2  <06>07 08 09
-     */
+    // ignore_sight
+    //
+    //  00 01 02 03       XX XX 00 01
+    //  04 05 06 07       02 03 04 05
+    // <08>09        -2  <06>07 08 09
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 10, level: Some(2), sight_size: 4],
@@ -1061,14 +925,12 @@ fn test_previous() {
         true,
         [fly_leaves: 2, level: Some(2)]);
 
-    /**
-     * ignore_sight
-     *
-     *  00 01 02 03       XX XX 00 01
-     *  04 05 06 07       02 03 04 05
-     * <08>09 10         <06>07 08 09
-     *               -2   10
-     */
+    // ignore_sight
+    //
+    //  00 01 02 03       XX XX 00 01
+    //  04 05 06 07       02 03 04 05
+    // <08>09 10         <06>07 08 09
+    //               -2   10
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 11, level: Some(2), sight_size: 4],
@@ -1076,14 +938,12 @@ fn test_previous() {
         true,
         [fly_leaves: 2, level: Some(2)]);
 
-    /**
-     * ignore_sight
-     *
-     *  00 01 02 03       XX XX XX 00
-     *  04 05 06 07       01 02 03 04
-     * <08>09 10         <05>06 07 08
-     *               -3   09 10
-     */
+    // ignore_sight
+    //
+    //  00 01 02 03       XX XX XX 00
+    //  04 05 06 07       01 02 03 04
+    // <08>09 10         <05>06 07 08
+    //               -3   09 10
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 11, level: Some(2), sight_size: 4],
@@ -1091,13 +951,11 @@ fn test_previous() {
         true,
         [fly_leaves: 3, level: Some(2)]);
 
-    /**
-     * ignore_sight
-     *
-     *  00 01 02 03       00 01 02 03
-     *  04 05 06 07      <04>05 06 07
-     * <08>09 10     -4   08 09 10
-     */
+    // ignore_sight
+    //
+    //  00 01 02 03       00 01 02 03
+    //  04 05 06 07      <04>05 06 07
+    // <08>09 10     -4   08 09 10
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 11, level: Some(2), sight_size: 4],
@@ -1105,13 +963,11 @@ fn test_previous() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     * wrap
-     *
-     *  00 01 02 03       00 01 02 03
-     *  04 05 06 07       04 05 06 07
-     * <08>09 10 11  -3  <08>09 10 11
-     */
+    // wrap
+    //
+    //  00 01 02 03       00 01 02 03
+    //  04 05 06 07       04 05 06 07
+    // <08>09 10 11  -3  <08>09 10 11
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 12, level: Some(2), sight_size: 4],
@@ -1119,13 +975,11 @@ fn test_previous() {
         false,
         [fly_leaves: 0, level: Some(2)]);
 
-    /**
-     * wrap
-     *
-     *  00 01 02 03       00 01 02 03
-     *  04 05 06 07       04 05 06 07
-     * <08>09        -3  <08>09
-     */
+    // wrap
+    //
+    //  00 01 02 03       00 01 02 03
+    //  04 05 06 07       04 05 06 07
+    // <08>09        -3  <08>09
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 10, level: Some(2), sight_size: 4],
@@ -1133,13 +987,11 @@ fn test_previous() {
         false,
         [fly_leaves: 0, level: Some(2)]);
 
-    /**
-     * wrap
-     *
-     *  00 01 02 03       00 01 02 03
-     *  04 05 06 07       04 05 06 07
-     * <08>09        -3  <08>09
-     */
+    // wrap
+    //
+    //  00 01 02 03       00 01 02 03
+    //  04 05 06 07       04 05 06 07
+    // <08>09        -3  <08>09
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 10, level: Some(2), sight_size: 4],
@@ -1147,13 +999,11 @@ fn test_previous() {
         false,
         [fly_leaves: 0, level: Some(2)]);
 
-    /**
-     * wrap
-     *
-     *  00 01 02 03       00 01 02 03
-     *  04 05 06 07      <04>05 06 07
-     * <08>09        -4   08 09
-     */
+    // wrap
+    //
+    //  00 01 02 03       00 01 02 03
+    //  04 05 06 07      <04>05 06 07
+    // <08>09        -4   08 09
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 10, level: Some(2), sight_size: 4],
@@ -1161,10 +1011,8 @@ fn test_previous() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     * <00>01 02 03      <00>01 02 03
-     *  04 05 06 07  -1   04 05 06 07
-     */
+    // <00>01 02 03      <00>01 02 03
+    //  04 05 06 07  -1   04 05 06 07
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 8, level: Some(0), sight_size: 4],
@@ -1172,10 +1020,8 @@ fn test_previous() {
         false,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * <00>01 02 03      <00>01 02 03
-     *  04 05 06 07  -4   04 05 06 07
-     */
+    // <00>01 02 03      <00>01 02 03
+    //  04 05 06 07  -4   04 05 06 07
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 8, level: Some(0), sight_size: 4],
@@ -1183,9 +1029,7 @@ fn test_previous() {
         false,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * <XX>XX XX 00  -1  <XX>XX XX 00
-     */
+    // <XX>XX XX 00  -1  <XX>XX XX 00
     assert_pg_mv!(
         previous,
         [fly_leaves: 0, len: 1, level: Some(0), sight_size: 4],
@@ -1193,12 +1037,10 @@ fn test_previous() {
         false,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * ignore_sight
-     *
-     * <XX>XX XX 00  -1  <XX>XX XX 00
-     *  01 02 03          01 02 03
-     */
+    // ignore_sight
+    //
+    // <XX>XX XX 00  -1  <XX>XX XX 00
+    //  01 02 03          01 02 03
     assert_pg_mv!(
         previous,
         [fly_leaves: 3, len: 4, level: Some(0), sight_size: 4],
@@ -1206,11 +1048,9 @@ fn test_previous() {
         false,
         [fly_leaves: 3, level: Some(0)]);
 
-    /**
-     *  XX XX XX 00       00 01 02 03
-     *  01 02 03 04      <04>05 06 07
-     * <05>06 07 08  -1   08
-     */
+    //  XX XX XX 00       00 01 02 03
+    //  01 02 03 04      <04>05 06 07
+    // <05>06 07 08  -1   08
     assert_pg_mv!(
         previous,
         [fly_leaves: 3, len: 9, level: Some(2), sight_size: 4],
@@ -1218,11 +1058,9 @@ fn test_previous() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     *  XX XX XX 00      <00>01 02 03
-     * <01>02 03 04       04 05 06 07
-     *  05 06 07 09  -1   08 09
-     */
+    //  XX XX XX 00      <00>01 02 03
+    // <01>02 03 04       04 05 06 07
+    //  05 06 07 09  -1   08 09
     assert_pg_mv!(
         previous,
         [fly_leaves: 3, len: 10, level: Some(1), sight_size: 4],
@@ -1230,13 +1068,11 @@ fn test_previous() {
         true,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * wrap
-     *
-     *  XX XX XX 00       XX XX XX 00
-     * <01>02 03 04       01 02 03 04
-     *  05 06 07 08  -8  <05>06 07 08
-     */
+    // wrap
+    //
+    //  XX XX XX 00       XX XX XX 00
+    // <01>02 03 04       01 02 03 04
+    //  05 06 07 08  -8  <05>06 07 08
     assert_pg_mv!(
         previous,
         [fly_leaves: 3, len: 9, level: Some(1), sight_size: 4],
@@ -1244,14 +1080,12 @@ fn test_previous() {
         true,
         [fly_leaves: 3, level: Some(2)]);
 
-    /**
-     * wrap
-     *
-     *  XX XX XX 00       XX XX XX 00
-     * <01>02 03 04      <01>02 03 04
-     *  05 06 07 08       05 06 07 08
-     *  09 10 11 12  -8   09 10 11 12
-     */
+    // wrap
+    //
+    //  XX XX XX 00       XX XX XX 00
+    // <01>02 03 04      <01>02 03 04
+    //  05 06 07 08       05 06 07 08
+    //  09 10 11 12  -8   09 10 11 12
     assert_pg_mv!(
         previous,
         [fly_leaves: 3, len: 13, level: Some(1), sight_size: 4],
@@ -1259,14 +1093,12 @@ fn test_previous() {
         false,
         [fly_leaves: 3, level: Some(1)]);
 
-    /**
-     * wrap
-     *
-     *  XX XX XX 00       XX XX XX 00
-     * <01>02 03 04       01 02 03 04
-     *  05 06 07 08      <05>06 07 08
-     *  09 10 11 12  -7   09 10 11 12
-     */
+    // wrap
+    //
+    //  XX XX XX 00       XX XX XX 00
+    // <01>02 03 04       01 02 03 04
+    //  05 06 07 08      <05>06 07 08
+    //  09 10 11 12  -7   09 10 11 12
     assert_pg_mv!(
         previous,
         [fly_leaves: 3, len: 13, level: Some(1), sight_size: 4],
@@ -1274,14 +1106,12 @@ fn test_previous() {
         true,
         [fly_leaves: 3, level: Some(2)]);
 
-    /**
-     * wrap
-     *
-     *  XX XX XX 00      <XX>XX XX 00
-     * <01>02 03 04       01 02 03 04
-     *  05 06 07 08       05 06 07 08
-     *  09 10 11 12  -9   09 10 11 12
-     */
+    // wrap
+    //
+    //  XX XX XX 00      <XX>XX XX 00
+    // <01>02 03 04       01 02 03 04
+    //  05 06 07 08       05 06 07 08
+    //  09 10 11 12  -9   09 10 11 12
     assert_pg_mv!(
         previous,
         [fly_leaves: 3, len: 13, level: Some(1), sight_size: 4],
@@ -1292,11 +1122,9 @@ fn test_previous() {
 
 #[test]
 fn test_first() {
-    /**
-     * <00>01 02 03      <00>01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09        =1   08 09
-     */
+    // <00>01 02 03      <00>01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09        =1   08 09
     assert_pg_mv!(
         first,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1304,11 +1132,9 @@ fn test_first() {
         false,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * <00>01 02 03       00 01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09        =2  <08>09
-     */
+    // <00>01 02 03       00 01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09        =2  <08>09
     assert_pg_mv!(
         first,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1316,11 +1142,9 @@ fn test_first() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     * <00>01 02 03       00 01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09        =3  <08>09
-     */
+    // <00>01 02 03       00 01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09        =3  <08>09
     assert_pg_mv!(
         first,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1328,11 +1152,9 @@ fn test_first() {
         true,
         [fly_leaves: 0, level: Some(2)]);
 
-    /**
-     *  00 01 02 03       00 01 02 03
-     * <04>05 06 07      <04>05 06 07
-     *  08 09        =1   08 09
-     */
+    //  00 01 02 03       00 01 02 03
+    // <04>05 06 07      <04>05 06 07
+    //  08 09        =1   08 09
     assert_pg_mv!(
         first,
         [fly_leaves: 0, len: 10, level: Some(1), sight_size: 4],
@@ -1340,13 +1162,11 @@ fn test_first() {
         false,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     * wrap
-     *
-     * <00>01 02 03       00 01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09        =3  <08>09
-     */
+    // wrap
+    //
+    // <00>01 02 03       00 01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09        =3  <08>09
     assert_pg_mv!(
         first,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1354,13 +1174,11 @@ fn test_first() {
         true,
         [fly_leaves: 0, level: Some(2)]);
 
-    /**
-     * wrap
-     *
-     * <00>01 02 03      <00>01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09        =4   08 09
-     */
+    // wrap
+    //
+    // <00>01 02 03      <00>01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09        =4   08 09
     assert_pg_mv!(
         first,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1368,13 +1186,11 @@ fn test_first() {
         false,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * wrap
-     *
-     * <00>01 02 03       00 01 02 03
-     *  04 05 06 07      <04>05 06 07
-     *  08 09        =5   08 09
-     */
+    // wrap
+    //
+    // <00>01 02 03       00 01 02 03
+    //  04 05 06 07      <04>05 06 07
+    //  08 09        =5   08 09
     assert_pg_mv!(
         first,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1382,13 +1198,11 @@ fn test_first() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     * ignore_sight
-     *
-     * <00>01 02 03      <00>01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09        =1   08 09
-     */
+    // ignore_sight
+    //
+    // <00>01 02 03      <00>01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09        =1   08 09
     assert_pg_mv!(
         first,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1396,14 +1210,12 @@ fn test_first() {
         false,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * ignore_sight
-     *
-     * <00>01 02 03       XX XX XX 00
-     *  04 05 06 07      <01>02 03 04
-     *  08 09             05 06 07 08
-     *               =2   09
-     */
+    // ignore_sight
+    //
+    // <00>01 02 03       XX XX XX 00
+    //  04 05 06 07      <01>02 03 04
+    //  08 09             05 06 07 08
+    //               =2   09
     assert_pg_mv!(
         first,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1411,14 +1223,12 @@ fn test_first() {
         true,
         [fly_leaves: 3, level: Some(1)]);
 
-    /**
-     * ignore_sight
-     *
-     * <00>01 02 03       XX XX 00 01
-     *  04 05 06 07      <02>03 04 05
-     *  08 09             06 07 08 09
-     *               =3   09
-     */
+    // ignore_sight
+    //
+    // <00>01 02 03       XX XX 00 01
+    //  04 05 06 07      <02>03 04 05
+    //  08 09             06 07 08 09
+    //               =3   09
     assert_pg_mv!(
         first,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1426,13 +1236,11 @@ fn test_first() {
         true,
         [fly_leaves: 2, level: Some(1)]);
 
-    /**
-     * ignore_sight
-     *
-     * <00>01 02 03       XX 00 01 02
-     *  04 05 06 07       03 04 05 06
-     *  08 09        =8  <07>08 09
-     */
+    // ignore_sight
+    //
+    // <00>01 02 03       XX 00 01 02
+    //  04 05 06 07       03 04 05 06
+    //  08 09        =8  <07>08 09
     assert_pg_mv!(
         first,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1440,14 +1248,12 @@ fn test_first() {
         true,
         [fly_leaves: 1, level: Some(2)]);
 
-    /**
-     * ignore_sight
-     *
-     *                     XX XX XX 00
-     * <00>01 02 03        01 02 03 04
-     *  04 05 06 07        05 06 07 08
-     *  08 09        =20  <09>
-     */
+    // ignore_sight
+    //
+    //                     XX XX XX 00
+    // <00>01 02 03        01 02 03 04
+    //  04 05 06 07        05 06 07 08
+    //  08 09        =20  <09>
     assert_pg_mv!(
         first,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1458,11 +1264,9 @@ fn test_first() {
 
 #[test]
 fn test_last() {
-    /**
-     * <00>01 02 03       00 01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09        =1  <08>09
-     */
+    // <00>01 02 03       00 01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09        =1  <08>09
     assert_pg_mv!(
         last,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1470,11 +1274,9 @@ fn test_last() {
         true,
         [fly_leaves: 0, level: Some(2)]);
 
-    /**
-     * <00>01 02 03       00 01 02 03
-     *  04 05 06 07      <04>05 06 07
-     *  08 09        =2   08 09
-     */
+    // <00>01 02 03       00 01 02 03
+    //  04 05 06 07      <04>05 06 07
+    //  08 09        =2   08 09
     assert_pg_mv!(
         last,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1482,11 +1284,9 @@ fn test_last() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     * <00>01 02 03      <00>01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09        =3   08 09
-     */
+    // <00>01 02 03      <00>01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09        =3   08 09
     assert_pg_mv!(
         last,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1494,11 +1294,9 @@ fn test_last() {
         false,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     *  00 01 02 03       00 01 02 03
-     * <04>05 06 07      <04>05 06 07
-     *  08 09        =1   08 09
-     */
+    //  00 01 02 03       00 01 02 03
+    // <04>05 06 07      <04>05 06 07
+    //  08 09        =1   08 09
     assert_pg_mv!(
         last,
         [fly_leaves: 0, len: 10, level: Some(1), sight_size: 4],
@@ -1506,13 +1304,11 @@ fn test_last() {
         false,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     * wrap
-     *
-     * <00>01 02 03      <00>01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09        =3   08 09
-     */
+    // wrap
+    //
+    // <00>01 02 03      <00>01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09        =3   08 09
     assert_pg_mv!(
         last,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1520,13 +1316,11 @@ fn test_last() {
         false,
         [fly_leaves: 0, level: Some(0)]);
 
-    /**
-     * wrap
-     *
-     * <00>01 02 03       00 01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09        =4  <08>09
-     */
+    // wrap
+    //
+    // <00>01 02 03       00 01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09        =4  <08>09
     assert_pg_mv!(
         last,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1534,13 +1328,11 @@ fn test_last() {
         true,
         [fly_leaves: 0, level: Some(2)]);
 
-    /**
-     * wrap
-     *
-     * <00>01 02 03       00 01 02 03
-     *  04 05 06 07      <04>05 06 07
-     *  08 09        =5   08 09
-     */
+    // wrap
+    //
+    // <00>01 02 03       00 01 02 03
+    //  04 05 06 07      <04>05 06 07
+    //  08 09        =5   08 09
     assert_pg_mv!(
         last,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1548,14 +1340,12 @@ fn test_last() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     * ignore_sight
-     *
-     *                    XX XX XX 00
-     * <00>01 02 03       01 02 03 04
-     *  04 05 06 07       05 06 07 08
-     *  08 09        =1  <09>
-     */
+    // ignore_sight
+    //
+    //                    XX XX XX 00
+    // <00>01 02 03       01 02 03 04
+    //  04 05 06 07       05 06 07 08
+    //  08 09        =1  <09>
     assert_pg_mv!(
         last,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1563,13 +1353,11 @@ fn test_last() {
         true,
         [fly_leaves: 3, level: Some(3)]);
 
-    /**
-     * ignore_sight
-     *
-     * <00>01 02 03       00 01 02 03
-     *  04 05 06 07       04 05 06 07
-     *  08 09        =2  <08>09
-     */
+    // ignore_sight
+    //
+    // <00>01 02 03       00 01 02 03
+    //  04 05 06 07       04 05 06 07
+    //  08 09        =2  <08>09
     assert_pg_mv!(
         last,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1577,13 +1365,11 @@ fn test_last() {
         true,
         [fly_leaves: 0, level: Some(2)]);
 
-    /**
-     * ignore_sight
-     *
-     * <00>01 02 03       XX 00 01 02
-     *  04 05 06 07       03 04 05 06
-     *  08 09        =3  <07>08 09
-     */
+    // ignore_sight
+    //
+    // <00>01 02 03       XX 00 01 02
+    //  04 05 06 07       03 04 05 06
+    //  08 09        =3  <07>08 09
     assert_pg_mv!(
         last,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1591,13 +1377,11 @@ fn test_last() {
         true,
         [fly_leaves: 1, level: Some(2)]);
 
-    /**
-     * ignore_sight
-     *
-     * <00>01 02 03       XX XX 00 01
-     *  04 05 06 07      <02>03 04 05
-     *  08 09        =8   06 07 08 09
-     */
+    // ignore_sight
+    //
+    // <00>01 02 03       XX XX 00 01
+    //  04 05 06 07      <02>03 04 05
+    //  08 09        =8   06 07 08 09
     assert_pg_mv!(
         last,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1605,13 +1389,11 @@ fn test_last() {
         true,
         [fly_leaves: 2, level: Some(1)]);
 
-    /**
-     * ignore_sight
-     *
-     * <00>01 02 03       <00>01 02 03
-     *  04 05 06 07        04 05 06 07
-     *  08 09        =99   08 09
-     */
+    // ignore_sight
+    //
+    // <00>01 02 03       <00>01 02 03
+    //  04 05 06 07        04 05 06 07
+    //  08 09        =99   08 09
     assert_pg_mv!(
         last,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1622,12 +1404,10 @@ fn test_last() {
 
 #[test]
 fn test_update_index() {
-    /**
-     * <00>     00
-     *  01     <01>
-     *  02      02
-     *  03  =1  03
-     */
+    // <00>     00
+    //  01     <01>
+    //  02      02
+    //  03  =1  03
     assert_pg!(
         update_index,
         [fly_leaves: 0, len: 4, level: None, sight_size: 1],
@@ -1635,11 +1415,9 @@ fn test_update_index() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     * <00>01 02 03       00 01 02 03
-     *  04 05 06 07      <04>05 06 07
-     *  08 09        =6   08 09
-     */
+    // <00>01 02 03       00 01 02 03
+    //  04 05 06 07      <04>05 06 07
+    //  08 09        =6   08 09
     assert_pg!(
         update_index,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],
@@ -1647,11 +1425,9 @@ fn test_update_index() {
         true,
         [fly_leaves: 0, level: Some(1)]);
 
-    /**
-     * <00>01 02 03        00 01 02 03
-     *  04 05 06 07        04 05 06 07
-     *  08 09        =99  <08>09
-     */
+    // <00>01 02 03        00 01 02 03
+    //  04 05 06 07        04 05 06 07
+    //  08 09        =99  <08>09
     assert_pg!(
         update_index,
         [fly_leaves: 0, len: 10, level: Some(0), sight_size: 4],

@@ -261,7 +261,7 @@ fn rgb_to_hsv(rgb: TupleColor) -> TupleColor {
     (h, s, max)
 }
 
-static HRTBL: &'static [&'static [usize;3];6] = &[
+static HRTBL: &[&[usize;3];6] = &[
     &[0, 3, 1],
     &[2, 0, 1],
     &[1, 0, 3],

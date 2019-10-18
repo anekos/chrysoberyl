@@ -125,17 +125,17 @@ impl Cherenkoved {
     }
 
     pub fn generate_animation_png<T: AsRef<Path>>(&self, entry: &Entry, imaging: &Imaging, length: u8, path: &T) -> AppResultU {
-        use apng_encoder::apng;
+        use apng_encoder::{Color, encoder::Encoder, Meta};
         use crate::image::ImageBuffer::Static;
         use std::fs::File;
 
         fn generate(mut file: File, mut cache_entry: CacheEntry, entry_content: &EntryContent, imaging: &Imaging, size: Size, length: u8) -> AppResultU {
             let (width, height) = (size.width as u32, size.height as u32);
 
-            let color = apng::Color::RGBA(8);
-            let meta = apng::Meta { width, height, color, frames: u32::from(length), plays: None };
+            let color = Color::RGBA(8);
+            let meta = Meta { width, height, color, frames: u32::from(length), plays: None };
 
-            let mut encoder = apng::encoder::Encoder::create(&mut file, meta)?;
+            let mut encoder = Encoder::create(&mut file, meta)?;
 
             cache_entry.image = None;
             for _ in 0 .. length {

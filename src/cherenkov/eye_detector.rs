@@ -2,6 +2,7 @@
 use std::sync::mpsc::Sender;
 use std::thread::spawn;
 
+use bytes::Bytes;
 use rusoto_core::Region;
 use rusoto_rekognition::{DetectFacesRequest, DetectFacesResponse, Image, Rekognition, RekognitionClient};
 
@@ -15,7 +16,7 @@ use crate::size::Coord;
 pub fn detect_eyes(app_tx: Sender<Operation>, parameter: CherenkovParameter, image: Vec<u8>) {
     let cli = RekognitionClient::new(Region::default());
 
-    let image = Image { bytes: Some(image), s3_object: None };
+    let image = Image { bytes: Some(Bytes::from(image.as_slice())), s3_object: None };
     let request = DetectFacesRequest {
         attributes: None,
         image,

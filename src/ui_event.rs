@@ -283,7 +283,7 @@ fn on_scroll(app_tx: &Sender<Operation>, key: Key, direction: ScrollDirection) {
     }
 }
 
-fn uri_to_path(uri: &str) -> Result<String, Box<Error>> {
+fn uri_to_path(uri: &str) -> Result<String, Box<dyn Error>> {
     let uri = CString::new(uri).unwrap();
 
     unsafe {

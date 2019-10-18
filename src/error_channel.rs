@@ -45,7 +45,7 @@ macro_rules! with_error {
             $body;
             Ok(())
         };
-        let result: Result<(), Box<StdError>> = body();
+        let result: Result<(), Box<dyn StdError>> = body();
         match result {
             Ok(_) => (),
             Err(err) => puts_error!(err, "at" => $at),

@@ -92,7 +92,7 @@ define_error!(std::num::ParseIntError, ParseInt);
 define_error!(ParsingError, OperationParser);
 
 define_std_error!(String);
-define_std_error!(apng_encoder::apng::errors::ApngError);
+define_std_error!(apng_encoder::errors::ApngError);
 define_std_error!(cairo::IoError);
 define_std_error!(css_color_parser::ColorParseError);
 define_std_error!(curl::Error);

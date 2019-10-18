@@ -174,7 +174,7 @@ pub fn fetch_entries(path: &PathBuf, meta: Option<Meta>, show: bool, encodings: 
 }
 
 
-fn get_filename(entry: &Entry, index: usize, encodings: &[EncodingRef]) -> String {
+fn get_filename(entry: &dyn Entry, index: usize, encodings: &[EncodingRef]) -> String {
     use libarchive3_sys::ffi;
     use std::ffi::CStr;
     use encoding::Encoding;

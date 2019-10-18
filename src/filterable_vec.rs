@@ -10,7 +10,7 @@ use rand::{thread_rng, Rng, ThreadRng};
 
 
 
-pub type Pred<T, U> = Box<Fn(&T, &U) -> bool>;
+pub type Pred<T, U> = Box<dyn Fn(&T, &U) -> bool>;
 
 pub struct FilterableVec<T: Hash + Eq + Sized, U> {
     original: Vec<Arc<T>>,

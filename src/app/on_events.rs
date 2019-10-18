@@ -805,7 +805,7 @@ pub fn on_operate_file(app: &mut App, file_operation: &filer::FileOperation) -> 
                 file_operation.execute_with_buffer(png.as_ref(), &name)?
             },
             Message(ref message) =>
-                Err(AppError::Standard(o!(message)))?
+                return Err(AppError::Standard(o!(message)))
         };
         let text = format!("{:?}", file_operation);
         puts_event!("operate_file", "status" => "ok", "operation" => text);
@@ -1373,7 +1373,7 @@ pub fn on_sorter(app: &mut App, updated: &mut Updated, fix_current: bool, sorter
         }
         let columns: Vec<&str> = line.split('\t').collect();
         if columns.len() != 3 {
-            return Err("Invalid format")?;
+            return Err("Invalid format".into());
         }
         let key: entry::Key = (columns[0].parse()?, o!(columns[1]), columns[2].parse()?);
         orders.insert(key, index);
@@ -1552,7 +1552,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
             _ => false,
         };
 
-        let value: &mut OptionValue = match *option_name {
+        let value: &mut dyn OptionValue = match *option_name {
             PreDefined(ref option_name) => match *option_name {
                 AbbrevLength => &mut app.states.abbrev_length,
                 Animation => &mut app.states.drawing.animation,

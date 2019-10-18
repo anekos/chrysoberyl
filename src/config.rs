@@ -9,7 +9,7 @@ use crate::app_path;
 
 
 
-pub static DEFAULT_CONFIG: &'static str = include_str!("static/default.chry");
+pub static DEFAULT_CONFIG: &str = include_str!("static/default.chry");
 
 
 pub fn get_config_source<T: AsRef<Path>>(path: Option<&T>) -> String {
@@ -21,14 +21,14 @@ pub fn get_config_source<T: AsRef<Path>>(path: Option<&T>) -> String {
     })
 }
 
-fn read_config<T: AsRef<Path>>(path: &T) -> Result<String, Box<Error>> {
+fn read_config<T: AsRef<Path>>(path: &T) -> Result<String, Box<dyn Error>> {
     let mut file = File::open(path)?;
     let mut out = o!("");
     file.read_to_string(&mut out)?;
     Ok(out)
 }
 
-fn create_default() -> Result<(), Box<Error>> {
+fn create_default() -> Result<(), Box<dyn Error>> {
     let file = app_path::config_file();
     let dir = file.parent().ok_or("WTF: Unexpected config path")?;
     create_dir_all(dir)?;

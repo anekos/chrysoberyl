@@ -30,7 +30,7 @@ impl Counter {
             self.value = item;
             Ok(())
         } else {
-            Err(AppError::Fixed("Empty stack"))?
+            Err(AppError::Fixed("Empty stack"))
         }
     }
 

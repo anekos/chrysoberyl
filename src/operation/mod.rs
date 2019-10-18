@@ -405,7 +405,7 @@ impl Operation {
     pub fn parse_fuzziness(s: &str) -> AppResult<Operation> {
         match _parse_from_str(s) {
             Err(ParsingError::NotOperation(_)) => Ok(Operation::Push(Expandable::new(o!(s)), None, false, false)),
-            Err(err) => Err(err)?,
+            Err(err) => Err(err.into()),
             Ok(op) => Ok(op)
         }
     }

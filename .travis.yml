@@ -11,6 +11,7 @@ addons:
     packages:
     - libgtk-3-dev
     - libcairo2-dev
+    - libarchive-dev
 cache:
   directories:
     - $HOME/.rustup

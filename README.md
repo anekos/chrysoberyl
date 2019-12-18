@@ -1,3 +1,6 @@
+
+[![Build Status](https://travis-ci.org/anekos/chrysoberyl.svg?branch=master)](https://travis-ci.org/anekos/chrysoberyl)
+
 # chrysoberyl
 
 The controllable image viewer

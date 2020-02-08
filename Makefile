@@ -1,15 +1,15 @@
 
 release:
-	RUSTC_WRAPPER=`which sccache` cargo build --release --features poppler_lock
+	cargo build --release --features poppler_lock
 
 release-without-lock:
-	RUSTC_WRAPPER=`which sccache` cargo build --release
+	cargo build --release
 
 build-debug:
-	CARGO_INCREMENTAL=1 RUSTC_WRAPPER=`which sccache` cargo build
+	CARGO_INCREMENTAL=1 cargo build
 
 test:
-	RUSTC_WRAPPER=`which sccache` cargo test
+	cargo test
 
 install-sccache:
 	cargo install --force --git https://github.com/mozilla/sccache

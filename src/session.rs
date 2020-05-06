@@ -351,11 +351,11 @@ fn write_path(entry: &Entry, out: &mut String) {
 }
 
 pub fn write_paginator(entry: Option<Arc<Entry>>, paginator: &Paginator, out: &mut String) {
+    sprintln!(out, "@fly-leaves {}", paginator.fly_leaves());
     if let Some(entry) = entry {
         let (_, ref path, index) = entry.key;
         sprintln!(out, "@go {} {}", escape(path), index + 1);
     }
-    sprintln!(out, "@fly-leaves {}", paginator.fly_leaves());
 }
 
 pub fn write_mappings(mappings: &Mapping, out: &mut String) {

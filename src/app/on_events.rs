@@ -936,15 +936,22 @@ pub fn on_push_memory(app: &mut App, updated: &mut Updated, buf: Vec<u8>, meta: 
 }
 
 pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: Option<Meta>, force: bool, show: bool) -> AppResultU {
-    if let Ok(path) = path.canonicalize() {
-        if let Some(entry_type) = get_entry_type_from_filename(&path) {
-            match entry_type {
-                EntryType::Archive =>
-                    return on_push_archive(app, &path, meta, force, show, None),
-                EntryType::PDF =>
-                    return on_push_pdf(app, updated, path.to_path_buf(), meta, force, show, None),
-                _ =>
-                    ()
+    {
+        let path = if app.states.canonicalize {
+            path.canonicalize()
+        } else {
+            Ok(path.to_owned())
+        };
+        if let Ok(path) = path {
+            if let Some(entry_type) = get_entry_type_from_filename(&path) {
+                match entry_type {
+                    EntryType::Archive =>
+                        return on_push_archive(app, &path, meta, force, show, None),
+                    EntryType::PDF =>
+                        return on_push_pdf(app, updated, path.to_path_buf(), meta, force, show, None),
+                    _ =>
+                        ()
+                }
             }
         }
     }
@@ -1558,6 +1565,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
                 Animation => &mut app.states.drawing.animation,
                 AutoReload => &mut app.states.auto_reload,
                 AutoPaging => &mut app.states.auto_paging,
+                Canonicalize => &mut app.states.canonicalize,
                 CurlConnectTimeout => &mut app.states.curl_options.connect_timeout,
                 CurlFollowLocation => &mut app.states.curl_options.follow_location,
                 CurlLowSpeedLimit => &mut app.states.curl_options.low_speed_limit,

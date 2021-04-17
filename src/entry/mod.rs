@@ -473,7 +473,9 @@ impl EntryContainer {
             }
         }
 
-        let file = file.canonicalize()?;
+        // Should it be canonicalized? (If yes, the `canonicalize` option should be considered)
+        // let file = file.canonicalize()?;
+        let file = file.to_owned();
 
         if let Some(expand_level) = expand_level {
             if let Some(dir) = file.parent() {

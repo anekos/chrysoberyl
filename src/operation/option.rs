@@ -26,6 +26,7 @@ iterable_enum!(PreDefinedOptionName =>
     Animation,
     AutoPaging,
     AutoReload,
+    Canonicalize,
     ColorLink,
     CurlConnectTimeout,
     CurlFollowLocation,
@@ -80,6 +81,7 @@ impl FromStr for PreDefinedOptionName {
             "animation" | "anim"                   => Animation,
             "auto-reload"                          => AutoReload,
             "auto-page" | "auto-paging" | "paging" => AutoPaging,
+            "canonicalize"                         => Canonicalize,
             "curl-connect-timeout"                 => CurlConnectTimeout,
             "curl-follow-location"                 => CurlFollowLocation,
             "curl-low-speed-limit"                 => CurlLowSpeedLimit,
@@ -132,7 +134,7 @@ impl PreDefinedOptionName {
 
         match *self {
             AbbrevLength | Animation | AutoReload | AutoPaging |
-                ColorLink |
+                Canonicalize | ColorLink |
                 FitTo | Freeze | HorizontalFlip | HorizontalViews | IdleTime | IgnoreFailures | InitialPosition | LogFile | MaskOperator |
                 PathList | PreFetchEnabled | PreFetchLimit | PreFetchPageSize | PreFetchStages |
                 Reverse | Rotation | Screen | SkipResizeWindow | StablePush | StatusBar | StatusBarAlign | StatusBarHeight | StatusBarOverlay | StatusFormat | EmptyStatusFormat | Style |

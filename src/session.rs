@@ -130,6 +130,7 @@ pub fn generate_option_value(name: &PreDefinedOptionName, st: &States) -> (Strin
         Animation => gen("animation", &b2s(st.drawing.animation)),
         AutoReload => gen("auto-reload", &b2s(st.auto_reload)),
         AutoPaging => gen("auto-paging", &st.auto_paging),
+        Canonicalize => gen("canonicalize", &b2s(st.canonicalize)),
         ColorLink => gen("link-color", &st.drawing.link_color),
         CurlConnectTimeout => geno("curl-connect-timeout", &st.curl_options.connect_timeout),
         CurlFollowLocation => gen("curl-follow-location", &b2s(st.curl_options.follow_location)),

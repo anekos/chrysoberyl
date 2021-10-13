@@ -45,6 +45,7 @@ impl MRubyEnv {
     }
 
     #[allow(unused_variables)]
+    #[allow(deprecated)]
     pub fn new() -> Self {
         let mruby = Mruby::new();
 

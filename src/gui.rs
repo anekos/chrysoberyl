@@ -691,7 +691,7 @@ impl Cell {
          sh as i32)
     }
 
-    pub fn get_position_on_image(&self, coord: &CoordPx, drawing: &Drawing) -> Option<(Coord)> {
+    pub fn get_position_on_image(&self, coord: &CoordPx, drawing: &Drawing) -> Option<Coord> {
         fn extract(adj: &Adjustment) -> (f64, f64) {
             (adj.get_value(), adj.get_upper())
         }

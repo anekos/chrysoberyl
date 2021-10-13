@@ -185,7 +185,7 @@ macro_rules! iterable_enum {
                 use self::$name::*;
 
                 static ITEMS: [$name; count_idents!($($var),*)] = [$($var,)*];
-                ITEMS.into_iter()
+                ITEMS.iter()
             }
         }
     }

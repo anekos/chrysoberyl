@@ -353,7 +353,7 @@ fn log_status(app_tx: &Sender<Operation>, sp: &SP, state: &State, buffers: usize
 
 
 fn update_atime<T: AsRef<Path>>(path: &T) -> AppResultU {
-    let meta = r#try!(fs::metadata(path));
+    let meta = fs::metadata(path)?;
     let ts = time::now().to_timespec();
     let mtime = FileTime::from_last_modification_time(&meta);
     let atime = FileTime::from_unix_time(ts.sec, ts.nsec as u32);

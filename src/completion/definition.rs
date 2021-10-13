@@ -123,8 +123,8 @@ impl Definition {
                     if line.starts_with("## (@") || line.starts_with("## @") {
                         let src = &line[3..];
                         match parse(src, definition) {
-                            Err(e) => panic!(format!("Err: {:?} for {:?}", e, line)),
-                            Ok((ref ops, ref args)) if ops.is_empty() => panic!(format!("Empty: line={:?}, ops={:?}, args={:?}", line, ops, args)),
+                            Err(e) => panic!("Err: {:?} for {:?}", e, line),
+                            Ok((ref ops, ref args)) if ops.is_empty() => panic!("Empty: line={:?}, ops={:?}, args={:?}", line, ops, args),
                             Ok((ops, args)) => {
                                 let args = Rc::new(args);
                                 for (i, op) in ops.into_iter().enumerate() {

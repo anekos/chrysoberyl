@@ -123,7 +123,16 @@ impl Gui {
     pub fn new(window_role: &str) -> Gui {
         use gtk::Orientation;
 
-        gtk::init().unwrap();
+        // gtk::init().unwrap();
+
+        // Workaround - https://github.com/gtk-rs/gtk/issues/405#issuecomment-261809506
+        unsafe {
+            use std::ptr;
+            use gtk_sys::gtk_init;
+            let mut argc = 0;
+            gtk_init(&mut argc, ptr::null_mut());
+            gtk::set_initialized();
+        }
 
         let window = tap!(it = gtk::Window::new(gtk::WindowType::Toplevel), {
             WidgetExt::set_name(&it, "application");

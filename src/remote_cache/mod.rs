@@ -13,8 +13,6 @@ use std::thread::spawn;
 use closet::clone_army;
 use curl::easy::Easy as EasyCurl;
 use filetime::{FileTime, set_file_times};
-use md5;
-use time;
 use url::Url;
 
 use crate::app_path;

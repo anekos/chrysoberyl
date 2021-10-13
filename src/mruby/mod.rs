@@ -6,7 +6,6 @@ use std::rc::Rc;
 use marksman_escape::Escape;
 use mrusty::{defines, mrfn, Mruby, mruby_class, mruby_defines, MrubyFile, MrubyImpl, mrusty_class, Value};
 use regex::{Regex, Captures};
-use xml;
 
 use crate::app::info::AppInfo;
 use crate::constant;

@@ -4,8 +4,6 @@ use std::env;
 
 use dirs::home_dir;
 
-use shellexpand;
-
 
 
 pub fn expand_env(s: &str) -> String {

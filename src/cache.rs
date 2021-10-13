@@ -21,14 +21,14 @@ impl<K, V> Cache<K, V> where K: Hash + Eq + Clone, V: Clone {
         }
     }
 
-    pub fn each<F>(&self, mut block: F) where F: FnMut(&V) -> () {
+    pub fn each<F>(&self, mut block: F) where F: FnMut(&V) {
         let entries = self.entries.lock().unwrap();
         for (_, entry) in &*entries {
             block(entry)
         }
     }
 
-    pub fn each_mut<F>(&mut self, block: F) where F: Fn(&mut V) -> () {
+    pub fn each_mut<F>(&mut self, block: F) where F: Fn(&mut V) {
         let mut entries = self.entries.lock().unwrap();
         for (_, entry) in entries.iter_mut() {
             block(entry)

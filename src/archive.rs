@@ -2,7 +2,7 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use std::path::PathBuf;
+use std::path::Path;
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use std::thread::spawn;
@@ -12,7 +12,6 @@ use encoding::types::EncodingRef;
 use libarchive::archive::{ReadFilter, ReadFormat, Entry, FileType};
 use libarchive::reader::Builder;
 use libarchive::reader::Reader;
-use natord;
 
 use crate::entry::Meta;
 use crate::file_extension::is_valid_image_filename;
@@ -56,7 +55,7 @@ impl Hash for ArchiveEntry {
 
 
 #[allow(clippy::too_many_arguments)]
-pub fn fetch_entries(path: &PathBuf, meta: Option<Meta>, show: bool, encodings: &[EncodingRef], tx: Sender<Operation>, mut sorting_buffer: SortingBuffer<QueuedOperation>, force: bool, url: Option<String>) -> AppResultU {
+pub fn fetch_entries<T: AsRef<Path>>(path: &T, meta: Option<Meta>, show: bool, encodings: &[EncodingRef], tx: Sender<Operation>, mut sorting_buffer: SortingBuffer<QueuedOperation>, force: bool, url: Option<String>) -> AppResultU {
     let from_index: HashMap<usize, (usize, String)> = {
         #[derive(Clone, Debug)]
         struct IndexWithName {
@@ -119,6 +118,7 @@ pub fn fetch_entries(path: &PathBuf, meta: Option<Meta>, show: bool, encodings: 
     };
 
     let ticket = sorting_buffer.reserve_n(from_index.len());
+    let path = path.as_ref().to_path_buf();
 
     spawn(clone_army!([path] move || {
         let mut builder = Builder::new();

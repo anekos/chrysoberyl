@@ -5,8 +5,6 @@ use std::sync::mpsc::Receiver;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-use env_logger;
-use gtk;
 use log::info;
 
 use crate::app;

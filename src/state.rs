@@ -6,9 +6,6 @@ use std::io::Read;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use cairo;
-use gtk;
-
 use crate::app_path::{PathList, cache_dir};
 use crate::cherenkov::Operator;
 use crate::color::Color;

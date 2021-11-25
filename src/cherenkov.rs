@@ -65,7 +65,7 @@ impl Cherenkoved {
     }
 
     pub fn get_image_buffer(&mut self, entry: &Entry, imaging: &Imaging) -> Option<AppResult<ImageBuffer>> {
-        if_let_some!(cache_entry = self.cache.get_mut(&entry.key), None);
+        let cache_entry = self.cache.get_mut(&entry.key)?;
         Some(get_image_buffer(cache_entry, &entry.content, imaging))
     }
 
@@ -85,7 +85,7 @@ impl Cherenkoved {
             for _ in 0 .. length {
                 let mut cache_entry = cache_entry.clone();
                 cache_entry.reseed();
-                if let Static(buffer) = get_image_buffer(&mut cache_entry, &entry_content, &imaging)? {
+                if let Static(buffer) = get_image_buffer(&mut cache_entry, entry_content, imaging)? {
                     let pixbuf = buffer.get_pixbuf();
                     let channels = pixbuf.get_n_channels();
 
@@ -141,14 +141,14 @@ impl Cherenkoved {
             for _ in 0 .. length {
                 let mut cache_entry = cache_entry.clone();
                 cache_entry.reseed();
-                if let Static(buffer) = get_image_buffer(&mut cache_entry, &entry_content, &imaging)? {
+                if let Static(buffer) = get_image_buffer(&mut cache_entry, entry_content, imaging)? {
                     let pixbuf = buffer.get_pixbuf();
                     let channels = pixbuf.get_n_channels();
                     let row_stride = pixbuf.get_rowstride() as usize;
 
                     if channels == 4 {
                         let pixels: &mut [u8] = unsafe { pixbuf.get_pixels() };
-                        encoder.write_frame(&pixels, None, None, Some(row_stride))?;
+                        encoder.write_frame(pixels, None, None, Some(row_stride))?;
                     } else {
                         return Err(AppError::Fixed("Invalid channels"));
                     }
@@ -217,7 +217,7 @@ impl Cherenkoved {
     }
 
     pub fn cherenkov(&mut self, entry: &Entry, imaging: &Imaging, new_modifiers: &[Modifier]) {
-        let mut modifiers = self.cache.get(&entry.key).map(|it| it.modifiers.clone()).unwrap_or_else(|| vec![]);
+        let mut modifiers = self.cache.get(&entry.key).map(|it| it.modifiers.clone()).unwrap_or_default();
 
         modifiers.extend_from_slice(new_modifiers);
 

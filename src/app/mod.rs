@@ -146,7 +146,7 @@ impl App {
             states,
             timers: TimerManager::new(secondary_tx.clone()),
             user_switches: UserSwitchManager::new(secondary_tx.clone()),
-            watcher: Watcher::new(secondary_tx.clone()),
+            watcher: Watcher::new(secondary_tx),
         };
 
         if initial.load_config {

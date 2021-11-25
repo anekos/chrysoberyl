@@ -859,9 +859,9 @@ impl FromStr for Direction {
 }
 
 
-impl Into<u32> for DropItemType {
-    fn into(self) -> u32 {
-        self as u32
+impl From<DropItemType> for u32 {
+    fn from(it: DropItemType) -> u32 {
+        it as u32
     }
 }
 

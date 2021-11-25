@@ -261,8 +261,8 @@ impl FromStr for FitTo {
                 if let Ok((w, h)) = resolution::from(src) {
                     return Ok(Fixed(w as i32, h as i32));
                 }
-                if src.ends_with('%') {
-                    if let Ok(scale) = src[.. src.len() - 1].parse() {
+                if let Some(stripped) = src.strip_suffix('%') {
+                    if let Ok(scale) = stripped.parse() {
                         return Ok(Scale(scale))
                     }
                 }
@@ -291,13 +291,13 @@ impl OptionValue for FitTo {
     }
 
     fn increment(&mut self, delta: usize) -> AppResultU {
-        let value = get_scale(self).checked_add(delta).unwrap_or(<usize>::max_value());
+        let value = get_scale(self).saturating_add(delta);
         self.set_scale(value);
         Ok(())
     }
 
     fn decrement(&mut self, delta: usize) -> AppResultU {
-        let value = get_scale(self).checked_sub(delta).unwrap_or(<usize>::min_value());
+        let value = get_scale(self).saturating_sub(delta);
         self.set_scale(value);
         Ok(())
     }

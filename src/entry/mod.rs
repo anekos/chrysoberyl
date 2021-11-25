@@ -76,6 +76,7 @@ pub struct SearchKey {
 pub type Key = (EntryType, String, usize); /* usize = 0 origin page number */
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Copy)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum EntryType {
     Invalid,
     PDF,
@@ -236,7 +237,7 @@ impl EntryContainer {
         let result =
             if let Some((file, index, current_entry)) = center {
                 let dir = n_parents(file.clone(), n);
-                expand(&dir.to_path_buf(), recursive).ok().and_then(|middle| {
+                expand(&dir, recursive).ok().map(|middle| {
                     let serial = self.new_serials(middle.len());
 
                     let mut middle: Vec<Arc<Entry>> = middle.into_iter().enumerate().map(|(index, it)| {
@@ -255,11 +256,11 @@ impl EntryContainer {
                     result.extend_from_slice(middle.as_slice());
                     result.extend_from_slice(&right[1..]);
 
-                    Some(result)
+                    result
                 })
             } else if let Some(dir) = dir {
                 let dir = n_parents(dir, n - 1);
-                expand(&dir.to_path_buf(), recursive).ok().map(|files| {
+                expand(&dir, recursive).ok().map(|files| {
                     let serial = self.new_serials(files.len());
 
                     let mut result = self.entries.clone_filtered();
@@ -299,7 +300,7 @@ impl EntryContainer {
     }
 
     pub fn find_page_in_archive(&self, current: usize, page_number: usize) -> Option<usize> {
-        if_let_some!(base = self.entries.get(current), None);
+        let base = self.entries.get(current)?;
 
         let len = self.entries.len();
 
@@ -414,13 +415,13 @@ impl EntryContainer {
         }
     }
 
-    pub fn push_archive_entry(&mut self, app_info: &AppInfo, archive_path: &PathBuf, entry: &ArchiveEntry, meta: Option<Meta>, force: bool, url: Option<String>) {
+    pub fn push_archive_entry<T: AsRef<Path>>(&mut self, app_info: &AppInfo, archive_path: &T, entry: &ArchiveEntry, meta: Option<Meta>, force: bool, url: Option<String>) {
         let serial = self.new_serial();
         self.push_entry(
             app_info,
             Entry::new(
                 serial,
-                EntryContent::Archive(Arc::new(archive_path.clone()), entry.clone()),
+                EntryContent::Archive(Arc::new(archive_path.as_ref().to_path_buf()), entry.clone()),
                 meta,
                 url),
             force);
@@ -460,10 +461,10 @@ impl EntryContainer {
         Ok(())
     }
 
-    pub fn push_image(&mut self, app_info: &AppInfo, file: &PathBuf, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) -> AppResultU {
+    pub fn push_image<T: AsRef<Path>>(&mut self, app_info: &AppInfo, file: &T, meta: Option<Meta>, force: bool, expand_level: Option<u8>, url: Option<String>) -> AppResultU {
         use std::os::unix::fs::FileTypeExt;
 
-        if let Ok(metadata) = file.metadata() {
+        if let Ok(metadata) = file.as_ref().metadata() {
             if metadata.file_type().is_fifo() {
                 let mut content = vec![];
                 let mut file = File::open(file)?;
@@ -474,7 +475,7 @@ impl EntryContainer {
 
         // Should it be canonicalized? (If yes, the `canonicalize` option should be considered)
         // let file = file.canonicalize()?;
-        let file = file.to_owned();
+        let file = file.as_ref().to_path_buf();
 
         if let Some(expand_level) = expand_level {
             if let Some(dir) = file.parent() {
@@ -493,8 +494,8 @@ impl EntryContainer {
         Ok(())
     }
 
-    pub fn push_directory(&mut self, app_info: &AppInfo, dir: &PathBuf, meta: &Option<Meta>, force: bool) ->AppResultU {
-        through!([expanded = expand(dir, <u8>::max_value())] {
+    pub fn push_directory<T: AsRef<Path>>(&mut self, app_info: &AppInfo, dir: &T, meta: &Option<Meta>, force: bool) ->AppResultU {
+        through!([expanded = expand(dir.as_ref(), <u8>::max_value())] {
             let mut expanded = expanded;
             expanded.sort_by(|a, b| natord::compare(path_to_str(a), path_to_str(b)));
             for file in expanded {
@@ -618,11 +619,7 @@ impl SearchKey {
 impl EntryType {
     pub fn is_container(self) -> bool {
         use self::EntryType::*;
-
-        match self {
-            PDF | Archive => true,
-            _ => false,
-        }
+        matches!(self, PDF | Archive)
     }
 }
 
@@ -674,7 +671,7 @@ impl ops::Add<usize> for Serial {
 
 fn n_parents(path: PathBuf, n: u8) -> PathBuf {
     if n > 0 {
-        if let Some(parent) = path.clone().parent() {
+        if let Some(parent) = path.parent() {
             return n_parents(parent.to_path_buf(), n - 1);
         }
     }

@@ -222,8 +222,7 @@ macro_rules! gen_includable {
 
         impl OptionValue for $t {
             fn set(&mut self, value: &str) -> AppResultU {
-                if value.starts_with('@') {
-                    let raw_path = &value[1..];
+                if let Some(raw_path) = value.strip_prefix('@') {
                     let path = Expandable::new(o!(raw_path));
                     let mut file = File::open(&path.to_string())?;
                     let mut script = o!("");

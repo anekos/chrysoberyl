@@ -47,13 +47,13 @@ pub fn get_static_image_buffer(entry_content: &EntryContent, imaging: &Imaging) 
 
     match *entry_content {
         Image(ref path) =>
-            make_scaled_from_file(path_to_str(path), &imaging),
+            make_scaled_from_file(path_to_str(path), imaging),
         Archive(_, ref entry) =>
-            make_scaled(&*entry.content.as_slice(), &imaging),
+            make_scaled(&*entry.content.as_slice(), imaging),
         Memory(ref content, _) =>
-            make_scaled(content, &imaging),
+            make_scaled(content, imaging),
         Pdf(ref path, index) =>
-            Ok(make_scaled_from_pdf(&**path, index, &imaging)),
+            Ok(make_scaled_from_pdf(&**path, index, imaging)),
         Message(ref message) =>
             Err(AppError::Standard(o!(message))),
     }
@@ -74,10 +74,8 @@ pub fn get_animation_buffer(entry_content: &EntryContent) -> AppResult<Animation
 
 
 fn is_animation(entry_content: &EntryContent) -> bool {
-    if let Some(img) = get_meta(entry_content) {
-        if let Ok(img) = img {
-            return img.is_animation()
-        }
+    if let Some(Ok(img)) = get_meta(entry_content) {
+        return img.is_animation()
     }
     false
 }
@@ -90,7 +88,7 @@ fn make_scaled(buffer: &[u8], imaging: &Imaging) -> AppResult<StaticImageBuffer>
         return Err(AppError::Fixed("Invalid image data"))
     }
 
-    let source = loader.get_pixbuf().ok_or_else(|| AppError::Fixed("Invalid image"))?;
+    let source = loader.get_pixbuf().ok_or(AppError::Fixed("Invalid image"))?;
     let original = Size::from_pixbuf(&source);
     let (scale, fitted, clipped_region) = original.rotate(imaging.drawing.rotation).fit_with_clipping(imaging.cell_size, &imaging.drawing);
 

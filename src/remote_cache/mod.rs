@@ -33,7 +33,7 @@ use self::curl_options::CurlOptions;
 
 
 
-type TID = usize;
+type Tid = usize;
 
 pub struct RemoteCache {
     main_tx: Sender<Getter>,
@@ -46,7 +46,7 @@ pub struct RemoteCache {
 #[derive(Default)]
 pub struct State {
     curl_options: CurlOptions,
-    idles: Vec<TID>,
+    idles: Vec<Tid>,
     processing: BTreeSet<Request>,
     queued: VecDeque<Request>,
     threads: Vec<Sender<Request>>,
@@ -310,7 +310,7 @@ fn make_queued_operation(file: PathBuf, url: String, meta: Option<Meta>, force: 
     }
 }
 
-fn try_next(app_tx: &Sender<Operation>, thread_id: TID, state: &mut State) {
+fn try_next(app_tx: &Sender<Operation>, thread_id: Tid, state: &mut State) {
     if let Some(next) = state.queued.pop_front() {
         state.threads[thread_id].send(next).unwrap();
     } else {

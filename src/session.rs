@@ -87,7 +87,7 @@ pub fn write_session(app: &App, session: Session, out: &mut String) {
             write_markers(&app.marker, out);
             write_paginator(app.current().map(|it| it.0), &app.paginator, out);
         },
-        Status => write_status(&app, out),
+        Status => write_status(app, out),
         Switches => write_switches(&app.user_switches, out),
         All => {
             write_options(&app.states, &app.gui, false, out);
@@ -348,7 +348,7 @@ fn write_path(entry: &Entry, out: &mut String) {
         }
     }
 
-    out.push_str("\n");
+    out.push('\n');
 }
 
 pub fn write_paginator(entry: Option<Arc<Entry>>, paginator: &Paginator, out: &mut String) {
@@ -455,8 +455,7 @@ pub fn write_markers(marker: &HashMap<String, Key>, out: &mut String) {
 fn write_envs(out: &mut String) {
     for (key, value) in env::vars_os() {
         if let (Ok(ref key), Ok(ref value)) = (key.into_string(), value.into_string()) {
-            if key.starts_with(constant::USER_VARIABLE_PREFIX) {
-                let key = &key[constant::USER_VARIABLE_PREFIX.len()..];
+            if let Some(key) = key.strip_prefix(constant::USER_VARIABLE_PREFIX) {
                 sprintln!(out, "@set-env -p {} {}", escape(key), escape(value));
             }
         }

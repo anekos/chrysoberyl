@@ -138,8 +138,8 @@ pub fn parse_apng(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut length).add_option(&["--length", "-l"], Store, "Animation length");
         ap.refer(&mut path).add_argument("path", Store, "Save to").required();
         parse_args(&mut ap, args)
-    } .and_then(|_| {
-        Ok(Operation::Apng(sh::expand_to_pathbuf(&path), length))
+    } .map(|_| {
+        Operation::Apng(sh::expand_to_pathbuf(&path), length)
     })
 }
 
@@ -484,8 +484,8 @@ pub fn parse_gif(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut show).add_option(&["--show", "-s"], StoreTrue, "Show the found entry");
         ap.refer(&mut path).add_argument("path", Store, "Save to").required();
         parse_args(&mut ap, args)
-    } .and_then(|_| {
-        Ok(Operation::Gif(sh::expand_to_pathbuf(&path), length, show))
+    } .map(|_| {
+        Operation::Gif(sh::expand_to_pathbuf(&path), length, show)
     })
 }
 
@@ -804,8 +804,8 @@ pub fn parse_page(args: &[String]) -> Result<Operation, ParsingError> {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut page).add_argument("page", Store, "Page number");
         parse_args(&mut ap, args)
-    } .and_then(|_| {
-        Ok(Operation::Page(page))
+    } .map(|_| {
+        Operation::Page(page)
     })
 }
 
@@ -834,9 +834,9 @@ pub fn parse_pdf_index(args: &[String]) -> Result<Operation, ParsingError> {
             .add_option(&["--format", "-f"], Store, "Format (1/2/indented)");
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
-    } .and_then(|_| {
+    } .map(|_| {
         let command_line = command_line.into_iter().map(Expandable::new).collect();
-        Ok(Operation::PdfIndex(r#async, read_operations, search_path, command_line, fmt, fmt_separator))
+        Operation::PdfIndex(r#async, read_operations, search_path, command_line, fmt, fmt_separator)
     })
 }
 
@@ -1019,8 +1019,8 @@ pub fn parse_refresh(args: &[String]) -> Result<Operation, ParsingError> {
         let mut ap = ArgumentParser::new();
         ap.refer(&mut image).add_option(&["--image", "-i"], StoreTrue, "Refresh image cache");
         parse_args(&mut ap, args)
-    } .and_then(|_| {
-        Ok(Operation::Refresh(image))
+    } .map(|_| {
+        Operation::Refresh(image)
     })
 }
 
@@ -1035,11 +1035,11 @@ pub fn parse_save(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut path).add_argument("path", Store, "Save to").required();
         ap.refer(&mut freeze).add_option(&["--freeze", "-F"], StoreTrue, "Insert freezer to stop drawing");
         parse_args(&mut ap, args)
-    } .and_then(|_| {
+    } .map(|_| {
         if sources.is_empty() {
             sources.push(Session::All);
         }
-        Ok(Operation::Save(sh::expand_to_pathbuf(&path), sources, freeze))
+        Operation::Save(sh::expand_to_pathbuf(&path), sources, freeze)
     })
 }
 
@@ -1123,9 +1123,9 @@ pub fn parse_shell(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         ap.refer(&mut freeze).add_option(&["--freeze", "-F"], StoreTrue, "Insert freezer to stop drawing");
         parse_args(&mut ap, args)
-    } .and_then(|_| {
+    } .map(|_| {
         let command_line = command_line.into_iter().map(Expandable::new).collect();
-        Ok(Operation::Shell(r#async, read_as, search_path, command_line, sessions, freeze))
+        Operation::Shell(r#async, read_as, search_path, command_line, sessions, freeze)
     })
 }
 
@@ -1138,9 +1138,9 @@ pub fn parse_shell_filter(args: &[String]) -> Result<Operation, ParsingError> {
         ap.refer(&mut search_path).add_option(&["--search-path", "-p"], StoreTrue, SEARCH_PATH_DESC);
         ap.refer(&mut command_line).add_argument("command_line", List, "Command arguments");
         parse_args(&mut ap, args)
-    } .and_then(|_| {
+    } .map(|_| {
         let command_line = command_line.into_iter().map(Expandable::new).collect();
-        Ok(Operation::ShellFilter(command_line, search_path))
+        Operation::ShellFilter(command_line, search_path)
     })
 }
 
@@ -1185,9 +1185,7 @@ where T: FnOnce(bool) -> Operation {
         ap.refer(&mut fix)
             .add_option(&["--fix", "-f"], StoreTrue, "Fix current page");
         parse_args(&mut ap, args)
-    } .and_then(|_| {
-        Ok(op(fix))
-    })
+    } .map(|_| op(fix))
 }
 
 pub fn parse_timer(args: &[String]) -> Result<Operation, ParsingError> {

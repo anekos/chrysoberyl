@@ -78,7 +78,7 @@ impl CompleterUI {
         let entry_buffer = EntryBuffer::new(None);
         entry.set_buffer(&entry_buffer);
 
-        entry.connect_key_press_event(clone_army!([candidates, ignore_keys, previous_keys, history] move |ref entry, key| {
+        entry.connect_key_press_event(clone_army!([candidates, ignore_keys, previous_keys, history] move |entry, key| {
             let position = entry.get_property_cursor_position();
             let text = entry.get_text().unwrap();
             let state = get_part(&text, position as usize);
@@ -89,14 +89,14 @@ impl CompleterUI {
             }
 
             if ignore_keys.contains(key.as_str()) {
-                select_next(&tree_view, &candidates, &entry, &entry_buffer, state.left, state.right, previous_keys.contains(key.as_str()));
+                select_next(&tree_view, &candidates, entry, &entry_buffer, state.left, state.right, previous_keys.contains(key.as_str()));
                 return Inhibit(true);
             }
 
             Inhibit(false)
         }));
 
-        entry.connect_key_release_event(clone_army!([candidates, definition] move |ref entry, key| {
+        entry.connect_key_release_event(clone_army!([candidates, definition] move |entry, key| {
             let position = entry.get_property_cursor_position();
             let text = entry.get_text().unwrap();
             let state = get_part(&text, position as usize);
@@ -161,7 +161,7 @@ fn get_part(whole: &str, position: usize) -> State {
             }
             if !after_space {
                 nth += 1;
-                args.push(substr(&whole, left, i));
+                args.push(substr(whole, left, i));
             }
             left = i;
             right = left;
@@ -180,15 +180,15 @@ fn get_part(whole: &str, position: usize) -> State {
         after_space = c == ' ';
     }
 
-    State { args, left, right, nth, text: substr(&whole, left, right), debug }
+    State { args, left, right, nth, text: substr(whole, left, right), debug }
 }
 
 fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
     fn get_flag_name(s: &str) -> Option<&str> {
-        if s.starts_with("--") {
-            Some(&s[2..])
-        } else if s.starts_with('-') {
-            Some(&s[1..])
+        if let Some(stripped) = s.strip_prefix("--") {
+            Some(stripped)
+        } else if let Some(stripped) = s.strip_prefix('-') {
+            Some(stripped)
         } else {
             None
         }
@@ -199,11 +199,11 @@ fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
             Val::Any =>
                 (),
             Val::Directory =>
-                get_candidates(&state.text, true, "", result),
+                get_candidates(state.text, true, "", result),
             Val::EventName =>
                 result.extend_from_slice(&*definition.event_names),
             Val::File | Val::Path =>
-                get_candidates(&state.text, false, "", result),
+                get_candidates(state.text, false, "", result),
             Val::Literals(ref values) =>
                 result.extend_from_slice(&*values),
             Val::Operator => {
@@ -219,7 +219,7 @@ fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
                     match value {
                         OptionValue::Enum(values) => result.extend_from_slice(&*values),
                         OptionValue::Boolean => result.extend_from_slice(&[o!("true"), o!("false")]),
-                        OptionValue::StringOrFile => get_candidates(&state.text, false, "@", result),
+                        OptionValue::StringOrFile => get_candidates(state.text, false, "@", result),
                     }
                 }
             },
@@ -240,20 +240,18 @@ fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
         }
 
         if let Some(flag_name) = get_flag_name(arg) {
-            if let Some(Argument::Flag(_, flag_value)) = def_args.iter().find(|it| {
+            if let Some(Argument::Flag(_, Some(flag_value))) = def_args.iter().find(|it| {
                 if let Argument::Flag(names, _) = it {
                     names.contains(&o!(flag_name))
                 } else {
                     false
                 }
             }) {
-                if let Some(flag_value) = flag_value {
-                    if i == state.args.len() - 2 { // at last
-                        make(&flag_value, None, &mut result);
-                        return result;
-                    } else {
-                        skip = true;
-                    }
+                if i == state.args.len() - 2 { // at last
+                    make(flag_value, None, &mut result);
+                    return result;
+                } else {
+                    skip = true;
                 }
             };
         } else {

@@ -28,7 +28,7 @@ pub struct CoordPx {
     pub height: u32,
 }
 
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Size {
     pub width: i32,
     pub height: i32,
@@ -241,10 +241,15 @@ impl Size {
 
 impl PartialOrd for Size {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.dimensions().partial_cmp(&other.dimensions())
+        Some(self.cmp(other))
     }
 }
 
+impl Ord for Size {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.dimensions().cmp(&other.dimensions())
+    }
+}
 
 impl Region {
     pub fn new(left: f64, top: f64, right: f64, bottom: f64) -> Region {

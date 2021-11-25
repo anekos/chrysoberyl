@@ -77,9 +77,10 @@ impl OptionValue for PathList {
 
 impl Default for PathList {
     fn default() -> Self {
-        let mut entries = vec![];
-        entries.push(config_dir());
-        entries.push(Path::new("/usr/share/chrysoberyl").to_path_buf());
+        let mut entries = vec![
+            config_dir(),
+            Path::new("/usr/share/chrysoberyl").to_path_buf(),
+        ];
         if let Ok(entry) = get_app_root(AppDataType::UserCache, &APP_INFO) {
             entries.push(entry);
         }

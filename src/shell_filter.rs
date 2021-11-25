@@ -26,14 +26,12 @@ fn main(command_line: Vec<String>, tx: Sender<Operation>) {
 
     let stdout_handle = spawn(move || {
         let reader = BufReader::new(stdout);
-        for line in reader.lines() {
-            if let Ok(line) = line {
-                match Operation::parse(&line) {
-                    Ok(op) =>
-                        tx.send(op).unwrap(),
-                    Err(err) =>
-                        puts_error!(err, "at" => "filter", "for" => &line),
-                }
+        for line in reader.lines().flatten() {
+            match Operation::parse(&line) {
+                Ok(op) =>
+                    tx.send(op).unwrap(),
+                Err(err) =>
+                    puts_error!(err, "at" => "filter", "for" => &line),
             }
         }
     });

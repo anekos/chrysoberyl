@@ -14,6 +14,7 @@ use crate::util::pom::from_vec_char;
 
 
 #[derive(Debug, PartialEq, Eq)]
+#[allow(clippy::enum_variant_names)]
 pub enum Value {
     Any,
     Directory,
@@ -85,8 +86,8 @@ impl Definition {
                 In::MaskOperators => {
                     if !mask_operators.is_empty() && line.is_empty() {
                         current = In::Other;
-                    } else if line.starts_with("- ") {
-                        mask_operators.push(o!(line[2..]));
+                    } else if let Some(stripped) = line.strip_prefix("- ") {
+                        mask_operators.push(o!(stripped));
                     }
                 },
                 In::Options => {
@@ -163,7 +164,7 @@ impl Definition {
     pub fn update_user_operations(&mut self, user_operations: &[String]) {
         self.operations.clear();
         self.operations.extend_from_slice(&self.original_operations);
-        self.operations.extend_from_slice(&user_operations);
+        self.operations.extend_from_slice(user_operations);
         self.operations.sort();
     }
 }
@@ -181,7 +182,7 @@ fn definition() -> Parser<char, (Vec<String>, Vec<Argument>)> {
     let p1 = operations();
     let p2 = dots() | flag() | value.map(Argument::Arg) | literals();
 
-    p1 + (spaces1() * list(p2, spaces1())).opt().map(|it| it.unwrap_or_else(|| vec![]))
+    p1 + (spaces1() * list(p2, spaces1())).opt().map(|it| it.unwrap_or_default())
 }
 
 fn id() -> Parser<char, String> {

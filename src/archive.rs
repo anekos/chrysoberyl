@@ -130,7 +130,7 @@ pub fn fetch_entries<T: AsRef<Path>>(path: &T, meta: Option<Meta>, show: bool, e
         let mut buffer = sorting_buffer;
         let mut index = 0;
 
-        while let Some(_) = reader.next_header() {
+        while reader.next_header().is_some() {
             if let Some(serial_name) = from_index.get(&index) {
                 let (serial, ref name) = *serial_name;
 

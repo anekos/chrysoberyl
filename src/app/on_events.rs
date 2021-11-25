@@ -1764,10 +1764,8 @@ pub fn on_write<T: AsRef<Path>>(app: &mut App, path: &T, index: &Option<usize>) 
 
 
 fn extract_region_from_context(context: Option<OperationContext>) -> Option<(Region, usize)> {
-    if let Some(mapped) = context.map(|it| it.mapped) {
-        if let Mapped::Region(ref region, _, cell_index) = mapped {
-            return Some((*region, cell_index));
-        }
+    if let Some(Mapped::Region(ref region, _, cell_index)) = context.map(|it| it.mapped) {
+        return Some((*region, cell_index));
     }
     None
 }
@@ -1786,9 +1784,9 @@ fn on_update_views(app: &mut App, updated: &mut Updated, ignore_views: bool) -> 
 }
 
 fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>) -> AppResultU {
-    fn gen_target(show: bool, url: &Option<String>, path: &PathBuf) -> Option<ShowTarget> {
+    fn gen_target<T: AsRef<Path>>(show: bool, url: &Option<String>, path: &T) -> Option<ShowTarget> {
         if show {
-            url.clone().map(ShowTarget::Url).or_else(|| path.canonicalize().ok().map(ShowTarget::File))
+            url.clone().map(ShowTarget::Url).or_else(|| path.as_ref().canonicalize().ok().map(ShowTarget::File))
         } else {
             None
         }

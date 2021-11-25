@@ -512,7 +512,7 @@ impl Gui {
 
     fn update_user_ui(&mut self, app_tx: &Sender<Operation>) -> AppResultU {
         use crate::util::file;
-        use crate::mruby::MRubyEnv;
+        use crate::shellexpand_wrapper as sh;
 
         if_let_some!(path = self.user_ui_file.as_ref(), Err(AppError::Fixed("Option `user_ui` is empty.")));
 
@@ -521,7 +521,7 @@ impl Gui {
         }
 
         let glade_src = file::read_string(path)?;
-        let glade_src = MRubyEnv::generate_string_from_template(&glade_src)?;
+        let glade_src = sh::expand_env(&glade_src);
         let builder = Builder::new_from_string(&glade_src);
         self.user_box_content = builder.get_object("user");
 

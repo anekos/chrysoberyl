@@ -39,7 +39,6 @@ mod key;
 mod lazy;
 mod lazy_sender;
 mod mapping;
-mod mruby;
 mod operation;
 mod option;
 mod paginator;

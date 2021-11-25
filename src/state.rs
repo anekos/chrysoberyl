@@ -267,16 +267,10 @@ macro_rules! gen_format {
 
         impl $t {
             pub fn generate(&self) -> String {
-                use crate::mruby::MRubyEnv;
                 use crate::shellexpand_wrapper as sh;
 
                 match *self {
-                    $t::Script(_, ref script) => {
-                        MRubyEnv::generate_string(script).unwrap_or_else(|err| {
-                            puts_error!(err, "at" => "generate/mruby_script");
-                            o!("mruby script error")
-                        })
-                    },
+                    $t::Script(_, _) => "NOT IMPLEMENTED".to_owned(),
                     $t::Literal(ref s) => sh::expand(s),
                 }
             }

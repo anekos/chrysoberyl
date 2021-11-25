@@ -12,7 +12,6 @@ use std::slice;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use natord;
 use url::Url;
 
 use crate::errors::AppResultU;

@@ -12,7 +12,6 @@ use std::ptr::{null, null_mut};
 #[cfg(feature = "poppler_lock")] use lazy_static::lazy_static;
 #[cfg(feature = "poppler_lock")] use log::trace;
 use cairo::{Context, ImageSurface, Format};
-use cairo;
 use gdk_pixbuf::Pixbuf;
 use glib::translate::ToGlibPtr;
 use libc::{c_int, c_double};

@@ -290,9 +290,9 @@ fn write_entry(entry: &Entry, out: &mut String, previous: &mut Key) {
             Image(ref path) =>
                 sprintln!(out, "@push-image{} {}", meta_args(&entry.meta), escape_pathbuf(path)),
             Archive(ref path, _) if path_changed =>
-                sprintln!(out, "@push-archive{} {}", meta_args(&entry.meta), escape_pathbuf(&*path)),
+                sprintln!(out, "@push-archive{} {}", meta_args(&entry.meta), escape_pathbuf(path.as_ref())),
             Pdf(ref path, _) if path_changed =>
-                sprintln!(out, "@push-pdf{} {}", meta_args(&entry.meta), escape_pathbuf(&*path)),
+                sprintln!(out, "@push-pdf{} {}", meta_args(&entry.meta), escape_pathbuf(path.as_ref())),
             Message(ref message) =>
                 sprintln!(out, "@push-message{} {}", meta_args(&entry.meta), escape(message)),
             Archive(_, _) | Pdf(_, _) | Memory(_, _) =>

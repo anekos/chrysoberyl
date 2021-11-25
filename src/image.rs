@@ -4,7 +4,6 @@ use std::io::{Error as IoError, Read};
 use std::path::Path;
 
 use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimation, Colorspace, PixbufLoader, PixbufLoaderExt};
-use glib;
 
 use crate::size::Size;
 

@@ -7,7 +7,6 @@ use std::thread::spawn;
 
 use closet::clone_army;
 use log::{info, trace};
-use num_cpus;
 
 use crate::entry::image::Imaging;
 use crate::entry::{Entry, Key, self};

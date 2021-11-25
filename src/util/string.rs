@@ -17,7 +17,7 @@ pub fn prefixed_lines(prefix: &str, source: &str) -> String {
     for line in source.lines() {
         result.push_str(prefix);
         result.push_str(line);
-        result.push_str("\n");
+        result.push('\n');
     }
     result
 }

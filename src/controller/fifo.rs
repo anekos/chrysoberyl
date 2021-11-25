@@ -21,8 +21,7 @@ pub fn register<T: AsRef<Path>>(tx: Sender<Operation>, path: &T) {
         let mode = 0o600;
         let cstr = CString::new(path.as_ref().to_str().unwrap().as_bytes());
         let cstr = cstr.unwrap();
-        let ptr = cstr.as_ptr();
-        libc::mkfifo(ptr, mode as libc::mode_t)
+        libc::mkfifo(cstr.as_ptr(), mode as libc::mode_t)
     };
 
     if res != 0 {

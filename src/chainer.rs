@@ -9,9 +9,7 @@ use std::path::PathBuf;
 use std::process::exit;
 use std::sync::{Arc, Mutex};
 
-use ctrlc;
 use lazy_static::lazy_static;
-use libc;
 use log::debug;
 
 

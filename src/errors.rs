@@ -97,7 +97,6 @@ define_std_error!(css_color_parser::ColorParseError);
 define_std_error!(curl::Error);
 define_std_error!(glib::error::Error);
 define_std_error!(libarchive::error::ArchiveError);
-define_std_error!(mrusty::MrubyError);
 define_std_error!(std::env::VarError);
 define_std_error!(std::string::FromUtf8Error);
 define_std_error!(url::ParseError);

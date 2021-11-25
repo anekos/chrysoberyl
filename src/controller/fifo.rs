@@ -20,7 +20,9 @@ pub fn register<T: AsRef<Path>>(tx: Sender<Operation>, path: &T) {
     let res = unsafe {
         let mode = 0o600;
         let cstr = CString::new(path.as_ref().to_str().unwrap().as_bytes());
-        libc::mkfifo(cstr.unwrap().as_ptr(), mode as libc::mode_t)
+        let cstr = cstr.unwrap();
+        let ptr = cstr.as_ptr();
+        libc::mkfifo(ptr, mode as libc::mode_t)
     };
 
     if res != 0 {

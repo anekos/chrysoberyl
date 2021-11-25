@@ -105,7 +105,7 @@ impl Cherenkoved {
 
         if_let_some!(cache_entry = self.cache.get(&entry.key).cloned(), Err(AppError::Fixed("Not cherenkoved")));
         let size = {
-            if_let_some!(image = cache_entry.image.as_ref(), Err(AppError::Fixed("Not cherenkoved")));;
+            if_let_some!(image = cache_entry.image.as_ref(), Err(AppError::Fixed("Not cherenkoved")));
             image.get_fit_size()
         };
 
@@ -163,7 +163,7 @@ impl Cherenkoved {
 
         if_let_some!(cache_entry = self.cache.get(&entry.key).cloned(), Err(AppError::Fixed("Not cherenkoved")));
         let size = {
-            if_let_some!(image = cache_entry.image.as_ref(), Err(AppError::Fixed("Not cherenkoved")));;
+            if_let_some!(image = cache_entry.image.as_ref(), Err(AppError::Fixed("Not cherenkoved")));
             image.get_fit_size()
         };
 

@@ -275,7 +275,7 @@ impl Region {
     #[allow(clippy::many_single_char_names)]
     pub fn contains(&self, x: i32, y: i32, width: i32, height: i32) -> bool {
         let (l, r, t, b) = self.absolute(width, height);
-        (l <= x && x <= r && t <= y && y <= b)
+        l <= x && x <= r && t <= y && y <= b
     }
 
     pub fn absolute(&self, width: i32, height: i32) -> (i32, i32, i32, i32) {

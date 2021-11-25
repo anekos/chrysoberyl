@@ -109,19 +109,19 @@ macro_rules! timeit {
 
 macro_rules! sprintln {
     ($name:expr, $fmt:expr) => {
-        $name.push_str(concat!($fmt, "\n"));
+        $name.push_str(concat!($fmt, "\n"))
     };
     ($name:expr, $fmt:expr $(,$args:expr)*) => {
-        $name.push_str(&format!(concat!($fmt, "\n") $(,$args)*));
+        $name.push_str(&format!(concat!($fmt, "\n") $(,$args)*))
     }
 }
 
 macro_rules! sprint {
     ($name:expr, $fmt:expr) => {
-        $name.push_str($fmt);
+        $name.push_str($fmt)
     };
     ($name:expr, $fmt:expr $(,$args:expr)*) => {
-        $name.push_str(&format!($fmt $(,$args)*));
+        $name.push_str(&format!($fmt $(,$args)*))
     }
 }
 
@@ -185,7 +185,7 @@ macro_rules! iterable_enum {
                 use self::$name::*;
 
                 static ITEMS: [$name; count_idents!($($var),*)] = [$($var,)*];
-                ITEMS.into_iter()
+                ITEMS.iter()
             }
         }
     }

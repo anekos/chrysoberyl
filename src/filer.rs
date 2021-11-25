@@ -48,7 +48,7 @@ impl FileOperation {
         FileOperation { action, destination_directory, destination_file, if_exist, size, }
     }
 
-    pub fn execute(&self, source: &PathBuf) -> AppResultU {
+    pub fn execute<T: AsRef<Path>>(&self, source: &T) -> AppResultU {
         use self::FileOperationAction::*;
 
         match self.action {
@@ -65,7 +65,7 @@ impl FileOperation {
         }
     }
 
-    pub fn execute_with_buffer(&self, source: &[u8], source_name: &PathBuf) -> AppResultU {
+    pub fn execute_with_buffer<T: AsRef<Path>>(&self, source: &[u8], source_name: &T) -> AppResultU {
         let dest = destination_path(source_name, &self.destination_directory, &self.destination_file, self.if_exist)?;
         let mut file = File::create(dest)?;
         file.write_all(source)?;
@@ -74,11 +74,11 @@ impl FileOperation {
 }
 
 
-fn destination_path(source: &PathBuf, destination_directory: &PathBuf, file_name: &Option<String>, if_exist: IfExist) -> AppResult<PathBuf> {
+fn destination_path<T: AsRef<Path>, U: AsRef<Path>>(source: &T, destination_directory: &U, file_name: &Option<String>, if_exist: IfExist) -> AppResult<PathBuf> {
     use self::IfExist::*;
 
-    let file_name = file_name.as_ref().map(AsRef::as_ref).unwrap_or_else(|| source.file_name().unwrap());
-    let mut path = destination_directory.clone();
+    let file_name = file_name.as_ref().map(AsRef::as_ref).unwrap_or_else(|| source.as_ref().file_name().unwrap());
+    let mut path = destination_directory.as_ref().to_path_buf();
 
     if !path.exists() {
         create_dir_all(&path)?;
@@ -95,7 +95,7 @@ fn destination_path(source: &PathBuf, destination_directory: &PathBuf, file_name
             let ext = Path::new(file_name).extension().map(os);
             while path.exists() {
                 suffix += 1;
-                path = destination_directory.clone();
+                path = destination_directory.as_ref().to_path_buf();
                 path.push({
                     if let Some(ext) = ext {
                         format!("{}_{}.{}", stem, suffix, ext)

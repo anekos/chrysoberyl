@@ -135,8 +135,8 @@ fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<Str
         child.stdin.unwrap().write_all(stdin.as_bytes()).unwrap();
     }
 
+    let stderr = child.stderr;
     if let Some(tx) = tx {
-        let stderr = child.stderr;
         spawn(move || pass("stderr", stderr));
         if let Some(mut stdout) = child.stdout {
             match read_as {
@@ -168,7 +168,6 @@ fn process_stdout(tx: Option<Sender<Operation>>, child: Child, stdin: Option<Str
             return Err("Could not get stdout".into());
         }
     } else {
-        let stderr = child.stderr;
         spawn(move || pass("stderr", stderr));
         pass("stdout", child.stdout);
     }

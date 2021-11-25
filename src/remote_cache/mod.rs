@@ -13,8 +13,6 @@ use std::thread::spawn;
 use closet::clone_army;
 use curl::easy::Easy as EasyCurl;
 use filetime::{FileTime, set_file_times};
-use md5;
-use time;
 use url::Url;
 
 use crate::app_path;
@@ -35,7 +33,7 @@ use self::curl_options::CurlOptions;
 
 
 
-type TID = usize;
+type Tid = usize;
 
 pub struct RemoteCache {
     main_tx: Sender<Getter>,
@@ -48,7 +46,7 @@ pub struct RemoteCache {
 #[derive(Default)]
 pub struct State {
     curl_options: CurlOptions,
-    idles: Vec<TID>,
+    idles: Vec<Tid>,
     processing: BTreeSet<Request>,
     queued: VecDeque<Request>,
     threads: Vec<Sender<Request>>,
@@ -312,7 +310,7 @@ fn make_queued_operation(file: PathBuf, url: String, meta: Option<Meta>, force: 
     }
 }
 
-fn try_next(app_tx: &Sender<Operation>, thread_id: TID, state: &mut State) {
+fn try_next(app_tx: &Sender<Operation>, thread_id: Tid, state: &mut State) {
     if let Some(next) = state.queued.pop_front() {
         state.threads[thread_id].send(next).unwrap();
     } else {
@@ -353,7 +351,7 @@ fn log_status(app_tx: &Sender<Operation>, sp: &SP, state: &State, buffers: usize
 
 
 fn update_atime<T: AsRef<Path>>(path: &T) -> AppResultU {
-    let meta = r#try!(fs::metadata(path));
+    let meta = fs::metadata(path)?;
     let ts = time::now().to_timespec();
     let mtime = FileTime::from_last_modification_time(&meta);
     let atime = FileTime::from_unix_time(ts.sec, ts.nsec as u32);

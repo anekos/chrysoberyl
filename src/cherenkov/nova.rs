@@ -65,7 +65,7 @@ pub struct Seed {
 impl Seed {
     pub fn new(text: Option<&str>) -> Self {
         let mut value = [0;32];
-        if let Some(ref text) = text {
+        if let Some(text) = text {
             for (i, b) in text.as_bytes().iter().enumerate() {
                 value[i % 32] ^= b;
             }
@@ -198,7 +198,8 @@ fn test_color_converter() {
         let rgb = hsv_to_rgb(hsv);
         assert!(
             near(rgb[0], r) && near(rgb[1], g) && near(rgb[2], b),
-            format!("RGB({:?}) => HSV({:?}) => RGB({:?})", (r, g, b), hsv, (rgb[0], rgb[1], rgb[2])));
+            "RGB({:?}) => HSV({:?}) => RGB({:?})",
+            (r, g, b), hsv, (rgb[0], rgb[1], rgb[2]));
     }
 
     assert_color(0.2, 0.2, 0.2);

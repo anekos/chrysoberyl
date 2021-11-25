@@ -10,7 +10,6 @@ use std::time::Duration;
 
 use encoding::types::EncodingRef;
 use gtk::prelude::*;
-use libc;
 use log::trace;
 use rand::{self, ThreadRng};
 
@@ -147,7 +146,7 @@ impl App {
             states,
             timers: TimerManager::new(secondary_tx.clone()),
             user_switches: UserSwitchManager::new(secondary_tx.clone()),
-            watcher: Watcher::new(secondary_tx.clone()),
+            watcher: Watcher::new(secondary_tx),
         };
 
         if initial.load_config {

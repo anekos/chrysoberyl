@@ -87,7 +87,7 @@ pub fn write_session(app: &App, session: Session, out: &mut String) {
             write_markers(&app.marker, out);
             write_paginator(app.current().map(|it| it.0), &app.paginator, out);
         },
-        Status => write_status(&app, out),
+        Status => write_status(app, out),
         Switches => write_switches(&app.user_switches, out),
         All => {
             write_options(&app.states, &app.gui, false, out);
@@ -290,9 +290,9 @@ fn write_entry(entry: &Entry, out: &mut String, previous: &mut Key) {
             Image(ref path) =>
                 sprintln!(out, "@push-image{} {}", meta_args(&entry.meta), escape_pathbuf(path)),
             Archive(ref path, _) if path_changed =>
-                sprintln!(out, "@push-archive{} {}", meta_args(&entry.meta), escape_pathbuf(&*path)),
+                sprintln!(out, "@push-archive{} {}", meta_args(&entry.meta), escape_pathbuf(path.as_ref())),
             Pdf(ref path, _) if path_changed =>
-                sprintln!(out, "@push-pdf{} {}", meta_args(&entry.meta), escape_pathbuf(&*path)),
+                sprintln!(out, "@push-pdf{} {}", meta_args(&entry.meta), escape_pathbuf(path.as_ref())),
             Message(ref message) =>
                 sprintln!(out, "@push-message{} {}", meta_args(&entry.meta), escape(message)),
             Archive(_, _) | Pdf(_, _) | Memory(_, _) =>
@@ -348,7 +348,7 @@ fn write_path(entry: &Entry, out: &mut String) {
         }
     }
 
-    out.push_str("\n");
+    out.push('\n');
 }
 
 pub fn write_paginator(entry: Option<Arc<Entry>>, paginator: &Paginator, out: &mut String) {
@@ -455,8 +455,7 @@ pub fn write_markers(marker: &HashMap<String, Key>, out: &mut String) {
 fn write_envs(out: &mut String) {
     for (key, value) in env::vars_os() {
         if let (Ok(ref key), Ok(ref value)) = (key.into_string(), value.into_string()) {
-            if key.starts_with(constant::USER_VARIABLE_PREFIX) {
-                let key = &key[constant::USER_VARIABLE_PREFIX.len()..];
+            if let Some(key) = key.strip_prefix(constant::USER_VARIABLE_PREFIX) {
                 sprintln!(out, "@set-env -p {} {}", escape(key), escape(value));
             }
         }

@@ -31,25 +31,23 @@ pub fn get_candidates(path: &str, directory_only: bool, prefix: &str, result: &m
     if_let_some!(home = home_dir());
     if_let_some!(home = home.to_str());
 
-    for entry in entries {
-        if let Ok(entry) = entry {
-            if directory_only {
-                if let Ok(file_type) = entry.file_type() {
-                    if file_type.is_file() {
-                        continue;
-                    }
+    for entry in entries.flatten() {
+        if directory_only {
+            if let Ok(file_type) = entry.file_type() {
+                if file_type.is_file() {
+                    continue;
                 }
             }
-            if let Ok(stripped) = entry.path().strip_prefix(&cwd) {
-                if let Some(path) = stripped.to_str() {
-                    result.push(format!("{}{}", prefix, path));
-                }
-            } else if let Some(path) = entry.path().to_str() {
-                if path.starts_with(home) {
-                    result.push(format!("{}~{}", prefix, &path[home.len()..]));
-                } else {
-                    result.push(format!("{}{}", prefix, path));
-                }
+        }
+        if let Ok(stripped) = entry.path().strip_prefix(&cwd) {
+            if let Some(path) = stripped.to_str() {
+                result.push(format!("{}{}", prefix, path));
+            }
+        } else if let Some(path) = entry.path().to_str() {
+            if let Some(stripped) = path.strip_prefix(home) {
+                result.push(format!("{}~{}", prefix, stripped));
+            } else {
+                result.push(format!("{}{}", prefix, path));
             }
         }
     }

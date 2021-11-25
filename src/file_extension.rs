@@ -6,8 +6,8 @@ use crate::entry::EntryType;
 
 
 pub fn get_entry_type_from_filename<T: AsRef<Path>>(path: &T) -> Option<EntryType> {
-    if_let_some!(ext = path.as_ref().extension(), None);
-    if_let_some!(ext = ext.to_str(), None);
+    let ext = path.as_ref().extension()?;
+    let ext = ext.to_str()?;
     let ext = ext.to_lowercase();
 
     match &*ext {

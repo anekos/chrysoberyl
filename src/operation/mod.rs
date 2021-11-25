@@ -192,6 +192,7 @@ pub enum ReadAs {
 
 
 #[derive(Clone, Debug, PartialEq)]
+#[allow(clippy::enum_variant_names)]
 pub enum QueuedOperation {
     PushArchive(PathBuf, Option<Meta>, bool, bool, Option<String>), /* path, meta, force, show, remote-url */
     PushArchiveEntry(PathBuf, ArchiveEntry, Option<Meta>, bool, bool, Option<String>), /* path, archive-entry, meta, force, show, remote-url */
@@ -376,8 +377,8 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
             "@views" | "@v"                 => parse_views(whole),
             "@when"                         => parse_when(whole, false),
             "@write"                        => parse_write(whole),
-            name => if name.starts_with('@') {
-                Ok(Operation::Fire(mapping::Mapped::Operation(o!(&name[1..]), whole[1..].to_vec())))
+            name => if let Some(stripped) = name.strip_prefix('@') {
+                Ok(Operation::Fire(mapping::Mapped::Operation(o!(stripped), whole[1..].to_vec())))
             } else {
                 Err(ParsingError::NotOperation(o!(name)))
             }

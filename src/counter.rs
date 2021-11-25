@@ -57,7 +57,7 @@ impl Counter {
     }
 
     pub fn take_option(&mut self) -> Option<usize> {
-        if_let_some!(result = self.value, None);
+        let result = self.value?;
         self.set(None);
         Some(result)
     }

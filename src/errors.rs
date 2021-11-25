@@ -2,7 +2,6 @@
 use std::io;
 use std::sync::mpsc::SendError;
 
-use cairo;
 use failure::Fail;
 
 

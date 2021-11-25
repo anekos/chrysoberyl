@@ -212,16 +212,20 @@ impl Paginator {
     }
 
     pub fn set_fly_leaves(&mut self, n: usize) -> bool {
+        use std::cmp::Ordering::*;
+
         let n = n % self.sight_size.0;
 
-        if self.fly_leaves.0 < n {
-            let d = n - self.fly_leaves.0;
-            self.increase_fly_leaves(d)
-        } else if n < self.fly_leaves.0 {
-            let d = self.fly_leaves.0 - n;
-            self.decrease_fly_leaves(d)
-        } else {
-            false
+        match self.fly_leaves.0.cmp(&n) {
+            Less => {
+                let d = n - self.fly_leaves.0;
+                self.increase_fly_leaves(d)
+            },
+            Equal => false,
+            Greater => {
+                let d = self.fly_leaves.0 - n;
+                self.decrease_fly_leaves(d)
+            }
         }
     }
 

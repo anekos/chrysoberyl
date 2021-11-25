@@ -15,7 +15,6 @@ use std::time::Duration;
 use gtk::prelude::*;
 use log::trace;
 use maplit::{convert_args, hashmap};
-use natord;
 use rand::distributions::{Distribution, Uniform};
 
 use crate::archive;
@@ -58,10 +57,7 @@ use crate::app::*;
 pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName, context: &HashMap<String, String>) -> AppResultU {
     use self::EventName::*;
 
-    let r#async = match *event_name {
-        Spawn => true,
-        _ => false,
-    };
+    let r#async = matches!(*event_name, Spawn);
 
     trace!("on_app_event: event={}, async={}", event_name, r#async);
 
@@ -89,7 +85,7 @@ pub fn on_app_event(app: &mut App, updated: &mut Updated, event_name: &EventName
     Ok(())
 }
 
-pub fn on_apng(app: &mut App, path: &PathBuf, length: u8) -> AppResultU {
+pub fn on_apng<T: AsRef<Path>>(app: &mut App, path: &T, length: u8) -> AppResultU {
     if_let_some!((entry, _) = app.current(), Ok(()));
     let imaging = app.get_imaging();
     app.cache.generate_animation_png(&entry, &imaging, length, path)
@@ -194,7 +190,7 @@ pub fn on_controller(app: &mut App, source: controller::Source) -> AppResultU {
 }
 
 pub fn on_copy_to_clipbaord(app: &mut App, selection: ClipboardSelection) -> AppResultU {
-    let cell = app.gui.cells(false).nth(0).ok_or(AppError::Fixed("No image"))?;
+    let cell = app.gui.cells(false).next().ok_or(AppError::Fixed("No image"))?;
     let pixbuf = cell.image.get_pixbuf().ok_or(AppError::Fixed("No static image"))?;
     clipboard::store(selection, &pixbuf);
     Ok(())
@@ -446,11 +442,11 @@ pub fn on_fly_leaves(app: &mut App, updated: &mut Updated, n: usize) -> AppResul
     Ok(())
 }
 
-pub fn on_gif(app: &mut App, path: &PathBuf, length: u8, show: bool) -> AppResultU {
+pub fn on_gif<T: AsRef<Path>>(app: &mut App, path: &T, length: u8, show: bool) -> AppResultU {
     if_let_some!((entry, _) = app.current(), Ok(()));
     let imaging = app.get_imaging();
     let tx = app.secondary_tx.clone();
-    let destination = path.to_str().map(ToString::to_string).ok_or(AppError::Fixed("WTF"))?;
+    let destination = path.as_ref().to_str().map(ToString::to_string).ok_or(AppError::Fixed("WTF"))?;
 
     app.cache.generate_animation_gif(&entry, &imaging, length, path, move || {
         if show {
@@ -496,7 +492,7 @@ pub fn on_initial_process(app: &mut App, entries: Vec<command_line::Entry>, shuf
                 if first_path.is_none() {
                     *first_path = Some(file.clone());
                 }
-                on_events::on_push(app, updated, file.clone(), None, false, false)?;
+                on_events::on_push(app, updated, file, None, false, false)?;
             }
             CLE::Controller(source) => {
                 controller::register(app.secondary_tx.clone(), source)?;
@@ -716,7 +712,7 @@ pub fn on_mark(app: &mut App, updated: &mut Updated, name: String, key: Option<(
             app.entries.search(&SearchKey { path: path.clone(), index: Some(index) }).and_then(|index| {
                 app.entries.nth(index).map(|it| it.key.0)
             })
-        }).ok_or_else(|| AppError::Fixed("Entry not found"))?;
+        }).ok_or(AppError::Fixed("Entry not found"))?;
         app.marker.insert(name, (entry_type, path, index));
     } else if let Some((ref entry, _)) = app.current() {
         app.marker.insert(name, entry.key.clone());
@@ -899,7 +895,7 @@ pub fn on_push(app: &mut App, updated: &mut Updated, path: String, meta: Option<
     on_push_path(app, updated, &Path::new(&path).to_path_buf(), meta, force, show)
 }
 
-pub fn on_push_archive(app: &mut App, path: &PathBuf, meta: Option<Meta>, force: bool, show: bool, url: Option<String>) -> AppResultU {
+pub fn on_push_archive<T: AsRef<Path>>(app: &mut App, path: &T, meta: Option<Meta>, force: bool, show: bool, url: Option<String>) -> AppResultU {
     archive::fetch_entries(path, meta, show, &app.encodings, app.secondary_tx.clone(), app.sorting_buffer.clone(), force, url)
 }
 
@@ -935,12 +931,12 @@ pub fn on_push_memory(app: &mut App, updated: &mut Updated, buf: Vec<u8>, meta: 
     push_buffered(app, updated, buffered)
 }
 
-pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: Option<Meta>, force: bool, show: bool) -> AppResultU {
+pub fn on_push_path<T: AsRef<Path>>(app: &mut App, updated: &mut Updated, path: &T, meta: Option<Meta>, force: bool, show: bool) -> AppResultU {
     {
         let path = if app.states.canonicalize {
-            path.canonicalize()
+            path.as_ref().canonicalize()
         } else {
-            Ok(path.to_owned())
+            Ok(path.as_ref().to_path_buf())
         };
         if let Ok(path) = path {
             if let Some(entry_type) = get_entry_type_from_filename(&path) {
@@ -956,10 +952,10 @@ pub fn on_push_path(app: &mut App, updated: &mut Updated, path: &PathBuf, meta: 
         }
     }
 
-    if path.is_dir() {
-        on_push_directory(app, updated, path.clone(), meta, force)
+    if path.as_ref().is_dir() {
+        on_push_directory(app, updated, path.as_ref().to_path_buf(), meta, force)
     } else {
-        on_push_image(app, updated, path.clone(), meta, force, show, None, None)
+        on_push_image(app, updated, path.as_ref().to_path_buf(), meta, force, show, None, None)
     }
 }
 
@@ -973,12 +969,12 @@ pub fn on_push_pdf(app: &mut App, updated: &mut Updated, file: PathBuf, meta: Op
 }
 
 pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, clear: bool, meta: Option<Meta>, force: bool, show: bool) -> AppResultU {
-    fn find_sibling(base: &PathBuf, next: bool) -> Option<PathBuf> {
-        base.parent().and_then(|dir| {
+    fn find_sibling<T: AsRef<Path>>(base: &T, next: bool) -> Option<PathBuf> {
+        base.as_ref().parent().and_then(|dir| {
             dir.read_dir().ok().and_then(|dir| {
                 let mut entries: Vec<PathBuf> = dir.filter_map(Result::ok).filter(|it| it.file_type().map(|it| it.is_file()).unwrap_or(false)).map(|it| it.path()).collect();
                 entries.sort_by(|a, b| natord::compare(path_to_str(a), path_to_str(b)));
-                entries.iter().position(|it| it == base).and_then(|found| {
+                entries.iter().position(|it| it == base.as_ref()).and_then(|found| {
                     if next {
                         entries.get(found + 1).cloned()
                     } else if found > 0 {
@@ -998,7 +994,7 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, clear: 
             Image(ref path) =>
                 find_sibling(path, next),
             Archive(ref path, _) | Pdf(ref path, _) =>
-                find_sibling(&*path, next),
+                find_sibling(&*path.as_ref(), next),
             Memory(_, _) | Message(_) =>
                 None,
         }
@@ -1551,10 +1547,7 @@ pub fn on_update_option(app: &mut App, updated: &mut Updated, option_name: &Opti
     {
         let do_update_fix_to = match *updater {
             Increment(_) | Decrement(_) if *option_name == PreDefined(FitTo) => {
-                match app.states.drawing.fit_to {
-                    size::FitTo::Scale(_) => false,
-                    _ => true,
-                }
+                !matches!(app.states.drawing.fit_to, size::FitTo::Scale(_))
             },
             _ => false,
         };
@@ -1763,7 +1756,7 @@ pub fn on_with_message(app: &mut App, updated: &mut Updated, message: Option<Str
     Ok(())
 }
 
-pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) -> AppResultU {
+pub fn on_write<T: AsRef<Path>>(app: &mut App, path: &T, index: &Option<usize>) -> AppResultU {
     let count = index.unwrap_or_else(|| app.counter.take()) - 1;
     app.gui.save_to_file(path, count)?;
     Ok(())
@@ -1771,10 +1764,8 @@ pub fn on_write(app: &mut App, path: &PathBuf, index: &Option<usize>) -> AppResu
 
 
 fn extract_region_from_context(context: Option<OperationContext>) -> Option<(Region, usize)> {
-    if let Some(mapped) = context.map(|it| it.mapped) {
-        if let Mapped::Region(ref region, _, cell_index) = mapped {
-            return Some((*region, cell_index));
-        }
+    if let Some(Mapped::Region(ref region, _, cell_index)) = context.map(|it| it.mapped) {
+        return Some((*region, cell_index));
     }
     None
 }
@@ -1793,9 +1784,9 @@ fn on_update_views(app: &mut App, updated: &mut Updated, ignore_views: bool) -> 
 }
 
 fn push_buffered(app: &mut App, updated: &mut Updated, ops: Vec<QueuedOperation>) -> AppResultU {
-    fn gen_target(show: bool, url: &Option<String>, path: &PathBuf) -> Option<ShowTarget> {
+    fn gen_target<T: AsRef<Path>>(show: bool, url: &Option<String>, path: &T) -> Option<ShowTarget> {
         if show {
-            url.clone().map(ShowTarget::Url).or_else(|| path.canonicalize().ok().map(ShowTarget::File))
+            url.clone().map(ShowTarget::Url).or_else(|| path.as_ref().canonicalize().ok().map(ShowTarget::File))
         } else {
             None
         }

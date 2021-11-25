@@ -14,7 +14,6 @@ use closet::clone_army;
 use enum_primitive::*;
 use gdk::{Cursor, CursorType, Display, DisplayExt, EventMask, WindowExt};
 use gdk_pixbuf::{Pixbuf, PixbufExt, PixbufAnimationExt};
-use glib;
 use gtk::prelude::*;
 use gtk::{Adjustment, Align, Builder, Button, ComboBoxText, ComboBoxTextExt, CssProvider, CssProviderExt, Entry, EventBox, Grid, Image, Label, Layout, Overlay, RadioButton, Scale, ScrolledWindow, self, Stack, Switch, StyleContext, TextBuffer, TextView, Widget, WidgetExt, Window};
 use maplit::{convert_args, hashmap};
@@ -700,7 +699,7 @@ impl Cell {
          sh as i32)
     }
 
-    pub fn get_position_on_image(&self, coord: &CoordPx, drawing: &Drawing) -> Option<(Coord)> {
+    pub fn get_position_on_image(&self, coord: &CoordPx, drawing: &Drawing) -> Option<Coord> {
         fn extract(adj: &Adjustment) -> (f64, f64) {
             (adj.get_value(), adj.get_upper())
         }
@@ -860,9 +859,9 @@ impl FromStr for Direction {
 }
 
 
-impl Into<u32> for DropItemType {
-    fn into(self) -> u32 {
-        self as u32
+impl From<DropItemType> for u32 {
+    fn from(it: DropItemType) -> u32 {
+        it as u32
     }
 }
 

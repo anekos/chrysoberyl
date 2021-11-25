@@ -44,12 +44,12 @@ pub fn fill(modified: Modified, p: Parameter) -> Modified {
     let context = Context::new(&surface);
 
     context_fill(ContextParamater {
-        clipping: &p.clipping, 
+        clipping: p.clipping, 
         color: p.color,
         context: &context,
         h: surface.get_height(),
         operator: p.operator,
-        region: &p.che,
+        region: p.che,
         shape: p.shape,
         w: surface.get_width(),
     });
@@ -63,12 +63,12 @@ pub fn mask(surface: Option<ImageSurface>, modified: &Modified, p: Parameter) ->
     let context = Context::new(&surface);
 
     context_fill(ContextParamater {
-        clipping: &p.clipping,
+        clipping: p.clipping,
         color: p.color,
         context: &context,
         h: size.height,
         operator: p.operator,
-        region: &p.che,
+        region: p.che,
         shape: p.shape,
         w: size.width,
     });

@@ -13,7 +13,6 @@ use std::time::Duration;
 
 use closet::clone_army;
 use enum_primitive::FromPrimitive;
-use enum_primitive;
 use gdk::ScrollDirection;
 use gtk::prelude::*;
 use gtk::{Inhibit, SelectionData};
@@ -305,10 +304,8 @@ fn uri_to_path(uri: &str) -> Result<String, Box<dyn Error>> {
 fn is_modifier_key(key: u32) -> bool {
     use gdk::enums::key;
 
-    match key {
-        key::Shift_L | key::Shift_R | key::Control_L | key::Control_R | key::Meta_L | key::Meta_R | key::Alt_L | key::Alt_R | key::Super_L | key::Super_R | key::Hyper_L | key::Hyper_R =>
-            true,
-        _ =>
-            false,
-    }
+    matches!(
+        key,
+        key::Shift_L | key::Shift_R | key::Control_L | key::Control_R | key::Meta_L | key::Meta_R | key::Alt_L | key::Alt_R | key::Super_L | key::Super_R | key::Hyper_L | key::Hyper_R
+    )
 }

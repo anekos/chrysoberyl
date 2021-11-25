@@ -6,7 +6,6 @@ use std::rc::Rc;
 use marksman_escape::Escape;
 use mrusty::{defines, mrfn, Mruby, mruby_class, mruby_defines, MrubyFile, MrubyImpl, mrusty_class, Value};
 use regex::{Regex, Captures};
-use xml;
 
 use crate::app::info::AppInfo;
 use crate::constant;
@@ -44,7 +43,7 @@ impl MRubyEnv {
         Ok(s!(result))
     }
 
-    #[allow(unused_variables)]
+    #[allow(unused_variables, deprecated)]
     pub fn new() -> Self {
         let mruby = Mruby::new();
 

@@ -4,7 +4,7 @@ use std::cmp::Eq;
 use std::hash::Hash;
 use std::sync::{Arc, Mutex};
 
-use lru_cache::LruCache;
+use lru::LruCache;
 
 
 
@@ -37,7 +37,7 @@ impl<K, V> Cache<K, V> where K: Hash + Eq + Clone, V: Clone {
 
     pub fn update_limit(&mut self, limit: usize) {
         let mut entries = self.entries.lock().unwrap();
-        entries.set_capacity(limit);
+        entries.resize(limit);
     }
 
     pub fn clear(&mut self) {
@@ -47,12 +47,12 @@ impl<K, V> Cache<K, V> where K: Hash + Eq + Clone, V: Clone {
 
     pub fn clear_entry(&mut self, key: &K) -> bool {
         let mut entries = self.entries.lock().unwrap();
-        entries.remove(key).is_some()
+        entries.pop(key).is_some()
     }
 
     pub fn push(&mut self, key: K, value: V) {
         let mut entries = self.entries.lock().unwrap();
-        entries.insert(key, value);
+        entries.put(key, value);
     }
 
     #[allow(dead_code)]
@@ -68,13 +68,13 @@ impl<K, V> Cache<K, V> where K: Hash + Eq + Clone, V: Clone {
             return found.clone()
         }
         let new = updater(&key);
-        entries.insert(key, new.clone());
+        entries.put(key, new.clone());
         new
     }
 
     pub fn contains(&self, key: &K) -> bool {
-        let mut entries = self.entries.lock().unwrap();
-        entries.contains_key(key)
+        let entries = self.entries.lock().unwrap();
+        entries.contains(key)
     }
 
     pub fn len(&self) -> usize {

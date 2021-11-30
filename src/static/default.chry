@@ -64,6 +64,7 @@
 @map input f,o          @set fit-to original-or-cell
 @map input f,O          @set fit-to original
 @map input f,c          @set fit-to cell
+@map input f,C          @set fit-to crop
 @map input f,s          @set-by-count fit-to
 @map input plus         @increment fit-to 10
 @map input minus        @decrement fit-to 10

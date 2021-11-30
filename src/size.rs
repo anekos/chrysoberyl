@@ -51,6 +51,7 @@ pub enum FitTo {
     Cell,
     Fixed(i32, i32),
     Scale(usize),
+    Crop,
 }
 
 
@@ -136,6 +137,7 @@ impl Size {
             Height => self.fit_to_height(cell_size),
             Fixed(w, h) => self.fit_to_fixed(w, h),
             Scale(scale) => self.fit_to_scaled(scale),
+            Crop => self.fit_to_cropped(cell_size),
         };
 
         (scale, fitted.to_valid())
@@ -190,6 +192,19 @@ impl Size {
             scale = f64!(cell.height) / f64!(self.height);
         }
         (scale, self.scaled(scale))
+    }
+
+    fn fit_to_cropped(self, cell: Size) -> (f64, Size) {
+        if self == cell {
+            return self.fit_to_original();
+        }
+        let h = self.fit_to_height(cell);
+        let w = self.fit_to_width(cell);
+        if h.0 < w.0 {
+            w
+        } else {
+            h
+        }
     }
 
     fn fit_to_height(self, cell: Size) -> (f64, Size) {

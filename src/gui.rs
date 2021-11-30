@@ -103,6 +103,7 @@ pub struct Views {
 
 #[derive(Clone, Copy, Debug)]
 pub enum Position {
+    Center,
     TopLeft,
     TopRight,
     BottomLeft,
@@ -781,7 +782,7 @@ impl Cell {
                 self.window.set_size_request(cell_size.width, ci_height),
             Height =>
                 self.window.set_size_request(ci_width, cell_size.height),
-            Cell | Original | OriginalOrCell | Fixed(_, _) | Scale(_) =>
+            Cell | Original | OriginalOrCell | Fixed(_, _) | Scale(_) | Crop =>
                 self.window.set_size_request(ci_width, ci_height),
         }
     }
@@ -800,9 +801,11 @@ impl Cell {
         if_let_some!(v_adj = self.window.get_vadjustment());
 
         let (h_upper, v_upper) = (h_adj.get_upper(), v_adj.get_upper());
+        let (h_size, v_size) = (h_adj.get_page_size(), v_adj.get_page_size());
 
         let position = if to_end { !position } else { position };
         let (h, v) = match position {
+            Center => ((h_upper - h_size) / 2.0, (v_upper - v_size) / 2.0),
             TopLeft => (0.0, 0.0),
             TopRight => (h_upper, 0.0),
             BottomLeft => (0.0, v_upper),
@@ -879,6 +882,7 @@ impl ops::Not for Position {
         use self::Position::*;
 
         match self {
+            Center => Center,
             TopLeft => BottomRight,
             TopRight => BottomLeft,
             BottomLeft => TopRight,
@@ -894,6 +898,8 @@ impl FromStr for Position {
         use self::Position::*;
 
         match src {
+            "center" | "c" =>
+                Ok(Center),
             "top-left" | "left-top" | "tl" =>
                 Ok(TopLeft),
             "top-right" | "right-top" | "tr" =>
@@ -913,6 +919,7 @@ impl fmt::Display for Position {
         use self::Position::*;
 
         let name = match *self {
+            Center => "center",
             TopLeft => "top-left",
             TopRight => "top-right",
             BottomLeft => "bottom-left",

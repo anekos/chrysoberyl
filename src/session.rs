@@ -512,6 +512,7 @@ impl fmt::Display for FitTo {
                 Cell => "cell",
                 Fixed(w, h) => return write!(f, "{}x{}", w, h),
                 Scale(scale) => return write!(f, "{}%", scale),
+                Crop => "crop",
             };
 
         write!(f, "{}", result)

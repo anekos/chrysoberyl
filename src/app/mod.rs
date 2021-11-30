@@ -833,13 +833,14 @@ impl App {
                 use self::FitTo::*;
                 let mut text = o!("");
                 text.push(match self.states.drawing.fit_to {
-                    Cell => 'C',
+                    Cell => 'c',
                     Height => 'H',
                     Original => 'O',
                     OriginalOrCell => 'o',
                     Width => 'W',
                     Fixed(_, _) => 'F',
                     Scale(_) => 'S',
+                    Crop => 'C',
                 });
                 text.push(if self.states.reverse { 'R' } else { 'r' });
                 text.push(if self.states.auto_paging.enabled() { 'A' } else { 'a' });

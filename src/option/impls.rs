@@ -249,6 +249,7 @@ impl FromStr for FitTo {
             "original" => Original,
             "original-or-cell" | "cell-or-original" => OriginalOrCell,
             "cell" => Cell,
+            "crop" => Crop,
             "width" => Width,
             "height" => Height,
             _ => {

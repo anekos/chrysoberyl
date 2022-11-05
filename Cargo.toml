@@ -61,6 +61,7 @@ notify = "*"
 num = "*"
 num_cpus = "*"
 onig = "*"
+openssl = { version = "0.10", features = ["vendored"] }
 pom = "1.0"
 rand = "0.5"
 regex = "*"

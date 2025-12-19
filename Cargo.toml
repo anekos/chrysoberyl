@@ -1,6 +1,6 @@
 [package]
 name = "chrysoberyl"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["anekos <anekos@snca.net>"]
 build = "build.rs"
 license-file = "LICENSE"

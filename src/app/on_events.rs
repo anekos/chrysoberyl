@@ -439,6 +439,7 @@ pub fn on_flush_buffer(app: &mut App, updated: &mut Updated) -> AppResultU {
 
 pub fn on_fly_leaves(app: &mut App, updated: &mut Updated, n: usize) -> AppResultU {
     updated.pointer = app.paginator.set_fly_leaves(n);
+    env::set_var(constant::env_name("fly_leaves"), format!("{}", n));
     Ok(())
 }
 

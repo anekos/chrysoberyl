@@ -15,7 +15,7 @@ pub struct History {
 impl History {
     pub fn new() -> Self {
         let path = app_path::entry_history();
-        if let Ok(items) = read_lines(&path) {
+        if let Ok(items) = read_lines(path) {
             return History { items, next_at: 0 }
         }
         History { items: vec![], next_at: 0 }

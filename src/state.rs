@@ -89,13 +89,16 @@ pub enum Direction {
     Backward
 }
 
+#[derive(Default)]
 pub struct Filters {
     pub static_filter: Option<FilterExpr>,
     pub dynamic_filter: Option<FilterExpr>,
 }
 
 #[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Default)]
 pub enum AutoPaging {
+    #[default]
     DoNot,
     Always,
     Smart,
@@ -177,14 +180,6 @@ impl Default for PreFetchState {
 }
 
 
-impl Default for Filters {
-    fn default() -> Self {
-        Filters {
-            static_filter: None,
-            dynamic_filter: None,
-        }
-    }
-}
 
 impl AutoPaging {
     pub fn enabled(self) -> bool {
@@ -205,11 +200,6 @@ impl fmt::Display for AutoPaging {
     }
 }
 
-impl Default for AutoPaging {
-    fn default() -> Self {
-        AutoPaging::DoNot
-    }
-}
 
 macro_rules! gen_includable {
     ($t:tt, $default:expr) => {

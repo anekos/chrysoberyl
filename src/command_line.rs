@@ -163,7 +163,7 @@ fn parse_option(arg: &str, args: &mut Args, init: &mut Initial) -> Result<bool, 
 }
 
 fn print_version() {
-    println!("{}", env!("CARGO_PKG_VERSION").to_string());
+    println!("{}", env!("CARGO_PKG_VERSION"));
 }
 
 fn print_path() {

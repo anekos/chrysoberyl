@@ -68,6 +68,7 @@ pub struct Gui {
 }
 
 #[derive(Clone)]
+#[allow(dead_code)]
 struct CellInner {
     container: gtk::Box,
     cells: Vec<Cell>,
@@ -102,8 +103,10 @@ pub struct Views {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[derive(Default)]
 pub enum Position {
     Center,
+    #[default]
     TopLeft,
     TopRight,
     BottomLeft,
@@ -869,11 +872,6 @@ impl From<DropItemType> for u32 {
 }
 
 
-impl Default for Position {
-    fn default() -> Self {
-        Position::TopLeft
-    }
-}
 
 impl ops::Not for Position {
     type Output = Self;

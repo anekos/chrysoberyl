@@ -161,7 +161,7 @@ fn logic() -> Parser<char, Expr> {
 
 fn glob() -> Parser<char, EValue> {
     (sym('<') * list(call(glob_entry), sym(',')) - sym('>')).map(|entries| {
-        EValue::Glob(entries.into_iter().map(|(m, src)| (m, src)).collect())
+        EValue::Glob(entries.into_iter().collect())
     })
 }
 

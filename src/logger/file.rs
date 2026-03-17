@@ -67,7 +67,7 @@ pub fn register<T: AsRef<Path>>(path: &T) -> AppResult<Sender<String>> {
         create_dir_all(parent).unwrap();
     }
 
-    let mut file = OpenOptions::new().read(false).write(true).append(true).create(true).open(path)?;
+    let mut file = OpenOptions::new().read(false).append(true).create(true).open(path)?;
 
     let (tx, rx) = channel::<String>();
 

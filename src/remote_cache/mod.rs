@@ -289,7 +289,7 @@ fn generate_temporary_filename(url: &str) -> AppResult<PathBuf> {
         }
     }
 
-    create_dir_all(&result.parent().unwrap()).unwrap();
+    create_dir_all(result.parent().unwrap()).unwrap();
     Ok(result)
 }
 
@@ -379,7 +379,7 @@ impl Ord for Request {
 
 impl PartialOrd for Request {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.ticket.partial_cmp(&other.ticket)
+        Some(self.cmp(other))
     }
 }
 

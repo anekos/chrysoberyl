@@ -352,9 +352,9 @@ pub fn on_fill(app: &mut App, updated: &mut Updated, shape: Shape, region: Optio
 
 pub fn on_filter(app: &mut App, updated: &mut Updated, dynamic: bool, expr: Option<FilterExpr>) -> AppResultU {
     if dynamic {
-        app.states.last_filter.dynamic_filter = expr.clone();
+        app.states.last_filter.dynamic_filter.clone_from(&expr);
     } else {
-        app.states.last_filter.static_filter = expr.clone();
+        app.states.last_filter.static_filter.clone_from(&expr);
     }
 
     let app_info = app.app_info();
@@ -635,7 +635,7 @@ pub fn on_link_action(app: &mut App, updated: &mut Updated, operation: &[String]
     use crate::entry::EntryContent::*;
 
     let mut clicked = None;
-    if let Some(&Mapped::Input(ref coord, _)) = context.as_ref().map(|it| &it.mapped) {
+    if let Some(Mapped::Input(coord, _)) = context.as_ref().map(|it| &it.mapped) {
         for (index, cell) in app.gui.cells(app.states.reverse).enumerate() {
             if let Some((entry, _)) = app.current_with(index as isize) {
                 if let Some(coord) = cell.get_position_on_image(coord, &app.states.drawing) {
@@ -995,7 +995,7 @@ pub fn on_push_sibling(app: &mut App, updated: &mut Updated, next: bool, clear: 
             Image(ref path) =>
                 find_sibling(path, next),
             Archive(ref path, _) | Pdf(ref path, _) =>
-                find_sibling(&*path.as_ref(), next),
+                find_sibling(path.as_ref(), next),
             Memory(_, _) | Message(_) =>
                 None,
         }
@@ -1354,7 +1354,7 @@ pub fn on_sorter(app: &mut App, updated: &mut Updated, fix_current: bool, sorter
         }
 
         let (head, args) = sorter_command.split_first().ok_or("Empty command")?;
-        let mut command = Command::new(&head.expand());
+        let mut command = Command::new(head.expand());
         for arg in args {
             command.arg(&arg.expand());
         }

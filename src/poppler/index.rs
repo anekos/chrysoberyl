@@ -20,7 +20,9 @@ pub struct IndexEntry {
 }
 
 #[derive(Clone, Debug, Copy)]
+#[derive(Default)]
 pub enum Format {
+    #[default]
     Indented,
     OneLine,
     TwoLines,
@@ -87,11 +89,6 @@ impl IndexEntry {
 }
 
 
-impl Default for Format {
-    fn default() -> Self {
-        Format::Indented
-    }
-}
 
 impl FromStr for Format {
     type Err = String;

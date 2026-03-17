@@ -21,6 +21,7 @@ pub struct Coord {
 }
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug, Copy)]
+#[derive(Default)]
 pub struct CoordPx {
     pub x: i32,
     pub y: i32,
@@ -81,11 +82,6 @@ impl CoordPx {
     }
 }
 
-impl Default for CoordPx {
-    fn default() -> Self {
-        CoordPx { x: 0, y: 0, width: 0, height: 0 }
-    }
-}
 
 impl fmt::Display for CoordPx {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

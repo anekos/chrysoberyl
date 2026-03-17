@@ -26,7 +26,7 @@ fn main(command_line: Vec<String>, tx: Sender<Operation>) {
 
     let stdout_handle = spawn(move || {
         let reader = BufReader::new(stdout);
-        for line in reader.lines().flatten() {
+        for line in reader.lines().map_while(Result::ok) {
             match Operation::parse(&line) {
                 Ok(op) =>
                     tx.send(op).unwrap(),

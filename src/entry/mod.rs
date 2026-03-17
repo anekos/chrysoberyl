@@ -124,7 +124,7 @@ impl Ord for Entry {
 
 impl PartialOrd for Entry {
     fn partial_cmp(&self, other: &Entry) -> Option<Ordering> {
-        Some(compare_key(&self.key, &other.key))
+        Some(self.cmp(other))
     }
 }
 
@@ -337,7 +337,7 @@ impl EntryContainer {
                         return Some(index)
                     } else {
                         count -= 1;
-                        current_archive = it.archive_name().to_owned();
+                        it.archive_name().clone_into(&mut current_archive);
                     }
                 }
             }
@@ -520,7 +520,7 @@ impl EntryContainer {
     fn is_valid_image(&self, entry: &Entry) -> bool {
         use self::EntryContent::*;
 
-        match (*entry).content {
+        match entry.content {
             Image(ref path) => is_valid_image_filename(path),
             Archive(_, _) | Pdf(_,  _) | Memory(_, _) | Message(_) => true, // FIXME archive
         }
@@ -547,7 +547,7 @@ impl Entry {
 
     pub fn abbrev_path(&self, max: usize) -> String {
         if let Some(ref url) = self.url {
-            Url::parse(&**url).as_ref().map(|it| shorten_url(it, max)).unwrap_or_else(|_| (**url).clone())
+            Url::parse(url).as_ref().map(|it| shorten_url(it, max)).unwrap_or_else(|_| (**url).clone())
         } else {
             shorten_path(&Path::new(&self.key.1), max)
         }

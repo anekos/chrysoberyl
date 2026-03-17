@@ -38,7 +38,7 @@ pub fn config_file() -> PathBuf {
     {
         let dir = file.parent().unwrap();
         if !dir.exists() {
-            create_dir_all(&dir).unwrap();
+            create_dir_all(dir).unwrap();
         }
     }
     file
@@ -93,9 +93,7 @@ impl fmt::Display for PathList {
         let last = self.entries.len() - 1;
         for (i, entry) in self.entries.iter().enumerate() {
             let result = write!(f, "{}{}", path_to_str(entry), if i == last { "" } else { ":" });
-            if result.is_err() {
-                return result;
-            }
+            result?;
         }
         Ok(())
     }

@@ -236,7 +236,9 @@ pub enum UIActionType {
 }
 
 #[derive(Clone, Copy)]
+#[derive(Default)]
 pub enum ClipboardSelection {
+    #[default]
     Clipboard,
     Primary,
     Secondary,
@@ -256,7 +258,7 @@ fn _parse_from_vec(whole: &[String]) -> Result<Operation, ParsingError> {
     use self::Operation::*;
     use self::parser::*;
 
-    if let Some(head) = whole.get(0) {
+    if let Some(head) = whole.first() {
         let name = &*head.to_lowercase();
         let args = &whole[1..];
 
@@ -431,11 +433,6 @@ impl Operation {
 }
 
 
-impl Default for ClipboardSelection {
-    fn default() -> Self {
-        ClipboardSelection::Clipboard
-    }
-}
 
 impl EventName {
     pub fn operation_with_env(&self, env: HashMap<String, String>) -> Operation {

@@ -103,7 +103,7 @@ impl AnimationBuffer {
 
     pub fn get_pixbuf_animation(&self) -> Result<PixbufAnimation, glib::Error> {
         let loader = PixbufLoader::new();
-        loader.write(&*self.source.as_slice()).map(|_| {
+        loader.write(self.source.as_slice()).map(|_| {
             loader.close().unwrap();
             loader.get_animation().unwrap()
         })

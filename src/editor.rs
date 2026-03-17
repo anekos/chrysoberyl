@@ -40,7 +40,7 @@ pub fn start_edit(tx: &Sender<Operation>, editor_command: &[Expandable], default
     command.status().expect("Failed to execute process");
 
     {
-        let file = BufReader::new(File::open(&temp_file.path()).unwrap());
+        let file = BufReader::new(File::open(temp_file.path()).unwrap());
         for line in file.lines() {
             let line = line.unwrap();
             match Operation::parse_fuzziness(&line) {

@@ -38,13 +38,13 @@ struct ContextParamater<'a> {
 }
 
 
-#[cfg_attr(feature = "cargo-clippy", allow(clippy::many_single_char_names))]
+#[allow(clippy::many_single_char_names)]
 pub fn fill(modified: Modified, p: Parameter) -> Modified {
     let surface = modified.get_image_surface();
     let context = Context::new(&surface);
 
     context_fill(ContextParamater {
-        clipping: p.clipping, 
+        clipping: p.clipping,
         color: p.color,
         context: &context,
         h: surface.get_height(),

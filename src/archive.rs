@@ -90,7 +90,7 @@ pub fn fetch_entries<T: AsRef<Path>>(path: &T, meta: Option<Meta>, show: bool, e
             builder.support_format(ReadFormat::All).ok();
             builder.support_filter(ReadFilter::All).ok();
 
-            let mut reader = builder.open_file(&path)?;
+            let mut reader = builder.open_file(path)?;
             let mut index = 0;
 
             while let Some(entry) = reader.next_header() {

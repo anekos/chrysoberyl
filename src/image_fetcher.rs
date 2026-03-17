@@ -101,8 +101,8 @@ fn start(tx: &Sender<FetcherOperation>, cache: &mut ImageCache, entries: &mut Ve
 
 fn fetch(tx: Sender<FetcherOperation>, entry: Arc<Entry>, imaging: Imaging) {
     spawn(move || {
-        trace!("image_fetcher/get_image_buffer: key={:?}", &(*entry).key);
-        let image_buffer = entry::image::get_image_buffer(&(*entry).content, &imaging).map_err(|it| s!(it));
+        trace!("image_fetcher/get_image_buffer: key={:?}", &entry.key);
+        let image_buffer = entry::image::get_image_buffer(&entry.content, &imaging).map_err(|it| s!(it));
         tx.send(FetcherOperation::Done(entry.key.clone(), imaging, image_buffer)).unwrap();
     });
 }

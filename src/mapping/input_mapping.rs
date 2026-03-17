@@ -119,7 +119,7 @@ impl InputMapping {
     }
 
     pub fn update_depth(&mut self) {
-        let sub_max = self.table.iter().map(|(_, entry)| {
+        let sub_max = self.table.values().map(|entry| {
             match *entry {
                 Node::Sub(ref sub) => sub.depth,
                 _ => 0

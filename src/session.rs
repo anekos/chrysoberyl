@@ -272,7 +272,6 @@ fn write_entry(entry: &Entry, out: &mut String, previous: &mut Key) {
     let path_changed = previous.1 != entry.key.1;
 
     if let Some(ref url) = entry.url {
-        let url = &*url;
         match entry.content {
             Image(_) =>
                 sprintln!(out, "@push-url --as image{} {}", meta_args(&entry.meta), escape(url)),
@@ -327,21 +326,21 @@ fn write_path(entry: &Entry, out: &mut String) {
     if let Some(ref url) = entry.url {
         match entry.content {
             Image(_) =>
-                out.push_str(&*url),
+                out.push_str(url),
             Archive(_, ref entry) if entry.index == 0 =>
-                out.push_str(&*url),
-            Pdf(_, index) if index == 0 =>
-                out.push_str(&*url),
+                out.push_str(url),
+            Pdf(_, 0) =>
+                out.push_str(url),
             Archive(_, _) | Pdf(_, _) | Memory(_, _) | Message(_) =>
                 return,
         }
     } else {
         match entry.content {
             Image(ref path) =>
-                out.push_str(path_to_str(&*path)),
+                out.push_str(path_to_str(path)),
             Archive(ref path, ref entry) if entry.index == 0 =>
                 out.push_str(path_to_str(&**path)),
-            Pdf(ref path, index) if index == 0 =>
+            Pdf(ref path, 0) =>
                 out.push_str(path_to_str(&**path)),
             Archive(_, _) | Pdf(_, _) | Memory(_, _) | Message(_) =>
                 return,
@@ -382,7 +381,7 @@ fn write_input_mapping_entry(name: &str, entry: &imap::Node, out: &mut String) {
 
     match *entry {
         Sub(ref sub) =>
-            write_input_mappings(Some(name), &*sub, out),
+            write_input_mappings(Some(name), sub, out),
         Leaf(ref leaf_node) => {
             for entry in &leaf_node.entries {
                 sprint!(out, "@map input");

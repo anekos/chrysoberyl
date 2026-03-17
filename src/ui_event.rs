@@ -208,7 +208,7 @@ fn entry_on_ui(tx: &Sender<Operation>, key: &Key) {
 fn on_key_press(tx: &Sender<Operation>, key: Key, keyval: u32) {
     use gdk::enums::key;
 
-    if key::_0 <= keyval && keyval <= key::_9 {
+    if (key::_0..=key::_9).contains(&keyval) {
         tx.send(Operation::CountDigit((keyval - key::_0) as u8)).unwrap();
     } else if !is_modifier_key(keyval) {
         tx.send(Operation::Fire(Mapped::Input(CoordPx::default(), key))).unwrap();

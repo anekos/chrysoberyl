@@ -3,12 +3,12 @@ use std::cmp;
 use std::fmt;
 use std::mem;
 use std::mem::ManuallyDrop;
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use errors::InvalidThreadAccess;
 
 fn next_thread_id() -> usize {
-    static mut COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
+    static mut COUNTER: AtomicUsize = AtomicUsize::new(0);
     unsafe { COUNTER.fetch_add(1, Ordering::SeqCst) }
 }
 
@@ -67,9 +67,9 @@ impl<T> Fragile<T> {
     pub fn into_inner(mut self) -> T {
         self.assert_thread();
         unsafe {
-            let value = mem::replace(&mut self.value, mem::uninitialized());
+            let value = ManuallyDrop::take(&mut self.value);
             mem::forget(self);
-            *ManuallyDrop::into_inner(value).into_inner()
+            *value.into_inner()
         }
     }
 

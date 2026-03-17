@@ -159,8 +159,8 @@ impl PopplerPage {
             context.scale(scale, scale);
             context.set_source_rgb(1.0, 1.0, 1.0);
             if let Some(r) = clipped_region {
-                context.translate(-r.left as f64, -r.top as f64);
-                context.rectangle(r.left as f64, r.top as f64, r.right as f64, r.bottom as f64);
+                context.translate(-r.left, -r.top);
+                context.rectangle(r.left, r.top, r.right, r.bottom);
                 context.clip();
             }
             context_rotate(&context, page, drawing.rotation);

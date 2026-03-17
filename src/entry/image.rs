@@ -49,7 +49,7 @@ pub fn get_static_image_buffer(entry_content: &EntryContent, imaging: &Imaging) 
         Image(ref path) =>
             make_scaled_from_file(path_to_str(path), imaging),
         Archive(_, ref entry) =>
-            make_scaled(&*entry.content.as_slice(), imaging),
+            make_scaled(entry.content.as_slice(), imaging),
         Memory(ref content, _) =>
             make_scaled(content, imaging),
         Pdf(ref path, index) =>
@@ -67,7 +67,7 @@ pub fn get_animation_buffer(entry_content: &EntryContent) -> AppResult<Animation
         Image(ref path) =>
             Ok(AnimationBuffer::new_from_file(path)?),
         Archive(_, ref entry) =>
-            Ok(AnimationBuffer::new_from_slice(&*entry.content)),
+            Ok(AnimationBuffer::new_from_slice(&entry.content)),
         _ => Err(AppError::Fixed("Not implemented: get_animation_buffer")),
     }
 }
@@ -97,8 +97,8 @@ fn make_scaled(buffer: &[u8], imaging: &Imaging) -> AppResult<StaticImageBuffer>
         let context = Context::new(&surface);
         context.scale(scale, scale);
         if let Some(r) = clipped_region {
-            context.translate(-r.left as f64, -r.top as f64);
-            context.rectangle(r.left as f64, r.top as f64, r.right as f64, r.bottom as f64);
+            context.translate(-r.left, -r.top);
+            context.rectangle(r.left, r.top, r.right, r.bottom);
             context.clip();
         }
         context_rotate(&context, original, imaging.drawing.rotation);

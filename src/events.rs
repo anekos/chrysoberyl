@@ -6,6 +6,7 @@ use std::str::FromStr;
 
 
 #[derive(PartialEq, Hash, Clone, Debug, Eq)]
+#[derive(Default)]
 pub enum EventName {
     AtFirst,
     AtLast,
@@ -21,6 +22,7 @@ pub enum EventName {
     ShowImage,
     ShowImagePre,
     Spawn,
+    #[default]
     Void,
     User(String),
 }
@@ -80,8 +82,3 @@ impl fmt::Display for EventName {
     }
 }
 
-impl Default for EventName {
-    fn default() -> Self {
-        EventName::Void
-    }
-}

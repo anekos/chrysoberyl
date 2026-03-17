@@ -3,6 +3,7 @@ use std::ops;
 
 
 #[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(Default)]
 pub struct Level(pub usize);
 
 #[derive(PartialEq, Debug, Clone, Copy)]
@@ -40,11 +41,6 @@ impl Level {
     }
 }
 
-impl Default for Level {
-    fn default() -> Self {
-        Level(0)
-    }
-}
 
 impl ops::Add<usize> for Level {
     type Output = Self;

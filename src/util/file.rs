@@ -9,7 +9,7 @@ use crate::errors::{AppResult, AppResultU};
 
 pub fn write_line(line: &str, file: &Option<PathBuf>) -> AppResultU {
     if_let_some!(file = file.as_ref(), Ok(()));
-    let mut file = OpenOptions::new().read(false).write(true).append(true).create(true).open(file)?;
+    let mut file = OpenOptions::new().read(false).append(true).create(true).open(file)?;
     writeln!(file, "{}", line)?;
     Ok(())
 }

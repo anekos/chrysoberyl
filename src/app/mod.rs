@@ -519,7 +519,7 @@ impl App {
         use crate::constant::OPTION_VARIABLE_PREFIX;
 
         let (name, value) = generate_option_value(option_name, &self.states);
-        let name = name.replace("-", "_").to_uppercase();
+        let name = name.replace('-', "_").to_uppercase();
         env::set_var(format!("{}{}", OPTION_VARIABLE_PREFIX, name), value.unwrap_or_else(||  o!("")));
     }
 
@@ -709,7 +709,7 @@ impl App {
 
     fn update_env(&mut self, envs: &[(String, String)]) {
         let mut new_keys = HashSet::<String>::new();
-        for &(ref name, ref value) in envs {
+        for (name, value) in envs {
             env::set_var(constant::env_name(name), value);
             new_keys.insert(o!(name));
         }

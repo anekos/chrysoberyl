@@ -1,8 +1,8 @@
 
 use std::default::Default;
+use std::fmt;
 use std::path::{PathBuf, Path};
 use std::str::FromStr;
-use std::string::ToString;
 
 use crate::shellexpand_wrapper as sh;
 
@@ -18,13 +18,13 @@ pub enum Expandable {
 }
 
 
-impl ToString for Expandable {
-    fn to_string(&self) -> String {
+impl fmt::Display for Expandable {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::Expandable::*;
 
         match *self {
-            Expanded(ref path) => o!(path),
-            Unexpanded(ref path) => sh::expand(path),
+            Expanded(ref path) => write!(f, "{}", path),
+            Unexpanded(ref path) => write!(f, "{}", sh::expand(path)),
         }
     }
 }

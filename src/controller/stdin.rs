@@ -29,7 +29,7 @@ pub fn register(tx: Sender<Operation>, mut history_file: Option<PathBuf>) {
             puts_event!("input/stdin/open", "type" => "readline");
             while let Ok(line) = readline.readline("") {
                 if let Some(line) = joiner.push(&line) {
-                    if process(&tx, &*line, "input/stdin") {
+                    if process(&tx, &line, "input/stdin") {
                         if let Err(error) = util::file::write_line(&line, &history_file) {
                             puts_error!(error, "at" => "input/stdin/write_line");
                             history_file = None; // Do not retry
@@ -42,7 +42,7 @@ pub fn register(tx: Sender<Operation>, mut history_file: Option<PathBuf>) {
             for line in stdin.lock().lines() {
                 let line = line.unwrap();
                 if let Some(line) = joiner.push(&line) {
-                    process(&tx, &*line, "input/stdin");
+                    process(&tx, &line, "input/stdin");
                 }
             }
         }

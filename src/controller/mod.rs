@@ -25,9 +25,9 @@ pub fn register(tx: Sender<Operation>, source: Source) -> AppResultU {
 
     match source {
         Fifo(path) => fifo::register(tx, &path.expand()),
-        File(path) => file::register(tx, &path.expand()),
-        UnixSocket(path, true) => unix_socket::register_as_binary(tx, &path.expand())?,
-        UnixSocket(path, _) => unix_socket::register(tx, &path.expand())?,
+        File(path) => file::register(tx, path.expand()),
+        UnixSocket(path, true) => unix_socket::register_as_binary(tx, path.expand())?,
+        UnixSocket(path, _) => unix_socket::register(tx, path.expand())?,
     }
     Ok(())
 }

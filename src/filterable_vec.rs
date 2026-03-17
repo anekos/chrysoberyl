@@ -98,8 +98,8 @@ impl<T: Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
     // Shuffle **original** entries
     pub fn shuffle(&mut self, info: &U) {
         let mut source = self.original.clone();
-        let mut buffer = source.as_mut_slice();
-        self.rng.shuffle(&mut buffer);
+        let buffer = source.as_mut_slice();
+        self.rng.shuffle(buffer);
         self.original = buffer.to_vec();
 
         // FIXME Optimize
@@ -123,7 +123,7 @@ impl<T: Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
                 entries.to_vec()
             };
 
-        self.original.extend_from_slice(&*entries);
+        self.original.extend_from_slice(&entries);
 
         let targets = if let Some(ref dynamic_pred) = self.dynamic_pred {
             let mut targets = vec![];
@@ -135,7 +135,7 @@ impl<T: Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
             }
             targets
         } else {
-            self.filtered.extend_from_slice(&*entries);
+            self.filtered.extend_from_slice(&entries);
             self.reset_indices(); // FXIME Optimize
             return;
         };
@@ -147,7 +147,7 @@ impl<T: Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
 
     pub fn push(&mut self, info: &U, entry: &Arc<T>) {
         if let Some(ref static_pred) = self.static_pred {
-            if !static_pred(&*entry, info) {
+            if !static_pred(entry, info) {
                 return;
             }
         };
@@ -156,7 +156,7 @@ impl<T: Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
         self.original.push(Arc::clone(entry));
 
         if let Some(ref dynamic_pred) = self.dynamic_pred {
-            if !(dynamic_pred)(&*entry, info) {
+            if !(dynamic_pred)(entry, info) {
                 return;
             }
         };
@@ -237,7 +237,7 @@ impl<T: Hash + Eq + Sized + Ord, U> FilterableVec<T, U> {
                 }
             }
         } else {
-            self.filtered = self.original.clone();
+            self.filtered.clone_from(&self.original);
         }
         self.reset_indices();
 

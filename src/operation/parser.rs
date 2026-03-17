@@ -71,7 +71,7 @@ where T: FnOnce(U) -> Operation, U: FromStr {
     }
 }
 
-pub fn parse_common_move<'a, 'b>(ap: &'a mut ArgumentParser<'b>, count: &'b mut Option<usize>, ignore_views: &'b mut bool, move_by: &'b mut MoveBy, wrap: &'b mut bool) {
+pub fn parse_common_move<'b>(ap: &mut ArgumentParser<'b>, count: &'b mut Option<usize>, ignore_views: &'b mut bool, move_by: &'b mut MoveBy, wrap: &'b mut bool) {
     ap.refer(ignore_views).add_option(&["--ignore-views", "-i"], StoreTrue, "Ignore the number of views");
     ap.refer(wrap).add_option(&["--wrap", "-w"], StoreTrue, "First/Last page to Last/First page");
     ap.refer(move_by).add_option(&["--archive", "-a"], StoreConst(MoveBy::Archive), "Set move unit to `archive`");

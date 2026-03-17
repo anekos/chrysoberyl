@@ -201,23 +201,23 @@ fn make_candidates(state: &State, definition: &Definition) -> Vec<String> {
             Val::Directory =>
                 get_candidates(state.text, true, "", result),
             Val::EventName =>
-                result.extend_from_slice(&*definition.event_names),
+                result.extend_from_slice(&definition.event_names),
             Val::File | Val::Path =>
                 get_candidates(state.text, false, "", result),
             Val::Literals(ref values) =>
-                result.extend_from_slice(&*values),
+                result.extend_from_slice(values),
             Val::Operator => {
                 if let Some(OptionValue::Enum(ref values)) = definition.option_values.get("mask-operator") {
                     result.extend_from_slice(values);
                 }
             },
             Val::OptionName =>
-                result.extend_from_slice(&*definition.options),
+                result.extend_from_slice(&definition.options),
             Val::OptionValue => {
                 if_let_some!(option_name = option_name);
                 if let Some(value) = definition.option_values.get(*option_name) {
                     match value {
-                        OptionValue::Enum(values) => result.extend_from_slice(&*values),
+                        OptionValue::Enum(values) => result.extend_from_slice(values),
                         OptionValue::Boolean => result.extend_from_slice(&[o!("true"), o!("false")]),
                         OptionValue::StringOrFile => get_candidates(state.text, false, "@", result),
                     }

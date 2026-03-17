@@ -23,7 +23,7 @@ pub fn prefixed_lines(prefix: &str, source: &str) -> String {
 }
 
 pub fn remove_linebreaks(src: &str) -> String {
-    src.replace('\n', "").replace('\r', "")
+    src.replace(['\n', '\r'], "")
 }
 
 pub fn substr(src: &str, begin: usize, end: usize) -> &str {

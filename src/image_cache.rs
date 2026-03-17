@@ -60,7 +60,7 @@ impl ImageCache {
     pub fn clear(&mut self) {
         self.stages.each(|stage| {
             // Cancel current fetchings
-            let &(ref fetching, ref cond) = &*stage.fetching;
+            let (fetching, cond) = &*stage.fetching;
             let mut fetching = fetching.lock().unwrap();
             for it in fetching.values_mut() {
                 *it = false;
@@ -87,7 +87,7 @@ impl ImageCache {
 
         let stage = self.get_stage(imaging);
 
-        let &(ref fetching, _) = &*stage.fetching;
+        let (fetching, _) = &*stage.fetching;
         let mut fetching = fetching.lock().unwrap();
         if stage.cache.contains(&key) || fetching.contains_key(&key) {
             false
@@ -103,7 +103,7 @@ impl ImageCache {
         let mut stage = self.get_stage(imaging);
 
         let do_push = {
-            let &(ref fetching, ref cond) = &*stage.fetching;
+            let (fetching, cond) = &*stage.fetching;
             let mut fetching = fetching.lock().unwrap();
             let result = fetching.remove(key) == Some(true);
             cond.notify_all();
@@ -121,7 +121,7 @@ impl ImageCache {
         }.unwrap_or_else(|| {
             let stage = self.get_stage(imaging);
 
-            let &(ref fetching, ref cond) = &*stage.fetching;
+            let (fetching, cond) = &*stage.fetching;
             let mut fetching = fetching.lock().unwrap();
             while fetching.get(&entry.key) == Some(&true) {
                 fetching = cond.wait(fetching).unwrap();

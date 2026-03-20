@@ -184,6 +184,7 @@ impl App {
         let mut to_end = false;
         let len = self.entries.len();
         let count = self.counter.peek();
+        let before_fly_leaves = self.paginator.fly_leaves();
 
         {
             let operated = match operation {
@@ -413,6 +414,13 @@ impl App {
         }
 
         updated.counter |= count != self.counter.peek();
+
+        if before_fly_leaves != self.paginator.fly_leaves() {
+            env::set_var(
+                constant::env_name("fly_leaves"),
+                format!("{}", self.paginator.fly_leaves()),
+            );
+        }
 
         if self.states.spawned {
             self.after_operate(&mut updated, len, to_end);
